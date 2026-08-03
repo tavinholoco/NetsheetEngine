@@ -1,0 +1,848 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { CharacterSheet } from '../types/cyberpunk';
+import {
+  GameRoom,
+  RoomPlayer,
+  ChatMessage,
+  InitiativeEntry,
+  TacticalGridState
+} from '../types/multiplayer';
+import { TacticalGrid } from './TacticalGrid';
+import {
+  Radio,
+  Users,
+  MessageSquare,
+  Send,
+  Plus,
+  LogOut,
+  Dices,
+  Skull,
+  UserPlus,
+  Crosshair,
+  Eye,
+  Lock,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
+
+interface MultiplayerRoomProps {
+  sheet: CharacterSheet;
+  onUpdateSheet: (updated: Partial<CharacterSheet>) => void;
+  onRollDice: (roll: any) => void;
+  user: { uid: string; displayName?: string | null } | null;
+  onOpenAuthModal: () => void;
+}
+
+type RoomView = 'lobby' | 'active';
+
+interface RoomTab {
+  id: 'chat' | 'grid' | 'initiative';
+  label: string;
+}
+
+function generatePeerId(): string {
+  return 'peer_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+}
+
+export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdateSheet, onRollDice, user, onOpenAuthModal }) => {
+  const [view, setView] = useState<RoomView>('lobby');
+  const [roomCode, setRoomCode] = useState('');
+  const [roomName, setRoomName] = useState('Mesa de Night City');
+  const [room, setRoom] = useState<GameRoom | null>(null);
+  const [peerId, setPeerId] = useState<string>(() => sessionStorage.getItem('cyberpunk_peer_id') || '');
+  const [chatInput, setChatInput] = useState('');
+  const [tab, setTab] = useState<RoomTab['id']>('chat');
+  const [initiativeName, setInitiativeName] = useState('');
+  const [initiativeScore, setInitiativeScore] = useState(10);
+  const [selectedHealthPlayer, setSelectedHealthPlayer] = useState<RoomPlayer | null>(null);
+  const [inspectedPlayer, setInspectedPlayer] = useState<RoomPlayer | null>(null);
+  const [showRoomList, setShowRoomList] = useState(false);
+  const [activeRooms, setActiveRooms] = useState<{ code: string; name: string; gmHandle: string; playersCount: number }[]>([]);
+  const [errorMsg, setErrorMsg] = useState('');
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  const handle = user?.displayName || sheet.handle || 'Edgerunner';
+  const isGm = !!room && room.gmPeerId === peerId;
+  const players = room?.players || {};
+  const npcs = room?.npcs || {};
+
+  // Lista salas públicas no lobby
+  useEffect(() => {
+    if (view !== 'lobby') return;
+    const load = () => {
+      fetch('/api/rooms')
+        .then((r) => r.json())
+        .then((data) => setActiveRooms(data))
+        .catch(() => setActiveRooms([]));
+    };
+    load();
+    const iv = setInterval(load, 8000);
+    return () => clearInterval(iv);
+  }, [view]);
+
+  // Assinatura SSE quando em sala
+  useEffect(() => {
+    if (view !== 'active' || !roomCode) return;
+    const es = new EventSource(`/api/rooms/${roomCode}/stream`);
+    eventSourceRef.current = es;
+    es.onmessage = (ev) => {
+      try {
+        setRoom(JSON.parse(ev.data));
+      } catch {
+        /* ignore */
+      }
+    };
+    es.onerror = () => {
+      // EventSource reconecta automaticamente
+    };
+    return () => {
+      es.close();
+      eventSourceRef.current = null;
+    };
+  }, [view, roomCode]);
+
+  // Sincroniza a ficha na mesa APENAS quando ela muda de fato.
+  // (Antes dependia de `room`, que muda a cada evento SSE, criando um loop
+  //  infinito: POST /sheet -> broadcast -> SSE -> POST /sheet...)
+  const lastSyncedSheetRef = useRef<string>('');
+
+  useEffect(() => {
+    if (view !== 'active' || !peerId || !roomCode) return;
+    const sheetKey = JSON.stringify(sheet);
+    if (sheetKey === lastSyncedSheetRef.current) return;
+    lastSyncedSheetRef.current = sheetKey;
+    const t = setTimeout(() => {
+      fetch(`/api/rooms/${roomCode}/sheet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ peerId, sheet })
+      }).catch(() => {});
+    }, 600);
+    return () => clearTimeout(t);
+  }, [view, peerId, sheet, roomCode]);
+
+  const ensurePeerId = () => {
+    if (!peerId) {
+      const id = generatePeerId();
+      setPeerId(id);
+      sessionStorage.setItem('cyberpunk_peer_id', id);
+      return id;
+    }
+    return peerId;
+  };
+
+  const createRoom = async () => {
+    if (!user) {
+      onOpenAuthModal();
+      return;
+    }
+    if (!roomCode.trim()) {
+      setErrorMsg('Informe um código de sala (ex.: NC-2020).');
+      return;
+    }
+    const id = ensurePeerId();
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/rooms/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: roomCode.trim(), name: roomName, gmHandle: handle, gmPeerId: id })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data?.error || 'Erro ao criar sala.');
+        return;
+      }
+      setRoom(data);
+      setView('active');
+    } catch (e) {
+      setErrorMsg('Falha de conexão com o servidor.');
+    }
+  };
+
+  const joinRoom = async (code?: string) => {
+    const targetCode = (code || roomCode).trim();
+    if (!targetCode) return;
+    const id = ensurePeerId();
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/rooms/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: targetCode, peerId: id, handle, sheet })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data?.error || 'Sala não encontrada.');
+        return;
+      }
+      setRoomCode(targetCode);
+      setRoom(data);
+      setView('active');
+    } catch (e) {
+      setErrorMsg('Falha de conexão com o servidor.');
+    }
+  };
+
+  const sendChat = async (text?: string, rollResult?: any) => {
+    const content = (text ?? chatInput).trim();
+    if (!content && !rollResult) return;
+    if (text === undefined) setChatInput('');
+    try {
+      await fetch(`/api/rooms/${roomCode}/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderHandle: handle,
+          senderRole: isGm ? 'gm' : 'player',
+          text: content,
+          rollResult
+        })
+      });
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const rollDiceForTable = (diceFn: () => void) => {
+    // Dispara a rolagem local e depois transmite o resultado pelo chat
+    diceFn();
+  };
+
+  const rollAttack = () => {
+    const ref = sheet.stats.REF;
+    const wa = sheet.weapons[0]?.wa || 0;
+    const d10 = Math.floor(Math.random() * 10) + 1;
+    const total = d10 + ref + wa;
+    const label = `Ataque (${sheet.weapons[0]?.name || 'desarmado'})`;
+    const roll = {
+      id: 'roll_' + Date.now(),
+      timestamp: new Date().toLocaleTimeString(),
+      characterName: handle,
+      rollType: 'SKILL',
+      label,
+      diceFormula: '1d10',
+      baseRoll: d10,
+      bonus: ref + wa,
+      total,
+      isCriticalSuccess: d10 === 10,
+      isCriticalFailure: d10 === 1,
+      details: `1d10: ${d10} + REF (${ref}) + WA (${wa}) = ${total}`
+    };
+    onRollDice(roll);
+    sendChat(undefined, roll);
+  };
+
+  const updateGrid = (gridState: TacticalGridState) => {
+    fetch(`/api/rooms/${roomCode}/tactical-grid`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requesterPeerId: peerId, gridState })
+    }).catch(() => {});
+  };
+
+  const generateNpc = (archetypeId?: string) => {
+    fetch(`/api/rooms/${roomCode}/npcs/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requesterPeerId: peerId, archetypeId })
+    }).catch(() => {});
+  };
+
+  const generatePlayerEdgerunner = () => {
+    fetch(`/api/rooms/${roomCode}/players/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requesterPeerId: peerId })
+    }).catch(() => {});
+  };
+
+  const updatePlayerHealth = (targetPeerId: string, woundLevel: number) => {
+    fetch(`/api/rooms/${roomCode}/player-health`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requesterPeerId: peerId, targetPeerId, woundLevel })
+    }).catch(() => {});
+  };
+
+  const updateNpcHealth = (npcId: string, woundLevel: number) => {
+    fetch(`/api/rooms/${roomCode}/npcs/${npcId}/health`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requesterPeerId: peerId, woundLevel })
+    }).catch(() => {});
+  };
+
+  const deleteNpc = (npcId: string) => {
+    fetch(`/api/rooms/${roomCode}/npcs/${npcId}/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requesterPeerId: peerId })
+    }).catch(() => {});
+  };
+
+  const deletePlayer = (targetPeerId: string) => {
+    fetch(`/api/rooms/${roomCode}/players/${targetPeerId}/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requesterPeerId: peerId })
+    }).catch(() => {});
+  };
+
+  const addInitiative = () => {
+    if (!initiativeName.trim()) return;
+    const list: InitiativeEntry[] = [
+      ...(room?.initiativeList || []),
+      {
+        playerId: 'init_' + Date.now(),
+        handle: initiativeName.trim(),
+        role: '—',
+        score: initiativeScore,
+        isCurrentTurn: false
+      }
+    ].sort((a, b) => b.score - a.score);
+    fetch(`/api/rooms/${roomCode}/initiative`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initiativeList: list })
+    }).catch(() => {});
+    setInitiativeName('');
+  };
+
+  const nextTurn = () => {
+    fetch(`/api/rooms/${roomCode}/initiative`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'next' })
+    }).catch(() => {});
+  };
+
+  const leaveRoom = async () => {
+    if (roomCode && peerId) {
+      await fetch(`/api/rooms/${roomCode}/leave`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ peerId })
+      }).catch(() => {});
+    }
+    setRoom(null);
+    setRoomCode('');
+    setView('lobby');
+  };
+
+  /* ============================================================
+     LOBBY
+     ============================================================ */
+  if (view === 'lobby') {
+    return (
+      <div className="space-y-5 font-mono animate-fadeIn">
+        <div className="bg-slate-950/90 border-l-4 border-emerald-500 border-y border-r border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-emerald-500 select-none">
+            NET_LOBBY
+          </div>
+          <div className="flex items-center space-x-3 relative z-10">
+            <div className="w-12 h-12 rounded-lg bg-emerald-950 border border-emerald-500/60 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+              <Radio className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-emerald-400 uppercase tracking-widest">Mesa Multiplayer</h2>
+              <p className="text-[10px] text-slate-500">Crie ou entre em uma sala em tempo real</p>
+            </div>
+          </div>
+        </div>
+
+        {!user && (
+          <div className="bg-yellow-950/40 border border-yellow-500/50 p-4 rounded-xl text-xs font-mono text-yellow-300 flex items-center space-x-2">
+            <Lock className="w-4 h-4 text-yellow-400 shrink-0" />
+            <span>Você está no modo visitante. Faça login para criar salas como GM.</span>
+            <button onClick={onOpenAuthModal} className="ml-auto px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-[10px] uppercase rounded cursor-pointer transition-all shrink-0">
+              Acessar Conta
+            </button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Criar sala */}
+          <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-5 space-y-3">
+            <span className="text-xs font-black text-emerald-400 uppercase tracking-widest flex items-center space-x-1.5">
+              <Plus className="w-4 h-4" /> Criar Nova Sala
+            </span>
+            <input
+              type="text"
+              value={roomCode}
+              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+              placeholder="Código da sala (ex.: NC-2020)"
+              className="w-full bg-slate-900 border border-slate-700 text-sm text-cyan-300 font-mono px-3 py-2 rounded focus:border-emerald-400 focus:outline-none uppercase"
+            />
+            <input
+              type="text"
+              value={roomName}
+              onChange={(e) => setRoomName(e.target.value)}
+              placeholder="Nome da mesa"
+              className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-100 px-3 py-2 rounded focus:border-emerald-400 focus:outline-none"
+            />
+            <button
+              onClick={createRoom}
+              disabled={!user}
+              className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-xs uppercase rounded shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all cursor-pointer"
+            >
+              🌐 Criar Mesa como GM
+            </button>
+          </div>
+
+          {/* Entrar em sala */}
+          <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-5 space-y-3">
+            <span className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center space-x-1.5">
+              <Users className="w-4 h-4" /> Entrar em Sala
+            </span>
+            <input
+              type="text"
+              value={roomCode}
+              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+              placeholder="Digite o código da sala"
+              className="w-full bg-slate-900 border border-slate-700 text-sm text-cyan-300 font-mono px-3 py-2 rounded focus:border-cyan-400 focus:outline-none uppercase"
+            />
+            <button
+              onClick={() => joinRoom()}
+              className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs uppercase rounded shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all cursor-pointer"
+            >
+              🎮 Entrar na Mesa
+            </button>
+
+            <button
+              onClick={() => setShowRoomList(!showRoomList)}
+              className="w-full py-1.5 text-[10px] text-slate-400 hover:text-cyan-300 uppercase flex items-center justify-center space-x-1 transition-all cursor-pointer"
+            >
+              {showRoomList ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              <span>Salas ativas ({activeRooms.length})</span>
+            </button>
+
+            {showRoomList && (
+              <div className="space-y-1.5 animate-fadeIn">
+                {activeRooms.map((r) => (
+                  <div key={r.code} className="flex items-center justify-between bg-slate-900/80 border border-slate-800 rounded px-3 py-2">
+                    <div>
+                      <span className="text-xs font-black text-cyan-300 font-mono">{r.code}</span>
+                      <span className="text-[10px] text-slate-400 ml-2">{r.name}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[9px] text-slate-500">{r.playersCount} jog.</span>
+                      <button
+                        onClick={() => joinRoom(r.code)}
+                        className="px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-[9px] uppercase rounded cursor-pointer transition-all"
+                      >
+                        Entrar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {activeRooms.length === 0 && (
+                  <div className="text-center py-3 text-[10px] text-slate-600">Nenhuma sala ativa no momento.</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {errorMsg && (
+          <div className="bg-red-950/60 border border-red-500/50 p-3 rounded text-[11px] font-mono text-red-300">{errorMsg}</div>
+        )}
+      </div>
+    );
+  }
+
+  /* ============================================================
+     SALA ATIVA
+     ============================================================ */
+  const chatMessages: ChatMessage[] = room?.chatMessages || [];
+  const initiative = room?.initiativeList || [];
+  const gridState = room?.tacticalGrid || { rows: 8, cols: 10, theme: 'alley', tokens: [] };
+
+  return (
+    <div className="space-y-4 font-mono animate-fadeIn">
+      {/* Header da sala */}
+      <div className="bg-slate-950/90 border-l-4 border-emerald-500 border-y border-r border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-lg bg-emerald-950 border border-emerald-500/60 flex items-center justify-center">
+            <Radio className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-black text-white uppercase tracking-wider">{room?.name}</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-bold font-mono">
+                {roomCode}
+              </span>
+              {isGm && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-950 border border-red-500/60 text-red-300 font-black uppercase">
+                  GM
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-500">{room?.locationName || 'Night City'}</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-[10px] text-slate-400 flex items-center space-x-1">
+            <Users className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{Object.keys(players).length} jogadores</span>
+          </span>
+          <button
+            onClick={leaveRoom}
+            className="px-3 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-600/60 text-red-300 rounded font-bold text-[10px] uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
+          >
+            <LogOut className="w-3 h-3" />
+            <span>Sair</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center space-x-1.5">
+        {([
+          { id: 'chat' as const, label: '💬 Chat' },
+          { id: 'grid' as const, label: '🗺️ Grid Tático' },
+          { id: 'initiative' as const, label: '⚔️ Iniciativa' }
+        ]).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-3.5 py-2 rounded-lg border-2 text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+              tab === t.id
+                ? 'bg-emerald-600 text-white border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)]'
+                : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-emerald-500/50 hover:text-white'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* CHAT */}
+      {tab === 'chat' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[540px]">
+            <div className="flex items-center justify-between p-3 border-b border-slate-800">
+              <span className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center space-x-1.5">
+                <MessageSquare className="w-4 h-4" /> Chat da Mesa
+              </span>
+              <span className="text-[9px] text-slate-500">{chatMessages.length} mensagens</span>
+            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+              {chatMessages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.senderHandle === 'SISTEMA_NET' ? 'justify-center' : ''}`}>
+                  {msg.senderHandle === 'SISTEMA_NET' ? (
+                    <div className="bg-slate-900/60 border border-slate-800 rounded px-3 py-1.5 text-[9px] text-slate-400 text-center font-mono max-w-[90%]">
+                      {msg.text}
+                    </div>
+                  ) : (
+                    <div className="max-w-[85%] space-y-0.5">
+                      <div className="flex items-center space-x-1.5 text-[9px] font-mono">
+                        <span className={msg.senderRole === 'gm' ? 'text-red-400 font-black' : 'text-cyan-300 font-bold'}>
+                          {msg.senderRole === 'gm' ? '👑' : '🔹'} {msg.senderHandle}
+                        </span>
+                        <span className="text-slate-600">{msg.timestamp}</span>
+                      </div>
+                      <div className={`px-3 py-2 rounded-lg text-xs leading-relaxed font-sans ${
+                        msg.senderRole === 'gm'
+                          ? 'bg-red-950/50 border border-red-800/60 text-red-100'
+                          : 'bg-slate-900 border border-slate-700 text-slate-200'
+                      }`}>
+                        {msg.isDiceRoll && msg.rollResult ? (
+                          <div>
+                            <span className="font-mono font-black text-yellow-400">
+                              🎲 {msg.rollResult.label}: {msg.rollResult.total}
+                            </span>
+                            <p className="text-[10px] text-slate-400 mt-1">{msg.rollResult.details}</p>
+                          </div>
+                        ) : (
+                          msg.text
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {chatMessages.length === 0 && (
+                <div className="text-center py-10 text-[10px] text-slate-600">A mesa está em silêncio... Quebre o gelo!</div>
+              )}
+            </div>
+            <div className="border-t border-slate-800 p-3 flex space-x-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+                placeholder="Mensagem para a mesa..."
+                className="flex-1 bg-slate-900 border border-slate-700 text-slate-100 text-xs px-3 py-2.5 rounded focus:border-cyan-400 focus:outline-none placeholder:text-slate-600"
+              />
+              <button
+                onClick={() => sendChat()}
+                className="px-3.5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded font-black uppercase cursor-pointer transition-all"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => rollDiceForTable(rollAttack)}
+                title="Rolar ataque na mesa"
+                className="px-3.5 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black rounded font-black uppercase cursor-pointer transition-all"
+              >
+                <Dices className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Lateral: jogadores & NPCs */}
+          <div className="space-y-4">
+            <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
+              <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block mb-2">
+                Jogadores ({Object.keys(players).length})
+              </span>
+              <div className="space-y-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-1">
+                {Object.values(players).map((p) => (
+                  <div
+                    key={p.peerId}
+                    draggable={isGm}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(
+                        'application/json',
+                        JSON.stringify({ type: 'character_drag', peerId: p.peerId, handle: p.handle, role: p.role, isNpc: false, hp: p.sheet.woundLevel })
+                      );
+                    }}
+                    className="bg-slate-900/70 border border-slate-800 rounded-lg px-2.5 py-2 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-cyan-500/40 transition-all"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${p.isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+                      <span className="text-xs font-bold text-white truncate">{p.handle}</span>
+                      <span className="text-[8px] px-1 py-0.5 rounded bg-slate-950 border border-slate-700 text-yellow-400 shrink-0">
+                        {p.role}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1 shrink-0">
+                      <button
+                        onClick={() => setInspectedPlayer(p)}
+                        title="Inspecionar ficha"
+                        className="p-1 rounded bg-slate-950 border border-slate-700 text-slate-400 hover:text-cyan-400 cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" />
+                      </button>
+                      {isGm && p.peerId !== peerId && (
+                        <button
+                          onClick={() => setSelectedHealthPlayer(p)}
+                          title="Editar bio-monitor"
+                          className="p-1 rounded bg-slate-950 border border-slate-700 text-slate-400 hover:text-red-400 cursor-pointer"
+                        >
+                          <Crosshair className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {isGm && (
+              <div className="bg-slate-950/80 border border-red-500/40 rounded-xl p-3 space-y-2">
+                <span className="text-[10px] font-black text-red-400 uppercase tracking-widest block">Poderes do GM</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => generateNpc()}
+                    className="px-2 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-300 rounded font-bold text-[9px] uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
+                  >
+                    <Skull className="w-3 h-3" />
+                    <span>Gerar NPC</span>
+                  </button>
+                  <button
+                    onClick={generatePlayerEdgerunner}
+                    className="px-2 py-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/60 text-cyan-300 rounded font-bold text-[9px] uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                    <span>Gerar Jogador</span>
+                  </button>
+                </div>
+                <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                  <span className="text-[9px] text-slate-500 uppercase">NPCs ({Object.keys(npcs).length})</span>
+                  {Object.values(npcs).map((n) => (
+                    <div key={n.peerId} className="bg-slate-900/70 border border-slate-800 rounded px-2 py-1.5 flex items-center justify-between">
+                      <span className="text-[10px] text-red-200 font-bold truncate">{n.handle}</span>
+                      <div className="flex items-center space-x-1 shrink-0">
+                        <button
+                          onClick={() => updateNpcHealth(n.peerId, Math.min(10, n.sheet.woundLevel + 1))}
+                          className="text-[9px] px-1 py-0.5 rounded bg-slate-950 border border-slate-700 text-red-400 cursor-pointer"
+                        >
+                          +
+                        </button>
+                        <button
+                          onClick={() => deleteNpc(n.peerId)}
+                          className="text-[9px] px-1 py-0.5 rounded bg-slate-950 border border-slate-700 text-slate-400 cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {Object.keys(npcs).length === 0 && (
+                    <div className="text-center py-2 text-[9px] text-slate-600">Sem NPCs na mesa.</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* GRID TÁTICO */}
+      {tab === 'grid' && (
+        <div className="space-y-3">
+          {isGm && (
+            <div className="bg-slate-950/60 border border-slate-800 rounded p-2.5 text-[10px] text-slate-400 font-mono">
+              💡 Arraste as fichas da barra lateral diretamente para o grid, ou use os controles do grid para adicionar NPCs, cobertura e perigos.
+            </div>
+          )}
+          <TacticalGrid
+            gridState={gridState}
+            roleMode={isGm ? 'gm' : 'player'}
+            peerId={peerId}
+            players={players}
+            onUpdateGrid={updateGrid}
+            onSelectPlayerForHealthEdit={isGm ? (p) => setSelectedHealthPlayer(p) : undefined}
+            onInspectPlayer={(p) => setInspectedPlayer(p)}
+          />
+        </div>
+      )}
+
+      {/* INICIATIVA */}
+      {tab === 'initiative' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between p-3 border-b border-slate-800">
+              <span className="text-xs font-black text-yellow-400 uppercase tracking-widest">Ordem de Iniciativa</span>
+              <span className="text-[9px] text-slate-500">{initiative.length} entradas</span>
+            </div>
+            <div className="divide-y divide-slate-900">
+              {initiative.map((entry, idx) => (
+                <div
+                  key={entry.playerId}
+                  className={`flex items-center justify-between px-4 py-2.5 ${
+                    entry.isCurrentTurn ? 'bg-yellow-950/40 border-l-4 border-l-yellow-400' : ''
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-[9px] text-slate-500 w-6">{idx + 1}º</span>
+                    <span className={`text-xs font-bold ${entry.isCurrentTurn ? 'text-yellow-300' : 'text-white'}`}>
+                      {entry.handle}
+                    </span>
+                    {entry.isCurrentTurn && (
+                      <span className="text-[8px] px-1.5 py-0.5 bg-yellow-400 text-black rounded font-black uppercase">Vez</span>
+                    )}
+                  </div>
+                  <span className="text-xs font-mono font-black text-cyan-300">{entry.score}</span>
+                </div>
+              ))}
+              {initiative.length === 0 && (
+                <div className="text-center py-10 text-[10px] text-slate-600">Adicione combatentes para iniciar a rodada.</div>
+              )}
+            </div>
+            {initiative.length > 0 && (
+              <div className="p-3 border-t border-slate-800">
+                <button
+                  onClick={nextTurn}
+                  className="w-full py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xs uppercase rounded cursor-pointer transition-all"
+                >
+                  ⚔️ Próximo Turno
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+            <span className="text-xs font-black text-yellow-400 uppercase tracking-widest">Adicionar Combatente</span>
+            <input
+              type="text"
+              value={initiativeName}
+              onChange={(e) => setInitiativeName(e.target.value)}
+              placeholder="Nome / handle"
+              className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-100 px-3 py-2 rounded focus:border-yellow-400 focus:outline-none"
+            />
+            <input
+              type="number"
+              value={initiativeScore}
+              onChange={(e) => setInitiativeScore(parseInt(e.target.value) || 0)}
+              className="w-full bg-slate-900 border border-slate-700 text-xs text-yellow-400 px-3 py-2 rounded focus:border-yellow-400 focus:outline-none"
+            />
+            <button
+              onClick={addInitiative}
+              disabled={!initiativeName.trim()}
+              className="w-full py-2 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 text-black font-black text-[10px] uppercase rounded cursor-pointer transition-all"
+            >
+              + Adicionar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: editar saúde (GM) */}
+      {selectedHealthPlayer && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedHealthPlayer(null)}>
+          <div className="bg-slate-950 border-2 border-red-500/60 rounded-2xl p-6 w-full max-w-sm font-mono shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-black text-red-400 uppercase tracking-widest mb-3">
+              Bio-Monitor // {selectedHealthPlayer.handle}
+            </h3>
+            <div className="grid grid-cols-5 gap-1.5 mb-4">
+              {Array.from({ length: 11 }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => updatePlayerHealth(selectedHealthPlayer.peerId, i)}
+                  className={`aspect-square rounded border-2 text-[10px] font-black font-mono cursor-pointer transition-all ${
+                    i <= selectedHealthPlayer.sheet.woundLevel
+                      ? 'border-red-500 bg-red-950/80 text-red-300'
+                      : 'border-slate-800 bg-slate-900 text-slate-500 hover:border-red-500/50'
+                  }`}
+                >
+                  {i}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setSelectedHealthPlayer(null)}
+              className="w-full py-2 bg-slate-900 border border-slate-700 text-slate-300 rounded text-[10px] uppercase cursor-pointer"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: inspecionar ficha */}
+      {inspectedPlayer && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setInspectedPlayer(null)}>
+          <div className="bg-slate-950 border-2 border-cyan-500/60 rounded-2xl p-6 w-full max-w-md font-mono shadow-[0_0_30px_rgba(6,182,212,0.3)] max-h-[80vh] overflow-y-auto custom-scrollbar animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-black text-cyan-400 uppercase tracking-widest">{inspectedPlayer.handle}</h3>
+              <span className="text-[9px] px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-yellow-400">{inspectedPlayer.role}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 mb-3">
+              {(Object.keys(inspectedPlayer.sheet.stats) as (keyof typeof inspectedPlayer.sheet.stats)[]).map((k) => (
+                <div key={k} className="bg-slate-900 border border-slate-800 rounded p-1.5 text-center">
+                  <span className="text-[8px] text-slate-500 block">{k}</span>
+                  <span className="text-xs font-black text-yellow-400">{inspectedPlayer.sheet.stats[k]}</span>
+                </div>
+              ))}
+            </div>
+            <div className="text-[10px] text-slate-400 space-y-1">
+              <p>💥 Ferimento: <span className="text-red-300 font-bold">{inspectedPlayer.sheet.woundLevel}/10</span></p>
+              <p>💰 €$ {inspectedPlayer.sheet.eurodollars.toLocaleString()}</p>
+              <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
+              <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>
+            </div>
+            <button
+              onClick={() => setInspectedPlayer(null)}
+              className="w-full mt-4 py-2 bg-slate-900 border border-slate-700 text-slate-300 rounded text-[10px] uppercase cursor-pointer"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

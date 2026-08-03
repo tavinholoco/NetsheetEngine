@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+server.js
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Local database files
+*.db
+*.db-shm
+*.db-wal
+
+# Local workspace / tooling state
+.freebuff/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
