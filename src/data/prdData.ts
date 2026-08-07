@@ -250,7 +250,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T2.9', title: 'Migração de usuários/fichas (se houver)', status: 'pendente' },
         { code: 'T2.10', title: 'src/lib/supabase.ts com mesma API do firebase.ts', status: 'concluído' },
         { code: 'T2.11', title: 'AuthModal reescrito com Supabase', status: 'concluído' },
-        { code: 'T2.12', title: 'FriendsList/chat com Realtime', status: 'pendente' },
+        { code: 'T2.12', title: 'FriendsList/chat com Realtime', status: 'concluído' },
         { code: 'T2.13', title: 'useCharacterSheet com persistência jsonb', status: 'pendente' },
         { code: 'T2.14', title: 'useUserActivity com presença', status: 'pendente' },
         { code: 'T2.15', title: 'Migrar imports e remover firebase', status: 'pendente' },

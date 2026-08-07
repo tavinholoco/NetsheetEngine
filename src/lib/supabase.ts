@@ -27,7 +27,7 @@
  * ============================================================
  */
 
-import { createClient, type SupabaseClient, type User as SupabaseUser } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient, type RealtimeChannel, type User as SupabaseUser } from '@supabase/supabase-js';
 import type { CharacterSheet } from '../types/cyberpunk';
 
 /* ============================================================
@@ -50,6 +50,54 @@ export const googleProvider = { provider: 'google' } as const;
 
 /** Unsubscribe padrão da camada (compatível com o onSnapshot do Firebase). */
 export type Unsubscribe = () => void;
+
+/* ============================================================
+   CANAIS REALTIME COMPARTILHADOS (fix T2.12)
+   O CyberpunkMenu monta o FriendsList em 2 lugares (desktop sidebar
+   + drawer mobile) e o chat/fichas podem ser assinados mais de uma
+   vez. O supabase-js não permite `.on()` após `.subscribe()` num
+   canal com o mesmo nome — então canais são compartilhados por
+   chave com refcount: o 1º subscriber cria, os demais reutilizam,
+   e todos os `load`s registrados disparam a cada evento.
+   ============================================================ */
+
+interface SharedChannelEntry {
+  channel: RealtimeChannel;
+  loads: Set<() => void>;
+}
+
+const sharedChannels = new Map<string, SharedChannelEntry>();
+
+function subscribeShared(
+  key: string,
+  setup: (onEvent: () => void) => RealtimeChannel,
+  load: () => void
+): Unsubscribe {
+  let entry = sharedChannels.get(key);
+  if (!entry) {
+    const loads = new Set<() => void>();
+    const onEvent = () => {
+      loads.forEach((l) => l());
+    };
+    // Inscreve o canal ANTES do load inicial (o subscriber chama `void load()`
+    // logo após este retorno) para não perder eventos no intervalo.
+    const channel = setup(onEvent).subscribe();
+    entry = { channel, loads };
+    sharedChannels.set(key, entry);
+  }
+  entry.loads.add(load);
+  return () => {
+    const e = sharedChannels.get(key);
+    if (!e) return;
+    e.loads.delete(load);
+    if (e.loads.size === 0) {
+      sharedChannels.delete(key);
+      // removeChannel remove o canal da lista interna do client — evita que um
+      // resubscribe rápido reutilize o canal fechado (erro "after subscribe()").
+      void auth.removeChannel(e.channel);
+    }
+  };
+}
 
 /* ============================================================
    TIPOS (mesmo contrato do firebase.ts)
@@ -488,22 +536,24 @@ export function subscribeToFriends(uid: string, cb: (friends: FriendUser[]) => v
     if (active) cb([...readNpcFriends(), ...dbFriends]);
   };
 
+  // Canal primeiro, load depois: evita perder eventos entre o load e a subscrição.
+  const unsub = subscribeShared(
+    `friends_${uid}`,
+    (onEvent) =>
+      auth.channel(`friends_${uid}`).on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'friendships' },
+        onEvent
+      ),
+    () => {
+      void load();
+    }
+  );
   void load();
-
-  const channel = auth
-    .channel(`friends_${uid}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'friendships' },
-      () => {
-        void load();
-      }
-    )
-    .subscribe();
 
   return () => {
     active = false;
-    void channel.unsubscribe();
+    unsub();
   };
 }
 
@@ -534,22 +584,24 @@ export function subscribeToPendingRequests(
     );
   };
 
+  // Canal primeiro, load depois: evita perder eventos entre o load e a subscrição.
+  const unsub = subscribeShared(
+    `pending_requests_${uid}`,
+    (onEvent) =>
+      auth.channel(`pending_requests_${uid}`).on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'friend_requests', filter: `receiver_uid=eq.${uid}` },
+        onEvent
+      ),
+    () => {
+      void load();
+    }
+  );
   void load();
-
-  const channel = auth
-    .channel(`pending_requests_${uid}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'friend_requests', filter: `receiver_uid=eq.${uid}` },
-      () => {
-        void load();
-      }
-    )
-    .subscribe();
 
   return () => {
     active = false;
-    void channel.unsubscribe();
+    unsub();
   };
 }
 
@@ -604,27 +656,29 @@ export function subscribeToDirectMessages(
     );
   };
 
+  // Canal primeiro, load depois: evita perder eventos entre o load e a subscrição.
+  const unsub = subscribeShared(
+    `chat_${chatRoomId}`,
+    (onEvent) =>
+      auth.channel(`chat_${chatRoomId}`).on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `chat_room_id=eq.${chatRoomId}`
+        },
+        onEvent
+      ),
+    () => {
+      void load();
+    }
+  );
   void load();
-
-  const channel = auth
-    .channel(`chat_${chatRoomId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'direct_messages',
-        filter: `chat_room_id=eq.${chatRoomId}`
-      },
-      () => {
-        void load();
-      }
-    )
-    .subscribe();
 
   return () => {
     active = false;
-    void channel.unsubscribe();
+    unsub();
   };
 }
 
@@ -656,22 +710,24 @@ export function subscribeToCharacterSheets(
     );
   };
 
+  // Canal primeiro, load depois: evita perder eventos entre o load e a subscrição.
+  const unsub = subscribeShared(
+    `sheets_${uid}`,
+    (onEvent) =>
+      auth.channel(`sheets_${uid}`).on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'character_sheets', filter: `user_id=eq.${uid}` },
+        onEvent
+      ),
+    () => {
+      void load();
+    }
+  );
   void load();
-
-  const channel = auth
-    .channel(`sheets_${uid}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'character_sheets', filter: `user_id=eq.${uid}` },
-      () => {
-        void load();
-      }
-    )
-    .subscribe();
 
   return () => {
     active = false;
-    void channel.unsubscribe();
+    unsub();
   };
 }
 

@@ -193,6 +193,10 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
   const [searchError, setSearchError] = useState<string>('');
   const [actionFeedback, setActionFeedback] = useState<string>('');
 
+  // Reload token: NPCs são salvos em localStorage (não em profiles), então
+  // adicionar/remover NPC não dispara Realtime — forçamos re-subscrição.
+  const [friendsReloadKey, setFriendsReloadKey] = useState<number>(0);
+
   // Subscriptions to friends & friend requests
   useEffect(() => {
     if (!user) {
@@ -213,7 +217,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
       unsubFriends();
       unsubRequests();
     };
-  }, [user]);
+  }, [user, friendsReloadKey]);
 
   // Handle User Search by ID
   const handleSearch = async (e?: React.FormEvent) => {
@@ -282,6 +286,10 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
       const res = await sendFriendRequest(senderProfile, target);
       setActionFeedback(res.message);
       if (res.success) {
+        // NPCs não disparam Realtime (ficam em localStorage) → força refresh da lista
+        if (target.uid.startsWith('npc_')) {
+          setFriendsReloadKey((k) => k + 1);
+        }
         setTimeout(() => {
           setSearchResult(null);
           setSearchIdInput('');
@@ -326,6 +334,10 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
 
     try {
       await removeFriend(user.uid, friend.uid);
+      // NPC removal não dispara Realtime → sincroniza o estado local com o storage
+      if (friend.uid.startsWith('npc_')) {
+        setFriendsReloadKey((k) => k + 1);
+      }
     } catch (err) {
       console.error('Erro ao desfazer amizade:', err);
     }
