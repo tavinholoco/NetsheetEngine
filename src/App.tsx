@@ -492,7 +492,7 @@ export default function App() {
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,1)]"></div>
-                  <span className="text-emerald-500 text-[10px] font-bold uppercase">FIREBASE CLOUD CONECTADO</span>
+                  <span className="text-emerald-500 text-[10px] font-bold uppercase">SUPABASE CLOUD CONECTADO</span>
                 </div>
                 <span className="border-l border-slate-800 pl-4 text-[10px]">v0.4.0-RELEASE</span>
               </div>

@@ -253,7 +253,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T2.12', title: 'FriendsList/chat com Realtime', status: 'concluído' },
         { code: 'T2.13', title: 'useCharacterSheet com persistência jsonb', status: 'concluído' },
         { code: 'T2.14', title: 'useUserActivity com presença', status: 'concluído' },
-        { code: 'T2.15', title: 'Migrar imports e remover firebase', status: 'pendente' },
+        { code: 'T2.15', title: 'Migrar imports e remover firebase', status: 'concluído' },
         { code: 'T2.16', title: 'Bucket avatars com RLS', status: 'concluído' },
         { code: 'T2.17', title: 'Upload de avatar no UserProfile', status: 'pendente' },
         { code: 'T2.18', title: 'Testes manuais de auth/social/chat/fichas', status: 'pendente' },
