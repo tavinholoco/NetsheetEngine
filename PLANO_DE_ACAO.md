@@ -160,12 +160,13 @@ com migração de dados e RLS adequado. *(Manter `firebase-blueprint.json`/`fire
 - [ ] **T2.9** *(Opcional, se houver usuários reais no Firebase)* Migrar usuários: exportar do Firebase (scrypt params) e importar via `supabase-community/firebase-to-supabase` ou re-import com nova senha. **Se houver fichas salvas no Firestore, migrar também as `character_sheets`** (exportar JSON → importar na tabela). Se ainda sem dados reais, pular com anotação.
 
 ### 2.3 — Camada cliente
-- [ ] **T2.10** Criar `src/lib/supabase.ts` (cliente tipado) mantendo a **mesma API** hoje exportada por `src/lib/firebase.ts`:
+- [x] **T2.10** Criar `src/lib/supabase.ts` (cliente tipado) mantendo a **mesma API** hoje exportada por `src/lib/firebase.ts`: *(✓ criado em 07/08/2026 com a API idêntica — ver anotações; validado com teste funcional 19/19 contra o Supabase local, incluindo Realtime ao vivo e RLS. Aplicada a migration `0005_realtime_friends_sheets.sql` para adicionar `friendships` e `character_sheets` à publicação realtime, que faltavam na 0002.)*
   `auth`, `saveUserProfile`, `updateProfile`, `generateCyberpunkId`, `fetchUserProfile`, `searchUserByCyberpunkId`,
   `sendFriendRequest`, `acceptFriendRequest`, `rejectFriendRequest`, `removeFriend`, `subscribeToFriends`,
   `subscribeToPendingRequests`, `getChatRoomId`, `sendDirectMessage`, `subscribeToDirectMessages`,
-  `subscribeToCharacterSheets`/roster, `saveCharacterSheet`, `deleteCharacterSheet`, `signOut`, `DEMO_CYBERPUNK_USERS`.
+  `subscribeToCharacterSheets`/roster,  `saveCharacterSheet`, `deleteCharacterSheet`, `signOut`, `DEMO_CYBERPUNK_USERS`.
   *(Se impossível manter assinaturas idênticas, documentar os pontos de mudança e ajustar os consumidores.)*
+  ⚠️ **Pontos de mudança documentados (T2.10):** (1) NPCs (`npc_*`) não têm linha em `profiles` (FK uuid) → amizades de NPC ficam em localStorage e são mescladas em `subscribeToFriends`; chat com NPC continua no banco (room id contém uid real → RLS ok). (2) `profiles` não guarda e-mail (migration 0004) → `fetchUserProfile` retorna `email: null`, e-mail vem do JWT. (3) `signInWithPopup` usa fluxo OAuth de redirect do Supabase (não popup) e retorna `{user: null}` — o AuthModal (T2.11) tratará o retorno via `onAuthStateChanged`. (4) `generateCyberpunkId` do cliente (hash JS) difere do trigger `hashtextextended`; o upsert do `saveUserProfile` sobrescreve com o do cliente → consistente após o primeiro save.
 - [ ] **T2.11** Reescrever `src/components/AuthModal.tsx` para usar Supabase Auth (email/senha + Google), mantendo o mesmo UX/mensagens em pt-BR.
 - [ ] **T2.12** Reescrever `src/components/FriendsList.tsx` (subscrições Realtime no lugar de onSnapshot) e o chat (`subscribeToDirectMessages` via Realtime).
 - [ ] **T2.13** Reescrever `src/hooks/useCharacterSheet.ts` para persistência em `character_sheets` (jsonb) + fallback localStorage offline.
