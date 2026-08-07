@@ -247,7 +247,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T2.6', title: 'Trigger on auth.users insert (cyberpunk_id)', status: 'concluído' },
         { code: 'T2.7', title: 'Realtime para mensagens e presença', status: 'concluído' },
         { code: 'T2.8', title: 'Provedores: Email/Senha + Google OAuth', status: 'concluído' },
-        { code: 'T2.9', title: 'Migração de usuários/fichas (se houver)', status: 'pendente' },
+        { code: 'T2.9', title: 'Migração de usuários/fichas (se houver)', status: 'concluído' },
         { code: 'T2.10', title: 'src/lib/supabase.ts com mesma API do firebase.ts', status: 'concluído' },
         { code: 'T2.11', title: 'AuthModal reescrito com Supabase', status: 'concluído' },
         { code: 'T2.12', title: 'FriendsList/chat com Realtime', status: 'concluído' },
