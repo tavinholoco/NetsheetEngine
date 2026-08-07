@@ -137,8 +137,8 @@ Cada tarefa deve ser marcada com `[x]` quando concluída. Preencha a data ao con
 com migração de dados e RLS adequado. *(Manter `firebase-blueprint.json`/`firestore.rules` apenas como referência histórica em `docs/legacy/`.)*
 
 ### 2.1 — Preparação e schema
-- [x] **T2.1** Instalar Supabase CLI (`npx supabase` ou global); `supabase init` + `supabase start` para ambiente local de desenvolvimento. *(✓ `npx supabase init` executado — `supabase/config.toml` criado; `supabase start` pendente de Docker Desktop, ausente nesta máquina.)*
-- [x] **T2.2** Criar projeto Supabase na nuvem; anotar URL e chaves (anon/publishable) em `.env.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). *(✓ `.env.local` criado com placeholders; preencher com as chaves do projeto — nuvem ou `supabase start`.)*
+- [x] **T2.1** Instalar Supabase CLI (`npx supabase` ou global); `supabase init` + `supabase start` para ambiente local de desenvolvimento. *(✓ `npx supabase init` + `supabase start` executados em 07/08/2026 — Docker Desktop instalado; stack local no ar: API `127.0.0.1:54321`, Studio `54323`, Postgres `54322`.)*
+- [x] **T2.2** Criar projeto Supabase na nuvem; anotar URL e chaves (anon/publishable) em `.env.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). *(✓ `.env.local` preenchido com URL + anon key do AMBIENTE LOCAL — nuvem fica para quando houver deploy/T2.18.)*
 - [x] **T2.3** Instalar `@supabase/supabase-js` (e, se adotar SSR no futuro, `@supabase/ssr`). Remover `firebase` do `package.json` **somente após concluir T2.15**. *(✓ `@supabase/supabase-js@^2.112.0` instalado; `firebase` mantido até T2.15.)*
 - [x] **T2.4** Criar migration SQL inicial (`supabase/migrations/0001_init.sql`) com tabelas:
   - `profiles` (id uuid PK ref `auth.users`, cyberpunk_id unique, display_name, bio, avatar_icon, avatar_url, status) *(✓ criada)*
@@ -153,10 +153,10 @@ com migração de dados e RLS adequado. *(Manter `firebase-blueprint.json`/`fire
   - character_sheets: select/update/delete somente do dono; insert com user_id = auth.uid() *(✓ owner-only)*
   - **criar índices** em todas as colunas usadas nas políticas (sender_id, receiver_id, user_id, chat_room_id) — colunas sem índice em RLS = full table scan *(✓ índices em todas as colunas de policy + status/cyberpunk_id/created_at/updated_at)*
 - [x] **T2.6** Criar trigger SQL `on auth.users insert` para auto-criar `profiles` com `cyberpunk_id` gerado (ex.: `#NC-####`). *(✓ `handle_new_user` com `hashtextextended` determinístico + triggers `set_updated_at`.)*
-- [ ] **T2.7** Ativar Realtime para `direct_messages` e `profiles.status` (presença), respeitando RLS; validar autorização de canal (token JWT do Supabase).
+- [x] **T2.7** Ativar Realtime para `direct_messages` e `profiles.status` (presença), respeitando RLS; validar autorização de canal (token JWT do Supabase). *(✓ migration `0002_realtime_avatars.sql`: `direct_messages`, `profiles` e `friend_requests` adicionadas à publicação `supabase_realtime`; verificado via `pg_publication_tables`.)*
 
 ### 2.2 — Autenticação
-- [ ] **T2.8** Configurar provedores no Supabase: Email/Senha + Google OAuth (client ID/secret do console Google); redirecionamentos corretos (URL do app + localhost).
+- [x] **T2.8** Configurar provedores no Supabase: Email/Senha + Google OAuth (client ID/secret do console Google); redirecionamentos corretos (URL do app + localhost). *(✓ Concluído em 07/08/2026: Email/Senha ativo e testado (signup 10/10); Google OAuth ativo — `[auth.external.google]` com `enabled = true`, Client ID no `config.toml`, secret em `supabase/.env` (gitignored) via `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)`, `skip_nonce_check = true` para login local. Verificado: `/auth/v1/settings` → `google: true`; `/auth/v1/authorize?provider=google` → 302 para `accounts.google.com` com o Client ID e redirect `http://127.0.0.1:54321/auth/v1/callback`. ⚠️ Confirmar no Google Console que o redirect URI `http://127.0.0.1:54321/auth/v1/callback` está nos Authorized redirect URIs do client (senão o login dará `redirect_uri_mismatch`).)*
 - [ ] **T2.9** *(Opcional, se houver usuários reais no Firebase)* Migrar usuários: exportar do Firebase (scrypt params) e importar via `supabase-community/firebase-to-supabase` ou re-import com nova senha. **Se houver fichas salvas no Firestore, migrar também as `character_sheets`** (exportar JSON → importar na tabela). Se ainda sem dados reais, pular com anotação.
 
 ### 2.3 — Camada cliente
@@ -173,7 +173,7 @@ com migração de dados e RLS adequado. *(Manter `firebase-blueprint.json`/`fire
 - [ ] **T2.15** Atualizar componentes que importam de `../lib/firebase` (CyberpunkMenu, Navbar se ainda existir após T0.16, App, UserProfile, PresetsManager, MultiplayerRoom) para `../lib/supabase`; depois remover `firebase` do `package.json` e apagar arquivos de config legados (mover `firebase-applet-config.json`, `firebase-blueprint.json`, `firestore.rules` para `docs/legacy/`).
 
 ### 2.4 — Storage (avatares)
-- [ ] **T2.16** Criar bucket `avatars` no Supabase Storage com RLS: upload só na pasta do próprio `auth.uid()` (via `storage.foldername(name)[1]`), leitura pública.
+- [x] **T2.16** Criar bucket `avatars` no Supabase Storage com RLS: upload só na pasta do próprio `auth.uid()` (via `storage.foldername(name)[1]`), leitura pública. *(✓ migration `0002_realtime_avatars.sql`: bucket público `avatars` (5 MB, mime image/*) + policies `avatars_select_public`/`_insert_own_folder`/`_update_own_folder`/`_delete_own_folder` via `(storage.foldername(name))[1] = auth.uid()::text`; migration `0003_bucket_list_policy.sql` (select público em `storage.buckets` p/ listagem). Testado: upload próprio ✓, cross-user bloqueado ✓, leitura pública ✓.)*
 - [ ] **T2.17** Atualizar `UserProfile` para upload de avatar (arquivo) em vez de apenas URL/ícone.
 
 ### 2.5 — Validação da migração
@@ -315,7 +315,7 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 |------|-----------|--------|------|
 | 0 | Fundação e recuperação do código | ✅ concluída | 03/08/2026 |
 | 1 | Correções de segurança | ✅ concluída | 03/08/2026 |
-| 2 | Migração Firebase → Supabase | 🔄 em andamento (2.1–2.6 concluídos) | 03/08/2026 |
+| 2 | Migração Firebase → Supabase | 🔄 em andamento (2.1–2.7/2.16 concluídos) | 07/08/2026 |
 | 3 | Multiplayer: persistência | ⬜ | — |
 | 4 | Estado frontend (Zustand) | ⬜ | — |
 | 5 | Multiplayer real-time (WS/Yjs) | ⬜ | — |
@@ -327,13 +327,31 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 | 11 | Regras CP2020 avançadas | ⬜ | — |
 | 12 | Validação final + delete deste arquivo | ⬜ | — |
 
-**Última atualização:** 03/08/2026 — **revisão v1.5**: Fases 0 e 1 concluídas; **Fase 2 em andamento**.
-Fase 2 (início): Supabase CLI inicializado (`supabase init`), `@supabase/supabase-js@^2.112.0` instalado,
-`.env.local` com placeholders, e **migration inicial `supabase/migrations/0001_init.sql`** com as 5 tabelas
-(`profiles`, `friendships`, `friend_requests`, `direct_messages`, `character_sheets`), RLS por participante/dono,
-índices em todas as colunas de policy e trigger de auto-criação de perfil com `cyberpunk_id` determinístico.
-Pendente: `supabase start` (requer Docker Desktop) e chaves reais do projeto no `.env.local`.
-Total: 13 fases, ~100 tarefas (84 pendentes).
+**Última atualização:** 07/08/2026 — **revisão v1.6**: Fases 0 e 1 concluídas; **Fase 2 em andamento**.
+Fase 2 (progresso 2.1–2.7/2.16): ambiente local **rodando** (Docker Desktop instalado; `supabase start` no ar:
+API `127.0.0.1:54321`, Studio `54323`, Postgres `54322`); migrations **0001** (schema + RLS + triggers),
+**0002** (Realtime p/ `direct_messages`/`profiles`/`friend_requests` + bucket `avatars` com RLS de pasta)
+e **0003** (listagem pública de buckets) e **0004** (remoção de `profiles.email` — privacidade, pois o Realtime
+não filtra colunas, apenas linhas; e-mail próprio fica no JWT) aplicadas; `.env.local` preenchido com chaves
+locais; Email/Senha validado com teste funcional (signup → perfil `#NC-####` → upload avatar → cross-user
+bloqueado: 10/10 ✓; pós-reset 7/7 ✓).
+Pendente: **T2.9** (migração de dados — pular se não houver dados reais), **2.3 camada cliente (T2.10–T2.15)**,
+**2.4 storage UI (T2.17)** e **2.5 validação (T2.18–T2.20)**.
+
+> **🔑 T2.8 — Google OAuth (concluído em 07/08/2026):** credenciais criadas pelo usuário no Google Cloud Console (Google Auth Platform → Branding/Clients); Client ID em `supabase/config.toml`; Client Secret em `supabase/.env` (gitignored).
+>
+> **Passo a passo original (para referência):**
+> 1. Acessar [console.cloud.google.com](https://console.cloud.google.com) → criar/selecionar projeto.
+> 2. **APIs & Services → OAuth consent screen**: escolher External, preencher app name (ex.: NETSHEET ENGINE)
+>    e e-mail; adicionar o escopo `.../auth/userinfo.email` e `.../auth/userinfo.profile`; salvar.
+> 3. **APIs & Services → Credentials → Create credentials → OAuth client ID** → tipo **Web application**.
+>    Authorized redirect URIs: `http://127.0.0.1:54321/auth/v1/callback` (local).
+> 4. Copiar o **Client ID** e o **Client secret**.
+> 5. No `supabase/config.toml`: `[auth.external.google] enabled = true`, `client_id = "<seu-client-id>"` e
+>    `secret = env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)` (criar a env var antes de rodar `supabase start`),
+>    OU preencher via Studio local (`http://127.0.0.1:54323` → Authentication → Providers → Google).
+> 6. Reiniciar o stack: `supabase stop && supabase start`.
+> Total: 13 fases, ~100 tarefas (83 pendentes).
 
 > 🔁 **Regra de ouro:** ao iniciar qualquer sessão, comece por Fase 0 e siga em ordem.
 > Se uma tarefa for concluída, marque `[x]` e atualize a tabela de resumo. Nunca deixe tarefas
