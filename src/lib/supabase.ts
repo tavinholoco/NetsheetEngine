@@ -537,14 +537,23 @@ export function subscribeToFriends(uid: string, cb: (friends: FriendUser[]) => v
   };
 
   // Canal primeiro, load depois: evita perder eventos entre o load e a subscrição.
+  // Escuta `friendships` (adicionar/remover amizade) E `profiles` (status do
+  // amigo muda ao vivo via presença Realtime — T2.14). RLS filtra as linhas.
   const unsub = subscribeShared(
     `friends_${uid}`,
     (onEvent) =>
-      auth.channel(`friends_${uid}`).on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'friendships' },
-        onEvent
-      ),
+      auth
+        .channel(`friends_${uid}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'friendships' },
+          onEvent
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles' },
+          onEvent
+        ),
     () => {
       void load();
     }
