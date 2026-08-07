@@ -18,7 +18,7 @@ import { AuthModal } from './components/AuthModal';
 import { CharacterSheet, RollResult, StatName } from './types/cyberpunk';
 import { useCharacterSheet } from './hooks/useCharacterSheet';
 import { useUserActivity } from './hooks/useUserActivity';
-import { firebaseSignOut, auth } from './lib/firebase';
+import { firebaseSignOut, auth } from './lib/supabase';
 import { Dice5, Flame, AlertCircle, Save, CheckCircle2, Sparkles, Plus, Radio, Cpu, Lock } from 'lucide-react';
 
 export default function App() {

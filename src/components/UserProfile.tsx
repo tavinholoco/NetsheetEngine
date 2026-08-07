@@ -1,5 +1,5 @@
 import React from 'react';
-import { SheetMeta } from '../lib/firebase';
+import { SheetMeta } from '../lib/supabase';
 import { ActivityStatus } from '../hooks/useUserActivity';
 import { User as UserIcon, LogOut, Cpu, Shield, Skull, Bot, Zap, Plus, Trash2, FileText, Lock } from 'lucide-react';
 

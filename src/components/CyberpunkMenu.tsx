@@ -22,7 +22,7 @@ import {
   Newspaper,
   X
 } from 'lucide-react';
-import { User, generateCyberpunkId, fetchUserProfile } from '../lib/firebase';
+import { User, generateCyberpunkId, fetchUserProfile } from '../lib/supabase';
 import { ActivityStatus } from '../hooks/useUserActivity';
 import { PatchNotesFeed } from './PatchNotesFeed';
 import { FriendsList } from './FriendsList';

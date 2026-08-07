@@ -19,7 +19,7 @@ import {
   deleteCharacterSheet,
   type User,
   type SheetMeta
-} from '../lib/firebase';
+} from '../lib/supabase';
 import type { CharacterSheet } from '../types/cyberpunk';
 import { DEFAULT_ARMOR } from '../data/cyberpunkData';
 

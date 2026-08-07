@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   auth,
   signInWithEmailAndPassword,
@@ -6,8 +6,9 @@ import {
   signInWithPopup,
   googleProvider,
   saveUserProfile,
-  updateProfile
-} from '../lib/firebase';
+  updateProfile,
+  onAuthStateChanged
+} from '../lib/supabase';
 import { Shield, Mail, User as UserIcon, Lock, AlertTriangle, Loader2, Sparkles, LogIn, UserPlus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
@@ -18,6 +19,38 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
+/** Flag de OAuth pendente: salva o perfil ao voltar do redirect do Google. */
+const OAUTH_PENDING_KEY = 'cyberpunk_oauth_pending';
+
+/** Traduz erros do Supabase Auth para mensagens pt-BR (mantendo o UX do Firebase). */
+function translateAuthError(err: any): string {
+  const code = String(err?.code || err?.status || '');
+  const msg = String(err?.message || err || '');
+
+  if (code === 'invalid_credentials' || msg.includes('Invalid login credentials')) {
+    return 'E-mail ou senha incorretos.';
+  }
+  if (code === 'email_exists' || code === 'user_already_exists' || msg.includes('already been registered')) {
+    return 'Este e-mail já está cadastrado no sistema.';
+  }
+  if (code === 'weak_password' || msg.toLowerCase().includes('password should be at least')) {
+    return 'A senha deve ter no mínimo 6 caracteres.';
+  }
+  if (code === 'invalid_email' || msg.toLowerCase().includes('invalid email')) {
+    return 'Endereço de e-mail inválido.';
+  }
+  if (code === 'email_not_confirmed' || msg.toLowerCase().includes('email not confirmed')) {
+    return 'Confirme seu e-mail antes de acessar (verifique sua caixa de entrada).';
+  }
+  if (code === 'over_request_rate_limit' || code === 'over_email_send_rate_limit') {
+    return 'Muitas tentativas. Aguarde um instante e tente novamente.';
+  }
+  if (code === 'user_not_found' || msg.toLowerCase().includes('no user found')) {
+    return 'E-mail ou senha incorretos.';
+  }
+  return msg || 'Erro na autenticação. Verifique os dados.';
+}
+
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
@@ -25,6 +58,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Retorno do OAuth do Google: quando o usuário volta do redirect, a sessão
+  // já está ativa (onAuthStateChanged) e sincronizamos o perfil (display_name).
+  // Se o usuário cancelar no Google (volta sem sessão), limpamos a flag para
+  // não disparar sync redundante no próximo login.
+  useEffect(() => {
+    if (!sessionStorage.getItem(OAUTH_PENDING_KEY)) return;
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      sessionStorage.removeItem(OAUTH_PENDING_KEY);
+      if (u) {
+        try {
+          await saveUserProfile(u);
+        } catch (e) {
+          console.error('Erro ao sincronizar perfil pós-OAuth:', e);
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +94,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       if (isRegister) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        if (!userCredential.user) {
+          // Ex.: cloud com confirmação de e-mail ativa — sessão ainda não existe
+          setErrorMsg('Conta criada! Confirme seu e-mail antes de acessar.');
+          return;
+        }
         if (displayName.trim()) {
           await updateProfile(userCredential.user, { displayName });
         }
@@ -52,19 +109,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       onClose();
     } catch (err: any) {
       console.error('Auth error:', err);
-      let msg = err.message || 'Erro na autenticação. Verifique os dados.';
-      if (err.code === 'auth/operation-not-allowed' || err.code === 'auth/admin-restricted-operation' || String(err.message).includes('operation-not-allowed')) {
-        msg = 'O cadastro por E-mail/Senha não está ativado no Firebase Console. Ative o método "E-mail/Senha" em Firebase > Authentication > Sign-in method ou use o "Login com Google".';
-      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-        msg = 'E-mail ou senha incorretos.';
-      } else if (err.code === 'auth/email-already-in-use') {
-        msg = 'Este e-mail já está cadastrado no sistema.';
-      } else if (err.code === 'auth/weak-password') {
-        msg = 'A senha deve ter no mínimo 6 caracteres.';
-      } else if (err.code === 'auth/invalid-email') {
-        msg = 'Endereço de e-mail inválido.';
-      }
-      setErrorMsg(msg);
+      setErrorMsg(translateAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -74,12 +119,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await signInWithPopup(auth, googleProvider);
-      await saveUserProfile(res.user);
+      // Fluxo OAuth do Supabase usa redirect: marcamos o pendente para
+      // sincronizar o perfil quando o usuário voltar ao app.
+      sessionStorage.setItem(OAUTH_PENDING_KEY, '1');
+      await signInWithPopup(auth, googleProvider);
       onClose();
     } catch (err: any) {
       console.error('Google Auth Error:', err);
-      setErrorMsg('Falha no login com Google. Tente novamente.');
+      sessionStorage.removeItem(OAUTH_PENDING_KEY);
+      setErrorMsg('Falha no login com Google. Verifique se o redirect URI está configurado no Google Console.');
     } finally {
       setLoading(false);
     }
@@ -213,4 +261,3 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     </Dialog>
   );
 };
-

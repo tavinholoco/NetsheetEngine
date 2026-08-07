@@ -39,7 +39,7 @@ import {
   sendDirectMessage,
   subscribeToDirectMessages,
   DEMO_CYBERPUNK_USERS
-} from '../lib/firebase';
+} from '../lib/supabase';
 
 interface FriendsListProps {
   user: User | null;

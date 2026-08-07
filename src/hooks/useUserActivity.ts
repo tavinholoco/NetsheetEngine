@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { updateProfileStatus } from '../lib/firebase';
+import { updateProfileStatus } from '../lib/supabase';
 
 export type ActivityStatus = 'online' | 'inativo' | 'em jogo';
 

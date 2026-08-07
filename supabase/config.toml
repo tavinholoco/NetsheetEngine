@@ -340,7 +340,7 @@ email_optional = false
 [auth.external.google]
 enabled = true
 # Client ID público do Google OAuth (T2.8) — criado em 07/08/2026
-client_id = "74orl6td5c4j8n1al1q048uorfca449q.apps.googleusercontent.com"
+client_id = "774463152952-74orl6td5c4j8n1al1q048uorfca449q.apps.googleusercontent.com"
 # DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
 # O secret vai em supabase/.env (gitignored): SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=<seu-secret>
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"

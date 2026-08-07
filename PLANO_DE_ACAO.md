@@ -167,7 +167,7 @@ com migração de dados e RLS adequado. *(Manter `firebase-blueprint.json`/`fire
   `subscribeToCharacterSheets`/roster,  `saveCharacterSheet`, `deleteCharacterSheet`, `signOut`, `DEMO_CYBERPUNK_USERS`.
   *(Se impossível manter assinaturas idênticas, documentar os pontos de mudança e ajustar os consumidores.)*
   ⚠️ **Pontos de mudança documentados (T2.10):** (1) NPCs (`npc_*`) não têm linha em `profiles` (FK uuid) → amizades de NPC ficam em localStorage e são mescladas em `subscribeToFriends`; chat com NPC continua no banco (room id contém uid real → RLS ok). (2) `profiles` não guarda e-mail (migration 0004) → `fetchUserProfile` retorna `email: null`, e-mail vem do JWT. (3) `signInWithPopup` usa fluxo OAuth de redirect do Supabase (não popup) e retorna `{user: null}` — o AuthModal (T2.11) tratará o retorno via `onAuthStateChanged`. (4) `generateCyberpunkId` do cliente (hash JS) difere do trigger `hashtextextended`; o upsert do `saveUserProfile` sobrescreve com o do cliente → consistente após o primeiro save.
-- [ ] **T2.11** Reescrever `src/components/AuthModal.tsx` para usar Supabase Auth (email/senha + Google), mantendo o mesmo UX/mensagens em pt-BR.
+- [x] **T2.11** Reescrever `src/components/AuthModal.tsx` para usar Supabase Auth (email/senha + Google), mantendo o mesmo UX/mensagens em pt-BR. *(✓ reescrito em 07/08/2026 — email/senha testado de ponta a ponta (cadastro → perfil #NC-#### no banco → logout → login) e **Google OAuth validado no navegador**: login real com conta Google funcionando, sessão criada no Supabase. Client ID corrigido para `774463152952-74orl6td...apps.googleusercontent.com` (faltava o prefixo do nº do projeto). Imports da cadeia de sessão migrados para `../lib/supabase` (App, hooks, FriendsList, CyberpunkMenu, UserProfile, PresetsManager) — requisito para o login refletir na UI.)*
 - [ ] **T2.12** Reescrever `src/components/FriendsList.tsx` (subscrições Realtime no lugar de onSnapshot) e o chat (`subscribeToDirectMessages` via Realtime).
 - [ ] **T2.13** Reescrever `src/hooks/useCharacterSheet.ts` para persistência em `character_sheets` (jsonb) + fallback localStorage offline.
 - [ ] **T2.14** Reescrever `src/hooks/useUserActivity.ts` usando presença Realtime (ou heartbeat em `profiles.status`).
@@ -339,7 +339,7 @@ bloqueado: 10/10 ✓; pós-reset 7/7 ✓).
 Pendente: **T2.9** (migração de dados — pular se não houver dados reais), **2.3 camada cliente (T2.10–T2.15)**,
 **2.4 storage UI (T2.17)** e **2.5 validação (T2.18–T2.20)**.
 
-> **🔑 T2.8 — Google OAuth (concluído em 07/08/2026):** credenciais criadas pelo usuário no Google Cloud Console (Google Auth Platform → Branding/Clients); Client ID em `supabase/config.toml`; Client Secret em `supabase/.env` (gitignored).
+> **✅ T2.11 — Google OAuth validado (07/08/2026):** após corrigir o Client ID para `774463152952-74orl6td...apps.googleusercontent.com` (faltava o prefixo do nº do projeto), o **login real com conta Google funcionou de ponta a ponta** no navegador — sessão criada no Supabase local e perfil sincronizado. Client ID em `supabase/config.toml` (público, versionado); Client Secret em `supabase/.env` (gitignored, nunca commitar).
 >
 > **Passo a passo original (para referência):**
 > 1. Acessar [console.cloud.google.com](https://console.cloud.google.com) → criar/selecionar projeto.

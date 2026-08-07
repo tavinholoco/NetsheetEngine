@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CharacterSheet } from '../types/cyberpunk';
 import { generateRandomNpc } from '../utils/npcGenerator';
-import { SheetMeta } from '../lib/firebase';
+import { SheetMeta } from '../lib/supabase';
 import { Swords, Copy, Trash2, Upload, Download, Plus, User, Lock } from 'lucide-react';
 
 interface PresetsManagerProps {
