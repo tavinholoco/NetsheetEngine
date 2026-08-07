@@ -20,7 +20,10 @@ import {
   generateRoomPlayerEdgerunner,
   deleteGeneratedPlayer,
   deleteRoomNpc,
-  updateNpcWoundLevel
+  updateNpcWoundLevel,
+  verifySession,
+  sanitizeText,
+  isValidRoomCode
 } from "./server/roomManager.js";
 
 dotenv.config();
@@ -28,7 +31,49 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: "10mb" }));
+// T1.4 — limite de payload (fichas de personagem cabem folgadamente em 1MB)
+app.use(express.json({ limit: "1mb" }));
+
+// T1.4 — rate limit simples por IP (anti-abuso)
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function makeRateLimiter(maxRequests: number, windowMs: number) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    const now = Date.now();
+    const bucket = rateBuckets.get(ip);
+    if (!bucket || bucket.resetAt <= now) {
+      rateBuckets.set(ip, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    bucket.count += 1;
+    if (bucket.count > maxRequests) {
+      return res.status(429).json({ error: "Muitas requisições. Aguarde um instante." });
+    }
+    next();
+  };
+}
+
+const roomLimiter = makeRateLimiter(120, 60_000); // 120 req/min por IP
+const chatLimiter = makeRateLimiter(30, 60_000);  // chat mais restrito (30 msg/min)
+
+// T1.7 — autor do request é derivado do token de sessão, nunca do peerId livre
+function getSessionPeerId(req: express.Request, code: string): string | null {
+  const token = typeof req.body?.sessionToken === "string" ? req.body.sessionToken : null;
+  if (!token) return null;
+  return verifySession(code, token);
+}
+
+// Resposta padronizada: 404 p/ sala não encontrada, 403 p/ negação de autorização
+function respondWithResult(res: express.Response, result: { room: { code: string } | null; error?: string }) {
+  if (!result.room) {
+    const msg = result.error || "Ação não permitida";
+    const isNotFound = msg.includes("não encontrada") || msg.includes("não encontrado") || msg.includes("encerrada");
+    return res.status(isNotFound ? 404 : 403).json({ error: msg });
+  }
+  broadcastRoomUpdate(result.room.code);
+  return res.json(result.room);
+}
 
 // SSE Active Connections Map: roomCode -> Set<Response>
 const sseClients: Record<string, Set<Response>> = {};
@@ -85,28 +130,34 @@ app.get("/api/rooms", (_req, res) => {
 });
 
 // Create a new room
-app.post("/api/rooms/create", (req, res) => {
-  const { code, name, gmHandle, gmPeerId } = req.body;
-  if (!code) {
-    return res.status(400).json({ error: "Room code is required" });
+app.post("/api/rooms/create", roomLimiter, (req, res) => {
+  const { code, name, gmHandle, gmPeerId } = req.body ?? {};
+  if (typeof code !== "string" || !isValidRoomCode(code)) {
+    return res.status(400).json({ error: "Código de sala inválido. Use 2–12 caracteres alfanuméricos ou hífen (ex.: NC-2020)." });
   }
-  const room = createRoom(code, name, gmHandle, gmPeerId);
-  broadcastRoomUpdate(room.code);
-  res.json(room);
+  const result = createRoom(code, name, gmHandle, gmPeerId);
+  broadcastRoomUpdate(result.room.code);
+  res.json({ room: result.room, sessionToken: result.sessionToken });
 });
 
 // Join a room
-app.post("/api/rooms/join", (req, res) => {
-  const { code, peerId, handle, sheet } = req.body;
-  if (!code || !peerId || !sheet) {
-    return res.status(400).json({ error: "Code, peerId, and sheet are required" });
+app.post("/api/rooms/join", roomLimiter, (req, res) => {
+  const { code, peerId, handle, sheet } = req.body ?? {};
+  if (typeof code !== "string" || !isValidRoomCode(code)) {
+    return res.status(400).json({ error: "Código de sala inválido." });
   }
-  const room = joinRoom(code, peerId, handle, sheet);
-  if (!room) {
+  if (typeof peerId !== "string" || !peerId.trim()) {
+    return res.status(400).json({ error: "peerId é obrigatório." });
+  }
+  if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
+    return res.status(400).json({ error: "Ficha de personagem inválida." });
+  }
+  const result = joinRoom(code, peerId, handle, sheet);
+  if (!result) {
     return res.status(404).json({ error: "Room not found" });
   }
-  broadcastRoomUpdate(room.code);
-  res.json(room);
+  broadcastRoomUpdate(result.room.code);
+  res.json({ room: result.room, sessionToken: result.sessionToken });
 });
 
 // Get current room state
@@ -118,166 +169,158 @@ app.get("/api/rooms/:code", (req, res) => {
   res.json(room);
 });
 
-// Sync player sheet
-app.post("/api/rooms/:code/sheet", (req, res) => {
-  const { peerId, sheet } = req.body;
-  const room = updatePlayerSheet(req.params.code, peerId, sheet);
-  if (!room) {
-    return res.status(404).json({ error: "Room or player not found" });
+// Sync player sheet (T1.7 — autenticado por token)
+app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
+  const peerId = getSessionPeerId(req, req.params.code);
+  if (!peerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
-  broadcastRoomUpdate(room.code);
-  res.json(room);
+  const { sheet } = req.body ?? {};
+  if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
+    return res.status(400).json({ error: "Ficha inválida." });
+  }
+  const result = updatePlayerSheet(req.params.code, peerId, sheet);
+  if (result.error || !result.room) {
+    return res.status(404).json({ error: result.error || "Room or player not found" });
+  }
+  broadcastRoomUpdate(result.room.code);
+  res.json(result.room);
 });
 
 // GM Power: Update player's Bio-Monitor / health
-app.post("/api/rooms/:code/player-health", (req, res) => {
-  const { requesterPeerId, targetPeerId, woundLevel } = req.body;
-  if (!requesterPeerId || !targetPeerId || woundLevel === undefined) {
-    return res.status(400).json({ error: "requesterPeerId, targetPeerId, and woundLevel are required" });
+app.post("/api/rooms/:code/player-health", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+  }
+  const { targetPeerId, woundLevel } = req.body ?? {};
+  if (typeof targetPeerId !== "string" || woundLevel === undefined) {
+    return res.status(400).json({ error: "targetPeerId e woundLevel são obrigatórios" });
   }
   const result = updatePlayerWoundLevel(req.params.code, requesterPeerId, targetPeerId, woundLevel);
-  if (result.error || !result.room) {
-    return res.status(403).json({ error: result.error || "Ação não permitida" });
-  }
-  broadcastRoomUpdate(result.room.code);
-  res.json(result.room);
+  return respondWithResult(res, result);
 });
 
-// Tactical Grid sync
-app.post("/api/rooms/:code/tactical-grid", (req, res) => {
-  const { requesterPeerId, gridState } = req.body;
-  if (!requesterPeerId || !gridState) {
-    return res.status(400).json({ error: "requesterPeerId and gridState are required" });
+// Tactical Grid sync (T1.2 — apenas GM)
+app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+  }
+  const { gridState } = req.body ?? {};
+  if (!gridState || typeof gridState !== "object") {
+    return res.status(400).json({ error: "gridState são obrigatórios" });
   }
   const result = updateTacticalGrid(req.params.code, requesterPeerId, gridState);
-  if (result.error || !result.room) {
-    return res.status(403).json({ error: result.error || "Ação não permitida" });
-  }
-  broadcastRoomUpdate(result.room.code);
-  res.json(result.room);
+  return respondWithResult(res, result);
 });
 
 // GM Power: Generate random NPC
-app.post("/api/rooms/:code/npcs/generate", (req, res) => {
-  const { requesterPeerId, archetypeId } = req.body;
+app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(400).json({ error: "requesterPeerId is required" });
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
+  const { archetypeId } = req.body ?? {};
   const result = generateRoomNpc(req.params.code, requesterPeerId, archetypeId);
-  if (result.error || !result.room) {
-    return res.status(403).json({ error: result.error || "Erro ao gerar NPC" });
-  }
-  broadcastRoomUpdate(result.room.code);
-  res.json(result.room);
+  return respondWithResult(res, result);
 });
 
 // GM Power: Generate random Player Edgerunner sheet
-app.post("/api/rooms/:code/players/generate", (req, res) => {
-  const { requesterPeerId } = req.body;
+app.post("/api/rooms/:code/players/generate", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(400).json({ error: "requesterPeerId is required" });
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
   const result = generateRoomPlayerEdgerunner(req.params.code, requesterPeerId);
-  if (result.error || !result.room) {
-    return res.status(403).json({ error: result.error || "Erro ao gerar Edgerunner" });
-  }
-  broadcastRoomUpdate(result.room.code);
-  res.json(result.room);
+  return respondWithResult(res, result);
 });
 
 // GM Power: Delete GM-generated player sheet
-app.post("/api/rooms/:code/players/:targetPeerId/delete", (req, res) => {
-  const { requesterPeerId } = req.body;
+app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(400).json({ error: "requesterPeerId is required" });
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
   const result = deleteGeneratedPlayer(req.params.code, requesterPeerId, req.params.targetPeerId);
-  if (result.error || !result.room) {
-    return res.status(403).json({ error: result.error || "Erro ao remover Edgerunner gerado" });
-  }
-  broadcastRoomUpdate(result.room.code);
-  res.json(result.room);
+  return respondWithResult(res, result);
 });
 
 // GM Power: Delete NPC
-app.post("/api/rooms/:code/npcs/:npcId/delete", (req, res) => {
-  const { requesterPeerId } = req.body;
+app.post("/api/rooms/:code/npcs/:npcId/delete", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(400).json({ error: "requesterPeerId is required" });
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
   const result = deleteRoomNpc(req.params.code, requesterPeerId, req.params.npcId);
-  if (result.error || !result.room) {
-    return res.status(403).json({ error: result.error || "Erro ao remover NPC" });
-  }
-  broadcastRoomUpdate(result.room.code);
-  res.json(result.room);
+  return respondWithResult(res, result);
 });
 
 // GM Power: Update NPC Wound Level
-app.post("/api/rooms/:code/npcs/:npcId/health", (req, res) => {
-  const { requesterPeerId, woundLevel } = req.body;
-  if (!requesterPeerId || woundLevel === undefined) {
-    return res.status(400).json({ error: "requesterPeerId and woundLevel are required" });
+app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+  }
+  const { woundLevel } = req.body ?? {};
+  if (woundLevel === undefined) {
+    return res.status(400).json({ error: "woundLevel é obrigatório" });
   }
   const result = updateNpcWoundLevel(req.params.code, requesterPeerId, req.params.npcId, woundLevel);
-  if (result.error || !result.room) {
-    return res.status(403).json({ error: result.error || "Erro ao atualizar bio-monitor do NPC" });
-  }
-  broadcastRoomUpdate(result.room.code);
-  res.json(result.room);
+  return respondWithResult(res, result);
 });
 
-// Send chat message or dice roll
-app.post("/api/rooms/:code/message", (req, res) => {
-  const { senderHandle, senderRole, text, rollResult } = req.body;
-  const room = postChatMessage(req.params.code, senderHandle, senderRole, text, rollResult);
-  if (!room) {
-    return res.status(404).json({ error: "Room not found" });
+// Send chat message or dice roll (T1.7 — autenticado; handle/role vêm do servidor)
+app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
-  broadcastRoomUpdate(room.code);
-  res.json(room);
+  const { text, rollResult } = req.body ?? {};
+  const result = postChatMessage(req.params.code, requesterPeerId, text, rollResult);
+  return respondWithResult(res, result);
 });
 
-// Update room atmosphere/combat modifiers
-app.post("/api/rooms/:code/settings", (req, res) => {
-  const { locationName, combatModifier, modifierReason } = req.body;
-  const room = updateRoomSettings(req.params.code, locationName, combatModifier, modifierReason);
-  if (!room) {
-    return res.status(404).json({ error: "Room not found" });
+// Update room atmosphere/combat modifiers (T1.3 — apenas GM)
+app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
-  broadcastRoomUpdate(room.code);
-  res.json(room);
+  const { locationName, combatModifier, modifierReason } = req.body ?? {};
+  const result = updateRoomSettings(req.params.code, requesterPeerId, locationName, combatModifier, modifierReason);
+  return respondWithResult(res, result);
 });
 
-// Leave room endpoint
-app.post("/api/rooms/:code/leave", (req, res) => {
-  const { peerId } = req.body;
+// Leave room endpoint (T1.7 — autenticado por token)
+app.post("/api/rooms/:code/leave", roomLimiter, (req, res) => {
+  const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(400).json({ error: "peerId is required" });
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
-  const room = leaveRoom(req.params.code, peerId);
-  if (room) {
-    broadcastRoomUpdate(room.code);
+  const result = leaveRoom(req.params.code, peerId);
+  if (result.room) {
+    broadcastRoomUpdate(result.room.code);
   }
   res.json({ success: true });
 });
 
-// Update or advance initiative
-app.post("/api/rooms/:code/initiative", (req, res) => {
-  const { action, initiativeList } = req.body;
-  let room;
+// Update or advance initiative (T1.3 — apenas GM)
+app.post("/api/rooms/:code/initiative", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+  }
+  const { action, initiativeList } = req.body ?? {};
+  let result;
   if (action === 'next') {
-    room = nextTurn(req.params.code);
+    result = nextTurn(req.params.code, requesterPeerId);
   } else if (initiativeList) {
-    room = updateInitiative(req.params.code, initiativeList);
+    result = updateInitiative(req.params.code, requesterPeerId, initiativeList);
   } else {
-    room = getRoom(req.params.code);
+    result = { room: getRoom(req.params.code) ?? null };
   }
-  if (!room) {
-    return res.status(404).json({ error: "Room not found" });
-  }
-  broadcastRoomUpdate(room.code);
-  res.json(room);
+  return respondWithResult(res, result);
 });
 
 // Server-Sent Events (SSE) stream for live real-time updates (< 50ms latency)
@@ -321,6 +364,18 @@ app.get("/api/rooms/:code/stream", (req, res) => {
 // Health check endpoint
 app.get("/api/health", (_req, res) => {
   res.json({ status: "online", system: "Cyberpunk 2020 Sheet Builder & Multiplayer API" });
+});
+
+// T1.4 — erro de parsing/payload do express.json em formato JSON
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err?.type === "entity.too.large") {
+    return res.status(413).json({ error: "Payload excede o limite de 1MB." });
+  }
+  if (err?.type === "entity.parse.failed" || err instanceof SyntaxError) {
+    return res.status(400).json({ error: "JSON inválido no corpo da requisição." });
+  }
+  console.error("Erro não tratado:", err);
+  return res.status(500).json({ error: "Erro interno do servidor." });
 });
 
 async function startServer() {

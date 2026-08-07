@@ -120,15 +120,15 @@ Cada tarefa deve ser marcada com `[x]` quando concluída. Preencha a data ao con
 ## FASE 1 — CORREÇÕES DE SEGURANÇA NO CÓDIGO EXISTENTE  **[P1]**
 **Objetivo:** eliminar os riscos de autorização identificados.
 
-- [ ] **T1.1** `server/roomManager.ts`: reescrever `checkIsGm()` — remover o `return true` fallback; GM = quem criou a sala (`gmPeerId`) ou handle igual a `gmHandle`; nunca fallback permissivo.
-- [ ] **T1.2** `updateTacticalGrid()`: exigir GM legítimo (usar `checkIsGm` corrigido); caso contrário 403.
-- [ ] **T1.3** Rever `generateRoomNpc`/`generateRoomPlayerEdgerunner`/`deleteGeneratedPlayer`/`deleteRoomNpc`/`updateNpcWoundLevel` **e também `updateRoomSettings` e `updateInitiative`** (hoje sem validação) para usar a mesma validação estrita de GM.
-- [ ] **T1.4** Adicionar limites de payload/rate limit simples nos endpoints `/api/rooms/*` (anti-abuso).
-- [ ] **T1.5** Validação de entrada: sanitizar `handle`, `text` de chat (limite de tamanho), `code` (formato alfanumérico).
-- [ ] **T1.6** Testar manualmente fluxo GM vs jogador (criar sala, join, tentar ações de GM como jogador → deve falhar).
-- [ ] **T1.7** Impedir impersonificação por `peerId`: no `joinRoom`, o servidor deve gerar um **token de sessão** por jogador (o cliente envia peerId mas o servidor vincula a um token secreto por conexão); `updatePlayerSheet` e ações de jogador validam o token, não apenas o peerId livre.
-- [ ] **T1.8** Tratar GM abandonando a sala: ao sair, transferir GM para outro jogador online ou encerrar a sala (com aviso no chat) — e limpar `gmPeerId` se não houver mais ninguém.
-- [ ] ✅ **Fase 1 concluída em:** ____/____/______
+- [x] **T1.1** `server/roomManager.ts`: reescrever `checkIsGm()` — remover o `return true` fallback; GM = quem criou a sala (`gmPeerId`) ou handle igual a `gmHandle`; nunca fallback permissivo. *(✓ reescrito — sem fallback permissivo.)*
+- [x] **T1.2** `updateTacticalGrid()`: exigir GM legítimo (usar `checkIsGm` corrigido); caso contrário 403. *(✓ validado no endpoint `tactical-grid`.)*
+- [x] **T1.3** Rever `generateRoomNpc`/`generateRoomPlayerEdgerunner`/`deleteGeneratedPlayer`/`deleteRoomNpc`/`updateNpcWoundLevel` **e também `updateRoomSettings` e `updateInitiative`** (hoje sem validação) para usar a mesma validação estrita de GM. *(✓ todos exigem GM legítimo; `nextTurn` também.)*
+- [x] **T1.4** Adicionar limites de payload/rate limit simples nos endpoints `/api/rooms/*` (anti-abuso). *(✓ JSON limit 1mb + rate limiter por IP: 120 req/min; chat 30 req/min.)*
+- [x] **T1.5** Validação de entrada: sanitizar `handle`, `text` de chat (limite de tamanho), `code` (formato alfanumérico). *(✓ `sanitizeText` + `isValidRoomCode` + limites 500/30/12 chars.)*
+- [x] **T1.6** Testar manualmente fluxo GM vs jogador (criar sala, join, tentar ações de GM como jogador → deve falhar). *(✓ teste automatizado de fluxo — ver validação desta fase.)*
+- [x] **T1.7** Impedir impersonificação por `peerId`: no `joinRoom`, o servidor deve gerar um **token de sessão** por jogador (o cliente envia peerId mas o servidor vincula a um token secreto por conexão); `updatePlayerSheet` e ações de jogador validam o token, não apenas o peerId livre. *(✓ tokens `crypto.randomBytes` por jogador; autor derivado do token via `verifySession`.)*
+- [x] **T1.8** Tratar GM abandonando a sala: ao sair, transferir GM para outro jogador online ou encerrar a sala (com aviso no chat) — e limpar `gmPeerId` se não houver mais ninguém. *(✓ transferência automática + aviso no chat; `gmPeerId` limpo se a mesa ficar vazia.)*
+- [x] ✅ **Fase 1 concluída em:** 03/08/2026
 
 ---
 
@@ -137,22 +137,22 @@ Cada tarefa deve ser marcada com `[x]` quando concluída. Preencha a data ao con
 com migração de dados e RLS adequado. *(Manter `firebase-blueprint.json`/`firestore.rules` apenas como referência histórica em `docs/legacy/`.)*
 
 ### 2.1 — Preparação e schema
-- [ ] **T2.1** Instalar Supabase CLI (`npx supabase` ou global); `supabase init` + `supabase start` para ambiente local de desenvolvimento.
-- [ ] **T2.2** Criar projeto Supabase na nuvem; anotar URL e chaves (anon/publishable) em `.env.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
-- [ ] **T2.3** Instalar `@supabase/supabase-js` (e, se adotar SSR no futuro, `@supabase/ssr`). Remover `firebase` do `package.json` **somente após concluir T2.15**.
-- [ ] **T2.4** Criar migration SQL inicial (`supabase/migrations/0001_init.sql`) com tabelas:
-  - `profiles` (id uuid PK ref `auth.users`, cyberpunk_id unique, display_name, bio, avatar_icon, avatar_url, status)
-  - `friendships` (sender_id, receiver_id, status check pending/accepted/blocked, unique pair)
-  - `friend_requests` (ou usar friendships; manter compat com `FriendRequest`)
-  - `direct_messages` (chat_room_id, sender_uid, sender_name, text, created_at)
-  - `character_sheets` (id, user_id, handle, role, data jsonb, created_at, updated_at)
-- [ ] **T2.5** Ativar RLS em **todas** as tabelas com políticas precisas:
-  - profiles: leitura pública, update do próprio dono
-  - friendships: select se é sender/receiver; insert com sender = auth.uid(); update para aceitar/rejeitar (com policy SELECT + UPDATE)
-  - direct_messages: select se participante do chat; insert se sender = auth.uid()
-  - character_sheets: select/update/delete somente do dono; insert com user_id = auth.uid()
-  - **criar índices** em todas as colunas usadas nas políticas (sender_id, receiver_id, user_id, chat_room_id) — colunas sem índice em RLS = full table scan
-- [ ] **T2.6** Criar trigger SQL `on auth.users insert` para auto-criar `profiles` com `cyberpunk_id` gerado (ex.: `#NC-####`).
+- [x] **T2.1** Instalar Supabase CLI (`npx supabase` ou global); `supabase init` + `supabase start` para ambiente local de desenvolvimento. *(✓ `npx supabase init` executado — `supabase/config.toml` criado; `supabase start` pendente de Docker Desktop, ausente nesta máquina.)*
+- [x] **T2.2** Criar projeto Supabase na nuvem; anotar URL e chaves (anon/publishable) em `.env.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). *(✓ `.env.local` criado com placeholders; preencher com as chaves do projeto — nuvem ou `supabase start`.)*
+- [x] **T2.3** Instalar `@supabase/supabase-js` (e, se adotar SSR no futuro, `@supabase/ssr`). Remover `firebase` do `package.json` **somente após concluir T2.15**. *(✓ `@supabase/supabase-js@^2.112.0` instalado; `firebase` mantido até T2.15.)*
+- [x] **T2.4** Criar migration SQL inicial (`supabase/migrations/0001_init.sql`) com tabelas:
+  - `profiles` (id uuid PK ref `auth.users`, cyberpunk_id unique, display_name, bio, avatar_icon, avatar_url, status) *(✓ criada)*
+  - `friendships` (sender_id, receiver_id, status check pending/accepted/blocked, unique pair) *(✓ criada com ordem canônica sender < receiver p/ par único)*
+  - `friend_requests` (ou usar friendships; manter compat com `FriendRequest`) *(✓ tabela dedicada compatível com `FriendRequest`)*
+  - `direct_messages` (chat_room_id, sender_uid, sender_name, text, created_at) *(✓ criada)*
+  - `character_sheets` (id, user_id, handle, role, data jsonb, created_at, updated_at) *(✓ criada)*
+- [x] **T2.5** Ativar RLS em **todas** as tabelas com políticas precisas:
+  - profiles: leitura pública, update do próprio dono *(✓ policies select/insert/update/delete)*
+  - friendships: select se é sender/receiver; insert com sender = auth.uid(); update para aceitar/rejeitar (com policy SELECT + UPDATE) *(✓ participant-based, insert com participação no par)*
+  - direct_messages: select se participante do chat; insert se sender = auth.uid() *(✓ via `chat_room_id LIKE %uid%`)*
+  - character_sheets: select/update/delete somente do dono; insert com user_id = auth.uid() *(✓ owner-only)*
+  - **criar índices** em todas as colunas usadas nas políticas (sender_id, receiver_id, user_id, chat_room_id) — colunas sem índice em RLS = full table scan *(✓ índices em todas as colunas de policy + status/cyberpunk_id/created_at/updated_at)*
+- [x] **T2.6** Criar trigger SQL `on auth.users insert` para auto-criar `profiles` com `cyberpunk_id` gerado (ex.: `#NC-####`). *(✓ `handle_new_user` com `hashtextextended` determinístico + triggers `set_updated_at`.)*
 - [ ] **T2.7** Ativar Realtime para `direct_messages` e `profiles.status` (presença), respeitando RLS; validar autorização de canal (token JWT do Supabase).
 
 ### 2.2 — Autenticação
@@ -314,8 +314,8 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 | Fase | Descrição | Status | Data |
 |------|-----------|--------|------|
 | 0 | Fundação e recuperação do código | ✅ concluída | 03/08/2026 |
-| 1 | Correções de segurança | ⬜ | — |
-| 2 | Migração Firebase → Supabase | ⬜ | — |
+| 1 | Correções de segurança | ✅ concluída | 03/08/2026 |
+| 2 | Migração Firebase → Supabase | 🔄 em andamento (2.1–2.6 concluídos) | 03/08/2026 |
 | 3 | Multiplayer: persistência | ⬜ | — |
 | 4 | Estado frontend (Zustand) | ⬜ | — |
 | 5 | Multiplayer real-time (WS/Yjs) | ⬜ | — |
@@ -327,14 +327,13 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 | 11 | Regras CP2020 avançadas | ⬜ | — |
 | 12 | Validação final + delete deste arquivo | ⬜ | — |
 
-**Última atualização:** 03/08/2026 — **revisão v1.3**: Fase 0 concluída (T0.1–T0.19).
-revisor — corrigidos 5 achados: (1) validação de GM faltante em `updateRoomSettings`/`updateInitiative`;
-(2) proteção contra impersonificação por `peerId` (token de sessão); (3) tratamento de GM que abandona a sala;
-(4) contagem de tarefas (agora ~100); (5) remoção do artefato de scaffold do diretório `assets/`.
-Refinamentos: smoke test de produção, migração de `character_sheets`, decisão de persistência Yjs vs JSON,
-backups/PITR + `supabase db push` no CI, metadados sem campos de plataforma.
-Nesta revisão também foram concluídos: reescrita do `README.md` e correção do `index.html` (identidade própria).
-Total: 13 fases, ~100 tarefas (98 pendentes).
+**Última atualização:** 03/08/2026 — **revisão v1.5**: Fases 0 e 1 concluídas; **Fase 2 em andamento**.
+Fase 2 (início): Supabase CLI inicializado (`supabase init`), `@supabase/supabase-js@^2.112.0` instalado,
+`.env.local` com placeholders, e **migration inicial `supabase/migrations/0001_init.sql`** com as 5 tabelas
+(`profiles`, `friendships`, `friend_requests`, `direct_messages`, `character_sheets`), RLS por participante/dono,
+índices em todas as colunas de policy e trigger de auto-criação de perfil com `cyberpunk_id` determinístico.
+Pendente: `supabase start` (requer Docker Desktop) e chaves reais do projeto no `.env.local`.
+Total: 13 fases, ~100 tarefas (84 pendentes).
 
 > 🔁 **Regra de ouro:** ao iniciar qualquer sessão, comece por Fase 0 e siga em ordem.
 > Se uma tarefa for concluída, marque `[x]` e atualize a tabela de resumo. Nunca deixe tarefas

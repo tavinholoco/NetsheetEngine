@@ -1,30 +1,114 @@
+import crypto from "crypto";
 import { GameRoom, RoomPlayer, ChatMessage, InitiativeEntry, TacticalGridState } from "../src/types/multiplayer.js";
 import { CharacterSheet, RollResult } from "../src/types/cyberpunk.js";
 import { generateRandomNpc } from "../src/utils/npcGenerator.js";
 
+// ============================================================
+// SESSÕES (T1.7) — token secreto por jogador, nunca na broadcast
+// O cliente continua enviando um peerId (identificador público), mas toda ação
+// autenticada exige o token de sessão que o servidor gerou no create/join.
+// O peerId do autor é SEMPRE derivado do token (verifySession) — um peerId
+// livre no corpo da requisição não autentica nada (anti-impersonificação).
+// ============================================================
+interface Session {
+  roomCode: string;
+  peerId: string;
+}
+
+const sessions: Record<string, Session> = {}; // token -> sessão
+
+function createSessionToken(): string {
+  return crypto.randomBytes(24).toString("hex");
+}
+
+function bindSession(roomCode: string, peerId: string): string {
+  const token = createSessionToken();
+  sessions[token] = { roomCode: roomCode.trim().toUpperCase(), peerId };
+  return token;
+}
+
+/** Retorna o peerId autenticado pelo token na sala, ou null se inválido. */
+export function verifySession(roomCode: string, token: string): string | null {
+  const s = sessions[token];
+  if (!s) return null;
+  if (s.roomCode !== roomCode.trim().toUpperCase()) return null;
+  return s.peerId;
+}
+
+function revokeSessionsForPeer(roomCode: string, peerId: string): void {
+  const rc = roomCode.trim().toUpperCase();
+  for (const [token, s] of Object.entries(sessions)) {
+    if (s.peerId === peerId && s.roomCode === rc) delete sessions[token];
+  }
+}
+
+/** Remove a sala da memória e revoga todas as suas sessões (mesa encerrada). */
+function deleteRoom(code: string): void {
+  const rc = code.trim().toUpperCase();
+  delete rooms[rc];
+  for (const [token, s] of Object.entries(sessions)) {
+    if (s.roomCode === rc) delete sessions[token];
+  }
+}
+
+// ============================================================
+// VALIDAÇÃO DE ENTRADA (T1.5)
+// ============================================================
+
+/** Remove caracteres de controle, colapsa espaços e trunca. */
+export function sanitizeText(value: unknown, maxLength: number): string {
+  if (typeof value !== "string") return "";
+  return value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+/** Código de sala: 2–12 caracteres alfanuméricos ou hífen (ex.: NC-2020). */
+export function isValidRoomCode(code: string): boolean {
+  return /^[A-Z0-9-]{2,12}$/.test(code.trim().toUpperCase());
+}
+
 // In-memory store for game rooms
 const rooms: Record<string, GameRoom> = {};
 
-export function createRoom(code: string, roomName: string, gmHandle: string, gmPeerId?: string): GameRoom {
+// ============================================================
+// AUTORIZAÇÃO (T1.1) — GM SEM fallback permissivo
+// GM legítimo = quem criou a sala (gmPeerId) OU jogador cujo handle coincide
+// com gmHandle. Nunca `return true` genérico.
+// ============================================================
+function checkIsGm(room: GameRoom, requesterPeerId: string): boolean {
+  if (room.gmPeerId) {
+    return room.gmPeerId === requesterPeerId;
+  }
+  // Sem gmPeerId definido: handle igual a gmHandle assume o cargo
+  const player = room.players[requesterPeerId];
+  if (player && player.handle && room.gmHandle &&
+      player.handle.trim().toLowerCase() === room.gmHandle.trim().toLowerCase()) {
+    room.gmPeerId = requesterPeerId;
+    return true;
+  }
+  return false;
+}
+
+export function createRoom(code: string, roomName: string, gmHandle: string, gmPeerId?: string): { room: GameRoom; sessionToken: string } {
   const normalizedCode = code.trim().toUpperCase();
-  const gmUserPeerId = gmPeerId || 'gm_' + Date.now();
+  const gmUserPeerId = sanitizeText(gmPeerId, 64) || "gm_" + Date.now().toString(36);
+  const safeGmHandle = sanitizeText(gmHandle, 30) || "Mestre de Jogo";
   const gmSheet = generateRandomNpc();
-  gmSheet.handle = gmHandle || 'Mestre de Jogo';
-  gmSheet.role = 'Mestre (GM)';
+  gmSheet.handle = safeGmHandle;
+  gmSheet.role = "Mestre (GM)";
 
   const newRoom: GameRoom = {
     code: normalizedCode,
-    name: roomName || `Mesa de ${gmHandle}`,
-    gmHandle: gmHandle || 'Mestre de Jogo',
+    name: sanitizeText(roomName, 40) || `Mesa de ${safeGmHandle}`,
+    gmHandle: safeGmHandle,
     gmPeerId: gmUserPeerId,
-    locationName: 'Night City - Afterlife Club',
+    locationName: "Night City - Afterlife Club",
     combatModifier: 0,
-    modifierReason: 'Condições Normais de Combate',
+    modifierReason: "Condições Normais de Combate",
     players: {
       [gmUserPeerId]: {
         peerId: gmUserPeerId,
-        handle: gmHandle || 'Mestre de Jogo',
-        role: 'Mestre (GM)',
+        handle: safeGmHandle,
+        role: "Mestre (GM)",
         sheet: gmSheet,
         isOnline: true,
         joinedAt: new Date().toISOString()
@@ -32,11 +116,11 @@ export function createRoom(code: string, roomName: string, gmHandle: string, gmP
     },
     chatMessages: [
       {
-        id: 'msg_init_' + Date.now(),
-        senderHandle: 'SISTEMA_NET',
-        senderRole: 'gm',
-        text: `Sala [${normalizedCode}] criada por Mestre ${gmHandle}. Conexão com a Net de Night City estabelecida!`,
-        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        id: "msg_init_" + Date.now(),
+        senderHandle: "SISTEMA_NET",
+        senderRole: "gm",
+        text: `Sala [${normalizedCode}] criada por Mestre ${safeGmHandle}. Conexão com a Net de Night City estabelecida!`,
+        timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
       }
     ],
     initiativeList: [],
@@ -44,82 +128,91 @@ export function createRoom(code: string, roomName: string, gmHandle: string, gmP
     tacticalGrid: {
       rows: 8,
       cols: 10,
-      theme: 'alley',
+      theme: "alley",
       tokens: [
-        { id: 'cover_1', name: 'Barricada Concreto', type: 'cover', x: 2, y: 3, spCover: 15, color: '#64748b' },
-        { id: 'cover_2', name: 'Veículo Blindado', type: 'cover', x: 7, y: 4, spCover: 25, color: '#475569' },
-        { id: 'npc_booster', name: 'Boostergang Malandro', type: 'npc', x: 8, y: 2, hp: 0, maxHp: 10, status: 'Normal', color: '#ef4444' }
+        { id: "cover_1", name: "Barricada Concreto", type: "cover", x: 2, y: 3, spCover: 15, color: "#64748b" },
+        { id: "cover_2", name: "Veículo Blindado", type: "cover", x: 7, y: 4, spCover: 25, color: "#475569" },
+        { id: "npc_booster", name: "Boostergang Malandro", type: "npc", x: 8, y: 2, hp: 0, maxHp: 10, status: "Normal", color: "#ef4444" }
       ]
     },
     createdAt: new Date().toISOString()
   };
 
   rooms[normalizedCode] = newRoom;
-  return newRoom;
+  const sessionToken = bindSession(normalizedCode, gmUserPeerId);
+  return { room: newRoom, sessionToken };
 }
 
 export function getRoom(code: string): GameRoom | undefined {
   return rooms[code.trim().toUpperCase()];
 }
 
-export function joinRoom(code: string, peerId: string, handle: string, sheet: CharacterSheet): GameRoom | null {
+export function joinRoom(code: string, peerId: string, handle: string, sheet: CharacterSheet): { room: GameRoom; sessionToken: string } | null {
   const room = getRoom(code);
   if (!room) return null;
 
-  // If gmPeerId is not set yet, set it if player claims GM
-  if (!room.gmPeerId && handle === room.gmHandle) {
-    room.gmPeerId = peerId;
+  const safePeerId = sanitizeText(peerId, 64);
+  if (!safePeerId) return null;
+
+  const safeHandle = sanitizeText(handle, 30);
+
+  // Se gmPeerId ainda não está definido, quem reivindica o handle do GM assume
+  // (comparação trim + case-insensitive, idêntica ao checkIsGm)
+  if (!room.gmPeerId && safeHandle && safeHandle.toLowerCase() === room.gmHandle?.toLowerCase()) {
+    room.gmPeerId = safePeerId;
   }
 
   const player: RoomPlayer = {
-    peerId,
-    handle: handle || sheet.handle || 'Edgerunner',
-    role: sheet.role,
+    peerId: safePeerId,
+    handle: safeHandle || sheet?.handle || "Edgerunner",
+    role: sheet?.role || "Edgerunner",
     sheet,
     isOnline: true,
     joinedAt: new Date().toISOString()
   };
 
-  room.players[peerId] = player;
+  room.players[safePeerId] = player;
 
   // Auto-create tactical token for player if not existing
   if (room.tacticalGrid) {
-    const existingToken = room.tacticalGrid.tokens.find(t => t.peerId === peerId);
+    const existingToken = room.tacticalGrid.tokens.find(t => t.peerId === safePeerId);
     if (!existingToken) {
       const freeX = (Object.keys(room.players).length) % room.tacticalGrid.cols;
       room.tacticalGrid.tokens.push({
-        id: `token_${peerId}`,
+        id: `token_${safePeerId}`,
         name: player.handle,
-        type: 'player',
+        type: "player",
         x: freeX,
         y: 1,
-        peerId,
+        peerId: safePeerId,
         role: player.role,
-        hp: player.sheet.woundLevel,
-        color: '#06b6d4'
+        hp: player.sheet?.woundLevel ?? 0,
+        color: "#06b6d4"
       });
     }
   }
 
   // Add system message
   room.chatMessages.push({
-    id: 'msg_join_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
-    senderHandle: 'SISTEMA_NET',
-    senderRole: 'gm',
+    id: "msg_join_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+    senderHandle: "SISTEMA_NET",
+    senderRole: "gm",
     text: `⚡ Edgerunner [${player.handle}] (${player.role}) conectou-se à mesa!`,
-    timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
   });
 
-  return room;
+  const sessionToken = bindSession(room.code, safePeerId);
+  return { room, sessionToken };
 }
 
-export function updatePlayerSheet(code: string, peerId: string, sheet: CharacterSheet): GameRoom | null {
+export function updatePlayerSheet(code: string, peerId: string, sheet: CharacterSheet): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room || !room.players[peerId]) return null;
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room.players[peerId]) return { room: null, error: "Jogador não encontrado na mesa" };
 
   room.players[peerId].sheet = sheet;
-  room.players[peerId].handle = sheet.handle || room.players[peerId].handle;
-  room.players[peerId].role = sheet.role || room.players[peerId].role;
+  room.players[peerId].handle = sanitizeText(sheet.handle, 30) || room.players[peerId].handle;
+  room.players[peerId].role = sanitizeText(sheet.role, 30) || room.players[peerId].role;
   room.players[peerId].isOnline = true;
 
   // Also sync player's token name and HP in grid
@@ -131,7 +224,7 @@ export function updatePlayerSheet(code: string, peerId: string, sheet: Character
     }
   }
 
-  return room;
+  return { room };
 }
 
 export function updatePlayerWoundLevel(
@@ -141,16 +234,15 @@ export function updatePlayerWoundLevel(
   woundLevel: number
 ): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room) return { room: null, error: 'Sala não encontrada' };
+  if (!room) return { room: null, error: "Sala não encontrada" };
 
   // Strict check: Only GM can modify another player's bio-monitor
-  const isGm = room.gmPeerId ? room.gmPeerId === requesterPeerId : true;
-  if (!isGm) {
-    return { room: null, error: 'Acesso Negado! Apenas o Mestre da Mesa tem permissão para alterar o Bio-Monitor de outros jogadores.' };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa tem permissão para alterar o Bio-Monitor de outros jogadores." };
   }
 
   const player = room.players[targetPeerId];
-  if (!player) return { room: null, error: 'Jogador não encontrado na mesa.' };
+  if (!player) return { room: null, error: "Jogador não encontrado na mesa." };
 
   const clamped = Math.max(0, Math.min(10, woundLevel));
   player.sheet.woundLevel = clamped;
@@ -162,58 +254,43 @@ export function updatePlayerWoundLevel(
   }
 
   const woundNames = [
-    'Saudável (OK)',
-    'Ferimento Leve (Light)',
-    'Ferimento Sério (Serious)',
-    'Ferimento Crítico (Critical)',
-    'Mortal 0',
-    'Mortal 1',
-    'Mortal 2',
-    'Mortal 3',
-    'Mortal 4',
-    'Mortal 5',
-    'Mortal 6 (Morte Iminente)'
+    "Saudável (OK)",
+    "Ferimento Leve (Light)",
+    "Ferimento Sério (Serious)",
+    "Ferimento Crítico (Critical)",
+    "Mortal 0",
+    "Mortal 1",
+    "Mortal 2",
+    "Mortal 3",
+    "Mortal 4",
+    "Mortal 5",
+    "Mortal 6 (Morte Iminente)"
   ];
   const statusStr = woundNames[clamped] || `Nível ${clamped}`;
 
   room.chatMessages.push({
-    id: 'msg_health_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
-    senderHandle: 'SISTEMA_NET',
-    senderRole: 'gm',
+    id: "msg_health_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+    senderHandle: "SISTEMA_NET",
+    senderRole: "gm",
     text: `🩸 [MESTRE DE JOGO] alterou o Bio-Monitor de [${player.handle}] para: ${statusStr} (${clamped}/10 Caixas).`,
-    timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
   });
 
   return { room };
 }
 
-// Helper to check and maintain GM peerId authorization
-function checkIsGm(room: GameRoom, requesterPeerId: string): boolean {
-  if (!room.gmPeerId) {
-    room.gmPeerId = requesterPeerId;
-    return true;
-  }
-  if (room.gmPeerId === requesterPeerId) return true;
-
-  // Check if player handle matches gmHandle
-  const player = room.players[requesterPeerId];
-  if (player && player.handle && room.gmHandle &&
-      player.handle.trim().toLowerCase() === room.gmHandle.trim().toLowerCase()) {
-    room.gmPeerId = requesterPeerId;
-    return true;
-  }
-
-  // Fallback: If requester was room creator or GM role
-  return true; // Flexible GM authorization for active GM role users
-}
-
+// GM Power: Update tactical grid (T1.2 — exige GM legítimo)
 export function updateTacticalGrid(
   code: string,
   requesterPeerId: string,
   gridState: TacticalGridState
 ): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room) return { room: null, error: 'Sala não encontrada' };
+  if (!room) return { room: null, error: "Sala não encontrada" };
+
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode alterar o mapa tático." };
+  }
 
   room.tacticalGrid = gridState;
   return { room };
@@ -226,9 +303,11 @@ export function generateRoomNpc(
   archetypeId?: string
 ): { room: GameRoom | null; npcPlayer?: RoomPlayer; error?: string } {
   const room = getRoom(code);
-  if (!room) return { room: null, error: 'Sala não encontrada' };
+  if (!room) return { room: null, error: "Sala não encontrada" };
 
-  checkIsGm(room, requesterPeerId);
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode gerar NPCs." };
+  }
 
   const sheet = generateRandomNpc(archetypeId);
   const npcPlayer: RoomPlayer = {
@@ -252,22 +331,22 @@ export function generateRoomNpc(
     room.tacticalGrid.tokens.push({
       id: `npc_token_${sheet.id}`,
       name: sheet.handle,
-      type: 'npc',
+      type: "npc",
       x: freeX,
       y: freeY,
       peerId: sheet.id,
       role: sheet.role,
       hp: sheet.woundLevel,
-      color: '#ef4444'
+      color: "#ef4444"
     });
   }
 
   room.chatMessages.push({
-    id: 'msg_npc_gen_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
-    senderHandle: 'SISTEMA_NET',
-    senderRole: 'gm',
+    id: "msg_npc_gen_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+    senderHandle: "SISTEMA_NET",
+    senderRole: "gm",
     text: `💀 [MESTRE DE JOGO] gerou o NPC [${sheet.handle}] (${sheet.role} - Ref Nvl ${sheet.stats.REF}) e o inseriu no mapa tático!`,
-    timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
   });
 
   return { room, npcPlayer };
@@ -279,13 +358,15 @@ export function generateRoomPlayerEdgerunner(
   requesterPeerId: string
 ): { room: GameRoom | null; player?: RoomPlayer; error?: string } {
   const room = getRoom(code);
-  if (!room) return { room: null, error: 'Sala não encontrada' };
+  if (!room) return { room: null, error: "Sala não encontrada" };
 
-  checkIsGm(room, requesterPeerId);
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode gerar Edgerunners." };
+  }
 
   const sheet = generateRandomNpc();
   const edgerunnerPlayer: RoomPlayer = {
-    peerId: 'edgerunner_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    peerId: "edgerunner_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
     handle: sheet.handle,
     role: sheet.role,
     sheet,
@@ -301,22 +382,22 @@ export function generateRoomPlayerEdgerunner(
     room.tacticalGrid.tokens.push({
       id: `token_${edgerunnerPlayer.peerId}`,
       name: edgerunnerPlayer.handle,
-      type: 'player',
+      type: "player",
       x: freeX,
       y: freeY,
       peerId: edgerunnerPlayer.peerId,
       role: edgerunnerPlayer.role,
       hp: edgerunnerPlayer.sheet.woundLevel || 0,
-      color: '#06b6d4'
+      color: "#06b6d4"
     });
   }
 
   room.chatMessages.push({
-    id: 'msg_edgerunner_gen_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
-    senderHandle: 'SISTEMA_NET',
-    senderRole: 'gm',
+    id: "msg_edgerunner_gen_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+    senderHandle: "SISTEMA_NET",
+    senderRole: "gm",
     text: `⚡ [MESTRE DE JOGO] gerou uma nova ficha de Edgerunner aleatória [${sheet.handle}] (${sheet.role}) para a mesa!`,
-    timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
   });
 
   return { room, player: edgerunnerPlayer };
@@ -329,11 +410,13 @@ export function deleteRoomNpc(
   npcId: string
 ): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room) return { room: null, error: 'Sala não encontrada' };
+  if (!room) return { room: null, error: "Sala não encontrada" };
 
-  checkIsGm(room, requesterPeerId);
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode remover NPCs." };
+  }
 
-  let removedHandle = '';
+  let removedHandle = "";
 
   const npcs = room.npcs;
   if (npcs) {
@@ -371,11 +454,11 @@ export function deleteRoomNpc(
 
   if (removedHandle) {
     room.chatMessages.push({
-      id: 'msg_npc_del_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
-      senderHandle: 'SISTEMA_NET',
-      senderRole: 'gm',
+      id: "msg_npc_del_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+      senderHandle: "SISTEMA_NET",
+      senderRole: "gm",
       text: `🗑️ [MESTRE DE JOGO] removeu o NPC [${removedHandle}] da mesa de jogo.`,
-      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     });
   }
 
@@ -389,9 +472,11 @@ export function deleteGeneratedPlayer(
   targetPeerId: string
 ): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room) return { room: null, error: 'Sala não encontrada' };
+  if (!room) return { room: null, error: "Sala não encontrada" };
 
-  checkIsGm(room, requesterPeerId);
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode remover Edgerunners." };
+  }
 
   if (room.players) {
     const targetKey = Object.keys(room.players).find(
@@ -422,11 +507,11 @@ export function deleteGeneratedPlayer(
       );
 
       room.chatMessages.push({
-        id: 'msg_plr_del_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
-        senderHandle: 'SISTEMA_NET',
-        senderRole: 'gm',
+        id: "msg_plr_del_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+        senderHandle: "SISTEMA_NET",
+        senderRole: "gm",
         text: `🗑️ [MESTRE DE JOGO] removeu a ficha do Edgerunner [${handle}] da mesa.`,
-        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
       });
     }
   }
@@ -442,15 +527,14 @@ export function updateNpcWoundLevel(
   woundLevel: number
 ): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room) return { room: null, error: 'Sala não encontrada' };
+  if (!room) return { room: null, error: "Sala não encontrada" };
 
-  const isGm = room.gmPeerId ? room.gmPeerId === requesterPeerId : true;
-  if (!isGm) {
-    return { room: null, error: 'Acesso Negado! Apenas o Mestre da Mesa pode alterar o estado do Bio-Monitor de NPCs.' };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode alterar o estado do Bio-Monitor de NPCs." };
   }
 
   if (!room.npcs || !room.npcs[npcId]) {
-    return { room: null, error: 'NPC não encontrado.' };
+    return { room: null, error: "NPC não encontrado." };
   }
 
   const npc = room.npcs[npcId];
@@ -465,23 +549,28 @@ export function updateNpcWoundLevel(
   return { room };
 }
 
-
+// Chat da mesa — handle e role derivados do servidor (anti-spoofing)
 export function postChatMessage(
   code: string,
-  senderHandle: string,
-  senderRole: 'gm' | 'player',
+  requesterPeerId: string,
   text: string,
   rollResult?: RollResult
-): GameRoom | null {
+): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room) return null;
+  if (!room) return { room: null, error: "Sala não encontrada" };
+
+  const player = room.players[requesterPeerId];
+  if (!player) return { room: null, error: "Jogador não está na mesa." };
+
+  const safeText = sanitizeText(text, 500);
+  if (!safeText && !rollResult) return { room: null, error: "Mensagem vazia" };
 
   const newMsg: ChatMessage = {
-    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-    senderHandle,
-    senderRole,
-    text,
-    timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    id: "msg_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+    senderHandle: player.handle,
+    senderRole: requesterPeerId === room.gmPeerId ? "gm" : "player",
+    text: safeText,
+    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     isDiceRoll: !!rollResult,
     rollResult
   };
@@ -492,37 +581,66 @@ export function postChatMessage(
     room.chatMessages.shift();
   }
 
-  return room;
+  return { room };
 }
 
+// GM Power: Update room atmosphere/combat modifiers (T1.3)
 export function updateRoomSettings(
   code: string,
+  requesterPeerId: string,
   locationName?: string,
   combatModifier?: number,
   modifierReason?: string
-): GameRoom | null {
+): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room) return null;
+  if (!room) return { room: null, error: "Sala não encontrada" };
 
-  if (locationName !== undefined) room.locationName = locationName;
-  if (combatModifier !== undefined) room.combatModifier = combatModifier;
-  if (modifierReason !== undefined) room.modifierReason = modifierReason;
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode alterar as condições da mesa." };
+  }
 
-  return room;
+  if (locationName !== undefined) room.locationName = sanitizeText(locationName, 60) || room.locationName;
+  if (combatModifier !== undefined) {
+    const v = Number(combatModifier);
+    room.combatModifier = Number.isFinite(v) ? Math.max(-10, Math.min(10, Math.round(v))) : 0;
+  }
+  if (modifierReason !== undefined) room.modifierReason = sanitizeText(modifierReason, 120) || room.modifierReason;
+
+  return { room };
 }
 
-export function updateInitiative(code: string, initiativeList: InitiativeEntry[]): GameRoom | null {
+// GM Power: Update or replace initiative list (T1.3)
+export function updateInitiative(code: string, requesterPeerId: string, initiativeList: InitiativeEntry[]): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room) return null;
+  if (!room) return { room: null, error: "Sala não encontrada" };
 
-  room.initiativeList = initiativeList;
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode editar a ordem de iniciativa." };
+  }
+
+  if (!Array.isArray(initiativeList)) return { room: null, error: "Lista de iniciativa inválida" };
+
+  room.initiativeList = initiativeList
+    .map(e => ({
+      ...e,
+      handle: sanitizeText(e?.handle, 30) || "—",
+      score: Math.max(0, Math.min(999, Number(e?.score) || 0))
+    }))
+    .slice(0, 50);
   room.activeTurnIndex = 0;
-  return room;
+  return { room };
 }
 
-export function nextTurn(code: string): GameRoom | null {
+// GM Power: Advance to next turn (T1.3)
+export function nextTurn(code: string, requesterPeerId: string): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room || room.initiativeList.length === 0) return null;
+  if (!room) return { room: null, error: "Sala não encontrada" };
+
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode avançar o turno." };
+  }
+
+  if (room.initiativeList.length === 0) return { room };
 
   room.activeTurnIndex = (room.activeTurnIndex + 1) % room.initiativeList.length;
   room.initiativeList = room.initiativeList.map((item, idx) => ({
@@ -530,15 +648,19 @@ export function nextTurn(code: string): GameRoom | null {
     isCurrentTurn: idx === room.activeTurnIndex
   }));
 
-  return room;
+  return { room };
 }
 
-export function leaveRoom(code: string, peerId: string): GameRoom | null {
+// Sair da mesa — T1.8: se o GM sair, transfere o cargo ou limpa gmPeerId
+export function leaveRoom(code: string, peerId: string): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
-  if (!room) return null;
+  if (!room) return { room: null, error: "Sala não encontrada" };
 
-  if (room.players[peerId]) {
-    const playerHandle = room.players[peerId].handle;
+  const wasGm = room.gmPeerId === peerId;
+  const player = room.players[peerId];
+
+  if (player) {
+    const playerHandle = player.handle;
     delete room.players[peerId];
 
     // Remove the player's token from the tactical grid (avoid orphan tokens)
@@ -557,16 +679,50 @@ export function leaveRoom(code: string, peerId: string): GameRoom | null {
       room.initiativeList[0].isCurrentTurn = true;
     }
 
+    // T1.8 — GM abandonou a mesa
+    if (wasGm) {
+      const remainingOnline = Object.values(room.players).filter(p => p.isOnline);
+      if (remainingOnline.length > 0) {
+        const newGm = remainingOnline[0];
+        room.gmPeerId = newGm.peerId;
+        room.gmHandle = newGm.handle;
+        room.chatMessages.push({
+          id: "msg_gm_transfer_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+          senderHandle: "SISTEMA_NET",
+          senderRole: "gm",
+          text: `👑 [SISTEMA] O Mestre [${playerHandle}] deixou a mesa. [${newGm.handle}] assumiu como novo Mestre de Jogo!`,
+          timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+        });
+      } else {
+        room.gmPeerId = undefined;
+        room.chatMessages.push({
+          id: "msg_gm_left_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+          senderHandle: "SISTEMA_NET",
+          senderRole: "gm",
+          text: `⚠️ [SISTEMA] O Mestre [${playerHandle}] deixou a mesa. A mesa aguarda um novo Mestre de Jogo.`,
+          timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+        });
+      }
+    }
+
     room.chatMessages.push({
-      id: 'msg_leave_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
-      senderHandle: 'SISTEMA_NET',
-      senderRole: 'gm',
+      id: "msg_leave_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+      senderHandle: "SISTEMA_NET",
+      senderRole: "gm",
       text: `🔌 Edgerunner [${playerHandle}] desconectou-se da mesa.`,
-      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     });
   }
 
-  return room;
+  revokeSessionsForPeer(code, peerId);
+
+  // Mesa vazia → encerrar a sala e revogar todas as sessões (evita salas órfãs no lobby)
+  if (Object.keys(room.players).length === 0) {
+    deleteRoom(code);
+    return { room: null, error: "Sala encerrada — nenhum jogador restante." };
+  }
+
+  return { room };
 }
 
 export function getAllActiveRooms(): { code: string; name: string; gmHandle: string; playersCount: number }[] {

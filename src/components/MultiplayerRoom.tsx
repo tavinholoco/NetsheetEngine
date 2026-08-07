@@ -50,6 +50,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
   const [roomName, setRoomName] = useState('Mesa de Night City');
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [peerId, setPeerId] = useState<string>(() => sessionStorage.getItem('cyberpunk_peer_id') || '');
+  const [sessionToken, setSessionToken] = useState<string>(() => sessionStorage.getItem('cyberpunk_session_token') || '');
   const [chatInput, setChatInput] = useState('');
   const [tab, setTab] = useState<RoomTab['id']>('chat');
   const [initiativeName, setInitiativeName] = useState('');
@@ -107,7 +108,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
   const lastSyncedSheetRef = useRef<string>('');
 
   useEffect(() => {
-    if (view !== 'active' || !peerId || !roomCode) return;
+    if (view !== 'active' || !peerId || !sessionToken || !roomCode) return;
     const sheetKey = JSON.stringify(sheet);
     if (sheetKey === lastSyncedSheetRef.current) return;
     lastSyncedSheetRef.current = sheetKey;
@@ -115,11 +116,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
       fetch(`/api/rooms/${roomCode}/sheet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ peerId, sheet })
+        body: JSON.stringify({ sessionToken, sheet })
       }).catch(() => {});
     }, 600);
     return () => clearTimeout(t);
-  }, [view, peerId, sheet, roomCode]);
+  }, [view, peerId, sessionToken, sheet, roomCode]);
 
   const ensurePeerId = () => {
     if (!peerId) {
@@ -153,7 +154,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
         setErrorMsg(data?.error || 'Erro ao criar sala.');
         return;
       }
-      setRoom(data);
+      setSessionToken(data.sessionToken);
+      sessionStorage.setItem('cyberpunk_session_token', data.sessionToken);
+      setRoom(data.room);
       setView('active');
     } catch (e) {
       setErrorMsg('Falha de conexão com o servidor.');
@@ -176,8 +179,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
         setErrorMsg(data?.error || 'Sala não encontrada.');
         return;
       }
+      setSessionToken(data.sessionToken);
+      sessionStorage.setItem('cyberpunk_session_token', data.sessionToken);
       setRoomCode(targetCode);
-      setRoom(data);
+      setRoom(data.room);
       setView('active');
     } catch (e) {
       setErrorMsg('Falha de conexão com o servidor.');
@@ -192,12 +197,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
       await fetch(`/api/rooms/${roomCode}/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderHandle: handle,
-          senderRole: isGm ? 'gm' : 'player',
-          text: content,
-          rollResult
-        })
+        body: JSON.stringify({ sessionToken, text: content, rollResult })
       });
     } catch {
       /* ignore */
@@ -233,60 +233,48 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     sendChat(undefined, roll);
   };
 
-  const updateGrid = (gridState: TacticalGridState) => {
-    fetch(`/api/rooms/${roomCode}/tactical-grid`, {
+  // Helper: ações autenticadas por token de sessão (T1.7)
+  const roomAction = (path: string, body: object) => {
+    fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requesterPeerId: peerId, gridState })
-    }).catch(() => {});
+      body: JSON.stringify({ ...body, sessionToken })
+    })
+      .then(async (r) => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}));
+          setErrorMsg(data?.error || 'Ação negada pelo servidor.');
+        }
+      })
+      .catch(() => {});
+  };
+
+  const updateGrid = (gridState: TacticalGridState) => {
+    roomAction(`/api/rooms/${roomCode}/tactical-grid`, { gridState });
   };
 
   const generateNpc = (archetypeId?: string) => {
-    fetch(`/api/rooms/${roomCode}/npcs/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requesterPeerId: peerId, archetypeId })
-    }).catch(() => {});
+    roomAction(`/api/rooms/${roomCode}/npcs/generate`, { archetypeId });
   };
 
   const generatePlayerEdgerunner = () => {
-    fetch(`/api/rooms/${roomCode}/players/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requesterPeerId: peerId })
-    }).catch(() => {});
+    roomAction(`/api/rooms/${roomCode}/players/generate`, {});
   };
 
   const updatePlayerHealth = (targetPeerId: string, woundLevel: number) => {
-    fetch(`/api/rooms/${roomCode}/player-health`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requesterPeerId: peerId, targetPeerId, woundLevel })
-    }).catch(() => {});
+    roomAction(`/api/rooms/${roomCode}/player-health`, { targetPeerId, woundLevel });
   };
 
   const updateNpcHealth = (npcId: string, woundLevel: number) => {
-    fetch(`/api/rooms/${roomCode}/npcs/${npcId}/health`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requesterPeerId: peerId, woundLevel })
-    }).catch(() => {});
+    roomAction(`/api/rooms/${roomCode}/npcs/${npcId}/health`, { woundLevel });
   };
 
   const deleteNpc = (npcId: string) => {
-    fetch(`/api/rooms/${roomCode}/npcs/${npcId}/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requesterPeerId: peerId })
-    }).catch(() => {});
+    roomAction(`/api/rooms/${roomCode}/npcs/${npcId}/delete`, {});
   };
 
   const deletePlayer = (targetPeerId: string) => {
-    fetch(`/api/rooms/${roomCode}/players/${targetPeerId}/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requesterPeerId: peerId })
-    }).catch(() => {});
+    roomAction(`/api/rooms/${roomCode}/players/${targetPeerId}/delete`, {});
   };
 
   const addInitiative = () => {
@@ -301,30 +289,24 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
         isCurrentTurn: false
       }
     ].sort((a, b) => b.score - a.score);
-    fetch(`/api/rooms/${roomCode}/initiative`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initiativeList: list })
-    }).catch(() => {});
+    roomAction(`/api/rooms/${roomCode}/initiative`, { initiativeList: list });
     setInitiativeName('');
   };
 
   const nextTurn = () => {
-    fetch(`/api/rooms/${roomCode}/initiative`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'next' })
-    }).catch(() => {});
+    roomAction(`/api/rooms/${roomCode}/initiative`, { action: 'next' });
   };
 
   const leaveRoom = async () => {
-    if (roomCode && peerId) {
+    if (roomCode && sessionToken) {
       await fetch(`/api/rooms/${roomCode}/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ peerId })
+        body: JSON.stringify({ sessionToken })
       }).catch(() => {});
     }
+    sessionStorage.removeItem('cyberpunk_session_token');
+    setSessionToken('');
     setRoom(null);
     setRoomCode('');
     setView('lobby');
@@ -460,6 +442,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
 
   return (
     <div className="space-y-4 font-mono animate-fadeIn">
+      {errorMsg && (
+        <div className="bg-red-950/70 border border-red-500/50 p-3 rounded-lg text-[11px] font-mono text-red-300 animate-fadeIn">
+          {errorMsg}
+        </div>
+      )}
       {/* Header da sala */}
       <div className="bg-slate-950/90 border-l-4 border-emerald-500 border-y border-r border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
