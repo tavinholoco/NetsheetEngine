@@ -1,7 +1,19 @@
 /**
  * ============================================================
- * NETSHEET ENGINE — HOOK DE FICHA DE PERSONAGEM (T0.11)
+ * NETSHEET ENGINE — HOOK DE FICHA DE PERSONAGEM (T0.11 / T2.13)
  * Roster + ficha ativa + persistência local/cloud + autosave.
+ *
+ * T2.13 (Fase 2 — migração Supabase):
+ *   - Persistência na nuvem em `character_sheets` (jsonb) via camada
+ *     `src/lib/supabase.ts` (upsert por user_id + sheet_id).
+ *   - Fallback localStorage offline: a ficha ativa e o roster local
+ *     são sempre gravados localmente (LS_ACTIVE_KEY / LS_ROSTER_KEY).
+ *   - Modo visitante: o roster local é exibido (não mais vazio).
+ *   - Merge one-way local→cloud: no primeiro login, fichas criadas no
+ *     modo visitante são enviadas à nuvem (uma vez por uid).
+ *   - Autosave cloud com debounce (1.5s) quando logado e a ficha tem
+ *     handle preenchido; autosave local é imediato em qualquer edição.
+ *
  * Interface consumida pelo App.tsx:
  *   { user, authLoading, sheet, roster, updateSheet, loadSheet,
  *     loadPresetAsNewSheet, createNewCharacter, saveCurrentSheet,
@@ -25,6 +37,10 @@ import { DEFAULT_ARMOR } from '../data/cyberpunkData';
 
 const LS_ACTIVE_KEY = 'cyberpunk_active_sheet_v1';
 const LS_ROSTER_KEY = 'cyberpunk_local_roster_v1';
+/** Marca o merge local→cloud já feito para um uid (evita re-envio). */
+const LS_MERGED_PREFIX = 'cyberpunk_merged_v1_';
+/** Dono atual do roster local (uid que o gerou) — evita vazar fichas entre contas. */
+const LS_ROSTER_OWNER_KEY = 'cyberpunk_local_roster_owner_v1';
 
 /** Cria uma ficha em branco com valores padrão de CP2020. */
 export function createBlankCharacterSheet(): CharacterSheet {
@@ -66,6 +82,10 @@ export function createBlankCharacterSheet(): CharacterSheet {
   };
 }
 
+/* ------------------------------------------------------------
+   STORAGE LOCAL (fallback offline universal)
+   ------------------------------------------------------------ */
+
 function readActiveFromStorage(): CharacterSheet {
   try {
     const raw = localStorage.getItem(LS_ACTIVE_KEY);
@@ -84,6 +104,91 @@ function readActiveFromStorage(): CharacterSheet {
 function writeActiveToStorage(sheet: CharacterSheet): void {
   try {
     localStorage.setItem(LS_ACTIVE_KEY, JSON.stringify(sheet));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Lê o roster local (fichas completas). */
+function readLocalRoster(): CharacterSheet[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(LS_ROSTER_KEY) || '[]') as CharacterSheet[];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalRoster(list: CharacterSheet[]): void {
+  try {
+    localStorage.setItem(LS_ROSTER_KEY, JSON.stringify(list));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Define o dono do roster local (uid que o gerou). */
+function setLocalRosterOwner(uid: string | null): void {
+  try {
+    if (uid) localStorage.setItem(LS_ROSTER_OWNER_KEY, uid);
+    else localStorage.removeItem(LS_ROSTER_OWNER_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function getLocalRosterOwner(): string | null {
+  try {
+    return localStorage.getItem(LS_ROSTER_OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Converte fichas locais em metadados (mesmo formato do roster da nuvem). */
+function localRosterToMeta(): SheetMeta[] {
+  return readLocalRoster().map((s) => ({
+    id: s.id,
+    handle: s.handle || 'Sem nome',
+    role: s.role || 'Solo',
+    updatedAt: s.updatedAt || s.createdAt || new Date().toISOString()
+  }));
+}
+
+/**
+ * Merge one-way local→cloud: envia fichas locais que ainda não existem
+ * na nuvem (por id). Executa uma única vez por uid (flag em localStorage)
+ * para não reenviar a cada montagem/reload.
+ */
+async function mergeLocalToCloud(uid: string, cloudMetas: SheetMeta[]): Promise<void> {
+  try {
+    const flagKey = LS_MERGED_PREFIX + uid;
+    if (localStorage.getItem(flagKey)) return;
+
+    // Segurança: só mescla fichas locais geradas pelo próprio uid (ou órfãs
+    // de visitante). Se outro usuário logar no mesmo navegador, não vaza.
+    const owner = getLocalRosterOwner();
+    if (owner && owner !== uid) return;
+
+    const local = readLocalRoster();
+    if (local.length === 0) {
+      localStorage.setItem(flagKey, '1');
+      return;
+    }
+
+    const cloudIds = new Set(cloudMetas.map((m) => m.id));
+    let anyFailed = false;
+    for (const sheet of local) {
+      if (cloudIds.has(sheet.id)) continue;
+      try {
+        await saveCharacterSheet(uid, sheet);
+      } catch {
+        anyFailed = true; // falha individual não aborta, mas impede marcar como feito
+      }
+    }
+    // Só marca como concluído se nenhum upload falhou (senão, re-tenta no próximo login)
+    if (!anyFailed) localStorage.setItem(flagKey, '1');
+    setLocalRosterOwner(uid);
   } catch {
     /* ignore */
   }
@@ -112,7 +217,7 @@ export function useCharacterSheet(): UseCharacterSheetResult {
   const sheetRef = useRef(sheet);
   sheetRef.current = sheet;
 
-  // Sessão Firebase + assinatura do roster
+  // Sessão + assinatura do roster
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -123,10 +228,15 @@ export function useCharacterSheet(): UseCharacterSheetResult {
 
   useEffect(() => {
     if (!user) {
-      setRoster([]);
+      // Modo visitante: mostra as fichas locais (fallback offline)
+      setRoster(localRosterToMeta());
       return;
     }
-    const unsub = subscribeToCharacterSheets(user.uid, (r) => setRoster(r));
+    const unsub = subscribeToCharacterSheets(user.uid, (r) => {
+      setRoster(r);
+      // Primeira carga da nuvem → mescla fichas locais que faltam (uma vez por uid)
+      void mergeLocalToCloud(user.uid, r);
+    });
     return () => unsub();
   }, [user]);
 
@@ -134,6 +244,22 @@ export function useCharacterSheet(): UseCharacterSheetResult {
   useEffect(() => {
     writeActiveToStorage(sheet);
   }, [sheet]);
+
+  // Autosave cloud com debounce: salva na nuvem após 1.5s sem edições,
+  // apenas se logado e a ficha tiver handle (evita linhas de "Sem nome").
+  const lastCloudSaveRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user || !sheet.handle || !sheet.handle.trim()) return;
+    // O saveCurrentSheet já gravou esta versão na nuvem — evita re-upsert redundante
+    if (lastCloudSaveRef.current === sheet.updatedAt) return;
+    const timer = setTimeout(() => {
+      const current = { ...sheetRef.current, updatedAt: new Date().toISOString() };
+      saveCharacterSheet(user.uid, current).catch(() => {
+        /* autosave silencioso; o botão Salvar reporta erros */
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [sheet, user]);
 
   /** Atualiza parcialmente a ficha ativa. */
   const updateSheet = useCallback((updated: Partial<CharacterSheet>) => {
@@ -150,13 +276,8 @@ export function useCharacterSheet(): UseCharacterSheetResult {
           return;
         }
       }
-      try {
-        const local: CharacterSheet[] = JSON.parse(localStorage.getItem(LS_ROSTER_KEY) || '[]');
-        const found = local.find((s) => s.id === id);
-        if (found) setSheet(found);
-      } catch {
-        /* ignore */
-      }
+      const found = readLocalRoster().find((s) => s.id === id);
+      if (found) setSheet(found);
     },
     [user]
   );
@@ -182,23 +303,21 @@ export function useCharacterSheet(): UseCharacterSheetResult {
     const current = { ...sheetRef.current, updatedAt: new Date().toISOString() };
 
     // Roster local (fallback universal)
-    try {
-      const local: CharacterSheet[] = JSON.parse(localStorage.getItem(LS_ROSTER_KEY) || '[]');
-      const idx = local.findIndex((s) => s.id === current.id);
-      if (idx >= 0) local[idx] = current;
-      else local.push(current);
-      localStorage.setItem(LS_ROSTER_KEY, JSON.stringify(local));
-    } catch {
-      /* ignore */
-    }
+    const local = readLocalRoster();
+    const idx = local.findIndex((s) => s.id === current.id);
+    if (idx >= 0) local[idx] = current;
+    else local.push(current);
+    writeLocalRoster(local);
 
     if (user) {
       try {
         await saveCharacterSheet(user.uid, current);
+        lastCloudSaveRef.current = current.updatedAt;
       } catch (e: any) {
         throw new Error(e?.message || 'Falha de conexão com a nuvem');
       }
     }
+    setLocalRosterOwner(user?.uid ?? null);
     setSheet(current);
     return current.handle || 'Edgerunner';
   }, [user]);
@@ -216,14 +335,10 @@ export function useCharacterSheet(): UseCharacterSheetResult {
       if (user) {
         deleteCharacterSheet(user.uid, id).catch((e) => console.error('Erro ao deletar ficha:', e));
       }
-      try {
-        const local: CharacterSheet[] = JSON.parse(localStorage.getItem(LS_ROSTER_KEY) || '[]');
-        localStorage.setItem(
-          LS_ROSTER_KEY,
-          JSON.stringify(local.filter((s) => s.id !== id))
-        );
-      } catch {
-        /* ignore */
+      writeLocalRoster(readLocalRoster().filter((s) => s.id !== id));
+      if (!user) {
+        // Atualiza o roster exibido no modo visitante
+        setRoster(localRosterToMeta());
       }
       setSheet((prev) => (prev.id === id ? createBlankCharacterSheet() : prev));
     },
