@@ -341,7 +341,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       priority: 'P1',
       status: 'em andamento',
       tasks: [
-        { code: 'T8.1', title: 'docs/PRD.md (visão, personas, escopo, métricas)', status: 'pendente' },
+        { code: 'T8.1', title: 'docs/PRD.md (visão, personas, escopo, métricas)', status: 'concluído' },
         { code: 'T8.2', title: 'Popular data/prdData.ts para o PrdViewer', status: 'concluído' },
         { code: 'T8.3', title: 'README reescrito sem créditos de scaffold', status: 'concluído' },
         { code: 'T8.4', title: 'index.html com identidade própria (pt-BR)', status: 'concluído' },
