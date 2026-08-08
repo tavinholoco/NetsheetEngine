@@ -313,8 +313,8 @@ export const PRD_DOCUMENT: PrdDocument = {
       priority: 'P2',
       status: 'pendente',
       tasks: [
-        { code: 'T6.1', title: 'Instalar @dice-roller/rpg-dice-roller', status: 'pendente' },
-        { code: 'T6.2', title: 'utils/diceEngine.ts (rollSkill, rollDamage, rollDeathSave, rollLocation)', status: 'pendente' },
+        { code: 'T6.1', title: 'Instalar @dice-roller/rpg-dice-roller', status: 'concluído' },
+        { code: 'T6.2', title: 'utils/diceEngine.ts (rollSkill, rollDamage, rollDeathSave, rollLocation)', status: 'concluído' },
         { code: 'T6.3', title: 'Substituir lógica manual em App.tsx e DiceRoller', status: 'pendente' },
         { code: 'T6.4', title: 'Unit tests do motor', status: 'pendente' }
       ]
