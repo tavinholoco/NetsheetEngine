@@ -5,17 +5,23 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  # O job de segredos também roda em qualquer branch (push + PR), para
+  # bloquear chaves ANTES de chegarem ao master — ver job secrets-scan.
 
 jobs:
   secrets-scan:
     name: Varredura de segredos (gitleaks)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # para registrar achados na aba Security (SARIF)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Versão sincronizada com o campo [version] ref de .gitleaks.toml
       - name: Instalar gitleaks (pinado)
         run: |
           GITLEAKS_VERSION="v8.23.3"
@@ -28,7 +34,26 @@ jobs:
 
       - name: Detectar segredos no código
         run: |
+          # 1ª passada: falha o pipeline se encontrar segredos
           gitleaks detect --source . --config .gitleaks.toml --redact --exit-code 1 --verbose
+
+      - name: Gerar relatório SARIF (aba Security)
+        if: always()
+        run: |
+          # exit 0 mesmo com leaks — o fail do pipeline vem da passada acima
+          gitleaks detect --source . --config .gitleaks.toml --redact --report-path gitleaks.sarif --report-format sarif || true
+
+      - name: Registrar achados na aba Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+
+      - name: Falhar se segredos forem encontrados
+        if: failure()
+        run: |
+          echo "❌ Segredo(s) detectado(s) — corrija e reenvie o commit."
+          exit 1
 
   validate:
     name: tsc + build + testes

@@ -49,3 +49,19 @@ Pré-requisitos: Node ≥ 20 e [Supabase CLI](https://supabase.com/docs/guides/c
 5. Acesse `http://localhost:3000`
 
 > ⚠️ As chaves de `service_role` do Supabase são **exclusivas do servidor** — nunca as coloque com prefixo `VITE_`.
+
+## Segurança
+
+O repositório usa o [gitleaks](https://github.com/zricethezav/gitleaks) para bloquear segredos:
+
+- **CI** — todo `push`/`pull request` roda `gitleaks detect` (config em [`.gitleaks.toml`](./.gitleaks.toml)) e falha o pipeline se qualquer segredo for encontrado.
+- **Local** — varredura manual: `gitleaks detect --source . --config .gitleaks.toml --redact`
+- **Pre-commit hook (opcional)** — bloqueia o commit antes do push:
+  ```bash
+  # Linux/macOS:
+  ln -s ../../.gitleaks/pre-commit.sh .git/hooks/pre-commit
+  # Windows (Git Bash, sem symlink): cp .gitleaks/pre-commit.sh .git/hooks/pre-commit
+  chmod +x .git/hooks/pre-commit
+  ```
+
+Regras custom detectam Google OAuth Client Secrets (`GOCSPX-…`), Google/Firebase API Keys (`AIzaSy…`), tokens GitHub, chaves AWS e segredos genéricos de alta entropia. A anon key do Supabase local é permitida por design (é pública e vai no bundle do cliente).
