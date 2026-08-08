@@ -296,13 +296,13 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'Multiplayer em Tempo Real: WebSockets/Yjs',
       objective: 'Sincronização de alta frequência sem latência nem conflitos (P2).',
       priority: 'P2',
-      status: 'pendente',
+      status: 'concluído',
       tasks: [
         { code: 'T5.1', title: 'Avaliar Yjs+Hocuspocus vs Socket.IO', status: 'concluído' },
         { code: 'T5.2', title: 'Transporte WebSocket com SSE como fallback', status: 'concluído' },
         { code: 'T5.3', title: 'TacticalGrid com Yjs (tokens CRDT)', status: 'concluído' },
         { code: 'T5.4', title: 'RNG server-authoritative', status: 'concluído' },
-        { code: 'T5.5', title: 'Documentar protocolo multiplayer', status: 'pendente' }
+        { code: 'T5.5', title: 'Documentar protocolo multiplayer', status: 'concluído' }
       ]
     },
     {

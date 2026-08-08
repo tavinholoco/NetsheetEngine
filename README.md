@@ -36,7 +36,7 @@ React 19 · Vite · TypeScript · Tailwind CSS 4 · shadcn/ui (Radix) · Express
 O desenvolvimento segue um plano de 13 fases documentado em [`PLANO_DE_ACAO.md`](./PLANO_DE_ACAO.md),
 com o detalhamento em [`src/data/prdData.ts`](./src/data/prdData.ts) (consumido pelo visualizador de PRD do app).
 
-Fases concluídas até agora: **0** (fundação), **1** (segurança), **2** (migração Firebase → Supabase) e **3** (multiplayer: persistência e confiabilidade).
+Fases concluídas até agora: **0** (fundação), **1** (segurança), **2** (migração Firebase → Supabase), **3** (multiplayer: persistência e confiabilidade), **4** (estado global com Zustand) e **5** (multiplayer em tempo real: WebSockets/Yjs). O protocolo de rede está documentado em [`docs/PROTOCOLO_MULTIPLAYER.md`](./docs/PROTOCOLO_MULTIPLAYER.md).
 
 ## Rodando localmente
 
