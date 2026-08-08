@@ -213,7 +213,28 @@ com RLS adequado. *(Manter `firebase-blueprint.json`/`firestore.rules` apenas co
 ## FASE 5 — MULTIPLAYER EM TEMPO REAL: WEBSOCKETS/YJS  **[P2]**
 **Objetivo:** sincronização de alta frequência (drag de tokens, grid) sem latência e sem conflitos.
 
-- [ ] **T5.1** Avaliar e escolher: Yjs + Hocuspocus (`y-websocket`) vs Socket.IO (recomenda-se Yjs para estado do grid/fichas; WebSocket puro para chat/rolls).
+- [x] **T5.1** Avaliar e escolher: Yjs + Hocuspocus (`y-websocket`) vs Socket.IO (recomenda-se Yjs para estado do grid/fichas; WebSocket puro para chat/rolls). *(✓ Decidido e documentado em 08/08/2026 — ver análise comparativa e decisão abaixo.)*
+
+  **📊 Análise comparativa (aplicada à arquitetura de servidor autoritativo + SSE):**
+
+  | Critério | WebSocket puro (`ws@8`, **já instalado**) | Socket.IO | Yjs + Hocuspocus (`y-websocket`) |
+  |---|---|---|---|
+  | **Dependências novas** | **Zero** — `ws@8.21.1` já está no `package.json` | +`socket.io` + `socket.io-client` (~10,4 KB gzip no cliente) | +`yjs` (v13 estável) + `y-websocket`/`y-protocols` (v14 em desenvolvimento em `@y/*`) |
+  | **Overhead** | Mínimo (frames RFC 6455) | ~20–30% de framing do protocolo | Updates binários pequenos (só diffs); +awareness |
+  | **Reconexão** | Manual — **já implementada na T3.3** (`reconnectSession`/`authedFetch`) | Built-in | Built-in (exponential backoff, `maxBackoffTime`) |
+  | **Rooms/broadcast** | Mapeamento manual (o `roomManager` já tem `Map<code, room>`) | Built-in (`socket.join`) | Sala = documento Yjs por `roomCode` |
+  | **Edição concorrente do grid** | ❌ Não resolve conflitos | ❌ Não resolve conflitos (não é CRDT) | ✅ **CRDT resolve** (GM e jogador movendo o mesmo token) |
+  | **Cursores/awareness do GM** | ❌ | ❌ | ✅ Awareness nativo |
+  | **Auth de sessão (T1.7)** | Handshake com token no upgrade (ou `params` na URL) | Handshake middleware | `params` na URL + close codes **4400–4499** p/ sessão expirada (alinha com a T3.3) |
+  | **Fallback** | SSE existente (`/api/rooms/:code/stream`) | HTTP long-polling (irrelevante — já temos SSE) | — |
+  | **Complexidade operacional** | Baixa (mesmo processo Express) | Média | Média-alta (Hocuspocus é serviço/pipeline separado com persistência própria) |
+
+  ➡️ **DECISÃO (T5.1): transporte híbrido.**
+  1. **Transporte base (T5.2): WebSocket puro com `ws`** (zero dependências novas) para chat, rolagens, iniciativa e sala — mensagens JSON sobre o mesmo servidor Express, handshake autenticado pelo token de sessão (T1.7), broadcast por sala via `roomManager`, reconexão reaproveitando o padrão da T3.3. **SSE mantido como fallback** durante e após a transição.
+  2. **Grid tático (T5.3): Yjs v13** integrado ao **mesmo** WebSocket (handler `y-protocols` sync + awareness no servidor), sem Hocuspocus como serviço separado — o servidor Express continua autoritativo e converte o estado Yjs para o `tacticalGrid` JSON a cada debounce (reusando o `roomPersistence`, decisão T3.5: **JSON continua como verdade durável**).
+  3. **Rolagens (T5.4): RNG server-authoritative** — o servidor gera e broadcasta o resultado.
+
+  ❌ **Rejeitados:** **Socket.IO** (overhead de framing, protocolo proprietário — cliente e servidor presos à lib, +10 KB no bundle — e **não resolve o problema central**: conflitos concorrentes no grid, pois não é CRDT; reconexão e fallback já resolvidos por T3.3/SSE) e **Hocuspocus standalone** (adiciona serviço/persistência própria que conflita com a decisão T3.5; integrar Yjs ao handler `ws` existente é mais leve e mantém o Express autoritativo).
 - [ ] **T5.2** Implementar transporte: substituir/encapsular SSE por WebSocket para o grid tático, tokens, iniciativa e chat da mesa (manter SSE como fallback durante transição).
 - [ ] **T5.3** Integrar Yjs ao `TacticalGrid` (tokens como estado CRDT; awareness para cursores do GM).
 - [ ] **T5.4** Rolar dados no servidor (RNG server-authoritative) e broadcast do resultado.
@@ -331,7 +352,7 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 
 > 🔒 **Incidente de segurança resolvido em 08/08/2026 (pós-Fase 3):** o GitHub Secret Scanning detectou a **Web API Key do Firebase antigo** (`AIzaSy[REDIGIDO]`, projeto `concise-waters-p1ttq`) commitada na Fase 0 (`src/lib/firebase.ts`, removido na T2.15) e ainda presente no HEAD em `docs/legacy/firebase-applet-config.json`. Correção completa: (1) chave substituída por placeholder `REMOVIDA-SEGURANCA` no HEAD (commit `e618832`); (2) **história reescrita** com `git filter-branch` — todos os 23 commits purgados, refs originais + reflog + GC eliminados, zero ocorrências em qualquer blob; (3) force push + alerta GitHub marcado como **resolved/revoked**. Verificado: o **Google OAuth Client Secret** (GOCSPX-) nunca vazou (só em `supabase/.env` gitignored); chaves `service_role` nunca vazaram. ⚠️ **Ação pendente do usuário:** revogar/rotacionar a API Key no Google Cloud Console (APIs & Services → Credentials) — o projeto Firebase antigo pode ser excluído. Repo foi **criado em 08/08/2026** (público, `tavinholoco/NetsheetEngine`), CI GitHub Actions verde (tsc + build + smoke em Node 20/22).
 
-**Última atualização:** 08/08/2026 — **revisão v1.13**: Fases 0, 1, 2, **3 e 4 concluídas** (Fase 4: T4.1–T4.4 em 08/08/2026). Fase 4 entregue: **estado global com Zustand** (`zustand@^5`) em `src/stores/` — `useSheetStore` (bridge com `useCharacterSheet`: persistência cloud/local/autosave preservada), `useRoomStore` (sala multiplayer reativa), `useRollStore` (histórico/banner + broadcast), `useUiStore` (abas, auth modal, toasts) — eliminando o prop drilling do `App.tsx` (CyberpunkMenu, DiceRoller, PresetsManager, UserProfile e MultiplayerRoom leem das stores; props reduzidas a callbacks). Decisão de arquitetura: **bridge em vez de reescrever a persistência** da ficha para não arriscar regressão na T2.13; `syncSheetStore` espelha o hook na store a cada render. Também em 08/08/2026: **gitleaks integrado ao CI** (varredura de segredos em todo push/PR + SARIF na aba Security) e incidente da Firebase API Key resolvido e documentado.
+**Última atualização:** 08/08/2026 — **revisão v1.14**: Fases 0, 1, 2, 3 e 4 concluídas; **Fase 5 em andamento — T5.1 concluída** (decisão documentada: **WebSocket puro `ws` como transporte base** para chat/rolls/iniciativa — zero deps novas, reconexão via T3.3, SSE como fallback — + **Yjs v13 só no TacticalGrid** como CRDT para tokens e awareness de cursores, integrado ao mesmo WebSocket sem Hocuspocus separado; **RNG server-authoritative** na T5.4; Socket.IO rejeitado). Fase 4 entregue: **estado global com Zustand** (`zustand@^5`) em `src/stores/` — `useSheetStore` (bridge com `useCharacterSheet`: persistência cloud/local/autosave preservada), `useRoomStore` (sala multiplayer reativa), `useRollStore` (histórico/banner + broadcast), `useUiStore` (abas, auth modal, toasts) — eliminando o prop drilling do `App.tsx` (CyberpunkMenu, DiceRoller, PresetsManager, UserProfile e MultiplayerRoom leem das stores; props reduzidas a callbacks). Decisão de arquitetura: **bridge em vez de reescrever a persistência** da ficha para não arriscar regressão na T2.13; `syncSheetStore` espelha o hook na store a cada render. Também em 08/08/2026: **gitleaks integrado ao CI** (varredura de segredos em todo push/PR + SARIF na aba Security) e incidente da Firebase API Key resolvido e documentado.
 Fase 2 (progresso 2.1–2.8/2.10–2.16): ambiente local **rodando** (Docker Desktop instalado; `supabase start` no ar:
 API `127.0.0.1:54321`, Studio `54323`, Postgres `54322`); migrations **0001** (schema + RLS + triggers),
 **0002** (Realtime p/ `direct_messages`/`profiles`/`friend_requests` + bucket `avatars` com RLS de pasta)

@@ -282,7 +282,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'Estado Frontend: Zustand',
       objective: 'Eliminar prop drilling e re-renders em cascata (P2 média).',
       priority: 'P2',
-      status: 'pendente',
+      status: 'concluído',
       tasks: [
         { code: 'T4.1', title: 'Stores: sheet, room, roll, ui', status: 'concluído' },
         { code: 'T4.2', title: 'Refatorar App.tsx para consumir stores', status: 'concluído' },
@@ -298,7 +298,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       priority: 'P2',
       status: 'pendente',
       tasks: [
-        { code: 'T5.1', title: 'Avaliar Yjs+Hocuspocus vs Socket.IO', status: 'pendente' },
+        { code: 'T5.1', title: 'Avaliar Yjs+Hocuspocus vs Socket.IO', status: 'concluído' },
         { code: 'T5.2', title: 'Transporte WebSocket com SSE como fallback', status: 'pendente' },
         { code: 'T5.3', title: 'TacticalGrid com Yjs (tokens CRDT)', status: 'pendente' },
         { code: 'T5.4', title: 'RNG server-authoritative', status: 'pendente' },
