@@ -1,19 +1,6 @@
-import React from 'react';
+import React, { lazy, Suspense, useEffect, useRef } from 'react';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { CyberpunkMenu, TabType } from './components/CyberpunkMenu';
-import { HomePage } from './components/HomePage';
-import { PrdViewer } from './components/PrdViewer';
-import { CharacterHeader } from './components/CharacterSheet/CharacterHeader';
-import { StatBlock } from './components/CharacterSheet/StatBlock';
-import { HealthTracker } from './components/CharacterSheet/HealthTracker';
-import { CyberwareManager } from './components/CharacterSheet/CyberwareManager';
-import { SkillsSection } from './components/CharacterSheet/SkillsSection';
-import { WeaponsArmor } from './components/CharacterSheet/WeaponsArmor';
-import { LifepathGenerator } from './components/CharacterSheet/LifepathGenerator';
-import { DiceRoller } from './components/DiceRoller';
-import { AiAssistant } from './components/AiAssistant';
-import { PresetsManager } from './components/PresetsManager';
-import { MultiplayerRoom } from './components/MultiplayerRoom';
-import { UserProfile } from './components/UserProfile';
 import { AuthModal } from './components/AuthModal';
 import { RollResult, StatName } from './types/cyberpunk';
 import { useCharacterSheet } from './hooks/useCharacterSheet';
@@ -24,7 +11,32 @@ import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
 // Fase 6 (T6.3) — motor de dados FNFF (audit trail via @dice-roller)
 import { rollSkill, rollDamage, rollDeathSave } from './utils/diceEngine';
-import { Dice5, Save, CheckCircle2, Plus, Lock } from 'lucide-react';
+// Fase 7 (T7.1) — mapas de rota ↔ aba do menu
+import { pathToTab, tabToPath } from './router';
+import { Dice5, CheckCircle2 } from 'lucide-react';
+
+// ===========================================================================
+// FASE 7 (T7.1) — PÁGINAS COM LAZY LOADING (code-splitting por rota)
+// Cada módulo vira um chunk separado no bundle; o Suspense mostra o fallback
+// enquanto o chunk carrega.
+// ===========================================================================
+const HomePageLazy = lazy(() => import('./components/HomePage').then((m) => ({ default: m.HomePage })));
+const PrdViewerLazy = lazy(() => import('./components/PrdViewer').then((m) => ({ default: m.PrdViewer })));
+const SheetPageLazy = lazy(() => import('./pages/SheetPage').then((m) => ({ default: m.SheetPage })));
+const DiceRollerLazy = lazy(() => import('./components/DiceRoller').then((m) => ({ default: m.DiceRoller })));
+const AiAssistantLazy = lazy(() => import('./components/AiAssistant').then((m) => ({ default: m.AiAssistant })));
+const MultiplayerRoomLazy = lazy(() => import('./components/MultiplayerRoom').then((m) => ({ default: m.MultiplayerRoom })));
+const RoomPageLazy = lazy(() => import('./pages/RoomPage').then((m) => ({ default: m.RoomPage })));
+const PresetsManagerLazy = lazy(() => import('./components/PresetsManager').then((m) => ({ default: m.PresetsManager })));
+const UserProfileLazy = lazy(() => import('./components/UserProfile').then((m) => ({ default: m.UserProfile })));
+const NotFoundLazy = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
+
+/** Placeholder exibido enquanto o chunk da rota carrega. */
+const RouteFallback: React.FC = () => (
+  <div className="flex items-center justify-center py-20 font-mono text-slate-500 animate-pulse">
+    <span className="text-xs uppercase tracking-widest">Carregando módulo da Net...</span>
+  </div>
+);
 
 export default function App() {
   // Fase 4 (T4.1/T4.2) — estado global via Zustand (sem prop drilling)
@@ -61,6 +73,36 @@ export default function App() {
 
   // Activity status tracking (online, inativo after 1min, em jogo when in multiplayer tab)
   const activityStatus = useUserActivity(user?.uid, activeTab === 'multiplayer');
+
+  // Fase 7 (T7.1) — URL ↔ aba ativa: navegar muda a URL e a URL destaca o menu.
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Guarda a aba que veio da URL — cliques no menu (que mudam activeTab sem
+  // URL) precisam navegar; mudanças de aba causadas pela URL não podem.
+  const tabFromUrlRef = useRef<TabType | null>(null);
+  // No primeiro render a URL já é a fonte de verdade — o efeito "aba→URL" não
+  // pode navegar (senão um deep link /room/NC-2020 seria redirecionado para /).
+  const isFirstRenderRef = useRef(true);
+
+  // URL → aba (deep links e reload mantêm o destaque do menu correto)
+  useEffect(() => {
+    const tab = pathToTab(location.pathname);
+    if (tab) {
+      tabFromUrlRef.current = tab;
+      setActiveTab(tab);
+    }
+  }, [location.pathname, setActiveTab]);
+
+  // aba → URL (cliques no menu / onNavigate / onNavigateToSheetCreator)
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return; // mount: a URL manda — não redirecionar
+    }
+    if (activeTab === tabFromUrlRef.current) return; // veio da URL — não navegar
+    const path = tabToPath(activeTab);
+    if (path) navigate(path);
+  }, [activeTab, navigate]);
 
   const handleSaveCurrentSheet = async () => {
     if (!user) {
@@ -234,152 +276,85 @@ export default function App() {
 
           {/* Main Content Render Area */}
           <main className="flex-1">
-            {/* TAB 0: HOME / INÍCIO OVERVIEW */}
-            {activeTab === 'home' && <HomePage onNavigate={setActiveTab} />}
-
-            {/* TAB 1: PRD DOCUMENTATION & ARCHITECTURE */}
-            {activeTab === 'prd' && <PrdViewer />}
-
-            {/* TAB 2: CHARACTER SHEET GENERATOR */}
-            {activeTab === 'sheet' && (
-              <div className="space-y-6">
-                {/* Header / Identity */}
-                <CharacterHeader sheet={sheet} onChange={handleUpdateSheet} />
-
-                {/* Health & Wound Tracker */}
-                <HealthTracker
-                  sheet={sheet}
-                  onChange={handleUpdateSheet}
-                  onRollDeathSave={handleRollDeathSave}
+            {/* Fase 7 (T7.1) — rotas com lazy loading (URLs reais + deep links) */}
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/" element={<HomePageLazy onNavigate={setActiveTab} />} />
+                <Route path="/prd" element={<PrdViewerLazy />} />
+                <Route
+                  path="/sheet"
+                  element={
+                    <SheetPageLazy
+                      sheet={sheet}
+                      onChange={handleUpdateSheet}
+                      onRollDeathSave={handleRollDeathSave}
+                      onRollWeaponAttack={handleRollWeaponAttack}
+                      onRollDamageOnly={handleRollDamageOnly}
+                      onRollSkill={handleRollSkill}
+                      user={user}
+                      isSavingSheet={isSavingSheet}
+                      onSave={handleSaveCurrentSheet}
+                      onSaveAndReset={handleSaveAndResetSheet}
+                    />
+                  }
                 />
-
-                {/* Primary & Derived Stats */}
-                <StatBlock sheet={sheet} onChange={handleUpdateSheet} />
-
-                {/* Cyberware & Humanity */}
-                <CyberwareManager sheet={sheet} onChange={handleUpdateSheet} />
-
-                {/* Weapons & Armor SP */}
-                <WeaponsArmor
-                  sheet={sheet}
-                  onChange={handleUpdateSheet}
-                  onRollWeaponAttack={handleRollWeaponAttack}
-                  onRollDamageOnly={handleRollDamageOnly}
+                <Route
+                  path="/dice"
+                  element={
+                    <DiceRollerLazy
+                      onAddRoll={handleAddRollResult}
+                      onClearHistory={() => useRollStore.getState().clearHistory()}
+                    />
+                  }
                 />
-
-                {/* Skills Tree */}
-                <SkillsSection
-                  sheet={sheet}
-                  onChange={handleUpdateSheet}
-                  onRollSkill={handleRollSkill}
+                <Route
+                  path="/ai"
+                  element={
+                    <AiAssistantLazy
+                      sheet={sheet}
+                      onChange={handleUpdateSheet}
+                      user={user}
+                      onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
+                    />
+                  }
                 />
-
-                {/* Lifepath Narrative */}
-                <LifepathGenerator sheet={sheet} onChange={handleUpdateSheet} />
-
-                {/* BOTTOM ACTION BAR: SAVE SHEET & OPTIONS */}
-                <div className="bg-slate-950 border-2 border-cyan-500/60 rounded-xl p-6 shadow-[0_0_25px_rgba(6,182,212,0.2)] flex flex-col lg:flex-row items-center justify-between gap-6 font-mono">
-                  <div className="space-y-1.5 text-center lg:text-left">
-                    <div className="flex items-center justify-center lg:justify-start space-x-2">
-                      <Save className="w-5 h-5 text-cyan-400" />
-                      <h3 className="text-base font-bold text-cyan-400 uppercase tracking-wider">
-                        Gerenciamento da Ficha // {user ? (sheet.handle || 'Edgerunner') : 'Modo Visitante'}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-slate-300 max-w-xl">
-                      {user ? (
-                        <>Edição em andamento da ficha de <strong className="text-yellow-400">{sheet.handle || 'Edgerunner'}</strong> ({sheet.role}). Sincronizada com seu perfil na nuvem.</>
-                      ) : (
-                        <>Você está visualizando o criador de ficha no <strong>Modo Visitante</strong>. Crie uma conta ou faça login para salvar permanentemente suas fichas na nuvem.</>
-                      )}
-                    </p>
-                    <div className="text-[10px] text-slate-500 font-mono">
-                      ID: <span className="text-cyan-500">{sheet.id}</span> • Status: <span className="text-emerald-400 font-bold">{user ? 'Auto-Sincronização Ativa' : 'Modo Visitante'}</span>
-                    </div>
-                  </div>
-
-                  {user ? (
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-                      {/* Main Update/Save Button */}
-                      <button
-                        onClick={handleSaveCurrentSheet}
-                        disabled={isSavingSheet}
-                        className="w-full sm:w-auto px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs uppercase rounded tracking-wider shadow-[0_0_18px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-black" />
-                        <span>{isSavingSheet ? 'Salvando...' : 'Salvar Alterações da Ficha'}</span>
-                      </button>
-
-                      {/* Optional Save & Reset for New Character */}
-                      <button
-                        onClick={handleSaveAndResetSheet}
-                        disabled={isSavingSheet}
-                        className="w-full sm:w-auto px-5 py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-yellow-400 font-bold text-xs uppercase rounded transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                        title="Salva a ficha atual e inicia uma nova ficha em branco"
-                      >
-                        <Plus className="w-4 h-4 text-yellow-400" />
-                        <span>Nova Ficha em Branco</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="bg-yellow-950/60 border border-yellow-500/60 p-3.5 rounded-lg text-xs font-mono text-yellow-300 flex items-center space-x-3">
-                      <Lock className="w-5 h-5 text-yellow-400 shrink-0" />
-                      <div>
-                        <span className="font-bold block uppercase text-yellow-400">Modo Visitante</span>
-                        <span className="text-slate-300">Acesse sua conta para salvar suas fichas permanentemente na nuvem.</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 3: DICE ROLLER & COMBAT LOG */}
-            {activeTab === 'dice' && (
-              <DiceRoller
-                onAddRoll={handleAddRollResult}
-                onClearHistory={() => useRollStore.getState().clearHistory()}
-              />
-            )}
-
-            {/* TAB 4: NETRUNNER AI ASSISTANT */}
-            {activeTab === 'ai' && (
-              <AiAssistant
-                sheet={sheet}
-                onChange={handleUpdateSheet}
-                user={user}
-                onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
-              />
-            )}
-
-            {/* TAB 5: MULTIPLAYER VIRTUAL TABLE */}
-            {activeTab === 'multiplayer' && (
-              <MultiplayerRoom onOpenAuthModal={() => useUiStore.getState().openAuthModal()} />
-            )}
-
-            {/* TAB 6: PRESET CHARACTERS & IMPORT/EXPORT */}
-            {activeTab === 'presets' && (
-              <PresetsManager
-                onLoadSheet={loadSheet}
-                onLoadPresetAsNewSheet={loadPresetAsNewSheet}
-                onCreateNew={createNewCharacter}
-                onDeleteSheet={deleteCharacter}
-                onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
-              />
-            )}
-
-            {/* TAB 7: USER PROFILE */}
-            {activeTab === 'profile' && (
-              <UserProfile
-                activityStatus={activityStatus}
-                onLoadSheet={loadSheet}
-                onDeleteSheet={deleteCharacter}
-                onCreateNewSheet={createNewCharacter}
-                onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
-                onNavigateToSheetCreator={() => useUiStore.getState().setActiveTab('sheet')}
-                onLogout={handleLogout}
-              />
-            )}
+                <Route
+                  path="/multiplayer"
+                  element={<MultiplayerRoomLazy onOpenAuthModal={() => useUiStore.getState().openAuthModal()} />}
+                />
+                <Route
+                  path="/room/:code"
+                  element={<RoomPageLazy onOpenAuthModal={() => useUiStore.getState().openAuthModal()} />}
+                />
+                <Route
+                  path="/presets"
+                  element={
+                    <PresetsManagerLazy
+                      onLoadSheet={loadSheet}
+                      onLoadPresetAsNewSheet={loadPresetAsNewSheet}
+                      onCreateNew={createNewCharacter}
+                      onDeleteSheet={deleteCharacter}
+                      onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
+                    />
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <UserProfileLazy
+                      activityStatus={activityStatus}
+                      onLoadSheet={loadSheet}
+                      onDeleteSheet={deleteCharacter}
+                      onCreateNewSheet={createNewCharacter}
+                      onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
+                      onNavigateToSheetCreator={() => useUiStore.getState().setActiveTab('sheet')}
+                      onLogout={handleLogout}
+                    />
+                  }
+                />
+                <Route path="*" element={<NotFoundLazy />} />
+              </Routes>
+            </Suspense>
           </main>
 
           {/* Immersive Footer Bar */}
