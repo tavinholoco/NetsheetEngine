@@ -284,10 +284,10 @@ export const PRD_DOCUMENT: PrdDocument = {
       priority: 'P2',
       status: 'pendente',
       tasks: [
-        { code: 'T4.1', title: 'Stores: sheet, room, roll, ui', status: 'pendente' },
-        { code: 'T4.2', title: 'Refatorar App.tsx para consumir stores', status: 'pendente' },
-        { code: 'T4.3', title: 'MultiplayerRoom migrado para useRoomStore', status: 'pendente' },
-        { code: 'T4.4', title: 'Validação tsc + testes manuais', status: 'pendente' }
+        { code: 'T4.1', title: 'Stores: sheet, room, roll, ui', status: 'concluído' },
+        { code: 'T4.2', title: 'Refatorar App.tsx para consumir stores', status: 'concluído' },
+        { code: 'T4.3', title: 'MultiplayerRoom migrado para useRoomStore', status: 'concluído' },
+        { code: 'T4.4', title: 'Validação tsc + testes manuais', status: 'concluído' }
       ]
     },
     {

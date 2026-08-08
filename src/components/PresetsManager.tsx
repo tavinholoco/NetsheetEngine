@@ -1,30 +1,29 @@
 import React, { useState } from 'react';
 import { CharacterSheet } from '../types/cyberpunk';
 import { generateRandomNpc } from '../utils/npcGenerator';
-import { SheetMeta } from '../lib/supabase';
 import { Swords, Copy, Trash2, Upload, Download, Plus, User, Lock } from 'lucide-react';
+import { useSheetStore } from '../stores/useSheetStore';
 
 interface PresetsManagerProps {
-  currentSheet: CharacterSheet;
   onLoadSheet: (id: string) => void;
   onLoadPresetAsNewSheet: (preset: CharacterSheet) => void;
   onCreateNew: () => void;
-  roster: SheetMeta[];
   onDeleteSheet: (id: string) => void;
-  user: { uid: string; displayName?: string | null } | null;
   onOpenAuthModal: () => void;
 }
 
 export const PresetsManager: React.FC<PresetsManagerProps> = ({
-  currentSheet,
   onLoadSheet,
   onLoadPresetAsNewSheet,
   onCreateNew,
-  roster,
   onDeleteSheet,
-  user,
   onOpenAuthModal
 }) => {
+  // Fase 4 (T4.2) — ficha/roster/user via stores (sem prop drilling)
+  const currentSheet = useSheetStore((s) => s.sheet);
+  const roster = useSheetStore((s) => s.roster);
+  const user = useSheetStore((s) => s.user);
+
   const [presets, setPresets] = useState<CharacterSheet[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('cyberpunk_presets_v1') || '[]');

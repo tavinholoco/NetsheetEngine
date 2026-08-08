@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { CharacterSheet, RollResult, StatName } from '../types/cyberpunk';
+import { RollResult, StatName } from '../types/cyberpunk';
 import { Dice5, History, Trash2, Target, HeartPulse, Zap } from 'lucide-react';
+import { useSheetStore } from '../stores/useSheetStore';
+import { useRollStore } from '../stores/useRollStore';
 
 interface DiceRollerProps {
-  sheet: CharacterSheet;
-  rollHistory: RollResult[];
   onAddRoll: (roll: RollResult) => void;
   onClearHistory: () => void;
 }
@@ -17,7 +17,11 @@ function rollD10(): number {
   return Math.floor(Math.random() * 10) + 1;
 }
 
-export const DiceRoller: React.FC<DiceRollerProps> = ({ sheet, rollHistory, onAddRoll, onClearHistory }) => {
+export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistory }) => {
+  // Fase 4 (T4.2) — sheet e rollHistory via stores (sem prop drilling)
+  const sheet = useSheetStore((s) => s.sheet);
+  const rollHistory = useRollStore((s) => s.rollHistory);
+
   const [tab, setTab] = useState<DiceTab>('skill');
   const [skillName, setSkillName] = useState('Handgun');
   const [skillStat, setSkillStat] = useState<StatName>('REF');

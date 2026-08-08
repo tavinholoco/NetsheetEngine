@@ -26,15 +26,13 @@ import { User, generateCyberpunkId, fetchUserProfile } from '../lib/supabase';
 import { ActivityStatus } from '../hooks/useUserActivity';
 import { PatchNotesFeed } from './PatchNotesFeed';
 import { FriendsList } from './FriendsList';
+import { useUiStore } from '../stores/useUiStore';
+import { useSheetStore } from '../stores/useSheetStore';
 
 export type TabType = 'home' | 'multiplayer' | 'sheet' | 'presets' | 'ai' | 'dice' | 'prd' | 'profile';
 
 interface CyberpunkMenuProps {
-  activeTab: TabType;
-  setActiveTab: (tab: TabType) => void;
-  characterName: string;
-  characterRole: string;
-  user?: User | null;
+  /** Fase 4 (T4.2) — aba e usuário vêm das stores; props mínimas para callbacks. */
   activityStatus?: ActivityStatus;
   onOpenAuth?: () => void;
   onLogout?: () => void;
@@ -111,14 +109,15 @@ const MENU_ITEMS = [
 ];
 
 export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
-  activeTab,
-  setActiveTab,
-  characterName,
-  user,
   activityStatus = 'online',
   onOpenAuth,
   onLogout
 }) => {
+  // Fase 4 (T4.2) — estado global via Zustand (sem prop drilling)
+  const activeTab = useUiStore((s) => s.activeTab);
+  const setActiveTab = useUiStore((s) => s.setActiveTab);
+  const user = useSheetStore((s) => s.user);
+
   const [avatarIconKey, setAvatarIconKey] = useState<string>('cpu');
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [showPatchNotes, setShowPatchNotes] = useState<boolean>(true);

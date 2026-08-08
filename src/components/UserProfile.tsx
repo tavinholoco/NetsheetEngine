@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  SheetMeta,
   fetchUserProfile,
   uploadAvatar,
   removeAvatar
 } from '../lib/supabase';
 import { ActivityStatus } from '../hooks/useUserActivity';
+import { useSheetStore } from '../stores/useSheetStore';
 import {
   User as UserIcon,
   LogOut,
@@ -21,11 +21,7 @@ import {
 } from 'lucide-react';
 
 interface UserProfileProps {
-  user: { uid: string; displayName?: string | null; email?: string | null } | null;
-  authLoading: boolean;
   activityStatus: ActivityStatus;
-  roster: SheetMeta[];
-  activeSheetId: string;
   onLoadSheet: (id: string) => void;
   onDeleteSheet: (id: string) => void;
   onCreateNewSheet: () => void;
@@ -41,11 +37,7 @@ const STATUS_META: Record<ActivityStatus, { label: string; cls: string }> = {
 };
 
 export const UserProfile: React.FC<UserProfileProps> = ({
-  user,
-  authLoading,
   activityStatus,
-  roster,
-  activeSheetId,
   onLoadSheet,
   onDeleteSheet,
   onCreateNewSheet,
@@ -53,6 +45,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   onNavigateToSheetCreator,
   onLogout
 }) => {
+  // Fase 4 (T4.2) — user/roster/authLoading via stores (sem prop drilling)
+  const user = useSheetStore((s) => s.user);
+  const authLoading = useSheetStore((s) => s.authLoading);
+  const roster = useSheetStore((s) => s.roster);
+  const activeSheetId = useSheetStore((s) => s.sheet.id);
+
   const status = STATUS_META[activityStatus] || STATUS_META['online'];
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);

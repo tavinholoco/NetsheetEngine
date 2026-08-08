@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CharacterSheet } from '../types/cyberpunk';
+import { CharacterSheet, RollResult } from '../types/cyberpunk';
 import {
-  GameRoom,
   RoomPlayer,
   ChatMessage,
   InitiativeEntry,
   TacticalGridState
 } from '../types/multiplayer';
 import { TacticalGrid } from './TacticalGrid';
+import { useRoomStore } from '../stores/useRoomStore';
+import { useSheetStore } from '../stores/useSheetStore';
+import { useRollStore } from '../stores/useRollStore';
+import { useUiStore } from '../stores/useUiStore';
 import {
   Radio,
   Users,
@@ -26,14 +29,8 @@ import {
 } from 'lucide-react';
 
 interface MultiplayerRoomProps {
-  sheet: CharacterSheet;
-  onUpdateSheet: (updated: Partial<CharacterSheet>) => void;
-  onRollDice: (roll: any) => void;
-  user: { uid: string; displayName?: string | null } | null;
   onOpenAuthModal: () => void;
 }
-
-type RoomView = 'lobby' | 'active';
 
 interface RoomTab {
   id: 'chat' | 'grid' | 'initiative';
@@ -44,13 +41,30 @@ function generatePeerId(): string {
   return 'peer_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
 }
 
-export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdateSheet, onRollDice, user, onOpenAuthModal }) => {
-  const [view, setView] = useState<RoomView>('lobby');
-  const [roomCode, setRoomCode] = useState('');
+export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModal }) => {
+  // Fase 4 (T4.3) — estado da sala vem da useRoomStore
+  const view = useRoomStore((s) => s.view);
+  const setView = useRoomStore((s) => s.setView);
+  const roomCode = useRoomStore((s) => s.roomCode);
+  const setRoomCode = useRoomStore((s) => s.setRoomCode);
+  const room = useRoomStore((s) => s.room);
+  const setRoom = useRoomStore((s) => s.setRoom);
+  const peerId = useRoomStore((s) => s.peerId);
+  const setPeerId = useRoomStore((s) => s.setPeerId);
+  const sessionToken = useRoomStore((s) => s.sessionToken);
+  const setSessionToken = useRoomStore((s) => s.setSessionToken);
+  const activeRooms = useRoomStore((s) => s.activeRooms);
+  const setActiveRooms = useRoomStore((s) => s.setActiveRooms);
+  const errorMsg = useRoomStore((s) => s.errorMsg);
+  const setErrorMsg = useRoomStore((s) => s.setErrorMsg);
+  const resetRoom = useRoomStore((s) => s.resetRoom);
+
+  // Fase 4 — dados da ficha/user/rolagem via stores (sem props)
+  const sheet = useSheetStore((s) => s.sheet);
+  const user = useSheetStore((s) => s.user);
+  const addRoll = useRollStore((s) => s.addRoll);
+
   const [roomName, setRoomName] = useState('Mesa de Night City');
-  const [room, setRoom] = useState<GameRoom | null>(null);
-  const [peerId, setPeerId] = useState<string>(() => sessionStorage.getItem('cyberpunk_peer_id') || '');
-  const [sessionToken, setSessionToken] = useState<string>(() => sessionStorage.getItem('cyberpunk_session_token') || '');
   const [chatInput, setChatInput] = useState('');
   const [tab, setTab] = useState<RoomTab['id']>('chat');
   const [initiativeName, setInitiativeName] = useState('');
@@ -58,11 +72,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
   const [selectedHealthPlayer, setSelectedHealthPlayer] = useState<RoomPlayer | null>(null);
   const [inspectedPlayer, setInspectedPlayer] = useState<RoomPlayer | null>(null);
   const [showRoomList, setShowRoomList] = useState(false);
-  const [activeRooms, setActiveRooms] = useState<{ code: string; name: string; gmHandle: string; playersCount: number }[]>([]);
-  const [errorMsg, setErrorMsg] = useState('');
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  // Fase 3 (T3.3) — refs com o valor corrente para auto-reconexão sem closures stale
+  // Fase 3 (T3.3) — ref com o valor corrente do token para auto-reconexão sem closures stale
   const sessionTokenRef = useRef(sessionToken);
   sessionTokenRef.current = sessionToken;
   const reconnectInFlightRef = useRef<Promise<boolean> | null>(null);
@@ -73,13 +85,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
   const npcs = room?.npcs || {};
 
   const ensurePeerId = () => {
-    if (!peerId) {
+    const cur = useRoomStore.getState();
+    if (!cur.peerId) {
       const id = generatePeerId();
-      setPeerId(id);
+      cur.setPeerId(id);
       sessionStorage.setItem('cyberpunk_peer_id', id);
       return id;
     }
-    return peerId;
+    return cur.peerId;
   };
 
   // Fase 3 (T3.3) — re-join automático com o MESMO peerId após o servidor
@@ -89,25 +102,28 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     if (reconnectInFlightRef.current) return reconnectInFlightRef.current;
     const attempt = (async () => {
       try {
+        const code = useRoomStore.getState().roomCode;
         const id = ensurePeerId();
+        const curSheet = useSheetStore.getState().sheet;
+        const curHandle = useSheetStore.getState().user?.displayName || curSheet.handle || 'Edgerunner';
         const res = await fetch('/api/rooms/join', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: roomCode, peerId: id, handle, sheet })
+          body: JSON.stringify({ code, peerId: id, handle: curHandle, sheet: curSheet })
         });
         const data = await res.json();
         if (!res.ok) {
-          setErrorMsg('Sessão expirada e reconexão falhou — a sala pode ter sido encerrada. Saia e entre novamente.');
+          useRoomStore.getState().setErrorMsg('Sessão expirada e reconexão falhou — a sala pode ter sido encerrada. Saia e entre novamente.');
           return false;
         }
         sessionTokenRef.current = data.sessionToken;
-        setSessionToken(data.sessionToken);
+        useRoomStore.getState().setSessionToken(data.sessionToken);
         sessionStorage.setItem('cyberpunk_session_token', data.sessionToken);
-        setRoom(data.room);
-        setErrorMsg('');
+        useRoomStore.getState().setRoom(data.room);
+        useRoomStore.getState().setErrorMsg('');
         return true;
       } catch {
-        setErrorMsg('Sessão expirada e reconexão falhou. Verifique a conexão com o servidor.');
+        useRoomStore.getState().setErrorMsg('Sessão expirada e reconexão falhou. Verifique a conexão com o servidor.');
         return false;
       }
     })();
@@ -117,7 +133,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     } finally {
       reconnectInFlightRef.current = null;
     }
-  }, [roomCode, peerId, handle, sheet]);
+  }, [peerId, handle, sheet]);
 
   // POST autenticado com retry: se o servidor reiniciou e o token expirou (401
   // "Sessão inválida"), reconecta automaticamente e re-tenta a ação original.
@@ -142,8 +158,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     const load = () => {
       fetch('/api/rooms')
         .then((r) => r.json())
-        .then((data) => setActiveRooms(data))
-        .catch(() => setActiveRooms([]));
+        .then((data) => useRoomStore.getState().setActiveRooms(data))
+        .catch(() => useRoomStore.getState().setActiveRooms([]));
     };
     load();
     const iv = setInterval(load, 8000);
@@ -157,7 +173,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     eventSourceRef.current = es;
     es.onmessage = (ev) => {
       try {
-        setRoom(JSON.parse(ev.data));
+        useRoomStore.getState().setRoom(JSON.parse(ev.data));
       } catch {
         /* ignore */
       }
@@ -221,10 +237,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
         setErrorMsg(data?.error || 'Erro ao criar sala.');
         return;
       }
-      setSessionToken(data.sessionToken);
+      useRoomStore.getState().setSessionToken(data.sessionToken);
       sessionStorage.setItem('cyberpunk_session_token', data.sessionToken);
-      setRoom(data.room);
-      setView('active');
+      useRoomStore.getState().setRoom(data.room);
+      useRoomStore.getState().setView('active');
     } catch (e) {
       setErrorMsg('Falha de conexão com o servidor.');
     }
@@ -246,11 +262,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
         setErrorMsg(data?.error || 'Sala não encontrada.');
         return;
       }
-      setSessionToken(data.sessionToken);
+      useRoomStore.getState().setSessionToken(data.sessionToken);
       sessionStorage.setItem('cyberpunk_session_token', data.sessionToken);
-      setRoomCode(targetCode);
-      setRoom(data.room);
-      setView('active');
+      useRoomStore.getState().setRoomCode(targetCode);
+      useRoomStore.getState().setRoom(data.room);
+      useRoomStore.getState().setView('active');
     } catch (e) {
       setErrorMsg('Falha de conexão com o servidor.');
     }
@@ -278,7 +294,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     const d10 = Math.floor(Math.random() * 10) + 1;
     const total = d10 + ref + wa;
     const label = `Ataque (${sheet.weapons[0]?.name || 'desarmado'})`;
-    const roll = {
+    const roll: RollResult = {
       id: 'roll_' + Date.now(),
       timestamp: new Date().toLocaleTimeString(),
       characterName: handle,
@@ -292,7 +308,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
       isCriticalFailure: d10 === 1,
       details: `1d10: ${d10} + REF (${ref}) + WA (${wa}) = ${total}`
     };
-    onRollDice(roll);
+    addRoll(roll);
     sendChat(undefined, roll);
   };
 
@@ -358,16 +374,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
   };
 
   const leaveRoom = async () => {
-    if (roomCode && sessionToken) {
+    const { roomCode: code, sessionToken: token } = useRoomStore.getState();
+    if (code && token) {
       // T3.3 — authedFetch: após restart, "Sair" reconecta (token novo) e
       // então sai de fato — evita deixar player fantasma online na sala.
-      await authedFetch(`/api/rooms/${roomCode}/leave`, {}).catch(() => {});
+      await authedFetch(`/api/rooms/${code}/leave`, {}).catch(() => {});
     }
     sessionStorage.removeItem('cyberpunk_session_token');
-    setSessionToken('');
-    setRoom(null);
-    setRoomCode('');
-    setView('lobby');
+    resetRoom();
   };
 
   /* ============================================================

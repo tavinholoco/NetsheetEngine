@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { CyberpunkMenu, TabType } from './components/CyberpunkMenu';
 import { HomePage } from './components/HomePage';
 import { PrdViewer } from './components/PrdViewer';
@@ -15,25 +15,37 @@ import { PresetsManager } from './components/PresetsManager';
 import { MultiplayerRoom } from './components/MultiplayerRoom';
 import { UserProfile } from './components/UserProfile';
 import { AuthModal } from './components/AuthModal';
-import { CharacterSheet, RollResult, StatName } from './types/cyberpunk';
+import { RollResult, StatName } from './types/cyberpunk';
 import { useCharacterSheet } from './hooks/useCharacterSheet';
 import { useUserActivity } from './hooks/useUserActivity';
+import { useSheetStore, syncSheetStore } from './stores/useSheetStore';
+import { useRollStore } from './stores/useRollStore';
+import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
-import { Dice5, Flame, AlertCircle, Save, CheckCircle2, Sparkles, Plus, Radio, Cpu, Lock } from 'lucide-react';
+import { Dice5, Save, CheckCircle2, Plus, Lock } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [rollHistory, setRollHistory] = useState<RollResult[]>([]);
-  const [lastRollBanner, setLastRollBanner] = useState<RollResult | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [saveToast, setSaveToast] = useState<string | null>(null);
-  const [isSavingSheet, setIsSavingSheet] = useState(false);
+  // Fase 4 (T4.1/T4.2) — estado global via Zustand (sem prop drilling)
+  const activeTab = useUiStore((s) => s.activeTab);
+  const setActiveTab = useUiStore((s) => s.setActiveTab);
+  const isAuthModalOpen = useUiStore((s) => s.isAuthModalOpen);
+  const closeAuthModal = useUiStore((s) => s.closeAuthModal);
+  const saveToast = useUiStore((s) => s.saveToast);
+  const isSavingSheet = useUiStore((s) => s.isSavingSheet);
 
-  // Scalable custom hook for character state management & roster persistence
+  const rollHistory = useRollStore((s) => s.rollHistory);
+  const lastRollBanner = useRollStore((s) => s.lastRollBanner);
+  const addRoll = useRollStore((s) => s.addRoll);
+
+  const sheet = useSheetStore((s) => s.sheet);
+  const user = useSheetStore((s) => s.user);
+
+  // Persistência da ficha: o hook continua como fonte de verdade (cloud +
+  // localStorage + autosave) e espelha o estado na useSheetStore.
+  const sheetResult = useCharacterSheet();
+  syncSheetStore(sheetResult);
   const {
-    user,
     authLoading,
-    sheet,
     roster,
     updateSheet: handleUpdateSheet,
     loadSheet,
@@ -43,46 +55,42 @@ export default function App() {
     saveCurrentSheetAndReset,
     deleteCharacter,
     resetToBlankSheet
-  } = useCharacterSheet();
+  } = sheetResult;
 
   // Activity status tracking (online, inativo after 1min, em jogo when in multiplayer tab)
   const activityStatus = useUserActivity(user?.uid, activeTab === 'multiplayer');
 
   const handleSaveCurrentSheet = async () => {
     if (!user) {
-      setIsAuthModalOpen(true);
+      useUiStore.getState().openAuthModal();
       return;
     }
-    setIsSavingSheet(true);
+    useUiStore.getState().setSavingSheet(true);
     try {
       const savedHandle = await saveCurrentSheet();
-      setSaveToast(`Ficha de "${savedHandle}" foi atualizada e salva no seu perfil com sucesso!`);
-      setTimeout(() => setSaveToast(null), 5000);
+      useUiStore.getState().showSaveToast(`Ficha de "${savedHandle}" foi atualizada e salva no seu perfil com sucesso!`);
     } catch (e: any) {
       console.error('Error saving sheet:', e);
-      setSaveToast(`Ficha salva localmente no navegador! Aviso da nuvem: ${e?.message || 'Erro de conexão'}`);
-      setTimeout(() => setSaveToast(null), 5000);
+      useUiStore.getState().showSaveToast(`Ficha salva localmente no navegador! Aviso da nuvem: ${e?.message || 'Erro de conexão'}`);
     } finally {
-      setIsSavingSheet(false);
+      useUiStore.getState().setSavingSheet(false);
     }
   };
 
   const handleSaveAndResetSheet = async () => {
     if (!user) {
-      setIsAuthModalOpen(true);
+      useUiStore.getState().openAuthModal();
       return;
     }
-    setIsSavingSheet(true);
+    useUiStore.getState().setSavingSheet(true);
     try {
       const savedHandle = await saveCurrentSheetAndReset();
-      setSaveToast(`Ficha de "${savedHandle}" salva! Formulário limpo e novo personagem em branco iniciado.`);
-      setTimeout(() => setSaveToast(null), 5000);
+      useUiStore.getState().showSaveToast(`Ficha de "${savedHandle}" salva! Formulário limpo e novo personagem em branco iniciado.`);
     } catch (e: any) {
       console.error('Error saving sheet:', e);
-      setSaveToast(`Ficha salva localmente no navegador! Aviso da nuvem: ${e?.message || 'Erro de conexão'}`);
-      setTimeout(() => setSaveToast(null), 5000);
+      useUiStore.getState().showSaveToast(`Ficha salva localmente no navegador! Aviso da nuvem: ${e?.message || 'Erro de conexão'}`);
     } finally {
-      setIsSavingSheet(false);
+      useUiStore.getState().setSavingSheet(false);
     }
   };
 
@@ -96,14 +104,7 @@ export default function App() {
   };
 
   const handleAddRollResult = (roll: RollResult) => {
-    setRollHistory(prev => [roll, ...prev]);
-    setLastRollBanner(roll);
-    // Broadcast roll to active multiplayer room if open
-    window.dispatchEvent(new CustomEvent('cyberpunk_broadcast_roll', { detail: roll }));
-    // Auto-hide banner after 4 seconds
-    setTimeout(() => {
-      setLastRollBanner(prev => (prev?.id === roll.id ? null : prev));
-    }, 4000);
+    addRoll(roll);
   };
 
   // Roll Skill directly from Skill section
@@ -228,7 +229,7 @@ export default function App() {
       {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={closeAuthModal}
       />
 
       {/* Floating Roll Notification Banner */}
@@ -265,13 +266,8 @@ export default function App() {
       <div className="max-w-[1700px] mx-auto flex flex-col lg:flex-row min-h-screen">
         {/* LEFT COLUMN: CYBERPUNK 2077 VERTICAL MENU & PATCH NOTES */}
         <CyberpunkMenu
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          characterName={sheet.handle}
-          characterRole={sheet.role}
-          user={user}
           activityStatus={activityStatus}
-          onOpenAuth={() => setIsAuthModalOpen(true)}
+          onOpenAuth={() => useUiStore.getState().openAuthModal()}
           onLogout={handleLogout}
         />
 
@@ -319,7 +315,7 @@ export default function App() {
           {/* Main Content Render Area */}
           <main className="flex-1">
             {/* TAB 0: HOME / INÍCIO OVERVIEW */}
-            {activeTab === 'home' && <HomePage onNavigate={(tab) => setActiveTab(tab)} />}
+            {activeTab === 'home' && <HomePage onNavigate={setActiveTab} />}
 
             {/* TAB 1: PRD DOCUMENTATION & ARCHITECTURE */}
             {activeTab === 'prd' && <PrdViewer />}
@@ -421,10 +417,8 @@ export default function App() {
             {/* TAB 3: DICE ROLLER & COMBAT LOG */}
             {activeTab === 'dice' && (
               <DiceRoller
-                sheet={sheet}
-                rollHistory={rollHistory}
                 onAddRoll={handleAddRollResult}
-                onClearHistory={() => setRollHistory([])}
+                onClearHistory={() => useRollStore.getState().clearHistory()}
               />
             )}
 
@@ -434,48 +428,35 @@ export default function App() {
                 sheet={sheet}
                 onChange={handleUpdateSheet}
                 user={user}
-                onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
               />
             )}
 
             {/* TAB 5: MULTIPLAYER VIRTUAL TABLE */}
             {activeTab === 'multiplayer' && (
-              <MultiplayerRoom
-                sheet={sheet}
-                onUpdateSheet={handleUpdateSheet}
-                onRollDice={handleAddRollResult}
-                user={user}
-                onOpenAuthModal={() => setIsAuthModalOpen(true)}
-              />
+              <MultiplayerRoom onOpenAuthModal={() => useUiStore.getState().openAuthModal()} />
             )}
 
             {/* TAB 6: PRESET CHARACTERS & IMPORT/EXPORT */}
             {activeTab === 'presets' && (
               <PresetsManager
-                currentSheet={sheet}
                 onLoadSheet={loadSheet}
                 onLoadPresetAsNewSheet={loadPresetAsNewSheet}
                 onCreateNew={createNewCharacter}
-                roster={roster}
                 onDeleteSheet={deleteCharacter}
-                user={user}
-                onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
               />
             )}
 
             {/* TAB 7: USER PROFILE */}
             {activeTab === 'profile' && (
               <UserProfile
-                user={user}
-                authLoading={authLoading}
                 activityStatus={activityStatus}
-                roster={roster}
-                activeSheetId={sheet.id}
                 onLoadSheet={loadSheet}
                 onDeleteSheet={deleteCharacter}
                 onCreateNewSheet={createNewCharacter}
-                onOpenAuthModal={() => setIsAuthModalOpen(true)}
-                onNavigateToSheetCreator={() => setActiveTab('sheet')}
+                onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
+                onNavigateToSheetCreator={() => useUiStore.getState().setActiveTab('sheet')}
                 onLogout={handleLogout}
               />
             )}
