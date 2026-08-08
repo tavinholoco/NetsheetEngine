@@ -311,7 +311,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'Motor de Dados (Dice Engine)',
       objective: 'Rolagens corretas e auditáveis para FNFF (P2).',
       priority: 'P2',
-      status: 'pendente',
+      status: 'concluído',
       tasks: [
         { code: 'T6.1', title: 'Instalar @dice-roller/rpg-dice-roller', status: 'concluído' },
         { code: 'T6.2', title: 'utils/diceEngine.ts (rollSkill, rollDamage, rollDeathSave, rollLocation)', status: 'concluído' },
