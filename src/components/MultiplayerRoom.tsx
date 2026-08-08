@@ -73,6 +73,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const [inspectedPlayer, setInspectedPlayer] = useState<RoomPlayer | null>(null);
   const [showRoomList, setShowRoomList] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  // Fase 5 (T5.2) — contador para retry do WebSocket após queda (backoff simples)
+  const [wsAttempt, setWsAttempt] = useState(0);
 
   // Fase 3 (T3.3) — ref com o valor corrente do token para auto-reconexão sem closures stale
   const sessionTokenRef = useRef(sessionToken);
@@ -166,36 +169,103 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     return () => clearInterval(iv);
   }, [view]);
 
-  // Assinatura SSE quando em sala
+  // Fase 5 (T5.2) — TRANSPORTE UNIFICADO: tenta WebSocket; se não conectar
+  // (bloqueado/falhou), cai automaticamente para o SSE (EventSource). Ambos
+  // entregam o MESMO payload (room inteiro em JSON).
   useEffect(() => {
     if (view !== 'active' || !roomCode) return;
-    const es = new EventSource(`/api/rooms/${roomCode}/stream`);
-    eventSourceRef.current = es;
-    es.onmessage = (ev) => {
+    let disposed = false;
+
+    const handlePayload = (raw: string) => {
+      if (disposed) return;
       try {
-        useRoomStore.getState().setRoom(JSON.parse(ev.data));
+        useRoomStore.getState().setRoom(JSON.parse(raw));
       } catch {
         /* ignore */
       }
     };
-    es.onerror = () => {
-      // EventSource reconecta automaticamente
+
+    // Fallback SSE (comportamento original — auto-reconecta via EventSource)
+    const connectSse = () => {
+      const es = new EventSource(`/api/rooms/${roomCode}/stream`);
+      eventSourceRef.current = es;
+      es.onmessage = (ev) => handlePayload(ev.data);
+      es.onerror = () => {
+        // EventSource reconecta automaticamente
+      };
+      return es;
     };
+
+    let sse: EventSource | null = null;
+    let wsEverOpen = false;
+    const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/rooms/${roomCode}?token=${encodeURIComponent(sessionToken)}`;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      wsEverOpen = true;
+      useRoomStore.getState().setErrorMsg('');
+    };
+    ws.onmessage = (ev) => handlePayload(String(ev.data));
+    ws.onerror = () => {
+      // Sem conexão → o onclose decide o fallback SSE
+    };
+    ws.onclose = () => {
+      if (disposed) return;
+      wsRef.current = null;
+      if (!wsEverOpen && !sse) {
+        // Nunca conectou → SSE (fallback automático)
+        sse = connectSse();
+      } else if (wsEverOpen) {
+        // Caiu depois de conectar → reconecta em ~3s (token pode ter mudado
+        // via T3.3; o effect re-roda quando o token novo chega).
+        setTimeout(() => {
+          if (!disposed) setWsAttempt((a) => a + 1);
+        }, 3000);
+      }
+    };
+
     return () => {
-      es.close();
+      disposed = true;
+      ws.onclose = null;
+      if (wsRef.current === ws) wsRef.current = null;
+      try {
+        ws.close();
+      } catch {
+        /* ignore */
+      }
+      sse?.close();
       eventSourceRef.current = null;
     };
-  }, [view, roomCode]);
+  }, [view, roomCode, sessionToken, wsAttempt]);
 
-  // Fase 3 (T3.4) — heartbeat periódico: mantém isOnline=true enquanto a aba
-  // está na mesa. O servidor marca offline após o timeout (ROOM_OFFLINE_TIMEOUT_MS).
+  /** Envia uma mensagem JSON pelo WS se conectado; false = usar fallback POST. */
+  const wsSend = useCallback((msg: object): boolean => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify(msg));
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }, []);
+
+  // Fase 3 (T3.4) + Fase 5 (T5.2) — heartbeat periódico: mantém isOnline=true
+  // enquanto a aba está na mesa. Via WebSocket (baixa latência) ou POST como
+  // fallback. O servidor marca offline após o timeout (ROOM_OFFLINE_TIMEOUT_MS).
   useEffect(() => {
     if (view !== 'active' || !roomCode || !peerId || !sessionToken) return;
-    const beat = () => authedFetch(`/api/rooms/${roomCode}/heartbeat`, {}).catch(() => {});
+    const beat = () => {
+      if (wsSend({ type: 'heartbeat' })) return;
+      authedFetch(`/api/rooms/${roomCode}/heartbeat`, {}).catch(() => {});
+    };
     beat();
     const iv = setInterval(beat, 20_000); // 20s < timeout default de 60s
     return () => clearInterval(iv);
-  }, [view, roomCode, peerId, sessionToken, authedFetch]);
+  }, [view, roomCode, peerId, sessionToken, authedFetch, wsSend]);
 
   // Sincroniza a ficha na mesa APENAS quando ela muda de fato.
   // (Antes dependia de `room`, que muda a cada evento SSE, criando um loop
@@ -276,6 +346,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     const content = (text ?? chatInput).trim();
     if (!content && !rollResult) return;
     if (text === undefined) setChatInput('');
+    // Fase 5 (T5.2) — WebSocket quando disponível; fallback: POST autenticado
+    if (wsSend({ type: 'message', text: content, rollResult })) return;
     try {
       await authedFetch(`/api/rooms/${roomCode}/message`, { text: content, rollResult });
     } catch {

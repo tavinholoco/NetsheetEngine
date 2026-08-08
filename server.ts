@@ -1,8 +1,12 @@
 import express, { Response } from "express";
+import http from "http";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+// Fase 5 (T5.2) — WebSocket puro (ws, já instalado) como transporte base do
+// multiplayer. SSE mantido como fallback automático no cliente.
+import { WebSocketServer, WebSocket } from "ws";
 import {
   createRoom,
   getRoom,
@@ -88,17 +92,36 @@ function respondWithResult(res: express.Response, result: { room: { code: string
 // SSE Active Connections Map: roomCode -> Set<Response>
 const sseClients: Record<string, Set<Response>> = {};
 
+// Fase 5 (T5.2) — WebSocket Active Connections Map: roomCode -> Set<WebSocket>
+const wsClients: Record<string, Set<WebSocket>> = {};
+
+// Fase 5 (T5.2) — fecha os sockets WS de um peer (ex.: ao sair da mesa via REST)
+function closePeerSockets(code: string, peerId: string): void {
+  const sockets = wsClients[code.toUpperCase()];
+  if (!sockets) return;
+  for (const ws of sockets) {
+    if ((ws as any)._peerId === peerId) {
+      ws.close(4400, "Sessão encerrada");
+      sockets.delete(ws);
+    }
+  }
+  if (sockets.size === 0) delete wsClients[code.toUpperCase()];
+}
+
 function broadcastRoomUpdate(code: string) {
   const room = getRoom(code);
   if (!room) return;
   // Fase 3 (T3.1) — persistir a sala após cada mutação (debounce 2s)
   queueRoomPersist(code);
+  const payload = JSON.stringify(room);
+
+  // SSE (fallback) — mesmo payload JSON
   const clients = sseClients[code.toUpperCase()];
   if (clients && clients.size > 0) {
-    const payload = `data: ${JSON.stringify(room)}\n\n`;
+    const ssePayload = `data: ${payload}\n\n`;
     clients.forEach(res => {
       try {
-        res.write(payload);
+        res.write(ssePayload);
         if (typeof (res as any).flush === 'function') {
           (res as any).flush();
         }
@@ -106,6 +129,20 @@ function broadcastRoomUpdate(code: string) {
         clients.delete(res);
       }
     });
+  }
+
+  // Fase 5 (T5.2) — WebSocket (transporte base): mesmo payload, menor latência
+  const sockets = wsClients[code.toUpperCase()];
+  if (sockets && sockets.size > 0) {
+    for (const ws of sockets) {
+      if (ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(payload);
+        } catch (e) {
+          sockets.delete(ws);
+        }
+      }
+    }
   }
 }
 
@@ -327,6 +364,8 @@ app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
     return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
   const result = leaveRoom(req.params.code, peerId);
+  // Fase 5 (T5.2) — fecha o socket WS do peer que saiu (evita fantasma)
+  closePeerSockets(req.params.code, peerId);
   if (result.room) {
     broadcastRoomUpdate(result.room.code);
   } else {
@@ -393,6 +432,86 @@ app.get("/api/rooms/:code/stream", (req, res) => {
   });
 });
 
+// ==========================================
+// FASE 5 (T5.2) — WEBSOCKET: /ws/rooms/:code
+// ==========================================
+// Transporte base do multiplayer. Handshake autenticado pelo token de sessão
+// (T1.7) via query param `?token=`; close 4401 se a sessão for inválida
+// (código na faixa 4400–4499 = permanente, o cliente não tenta reconectar
+// com o mesmo token — alinhado com a T3.3).
+// Mensagens do cliente (JSON):
+//   { type: "message", text?, rollResult? }  → postChatMessage (broadcast)
+//   { type: "heartbeat" }                    → touchPlayer (sem broadcast)
+//   { type: "initiative", action?, initiativeList? } → nextTurn/updateInitiative
+// O broadcast (room inteiro em JSON) é o MESMO do SSE — o cliente usa WS ou
+// cai para SSE automaticamente.
+const wss = new WebSocketServer({ noServer: true });
+
+interface WsConnMeta {
+  code: string;
+  peerId: string;
+}
+
+wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMeta) => {
+  const { code, peerId } = meta;
+  (ws as any)._peerId = peerId;
+  if (!wsClients[code]) wsClients[code] = new Set();
+  wsClients[code].add(ws);
+
+  // Estado inicial imediato (mesmo comportamento do SSE)
+  const room = getRoom(code);
+  if (room && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(room));
+  }
+
+  ws.on("message", (raw) => {
+    let msg: any;
+    try {
+      msg = JSON.parse(String(raw));
+    } catch {
+      return;
+    }
+    if (!msg || typeof msg !== "object") return;
+
+    switch (msg.type) {
+      case "message": {
+        // Chat ou rolagem — handle/role derivados do servidor (anti-spoofing)
+        const result = postChatMessage(code, peerId, msg.text, msg.rollResult);
+        if (result.room) broadcastRoomUpdate(code);
+        break;
+      }
+      case "heartbeat": {
+        // Mantém isOnline=true; o watcher (T3.4) marca offline após timeout
+        touchPlayer(code, peerId);
+        break;
+      }
+      case "initiative": {
+        const result =
+          msg.action === "next"
+            ? nextTurn(code, peerId)
+            : Array.isArray(msg.initiativeList)
+              ? updateInitiative(code, peerId, msg.initiativeList)
+              : null;
+        if (result?.room) broadcastRoomUpdate(code);
+        break;
+      }
+      default:
+        break;
+    }
+  });
+
+  ws.on("close", () => {
+    wsClients[code]?.delete(ws);
+    if (wsClients[code] && wsClients[code].size === 0) {
+      delete wsClients[code];
+    }
+  });
+
+  ws.on("error", () => {
+    wsClients[code]?.delete(ws);
+  });
+});
+
 // Health check endpoint
 app.get("/api/health", (_req, res) => {
   res.json({ status: "online", system: "Cyberpunk 2020 Sheet Builder & Multiplayer API" });
@@ -445,8 +564,45 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Cyberpunk 2020 Engine & Multiplayer Server] Active on http://0.0.0.0:${PORT}`);
+  // Fase 5 (T5.2) — servidor HTTP explícito para anexar o WebSocket ao upgrade
+  const server = http.createServer(app);
+
+  // Upgrade handshake: /ws/rooms/:code?token=<sessão T1.7>
+  server.on("upgrade", (req, socket, head) => {
+    let url: URL;
+    try {
+      url = new URL(req.url || "", `http://${req.headers.host || "localhost"}`);
+    } catch {
+      socket.destroy();
+      return;
+    }
+    const match = url.pathname.match(/^\/ws\/rooms\/([A-Za-z0-9-]+)$/i);
+    if (!match) {
+      socket.destroy();
+      return;
+    }
+    const code = match[1].toUpperCase();
+    const token = url.searchParams.get("token") || "";
+    const peerId = verifySession(code, token);
+    if (!peerId) {
+      // Sessão inválida/expirada — rejeita de forma permanente (close 4401)
+      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+    const meta: WsConnMeta = { code, peerId };
+    try {
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit("connection", ws, req, meta);
+      });
+    } catch (e) {
+      // Socket pode fechar entre o handshake e o upgrade (cliente desistiu)
+      socket.destroy();
+    }
+  });
+
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`[Cyberpunk 2020 Engine & Multiplayer Server] Active on http://0.0.0.0:${PORT} (SSE + WebSocket)`);
   });
 }
 
