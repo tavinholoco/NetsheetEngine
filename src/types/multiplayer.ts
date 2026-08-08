@@ -11,6 +11,8 @@ export interface RoomPlayer {
   isOnline: boolean;
   joinedAt: string;
   initiative?: number;
+  /** Fase 3 (T3.4) — último heartbeat/atividade; usado pelo timeout de isOnline. */
+  lastActiveAt?: string;
 }
 
 export interface ChatMessage {

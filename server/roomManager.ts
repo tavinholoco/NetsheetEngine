@@ -69,6 +69,41 @@ export function isValidRoomCode(code: string): boolean {
 // In-memory store for game rooms
 const rooms: Record<string, GameRoom> = {};
 
+// Fase 3 (T3.4) — timeout de isOnline por inatividade.
+// Sobrescrevível via env (ex.: ROOM_OFFLINE_TIMEOUT_MS=8000 para testes).
+export const ROOM_OFFLINE_TIMEOUT_MS =
+  Number(process.env.ROOM_OFFLINE_TIMEOUT_MS) || 60_000;
+
+/** Marca o jogador como ativo agora (heartbeat ou qualquer ação na mesa). */
+export function touchPlayer(code: string, peerId: string): boolean {
+  const room = getRoom(code);
+  const player = room?.players[peerId];
+  if (!player) return false;
+  player.isOnline = true;
+  player.lastActiveAt = new Date().toISOString();
+  return true;
+}
+
+/** T3.4 — varre todas as salas e marca OFFLINE players sem heartbeat recente.
+ *  Retorna os códigos das salas que mudaram (para broadcast + persistência). */
+export function markStalePlayersOffline(): string[] {
+  const now = Date.now();
+  const changed: string[] = [];
+  for (const room of Object.values(rooms)) {
+    let roomChanged = false;
+    for (const player of Object.values(room.players)) {
+      if (!player.isOnline) continue;
+      const last = player.lastActiveAt ? new Date(player.lastActiveAt).getTime() : 0;
+      if (now - last > ROOM_OFFLINE_TIMEOUT_MS) {
+        player.isOnline = false;
+        roomChanged = true;
+      }
+    }
+    if (roomChanged) changed.push(room.code);
+  }
+  return changed;
+}
+
 // ============================================================
 // AUTORIZAÇÃO (T1.1) — GM SEM fallback permissivo
 // GM legítimo = quem criou a sala (gmPeerId) OU jogador cujo handle coincide
@@ -111,7 +146,8 @@ export function createRoom(code: string, roomName: string, gmHandle: string, gmP
         role: "Mestre (GM)",
         sheet: gmSheet,
         isOnline: true,
-        joinedAt: new Date().toISOString()
+        joinedAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString()
       }
     },
     chatMessages: [
@@ -225,7 +261,11 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
         // T3.3 — ficha resolvida por last-write-wins (updatedAt): cliente com
         // ficha antiga/estale não sobrescreve a versão mais recente do banco.
         sheet: pickSheet(sheet, existing.sheet),
-        isOnline: true
+        isOnline: true,
+        // T3.4 — renova lastActiveAt na reconexão: sem isso, um player que
+        // voltou de um restart (timestamp velho preservado) seria marcado
+        // OFFLINE no próximo sweep antes do primeiro heartbeat.
+        lastActiveAt: new Date().toISOString()
       }
     : {
         peerId: safePeerId,
@@ -233,7 +273,8 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
         role: sheet?.role || "Edgerunner",
         sheet,
         isOnline: true,
-        joinedAt: new Date().toISOString()
+        joinedAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString()
       };
 
   room.players[safePeerId] = player;
@@ -443,7 +484,10 @@ export function generateRoomPlayerEdgerunner(
     role: sheet.role,
     sheet,
     isOnline: true,
-    joinedAt: new Date().toISOString()
+    joinedAt: new Date().toISOString(),
+    // T3.4 — sem lastActiveAt, o primeiro sweep marcaria o edgerunner OFFLINE
+    // (now - 0 > timeout) apesar de ter acabado de ser gerado pelo GM.
+    lastActiveAt: new Date().toISOString()
   };
 
   room.players[edgerunnerPlayer.peerId] = edgerunnerPlayer;

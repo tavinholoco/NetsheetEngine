@@ -171,6 +171,16 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     };
   }, [view, roomCode]);
 
+  // Fase 3 (T3.4) — heartbeat periódico: mantém isOnline=true enquanto a aba
+  // está na mesa. O servidor marca offline após o timeout (ROOM_OFFLINE_TIMEOUT_MS).
+  useEffect(() => {
+    if (view !== 'active' || !roomCode || !peerId || !sessionToken) return;
+    const beat = () => authedFetch(`/api/rooms/${roomCode}/heartbeat`, {}).catch(() => {});
+    beat();
+    const iv = setInterval(beat, 20_000); // 20s < timeout default de 60s
+    return () => clearInterval(iv);
+  }, [view, roomCode, peerId, sessionToken, authedFetch]);
+
   // Sincroniza a ficha na mesa APENAS quando ela muda de fato.
   // (Antes dependia de `room`, que muda a cada evento SSE, criando um loop
   //  infinito: POST /sheet -> broadcast -> SSE -> POST /sheet...)

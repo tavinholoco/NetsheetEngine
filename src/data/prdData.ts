@@ -272,7 +272,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T3.1', title: 'Persistir salas (Supabase/Redis)', status: 'concluído' },
         { code: 'T3.2', title: 'Restaurar salas ativas no boot', status: 'concluído' },
         { code: 'T3.3', title: 'Reconexão com mesmo peerId restaura estado', status: 'concluído' },
-        { code: 'T3.4', title: 'Timeout de isOnline por inatividade', status: 'pendente' },
+        { code: 'T3.4', title: 'Timeout de isOnline por inatividade', status: 'concluído' },
         { code: 'T3.5', title: 'Decisão SSE vs WebSockets/Yjs (evitar retrabalho)', status: 'concluído' }
       ]
     },

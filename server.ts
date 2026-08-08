@@ -23,7 +23,10 @@ import {
   updateNpcWoundLevel,
   verifySession,
   sanitizeText,
-  isValidRoomCode
+  isValidRoomCode,
+  touchPlayer,
+  markStalePlayersOffline,
+  ROOM_OFFLINE_TIMEOUT_MS
 } from "./server/roomManager.js";
 import {
   queueRoomPersist,
@@ -290,6 +293,22 @@ app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
   return respondWithResult(res, result);
 });
 
+// Fase 3 (T3.4) — heartbeat: mantém o jogador online enquanto a aba estiver
+// aberta na mesa. O timeout marca como offline após inatividade.
+// SEM broadcast: o status isOnline não muda no heartbeat (já é true), e a
+// virada para OFFLINE já é broadcastada pelo watcher — broadcast aqui seria
+// um payload SSE redundante de 100–300 KB a cada 20s × jogador.
+app.post("/api/rooms/:code/heartbeat", roomLimiter, (req, res) => {
+  const peerId = getSessionPeerId(req, req.params.code);
+  if (!peerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+  }
+  if (!touchPlayer(req.params.code, peerId)) {
+    return res.status(404).json({ error: "Jogador não está na mesa." });
+  }
+  res.json({ success: true, isOnline: true });
+});
+
 // Update room atmosphere/combat modifiers (T1.3 — apenas GM)
 app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
@@ -391,9 +410,26 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   return res.status(500).json({ error: "Erro interno do servidor." });
 });
 
+// Fase 3 (T3.4) — varre periodicamente e marca como offline jogadores sem
+// heartbeat dentro da janela. Salas alteradas são broadcastadas + persistidas.
+// Iniciado dentro do startServer (após o restore) — no topo do módulo um
+// re-evaluate (watch/HMR) vazaria interval sem cleanup.
+let presenceWatcher: NodeJS.Timeout | null = null;
+function startPresenceWatcher(): void {
+  presenceWatcher = setInterval(() => {
+    const changedCodes = markStalePlayersOffline();
+    for (const code of changedCodes) {
+      broadcastRoomUpdate(code); // já faz queueRoomPersist (T3.1)
+    }
+  }, Math.min(15_000, Math.max(2_000, ROOM_OFFLINE_TIMEOUT_MS / 2)));
+}
+
 async function startServer() {
   // Fase 3 (T3.2) — restaurar salas persistidas antes de aceitar conexões
   await restoreRoomsFromDb();
+
+  // Fase 3 (T3.4) — watcher de presença (timeout de isOnline)
+  startPresenceWatcher();
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -417,6 +453,7 @@ async function startServer() {
 // Fase 3 (T3.1) — grava pendências de persistência no shutdown gracioso
 function shutdown(signal: string) {
   console.log(`[server] ${signal} recebido — persistindo salas pendentes...`);
+  if (presenceWatcher) clearInterval(presenceWatcher);
   void flushAllPending().finally(() => {
     process.exit(0);
   });
