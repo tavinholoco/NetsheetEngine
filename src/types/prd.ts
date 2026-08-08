@@ -9,7 +9,7 @@
  */
 
 /** Status de uma fase, tarefa, módulo ou seção do PRD. */
-export type PrdStatus = 'concluído' | 'em andamento' | 'pendente' | 'planejado';
+export type PrdStatus = 'concluído' | 'em andamento' | 'pendente' | 'planejado' | 'cancelado';
 
 /** Prioridade de fase (legenda do plano de ação). */
 export type PrdPriority = 'P0' | 'P1' | 'P2' | 'P3';

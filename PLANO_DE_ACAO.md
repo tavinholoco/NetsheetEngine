@@ -23,7 +23,7 @@
   A identidade pública do produto é 100% própria ("NETSHEET ENGINE"). Referências internas de origem
   podem existir apenas em comentários de código se forem úteis para manutenção — **nunca** na UI ou docs públicos.
 - **Stack atual:** React 19 + Vite 6 + TypeScript 5.8 + Tailwind 4 + shadcn/ui (Radix) + Express 4/5
-  + SSE (multiplayer) + **Firebase (Auth/Firestore)** + Gemini API (`@google/genai`) + `ws` + motion.
+  + SSE (multiplayer) + **Supabase (Auth/PostgreSQL/Realtime/Storage)** + Gemini API (`@google/genai`) + `ws` + motion.
 
 ---
 
@@ -134,7 +134,7 @@ Cada tarefa deve ser marcada com `[x]` quando concluída. Preencha a data ao con
 
 ## FASE 2 — MIGRAÇÃO FIREBASE → SUPABASE  **[P1]**
 **Objetivo:** substituir Firebase (Auth + Firestore) por Supabase (Auth + PostgreSQL + Realtime + Storage),
-com migração de dados e RLS adequado. *(Manter `firebase-blueprint.json`/`firestore.rules` apenas como referência histórica em `docs/legacy/`.)*
+com RLS adequado. *(Manter `firebase-blueprint.json`/`firestore.rules` apenas como referência histórica em `docs/legacy/`.)*
 
 ### 2.1 — Preparação e schema
 - [x] **T2.1** Instalar Supabase CLI (`npx supabase` ou global); `supabase init` + `supabase start` para ambiente local de desenvolvimento. *(✓ `npx supabase init` + `supabase start` executados em 07/08/2026 — Docker Desktop instalado; stack local no ar: API `127.0.0.1:54321`, Studio `54323`, Postgres `54322`.)*
@@ -157,7 +157,7 @@ com migração de dados e RLS adequado. *(Manter `firebase-blueprint.json`/`fire
 
 ### 2.2 — Autenticação
 - [x] **T2.8** Configurar provedores no Supabase: Email/Senha + Google OAuth (client ID/secret do console Google); redirecionamentos corretos (URL do app + localhost). *(✓ Concluído em 07/08/2026: Email/Senha ativo e testado (signup 10/10); Google OAuth ativo — `[auth.external.google]` com `enabled = true`, Client ID no `config.toml`, secret em `supabase/.env` (gitignored) via `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)`, `skip_nonce_check = true` para login local. Verificado: `/auth/v1/settings` → `google: true`; `/auth/v1/authorize?provider=google` → 302 para `accounts.google.com` com o Client ID e redirect `http://127.0.0.1:54321/auth/v1/callback`. ⚠️ Confirmar no Google Console que o redirect URI `http://127.0.0.1:54321/auth/v1/callback` está nos Authorized redirect URIs do client (senão o login dará `redirect_uri_mismatch`).)*
-- [x] **T2.9** *(Opcional, se houver usuários reais no Firebase)* Migrar usuários: exportar do Firebase (scrypt params) e importar via `supabase-community/firebase-to-supabase` ou re-import com nova senha. **Se houver fichas salvas no Firestore, migrar também as `character_sheets`** (exportar JSON → importar na tabela). Se ainda sem dados reais, pular com anotação. *(✓ Ferramenta pronta em 07/08/2026 — `scripts/migrate-firestore-to-supabase.mjs` (export/import/validate) + `scripts/migrate.README.md` com o passo-a-passo do Google Cloud. Testada de ponta a ponta com dados sintéticos: perfis, amizades, solicitações, mensagens e fichas importados em transação única, idempotente (re-execução não duplica). Pendente de execução real: depende do usuário gerar a service account do Firestore (única ação manual). Usuários migrados ganham senha aleatória + e-mail confirmado (redefinição de senha no 1º login); senhas scrypt do Firebase não são migradas.)*
+- [x] **T2.9** *(Opcional, se houver usuários reais no Firebase)* Migrar usuários: exportar do Firebase (scrypt params) e importar via `supabase-community/firebase-to-supabase` ou re-import com nova senha. **Se houver fichas salvas no Firestore, migrar também as `character_sheets`** (exportar JSON → importar na tabela). Se ainda sem dados reais, pular com anotação. *(❌ **CANCELADA em 07/08/2026 por decisão do usuário — os dados do Firebase/Firestore antigo NÃO serão migrados.** O Supabase inicia com banco limpo; o projeto antigo permanece intacto no Google Cloud apenas como referência. Removidos: `scripts/migrate-firestore-to-supabase.mjs`, `scripts/migrate.README.md` e as dependências `firebase-admin`/`pg`/`@types/pg` do `package.json`.)*
 
 ### 2.3 — Camada cliente
 - [x] **T2.10** Criar `src/lib/supabase.ts` (cliente tipado) mantendo a **mesma API** hoje exportada por `src/lib/firebase.ts`: *(✓ criado em 07/08/2026 com a API idêntica — ver anotações; validado com teste funcional 19/19 contra o Supabase local, incluindo Realtime ao vivo e RLS. Aplicada a migration `0005_realtime_friends_sheets.sql` para adicionar `friendships` e `character_sheets` à publicação realtime, que faltavam na 0002.)*
@@ -316,7 +316,7 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 |------|-----------|--------|------|
 | 0 | Fundação e recuperação do código | ✅ concluída | 03/08/2026 |
 | 1 | Correções de segurança | ✅ concluída | 03/08/2026 |
-| 2 | Migração Firebase → Supabase | 🔄 em andamento (2.1–2.7/2.16 concluídos) | 07/08/2026 |
+| 2 | Migração Firebase → Supabase | 🔄 em andamento (T2.1–T2.16; T2.9 cancelada) | 07/08/2026 |
 | 3 | Multiplayer: persistência | ⬜ | — |
 | 4 | Estado frontend (Zustand) | ⬜ | — |
 | 5 | Multiplayer real-time (WS/Yjs) | ⬜ | — |
@@ -328,16 +328,15 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 | 11 | Regras CP2020 avançadas | ⬜ | — |
 | 12 | Validação final + delete deste arquivo | ⬜ | — |
 
-**Última atualização:** 07/08/2026 — **revisão v1.6**: Fases 0 e 1 concluídas; **Fase 2 em andamento**.
-Fase 2 (progresso 2.1–2.7/2.16): ambiente local **rodando** (Docker Desktop instalado; `supabase start` no ar:
+**Última atualização:** 07/08/2026 — **revisão v1.7**: Fases 0 e 1 concluídas; **Fase 2 em andamento** (T2.1–T2.16; T2.9 cancelada).
+Fase 2 (progresso 2.1–2.8/2.10–2.16): ambiente local **rodando** (Docker Desktop instalado; `supabase start` no ar:
 API `127.0.0.1:54321`, Studio `54323`, Postgres `54322`); migrations **0001** (schema + RLS + triggers),
 **0002** (Realtime p/ `direct_messages`/`profiles`/`friend_requests` + bucket `avatars` com RLS de pasta)
 e **0003** (listagem pública de buckets) e **0004** (remoção de `profiles.email` — privacidade, pois o Realtime
 não filtra colunas, apenas linhas; e-mail próprio fica no JWT) aplicadas; `.env.local` preenchido com chaves
 locais; Email/Senha validado com teste funcional (signup → perfil `#NC-####` → upload avatar → cross-user
 bloqueado: 10/10 ✓; pós-reset 7/7 ✓).
-Pendente: **2.3 camada cliente (T2.10–T2.15)** — concluída; **T2.9** aguarda apenas a service account do usuário (ferramenta pronta e testada),
-**2.4 storage UI (T2.17)** e **2.5 validação (T2.18–T2.20)**.
+Pendente: **T2.9** cancelada (sem migração de dados — banco limpo); **2.4 storage UI (T2.17)** e **2.5 validação (T2.18–T2.20)**.
 
 > **✅ T2.11 — Google OAuth validado (07/08/2026):** após corrigir o Client ID para `774463152952-74orl6td...apps.googleusercontent.com` (faltava o prefixo do nº do projeto), o **login real com conta Google funcionou de ponta a ponta** no navegador — sessão criada no Supabase local e perfil sincronizado. Client ID em `supabase/config.toml` (público, versionado); Client Secret em `supabase/.env` (gitignored, nunca commitar).
 >

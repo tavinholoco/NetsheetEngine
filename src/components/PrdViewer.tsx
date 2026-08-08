@@ -7,7 +7,8 @@ const STATUS_STYLE: Record<PrdStatus, { label: string; cls: string }> = {
   'concluído': { label: 'CONCLUÍDO', cls: 'bg-emerald-950/80 text-emerald-400 border-emerald-500/60' },
   'em andamento': { label: 'EM ANDAMENTO', cls: 'bg-cyan-950/80 text-cyan-400 border-cyan-500/60' },
   'pendente': { label: 'PENDENTE', cls: 'bg-slate-900 text-slate-400 border-slate-700' },
-  'planejado': { label: 'PLANEJADO', cls: 'bg-purple-950/80 text-purple-400 border-purple-500/60' }
+  'planejado': { label: 'PLANEJADO', cls: 'bg-purple-950/80 text-purple-400 border-purple-500/60' },
+  'cancelado': { label: 'CANCELADO', cls: 'bg-red-950/80 text-red-400 border-red-500/60' }
 };
 
 const PRIORITY_STYLE: Record<string, string> = {
@@ -29,7 +30,7 @@ function StatusBadge({ status }: { status: PrdStatus }) {
 export const PrdViewer: React.FC = () => {
   const doc = PRD_DOCUMENT;
   const [activeSection, setActiveSection] = useState<'overview' | 'modules' | 'roadmap' | 'architecture'>('overview');
-  const totalTasks = doc.roadmap.reduce((acc, p) => acc + p.tasks.length, 0);
+  const totalTasks = doc.roadmap.reduce((acc, p) => acc + p.tasks.filter((t: PrdTask) => t.status !== 'cancelado').length, 0);
   const doneTasks = doc.roadmap.reduce((acc, p) => acc + p.tasks.filter((t: PrdTask) => t.status === 'concluído').length, 0);
 
   return (
@@ -131,8 +132,9 @@ export const PrdViewer: React.FC = () => {
       {activeSection === 'roadmap' && (
         <div className="space-y-4">
           {doc.roadmap.map((phase) => {
+            const applicable = phase.tasks.filter((t) => t.status !== 'cancelado').length;
             const done = phase.tasks.filter((t) => t.status === 'concluído').length;
-            const pct = phase.tasks.length ? Math.round((done / phase.tasks.length) * 100) : 0;
+            const pct = applicable ? Math.round((done / applicable) * 100) : 0;
             return (
               <div key={phase.id} className="bg-slate-950/80 border-l-4 border-red-500 border-y border-r border-slate-800 rounded-xl p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
@@ -146,7 +148,7 @@ export const PrdViewer: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <StatusBadge status={phase.status} />
-                    <span className="text-[9px] text-slate-500 font-mono">{done}/{phase.tasks.length}</span>
+                    <span className="text-[9px] text-slate-500 font-mono">{done}/{applicable}</span>
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-400 mb-3">{phase.objective}</p>
@@ -157,7 +159,7 @@ export const PrdViewer: React.FC = () => {
                   {phase.tasks.map((task) => (
                     <div key={task.code} className="flex items-center space-x-2 text-[10px] font-mono">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${
-                        task.status === 'concluído' ? 'bg-emerald-400' : task.status === 'em andamento' ? 'bg-cyan-400 animate-pulse' : 'bg-slate-700'
+                        task.status === 'concluído' ? 'bg-emerald-400' : task.status === 'em andamento' ? 'bg-cyan-400 animate-pulse' : task.status === 'cancelado' ? 'bg-red-500' : 'bg-slate-700'
                       }`} />
                       <span className="text-slate-500 font-bold shrink-0">{task.code}</span>
                       <span className={`truncate ${task.status === 'concluído' ? 'text-slate-500 line-through' : 'text-slate-300'}`}>
