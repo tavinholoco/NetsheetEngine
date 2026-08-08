@@ -683,12 +683,16 @@ export function subscribeToPendingRequests(
   };
 
   // Canal primeiro, load depois: evita perder eventos entre o load e a subscrição.
+  // SEM filter por coluna: o Realtime do Supabase NÃO avalia filtros de colunas
+  // não-PK em eventos DELETE (a WAL só carrega a PK) — o painel de pendentes
+  // ficaria travado após aceitar/recusar. A RLS (select_participant) já limita
+  // as linhas que o usuário recebe (bug encontrado na T2.18).
   const unsub = subscribeShared(
     `pending_requests_${uid}`,
     (onEvent) =>
       auth.channel(`pending_requests_${uid}`).on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'friend_requests', filter: `receiver_uid=eq.${uid}` },
+        { event: '*', schema: 'public', table: 'friend_requests' },
         onEvent
       ),
     () => {
@@ -755,6 +759,10 @@ export function subscribeToDirectMessages(
   };
 
   // Canal primeiro, load depois: evita perder eventos entre o load e a subscrição.
+  // Filtro MANTIDO (diferente de pending_requests/sheets): mensagens nunca são
+  // deletadas no app, e o filtro evita eventos/requeries de outros chats. Se um
+  // dia houver exclusão de mensagem, o filtro precisará ser removido (o Realtime
+  // não avalia filtros de coluna não-PK em DELETE — bug T2.18).
   const unsub = subscribeShared(
     `chat_${chatRoomId}`,
     (onEvent) =>
@@ -809,12 +817,15 @@ export function subscribeToCharacterSheets(
   };
 
   // Canal primeiro, load depois: evita perder eventos entre o load e a subscrição.
+  // SEM filter por coluna: eventos DELETE (deleteCharacterSheet) não são
+  // avaliados com filtro de coluna não-PK no Realtime (bug T2.18). A RLS
+  // owner-only já limita às fichas do próprio usuário.
   const unsub = subscribeShared(
     `sheets_${uid}`,
     (onEvent) =>
       auth.channel(`sheets_${uid}`).on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'character_sheets', filter: `user_id=eq.${uid}` },
+        { event: '*', schema: 'public', table: 'character_sheets' },
         onEvent
       ),
     () => {

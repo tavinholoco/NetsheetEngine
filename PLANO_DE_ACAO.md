@@ -178,7 +178,7 @@ com RLS adequado. *(Manter `firebase-blueprint.json`/`firestore.rules` apenas co
 - [x] **T2.17** Atualizar `UserProfile` para upload de avatar (arquivo) em vez de apenas URL/ícone. *(✓ concluído em 07/08/2026 — seção decorativa "Avatares disponíveis" substituída por upload real: `uploadAvatar(uid, file)` + `removeAvatar(uid)` em `src/lib/supabase.ts` (valida PNG/JPEG/WebP/GIF ≤ 5 MB, limpa a pasta `avatars/<uid>/` antes de gravar, grava a URL pública em `profiles.avatar_url`); `UserProfileData` ganhou `avatarUrl`; UI com preview, botão Enviar/Remover e estados de erro/loading; avatar exibido no cartão do perfil, no drawer mobile e na sidebar desktop do `CyberpunkMenu` (sync imediato via evento `cyberpunk:avatar-updated`). Validação: teste de integração 11/11 (upload → URL pública 200 → avatar_url no perfil → RLS bloqueando cross-user → remoção → re-upload) + navegador real (upload via UI, REMOVER, re-upload e avatar refletido no menu ao vivo).)*
 
 ### 2.5 — Validação da migração
-- [ ] **T2.18** Testes manuais: cadastro/login (email + Google), perfil, busca por cyberpunk_id, solicitação/aceite/recusa de amizade, chat em tempo real, salvar/carregar fichas, remoção de amizade.
+- [x] **T2.18** Testes manuais: cadastro/login (email + Google), perfil, busca por cyberpunk_id, solicitação/aceite/recusa de amizade, chat em tempo real, salvar/carregar fichas, remoção de amizade. *(✓ concluído em 07/08/2026 — bateria E2E no navegador com 2 contas: login/logout por email ✓; perfil com #NC-ID ✓; busca por ID + solicitação ✓ (201 no banco); aceite vê a pendência ao vivo ✓ (amizade accepted no banco, aparece nas 2 pontas); chat em tempo real ✓ (mensagem de B → A via API apareceu ao vivo no chat de B via Realtime); fichas ✓ (criar → autosave com handle/INT/nome no banco → reload → roster 1 → carregar → deletar → roster 0 ao vivo); remoção de amizade ✓ (some da UI e do banco); Google ✓ (botão inicia o redirect para accounts.google.com com o redirect URI correto — login completo já validado na T2.11 com conta real). 🐛 **Bug encontrado e corrigido — Realtime ignora DELETE com filtro de coluna não-PK**: o Supabase Realtime não avalia filtros (ex.: `receiver_uid=eq.X`) em eventos DELETE (a WAL de DELETE só carrega a PK) → o painel de solicitações pendentes ficava travado após aceitar/recusar e o roster não atualizava ao deletar ficha. Repro: 0 eventos com filtro vs 1 sem filtro (teste `.freebuff/t2.18-realtime-delete-filter-test.mjs`). Fix em `src/lib/supabase.ts`: removidos os filtros dos canais `pending_requests_*` e `sheets_*` — a RLS (participant/owner) já limita as linhas que cada usuário recebe. `direct_messages` mantém o filtro (nunca há DELETE). Validado 4/4 na camada + no navegador (painel some ao vivo após aceitar; roster 0 ao vivo após deletar).)*
 - [ ] **T2.19** Testar RLS: acessos anônimos e cross-user bloqueados (logs do Supabase sem acesso indevido); UPDATE exige SELECT policy (validar).
 - [ ] **T2.20** `npx tsc --noEmit` + `npm run build` verdes após a migração.
 - [ ] ✅ **Fase 2 concluída em:** ____/____/______
@@ -316,7 +316,7 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 |------|-----------|--------|------|
 | 0 | Fundação e recuperação do código | ✅ concluída | 03/08/2026 |
 | 1 | Correções de segurança | ✅ concluída | 03/08/2026 |
-| 2 | Migração Firebase → Supabase | 🔄 em andamento (T2.1–T2.17; T2.9 cancelada) | 07/08/2026 |
+| 2 | Migração Firebase → Supabase | 🔄 em andamento (T2.1–T2.18; T2.9 cancelada) | 07/08/2026 |
 | 3 | Multiplayer: persistência | ⬜ | — |
 | 4 | Estado frontend (Zustand) | ⬜ | — |
 | 5 | Multiplayer real-time (WS/Yjs) | ⬜ | — |
@@ -336,7 +336,7 @@ e **0003** (listagem pública de buckets) e **0004** (remoção de `profiles.ema
 não filtra colunas, apenas linhas; e-mail próprio fica no JWT) aplicadas; `.env.local` preenchido com chaves
 locais; Email/Senha validado com teste funcional (signup → perfil `#NC-####` → upload avatar → cross-user
 bloqueado: 10/10 ✓; pós-reset 7/7 ✓).
-Pendente: **T2.9** cancelada (sem migração de dados — banco limpo); **2.5 validação (T2.18–T2.20)** (T2.17 — upload de avatar — concluída).
+Pendente: **T2.9** cancelada (sem migração de dados — banco limpo); **2.5 validação (T2.18 concluída — encontrou e corrigiu o bug de DELETE do Realtime; restam T2.19 — testes de RLS — e T2.20 — tsc + build)**.
 
 > **✅ T2.11 — Google OAuth validado (07/08/2026):** após corrigir o Client ID para `774463152952-74orl6td...apps.googleusercontent.com` (faltava o prefixo do nº do projeto), o **login real com conta Google funcionou de ponta a ponta** no navegador — sessão criada no Supabase local e perfil sincronizado. Client ID em `supabase/config.toml` (público, versionado); Client Secret em `supabase/.env` (gitignored, nunca commitar).
 >
