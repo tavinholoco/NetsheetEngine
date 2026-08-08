@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CharacterSheet, RollResult } from '../types/cyberpunk';
+import { CharacterSheet } from '../types/cyberpunk';
 import {
   RoomPlayer,
   ChatMessage,
@@ -10,7 +10,6 @@ import { TacticalGrid } from './TacticalGrid';
 import { YjsGridConnection, RemoteCursor } from '../lib/yjsConnection';
 import { useRoomStore } from '../stores/useRoomStore';
 import { useSheetStore } from '../stores/useSheetStore';
-import { useRollStore } from '../stores/useRollStore';
 import { useUiStore } from '../stores/useUiStore';
 import {
   Radio,
@@ -19,14 +18,16 @@ import {
   Send,
   Plus,
   LogOut,
-  Dices,
   Skull,
   UserPlus,
   Crosshair,
   Eye,
   Lock,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Target,
+  Zap,
+  HeartPulse
 } from 'lucide-react';
 
 interface MultiplayerRoomProps {
@@ -63,7 +64,6 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // Fase 4 — dados da ficha/user/rolagem via stores (sem props)
   const sheet = useSheetStore((s) => s.sheet);
   const user = useSheetStore((s) => s.user);
-  const addRoll = useRollStore((s) => s.addRoll);
 
   const [roomName, setRoomName] = useState('Mesa de Night City');
   const [chatInput, setChatInput] = useState('');
@@ -191,7 +191,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     const handlePayload = (raw: string) => {
       if (disposed) return;
       try {
-        useRoomStore.getState().setRoom(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        // Fase 5 (T5.4) — respostas de erro do servidor (roll-error / error)
+        if (parsed && typeof parsed === 'object' && typeof parsed.type === 'string' &&
+            (parsed.type === 'roll-error' || parsed.type === 'error')) {
+          useRoomStore.getState().setErrorMsg(String(parsed.error || 'Ação rejeitada pelo servidor.'));
+          return;
+        }
+        useRoomStore.getState().setRoom(parsed);
       } catch {
         /* ignore */
       }
@@ -386,47 +393,32 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     }
   };
 
-  const sendChat = async (text?: string, rollResult?: any) => {
+  const sendChat = async (text?: string) => {
     const content = (text ?? chatInput).trim();
-    if (!content && !rollResult) return;
+    if (!content) return;
     if (text === undefined) setChatInput('');
-    // Fase 5 (T5.2) — WebSocket quando disponível; fallback: POST autenticado
-    if (wsSend({ type: 'message', text: content, rollResult })) return;
+    // Fase 5 (T5.2) — WebSocket quando disponível; fallback: POST autenticado.
+    // T5.4 — sem rollResult: rolagens só existem via { type: 'roll' }.
+    if (wsSend({ type: 'message', text: content })) return;
     try {
-      await authedFetch(`/api/rooms/${roomCode}/message`, { text: content, rollResult });
+      await authedFetch(`/api/rooms/${roomCode}/message`, { text: content });
     } catch {
       /* ignore */
     }
   };
 
-  const rollDiceForTable = (diceFn: () => void) => {
-    // Dispara a rolagem local e depois transmite o resultado pelo chat
-    diceFn();
+  // Fase 5 (T5.4) — RNG SERVER-AUTHORITATIVE: o cliente só pede o tipo de
+  // rolagem; o servidor rola os dados (crypto.randomInt) usando a ficha que
+  // ELE possui e o resultado volta no broadcast do chat. WS-first, fallback
+  // POST /roll (clientes SSE).
+  const requestTableRoll = (kind: 'attack' | 'damage' | 'save' | 'skill', skillName?: string) => {
+    if (wsSend({ type: 'roll', kind, skillName })) return;
+    authedFetch(`/api/rooms/${roomCode}/roll`, { kind, skillName }).catch(() => {});
   };
 
-  const rollAttack = () => {
-    const ref = sheet.stats.REF;
-    const wa = sheet.weapons[0]?.wa || 0;
-    const d10 = Math.floor(Math.random() * 10) + 1;
-    const total = d10 + ref + wa;
-    const label = `Ataque (${sheet.weapons[0]?.name || 'desarmado'})`;
-    const roll: RollResult = {
-      id: 'roll_' + Date.now(),
-      timestamp: new Date().toLocaleTimeString(),
-      characterName: handle,
-      rollType: 'SKILL',
-      label,
-      diceFormula: '1d10',
-      baseRoll: d10,
-      bonus: ref + wa,
-      total,
-      isCriticalSuccess: d10 === 10,
-      isCriticalFailure: d10 === 1,
-      details: `1d10: ${d10} + REF (${ref}) + WA (${wa}) = ${total}`
-    };
-    addRoll(roll);
-    sendChat(undefined, roll);
-  };
+  const rollAttack = () => requestTableRoll('attack');
+  const rollTableDamage = () => requestTableRoll('damage');
+  const rollTableSave = () => requestTableRoll('save');
 
   // Helper: ações autenticadas por token de sessão (T1.7), com auto-reconexão
   // na Fase 3 (T3.3) via authedFetch (401 → re-join com mesmo peerId → retry).
@@ -774,11 +766,25 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 <Send className="w-4 h-4" />
               </button>
               <button
-                onClick={() => rollDiceForTable(rollAttack)}
-                title="Rolar ataque na mesa"
-                className="px-3.5 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black rounded font-black uppercase cursor-pointer transition-all"
+                onClick={rollAttack}
+                title="🎯 Ataque — d10 + REF + WA (RNG no servidor)"
+                className="px-3 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black rounded font-black uppercase cursor-pointer transition-all"
               >
-                <Dices className="w-4 h-4" />
+                <Target className="w-4 h-4" />
+              </button>
+              <button
+                onClick={rollTableDamage}
+                title="💥 Dano da arma + local de impacto (RNG no servidor)"
+                className="px-3 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded font-black uppercase cursor-pointer transition-all"
+              >
+                <Zap className="w-4 h-4" />
+              </button>
+              <button
+                onClick={rollTableSave}
+                title="🩸 Death Save — 1d10 ≤ BODY (RNG no servidor)"
+                className="px-3 py-2.5 bg-pink-600 hover:bg-pink-500 text-white rounded font-black uppercase cursor-pointer transition-all"
+              >
+                <HeartPulse className="w-4 h-4" />
               </button>
             </div>
           </div>

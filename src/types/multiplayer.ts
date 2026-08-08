@@ -56,6 +56,20 @@ export interface TacticalGridState {
   tokens: TacticalToken[];
 }
 
+/**
+ * Fase 5 (T5.4) — pedido de rolagem da mesa (RNG server-authoritative).
+ * O cliente NUNCA envia o resultado — só o tipo + parâmetros de contexto; o
+ * servidor rola os dados com `crypto.randomInt` e monta o RollResult usando a
+ * ficha que ELE possui (bônus derivados do servidor, anti-forjamento).
+ */
+export type TableRollKind = "attack" | "damage" | "save" | "skill";
+
+export interface TableRollRequest {
+  kind: TableRollKind;
+  /** Apenas para `skill`: nome da perícia (o servidor valida na ficha). */
+  skillName?: string;
+}
+
 export interface GameRoom {
   code: string;
   name: string;

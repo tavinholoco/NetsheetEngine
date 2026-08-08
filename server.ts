@@ -32,6 +32,7 @@ import {
   deleteGeneratedPlayer,
   deleteRoomNpc,
   updateNpcWoundLevel,
+  rollDiceForPlayer,
   verifySession,
   sanitizeText,
   isValidRoomCode,
@@ -329,15 +330,35 @@ app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
   return respondWithResult(res, result);
 });
 
-// Send chat message or dice roll (T1.7 — autenticado; handle/role vêm do servidor)
+// Send chat message (T1.7 — autenticado; handle/role vêm do servidor).
+// Fase 5 (T5.4) — o cliente NÃO pode enviar rollResult no message: rolagens
+// só existem via /roll (RNG server-authoritative). rollResult do cliente é
+// ignorado (anti-forjamento).
 app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
     return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
-  const { text, rollResult } = req.body ?? {};
-  const result = postChatMessage(req.params.code, requesterPeerId, text, rollResult);
+  const { text } = req.body ?? {};
+  const result = postChatMessage(req.params.code, requesterPeerId, text);
   return respondWithResult(res, result);
+});
+
+// Fase 5 (T5.4) — rolagem server-authoritative (fallback REST p/ SSE): o
+// servidor rola os dados (crypto.randomInt) usando a ficha que ELE possui.
+app.post("/api/rooms/:code/roll", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+  }
+  const { kind, skillName } = req.body ?? {};
+  const result = rollDiceForPlayer(req.params.code, requesterPeerId, { kind, skillName });
+  if (!result.room) {
+    const msg = result.error || "Rolagem não permitida";
+    return res.status(400).json({ error: msg });
+  }
+  broadcastRoomUpdate(result.room.code);
+  return res.json({ room: result.room, roll: result.roll });
 });
 
 // Fase 3 (T3.4) — heartbeat: mantém o jogador online enquanto a aba estiver
@@ -665,7 +686,13 @@ function handleYjsBinary(code: string, ws: WebSocket, raw: Buffer): void {
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, messageSync);
     // Aplica updates no doc com origin=ws; responde syncStep2 se necessário.
-    syncProtocol.readSyncMessage(decoder, encoder, entry.doc, ws);
+    // try/catch próprio: update malformado não pode derrubar o handler nem
+    // logar stack trace do lib0 (o Yjs captura internamente via console.error).
+    try {
+      syncProtocol.readSyncMessage(decoder, encoder, entry.doc, ws);
+    } catch {
+      /* update Yjs inválido — socket mantido; estado durável é o JSON */
+    }
     const reply = encoding.toUint8Array(encoder);
     if (reply.byteLength > 1 && ws.readyState === WebSocket.OPEN) {
       try {
@@ -711,12 +738,16 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
     ws.send(JSON.stringify(room));
   }
 
-  ws.on("message", (raw: any) => {
+  ws.on("message", (raw: any, isBinary: boolean) => {
     // Texto → protocolo JSON existente; binário → Yjs (grid CRDT / awareness)
-    if (typeof raw === "string") {
+    // NOTA: frames de texto podem chegar como string OU Buffer conforme a
+    // versão do ws — o discriminador confiável é o flag `isBinary`, não o
+    // typeof (que em ws@8.21.1 entrega texto como Buffer).
+    if (!isBinary) {
+      const text = Buffer.isBuffer(raw) ? raw.toString("utf8") : String(raw);
       let msg: any;
       try {
-        msg = JSON.parse(raw);
+        msg = JSON.parse(text);
       } catch {
         return;
       }
@@ -724,9 +755,26 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
 
       switch (msg.type) {
         case "message": {
-          // Chat ou rolagem — handle/role derivados do servidor (anti-spoofing)
-          const result = postChatMessage(code, peerId, msg.text, msg.rollResult);
+          // Chat — handle/role derivados do servidor (anti-spoofing).
+          // T5.4: rolagens NÃO vêm por aqui (rollResult do cliente é ignorado
+          // — só o tipo "roll" gera dado, no servidor).
+          const result = postChatMessage(code, peerId, msg.text);
           if (result.room) broadcastRoomUpdate(code);
+          else if (result.error) {
+            // Erro de volta para o autor (ex.: mensagem vazia)
+            if (ws.readyState === WebSocket.OPEN) {
+              try { ws.send(JSON.stringify({ type: "error", error: result.error })); } catch { /* ignore */ }
+            }
+          }
+          break;
+        }
+        case "roll": {
+          // Fase 5 (T5.4) — RNG server-authoritative
+          const result = rollDiceForPlayer(code, peerId, { kind: msg.kind, skillName: msg.skillName });
+          if (result.room) broadcastRoomUpdate(code);
+          else if (ws.readyState === WebSocket.OPEN) {
+            try { ws.send(JSON.stringify({ type: "roll-error", error: result.error || "Rolagem não permitida" })); } catch { /* ignore */ }
+          }
           break;
         }
         case "heartbeat": {
@@ -752,7 +800,13 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
 
     // Binário → Yjs (lida com mensagens fragmentadas ws como Buffer[])
     const bin = Array.isArray(raw) ? Buffer.concat(raw) : (Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer));
-    handleYjsBinary(code, ws, bin);
+    try {
+      handleYjsBinary(code, ws, bin);
+    } catch (e) {
+      // Frame Yjs malformado (payload truncado/aleatório) — nunca derruba o
+      // socket nem o processo; o servidor continua atendendo a mesa.
+      console.warn(`[ws] frame Yjs inválido ignorado (${code}):`, (e as Error).message);
+    }
   });
 
   ws.on("close", () => {

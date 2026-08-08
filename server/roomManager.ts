@@ -700,6 +700,190 @@ export function postChatMessage(
   return { room };
 }
 
+// ============================================================
+// ROLAGENS SERVER-AUTHORITATIVE (Fase 5 — T5.4)
+// ============================================================
+// O cliente pede o tipo de rolagem; o servidor rola os dados com
+// crypto.randomInt (seguro, não-preditível) e monta o RollResult usando a
+// ficha que ELE possui (room.players[peerId].sheet) — o jogador não pode
+// forjar o dado nem os bônus. O resultado entra no chat via postChatMessage
+// (handle/role derivados do servidor, anti-spoofing) e é broadcastado.
+
+const ROLLABLE_STATS = ["INT", "REF", "TECH", "COOL", "ATTR", "LUCK", "MA", "BODY", "EMP"] as const;
+
+function secureD10(): number {
+  return crypto.randomInt(1, 11); // 1–10 uniforme e criptograficamente seguro
+}
+
+function rollDice(formula: string): { total: number; rolls: number[]; error?: string } {
+  const m = formula.trim().toLowerCase().match(/^(\d+)d(\d+)([+-]\d+)?$/);
+  if (!m) return { total: 0, rolls: [], error: `Fórmula de dano inválida: ${formula}` };
+  const numDice = Math.min(20, Math.max(1, parseInt(m[1]) || 1));
+  const dieSides = Math.min(100, Math.max(2, parseInt(m[2]) || 6));
+  const modifier = m[3] ? parseInt(m[3]) || 0 : 0;
+  const rolls: number[] = [];
+  let total = modifier;
+  for (let i = 0; i < numDice; i++) {
+    const r = crypto.randomInt(1, dieSides + 1);
+    rolls.push(r);
+    total += r;
+  }
+  return { total, rolls };
+}
+
+function impactLocationName(d10: number): string {
+  if (d10 === 1) return "Cabeça (1) [DANO DOBRADO X2!]";
+  if (d10 >= 2 && d10 <= 4) return "Tronco (2-4)";
+  if (d10 === 5) return "Braço Direito (5)";
+  if (d10 === 6) return "Braço Esquerdo (6)";
+  if (d10 >= 7 && d10 <= 8) return "Perna Direita (7-8)";
+  return "Perna Esquerda (9-0)";
+}
+
+/** Primeira arma equipada (ou a primeira da lista) da ficha. */
+function firstWeapon(sheet: CharacterSheet) {
+  const ws = Array.isArray(sheet.weapons) ? sheet.weapons : [];
+  return ws.find((w) => w.equipped) || ws[0];
+}
+
+/**
+ * Executa uma rolagem de mesa no SERVIDOR (T5.4).
+ * - `attack`: d10 + REF + WA da arma (explosão em 10, fumble em 1)
+ * - `damage`: fórmula de dano da arma + local de impacto (1d10)
+ * - `save`  : death save 1d10 ≤ BODY
+ * - `skill` : 1d10 + atributo da perícia + nível (bônus da FICHA do servidor)
+ * Retorna a sala com a rolagem já publicada no chat (broadcast é do chamador).
+ */
+export function rollDiceForPlayer(
+  code: string,
+  requesterPeerId: string,
+  request: { kind: string; skillName?: string }
+): { room: GameRoom | null; roll?: RollResult; error?: string } {
+  const room = getRoom(code);
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  const player = room.players[requesterPeerId];
+  if (!player) return { room: null, error: "Jogador não está na mesa." };
+
+  const sheet: CharacterSheet = player.sheet || ({} as CharacterSheet);
+  const stats = sheet.stats || ({} as CharacterSheet["stats"]);
+  const kind = sanitizeText(request?.kind, 12).toLowerCase();
+  const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const rollId = "roll_" + Date.now() + "_" + crypto.randomBytes(3).toString("hex");
+
+  let roll: RollResult;
+
+  if (kind === "attack") {
+    const weapon = firstWeapon(sheet);
+    const ref = Number(stats.REF) || 0;
+    const wa = Number(weapon?.wa) || 0;
+    const d10 = secureD10();
+    let isExploding = false;
+    let isFumble = false;
+    let extra = 0;
+    if (d10 === 10) { isExploding = true; extra = secureD10(); }
+    else if (d10 === 1) { isFumble = true; extra = secureD10(); }
+    const total = d10 + (isExploding ? extra : 0) - (isFumble ? extra : 0) + ref + wa;
+    let details = `1d10: ${d10}`;
+    if (isExploding) details += ` + 🔥 Explosão (10!): +${extra}`;
+    if (isFumble) details += ` - 💀 Falha Crítica (1!): -${extra}`;
+    details += ` + REF (${ref}) + WA (${wa})`;
+    roll = {
+      id: rollId,
+      timestamp: now,
+      characterName: player.handle,
+      rollType: "SKILL",
+      label: `Ataque (${weapon?.name || "desarmado"})`,
+      diceFormula: "1d10",
+      baseRoll: d10,
+      bonus: ref + wa,
+      total,
+      isCriticalSuccess: isExploding,
+      isCriticalFailure: isFumble,
+      details
+    };
+  } else if (kind === "damage") {
+    const weapon = firstWeapon(sheet);
+    const formula = weapon?.damage || "1d6";
+    const { total, rolls, error } = rollDice(formula);
+    if (error) return { room: null, error };
+    const loc = secureD10();
+    roll = {
+      id: rollId,
+      timestamp: now,
+      characterName: player.handle,
+      rollType: "DAMAGE",
+      label: `Dano da Arma: ${weapon?.name || "—"}`,
+      diceFormula: formula,
+      baseRoll: total,
+      bonus: 0,
+      total,
+      isCriticalSuccess: false,
+      isCriticalFailure: false,
+      details: `Dados (servidor): [${rolls.join(", ")}] • Local de Impacto: ${impactLocationName(loc)}`
+    };
+  } else if (kind === "save") {
+    const body = Number(stats.BODY) || 0;
+    const d10 = secureD10();
+    const isSuccess = d10 <= body;
+    roll = {
+      id: rollId,
+      timestamp: now,
+      characterName: player.handle,
+      rollType: "SAVE",
+      label: "Teste de Atordoamento/Morte (Death Save)",
+      diceFormula: "1d10 ≤ BODY",
+      baseRoll: d10,
+      bonus: body,
+      total: d10,
+      isCriticalSuccess: isSuccess,
+      isCriticalFailure: !isSuccess,
+      details: isSuccess
+        ? `PASSOU! Resultado ${d10} ≤ Corpo ${body}`
+        : `FALHOU! Resultado ${d10} > Corpo ${body} (Inconsciente ou Morto!)`
+    };
+  } else if (kind === "skill") {
+    const skillName = sanitizeText(request?.skillName, 60);
+    const skill = Array.isArray(sheet.skills)
+      ? sheet.skills.find((s) => s.name.toLowerCase() === skillName.toLowerCase())
+      : undefined;
+    if (!skill) return { room: null, error: "Perícia não encontrada na sua ficha." };
+    const statName = skill.stat;
+    const statVal = Number(stats[statName]) || 0;
+    const rank = Number(skill.level) || 0;
+    const d10 = secureD10();
+    let isExploding = false;
+    let isFumble = false;
+    let extra = 0;
+    if (d10 === 10) { isExploding = true; extra = secureD10(); }
+    else if (d10 === 1) { isFumble = true; extra = secureD10(); }
+    const total = d10 + (isExploding ? extra : 0) - (isFumble ? extra : 0) + statVal + rank;
+    let details = `1d10: ${d10}`;
+    if (isExploding) details += ` + 🔥 Explosão (10!): +${extra}`;
+    if (isFumble) details += ` - 💀 Falha Crítica (1!): -${extra}`;
+    details += ` + ${statName} (${statVal}) + Perícia (${rank})`;
+    roll = {
+      id: rollId,
+      timestamp: now,
+      characterName: player.handle,
+      rollType: "SKILL",
+      label: `Rolagem: ${skill.name}`,
+      diceFormula: "1d10",
+      baseRoll: d10,
+      bonus: statVal + rank,
+      total,
+      isCriticalSuccess: isExploding,
+      isCriticalFailure: isFumble,
+      details
+    };
+  } else {
+    return { room: null, error: "Tipo de rolagem inválido. Use: attack, damage, save ou skill." };
+  }
+
+  const result = postChatMessage(code, requesterPeerId, "", roll);
+  if (!result.room) return result;
+  return { room: result.room, roll };
+}
+
 // GM Power: Update room atmosphere/combat modifiers (T1.3)
 export function updateRoomSettings(
   code: string,

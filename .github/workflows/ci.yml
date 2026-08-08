@@ -95,10 +95,21 @@ jobs:
           SERVER_PID=$!
           sleep 3
           HEALTH=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/health || true)
-          kill $SERVER_PID 2>/dev/null || true
           if [ "$HEALTH" != "200" ]; then
             echo "❌ Healthcheck falhou (HTTP $HEALTH)"
             tail -20 /tmp/server.log
             exit 1
           fi
           echo "✅ Healthcheck OK (HTTP $HEALTH)"
+          # E2E WebSocket (T5.4) — valida o discriminador isBinary (texto vs
+          # binário Yjs) + anti-forjamento de rollResult. Sem SUPABASE_URL o
+          # servidor roda sem persistência — o teste usa só memória (cria sala).
+          node scripts/test-ws-e2e.mjs
+          E2E_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          if [ "$E2E_EXIT" != "0" ]; then
+            echo "❌ E2E WebSocket falhou (exit $E2E_EXIT)"
+            tail -20 /tmp/server.log
+            exit 1
+          fi
+          echo "✅ E2E WebSocket OK"
