@@ -1,7 +1,24 @@
-import React from 'react';
-import { SheetMeta } from '../lib/supabase';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  SheetMeta,
+  fetchUserProfile,
+  uploadAvatar,
+  removeAvatar
+} from '../lib/supabase';
 import { ActivityStatus } from '../hooks/useUserActivity';
-import { User as UserIcon, LogOut, Cpu, Shield, Skull, Bot, Zap, Plus, Trash2, FileText, Lock } from 'lucide-react';
+import {
+  User as UserIcon,
+  LogOut,
+  Cpu,
+  Plus,
+  Trash2,
+  FileText,
+  Lock,
+  Upload,
+  ImagePlus,
+  Loader2,
+  XCircle
+} from 'lucide-react';
 
 interface UserProfileProps {
   user: { uid: string; displayName?: string | null; email?: string | null } | null;
@@ -37,6 +54,57 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   onLogout
 }) => {
   const status = STATUS_META[activityStatus] || STATUS_META['online'];
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Carrega o avatar do perfil (bucket avatars) ao montar / trocar de usuário
+  useEffect(() => {
+    if (!user) {
+      setAvatarUrl('');
+      return;
+    }
+    let active = true;
+    fetchUserProfile(user.uid)
+      .then((p) => {
+        if (active && p) setAvatarUrl(p.avatarUrl || '');
+      })
+      .catch(() => {
+        /* perfil indisponível — mantém estado atual */
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.uid]);
+
+  const handleFileSelected = async (file: File | undefined) => {
+    if (!file || !user) return;
+    setAvatarError(null);
+    setIsUploading(true);
+    try {
+      const url = await uploadAvatar(user.uid, file);
+      setAvatarUrl(url);
+      window.dispatchEvent(new CustomEvent<string>('cyberpunk:avatar-updated', { detail: url }));
+    } catch (e) {
+      setAvatarError(e instanceof Error ? e.message : 'Falha ao enviar avatar.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+    setAvatarError(null);
+    try {
+      await removeAvatar(user.uid);
+      setAvatarUrl('');
+      window.dispatchEvent(new CustomEvent<string>('cyberpunk:avatar-updated', { detail: '' }));
+    } catch {
+      setAvatarError('Falha ao remover avatar.');
+    }
+  };
 
   if (authLoading) {
     return (
@@ -76,8 +144,17 @@ export const UserProfile: React.FC<UserProfileProps> = ({
           PROFILE
         </div>
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-          <div className="w-20 h-20 rounded-2xl bg-slate-900 border-2 border-amber-400/60 flex items-center justify-center shadow-[0_0_20px_rgba(251,191,36,0.25)]">
-            <Cpu className="w-10 h-10 text-amber-400" />
+          <div className="w-20 h-20 rounded-2xl bg-slate-900 border-2 border-amber-400/60 flex items-center justify-center overflow-hidden shadow-[0_0_20px_rgba(251,191,36,0.25)]">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+                onError={() => setAvatarUrl('')}
+              />
+            ) : (
+              <Cpu className="w-10 h-10 text-amber-400" />
+            )}
           </div>
           <div className="flex-1">
             <div className="flex items-center space-x-3">
@@ -163,15 +240,61 @@ export const UserProfile: React.FC<UserProfileProps> = ({
         </div>
       </div>
 
-      {/* Ícones de avatar disponíveis (decorativo) */}
+      {/* Avatar upload (bucket avatars — T2.17) */}
       <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4">
-        <span className="text-[10px] text-slate-500 uppercase font-mono block mb-3">Avatares disponíveis</span>
-        <div className="flex items-center space-x-2">
-          {[Cpu, Shield, Skull, Bot, Zap].map((Icon, i) => (
-            <div key={i} className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center">
-              <Icon className="w-5 h-5 text-slate-400" />
+        <div className="flex items-center space-x-2 mb-3">
+          <ImagePlus className="w-4 h-4 text-amber-400" />
+          <span className="text-[10px] text-amber-400 uppercase font-mono font-black tracking-widest">
+            Avatar do Edgerunner
+          </span>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="w-16 h-16 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <Cpu className="w-7 h-7 text-slate-500" />
+            )}
+          </div>
+          <div className="flex-1 w-full space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => handleFileSelected(e.target.files?.[0])}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded font-black text-[10px] uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
+              >
+                {isUploading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5" />
+                )}
+                <span>{isUploading ? 'Enviando...' : 'Enviar Avatar'}</span>
+              </button>
+              {avatarUrl && (
+                <button
+                  onClick={handleRemoveAvatar}
+                  disabled={isUploading}
+                  className="px-3 py-1.5 bg-slate-900 hover:bg-red-950 border border-slate-700 hover:border-red-500 text-slate-400 hover:text-red-400 rounded font-black text-[10px] uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span>Remover</span>
+                </button>
+              )}
             </div>
-          ))}
+            <p className="text-[9px] text-slate-500 leading-relaxed">
+              PNG, JPEG, WebP ou GIF · até 5 MB. O avatar aparece no menu e no perfil.
+            </p>
+            {avatarError && (
+              <p className="text-[10px] text-red-400 font-bold">⚠ {avatarError}</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

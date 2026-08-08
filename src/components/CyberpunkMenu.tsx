@@ -120,12 +120,13 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
   onLogout
 }) => {
   const [avatarIconKey, setAvatarIconKey] = useState<string>('cpu');
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [showPatchNotes, setShowPatchNotes] = useState<boolean>(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [userCyberpunkId, setUserCyberpunkId] = useState<string>('');
 
-  // Sync avatar icon and Cyberpunk ID from local profile cache & cloud
+  // Sync avatar icon/url and Cyberpunk ID from local profile cache & cloud
   useEffect(() => {
     if (user) {
       const defaultId = generateCyberpunkId(user.uid);
@@ -148,15 +149,48 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
         if (p?.cyberpunkId) {
           setUserCyberpunkId(p.cyberpunkId);
         }
+        if (p?.avatarUrl) {
+          setAvatarUrl(p.avatarUrl);
+        }
       });
     } else {
       setUserCyberpunkId('');
+      setAvatarUrl('');
     }
   }, [user, activeTab]);
+
+  // Avatar atualiza imediatamente após upload/remoção feitos no UserProfile
+  // (evento customizado — evita depender de troca de aba para re-sync).
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setAvatarUrl((e as CustomEvent<string>).detail || '');
+    };
+    window.addEventListener('cyberpunk:avatar-updated', handler);
+    return () => window.removeEventListener('cyberpunk:avatar-updated', handler);
+  }, []);
 
   const avatarInfo = AVATAR_CONFIG[avatarIconKey] || AVATAR_CONFIG['cpu'];
   const UserAvatarComp = avatarInfo.icon;
   const statusInfo = STATUS_LED_CONFIG[activityStatus] || STATUS_LED_CONFIG['online'];
+
+  // Renderiza a imagem do avatar (bucket avatars) quando disponível; senão o ícone.
+  const renderAvatar = (sizeCls: string) => {
+    if (avatarUrl) {
+      return (
+        <img
+          src={avatarUrl}
+          alt="Avatar"
+          className={`${sizeCls} object-cover rounded-lg shrink-0`}
+          onError={() => setAvatarUrl('')}
+        />
+      );
+    }
+    return (
+      <div className={`${sizeCls} rounded-lg border ${avatarInfo.border} ${avatarInfo.bg} flex items-center justify-center shrink-0`}>
+        <UserAvatarComp className={`w-5 h-5 ${avatarInfo.color}`} />
+      </div>
+    );
+  };
 
   return (
     <aside
@@ -252,9 +286,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                 className={`p-3 rounded-xl border-2 cursor-pointer bg-slate-900/90 flex items-center justify-between ${statusInfo.borderActive} ${statusInfo.shadow}`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`w-9 h-9 rounded-lg border ${avatarInfo.border} ${avatarInfo.bg} flex items-center justify-center shrink-0`}>
-                    <UserAvatarComp className={`w-5 h-5 ${avatarInfo.color}`} />
-                  </div>
+                  {renderAvatar('w-9 h-9')}
                   <div>
                     <div className="flex items-center space-x-1.5 leading-tight">
                       <span className={`text-xs ${avatarInfo.color} font-black uppercase tracking-wider block`}>
@@ -510,12 +542,8 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  {/* User Avatar */}
-                  <div
-                    className={`w-9 h-9 rounded-lg border ${avatarInfo.border} ${avatarInfo.bg} flex items-center justify-center shrink-0 shadow-sm`}
-                  >
-                    <UserAvatarComp className={`w-5 h-5 ${avatarInfo.color}`} />
-                  </div>
+                  {/* User Avatar (imagem do bucket ou ícone) */}
+                  {renderAvatar('w-9 h-9 shadow-sm')}
 
                   {/* Name and LED status */}
                   {!isMinimized && (

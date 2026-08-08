@@ -255,7 +255,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T2.14', title: 'useUserActivity com presença', status: 'concluído' },
         { code: 'T2.15', title: 'Migrar imports e remover firebase', status: 'concluído' },
         { code: 'T2.16', title: 'Bucket avatars com RLS', status: 'concluído' },
-        { code: 'T2.17', title: 'Upload de avatar no UserProfile', status: 'pendente' },
+        { code: 'T2.17', title: 'Upload de avatar no UserProfile', status: 'concluído' },
         { code: 'T2.18', title: 'Testes manuais de auth/social/chat/fichas', status: 'pendente' },
         { code: 'T2.19', title: 'Testes de RLS (acessos anônimos/cross-user)', status: 'pendente' },
         { code: 'T2.20', title: 'tsc + build verdes pós-migração', status: 'pendente' }

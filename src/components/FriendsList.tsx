@@ -279,6 +279,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
       displayName: user.displayName || user.email?.split('@')[0] || 'Edgerunner',
       bio: '',
       avatarIcon: 'cpu',
+      avatarUrl: '',
       status: 'online'
     };
 
@@ -313,6 +314,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
       displayName: user.displayName || user.email?.split('@')[0] || 'Edgerunner',
       bio: '',
       avatarIcon: 'cpu',
+      avatarUrl: '',
       status: 'online'
     };
     await acceptFriendRequest(req, currentUserProfile);
