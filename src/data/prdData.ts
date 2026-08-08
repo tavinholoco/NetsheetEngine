@@ -267,13 +267,13 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'Multiplayer: Persistência e Confiabilidade',
       objective: 'Salas não podem viver só em memória; reconexão e estado estável (P1).',
       priority: 'P1',
-      status: 'pendente',
+      status: 'em andamento',
       tasks: [
-        { code: 'T3.1', title: 'Persistir salas (Supabase/Redis)', status: 'pendente' },
-        { code: 'T3.2', title: 'Restaurar salas ativas no boot', status: 'pendente' },
+        { code: 'T3.1', title: 'Persistir salas (Supabase/Redis)', status: 'concluído' },
+        { code: 'T3.2', title: 'Restaurar salas ativas no boot', status: 'concluído' },
         { code: 'T3.3', title: 'Reconexão com mesmo peerId restaura estado', status: 'pendente' },
         { code: 'T3.4', title: 'Timeout de isOnline por inatividade', status: 'pendente' },
-        { code: 'T3.5', title: 'Decisão SSE vs WebSockets/Yjs (evitar retrabalho)', status: 'pendente' }
+        { code: 'T3.5', title: 'Decisão SSE vs WebSockets/Yjs (evitar retrabalho)', status: 'concluído' }
       ]
     },
     {

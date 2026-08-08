@@ -25,8 +25,15 @@ import {
   sanitizeText,
   isValidRoomCode
 } from "./server/roomManager.js";
+import {
+  queueRoomPersist,
+  deleteRoomPersisted,
+  restoreRoomsFromDb,
+  flushAllPending
+} from "./server/roomPersistence.js";
 
-dotenv.config();
+// Fase 3 — o servidor lê .env.local (VITE_* + chaves de serviço)
+dotenv.config({ path: ['.env', '.env.local'] });
 
 const app = express();
 const PORT = 3000;
@@ -81,6 +88,8 @@ const sseClients: Record<string, Set<Response>> = {};
 function broadcastRoomUpdate(code: string) {
   const room = getRoom(code);
   if (!room) return;
+  // Fase 3 (T3.1) — persistir a sala após cada mutação (debounce 2s)
+  queueRoomPersist(code);
   const clients = sseClients[code.toUpperCase()];
   if (clients && clients.size > 0) {
     const payload = `data: ${JSON.stringify(room)}\n\n`;
@@ -293,7 +302,7 @@ app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
 });
 
 // Leave room endpoint (T1.7 — autenticado por token)
-app.post("/api/rooms/:code/leave", roomLimiter, (req, res) => {
+app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
     return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
@@ -301,6 +310,10 @@ app.post("/api/rooms/:code/leave", roomLimiter, (req, res) => {
   const result = leaveRoom(req.params.code, peerId);
   if (result.room) {
     broadcastRoomUpdate(result.room.code);
+  } else {
+    // Fase 3 (T3.1) — mesa encerrada: remover do banco (o broadcast não roda).
+    // Await para não deixar linha órfã que ressuscitaria a sala no próximo boot.
+    await deleteRoomPersisted(req.params.code);
   }
   res.json({ success: true });
 });
@@ -379,6 +392,9 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 });
 
 async function startServer() {
+  // Fase 3 (T3.2) — restaurar salas persistidas antes de aceitar conexões
+  await restoreRoomsFromDb();
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -397,5 +413,15 @@ async function startServer() {
     console.log(`[Cyberpunk 2020 Engine & Multiplayer Server] Active on http://0.0.0.0:${PORT}`);
   });
 }
+
+// Fase 3 (T3.1) — grava pendências de persistência no shutdown gracioso
+function shutdown(signal: string) {
+  console.log(`[server] ${signal} recebido — persistindo salas pendentes...`);
+  void flushAllPending().finally(() => {
+    process.exit(0);
+  });
+}
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 startServer();

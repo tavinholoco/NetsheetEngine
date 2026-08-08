@@ -3,7 +3,8 @@
 -- ============================================================
 -- Verifica que a Row Level Security bloqueia acessos anônimos e
 -- cross-user em profiles, friendships, friend_requests,
--- direct_messages, character_sheets e storage (bucket avatars).
+-- direct_messages, character_sheets, storage (bucket avatars) e rooms
+-- (Fase 3 — persistência de salas, servidor-only).
 --
 -- Técnica: impersonação via `set role` + `request.jwt.claim.sub`
 -- (padrão Supabase — auth.uid() lê esse GUC). Helpers com
@@ -159,6 +160,11 @@ select rls_test.expect_count('select * from public.direct_messages', 0, 'anon: n
 select rls_test.expect_denied('insert into public.direct_messages (chat_room_id, sender_uid, text) values (''x__y'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b'', ''hi'')', 'anon: não insere em direct_messages');
 select rls_test.expect_count('select * from public.character_sheets', 0, 'anon: não lê character_sheets');
 select rls_test.expect_denied('insert into public.character_sheets (user_id, sheet_id) values (''6dbca66c-511a-4959-8919-a03b1bdeff5b'', ''anon_sheet'')', 'anon: não insere em character_sheets');
+-- rooms (Fase 3): servidor-only — RLS ativo sem policies → nada de anon
+select rls_test.expect_count('select * from public.rooms', 0, 'anon: não lê rooms (servidor-only)');
+select rls_test.expect_denied('insert into public.rooms (code, room_state) values (''RLSNC-1'', ''{}''::jsonb)', 'anon: não insere em rooms');
+select rls_test.expect_affected('update public.rooms set room_state = ''{}''::jsonb', 0, 'anon: NÃO atualiza rooms');
+select rls_test.expect_affected('delete from public.rooms where code = ''RLSNC-1''', 0, 'anon: NÃO deleta de rooms (sem policy de delete)');
 select rls_test.expect_denied('insert into storage.objects (bucket_id, name, owner_id) values (''avatars'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b/anon.png'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b'')', 'anon: não faz upload no bucket avatars');
 -- leitura pública (políticas to public): bucket público + listagem de buckets
 select rls_test.expect_count('select * from storage.objects where bucket_id = ''avatars''', 1, 'anon: lê avatares (bucket público)');
@@ -207,8 +213,7 @@ select rls_test.expect_affected('update public.character_sheets set handle = ''h
 select rls_test.expect_affected('delete from public.character_sheets where user_id = ''7afefc46-fb18-41a5-8b78-57fad6249e69''', 0, 'A: NÃO deleta a ficha de B');
 
 -- storage: pasta própria apenas
-select rls_test.expect_ok('insert into storage.objects (bucket_id, name, owner_id) values (''avatars'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b/own.png'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b'')', 'A: faz upload na própria pasta avatars');
-select rls_test.expect_denied('insert into storage.objects (bucket_id, name, owner_id) values (''avatars'', ''7afefc46-fb18-41a5-8b78-57fad6249e69/roubo.png'', ''7afefc46-fb18-41a5-8b78-57fad6249e69'')', 'A: NÃO faz upload na pasta de B');
+select rls_test.expect_ok('insert into storage.objects (bucket_id, name, owner_id) values (''avatars'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b/own.png'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b'')', 'A: faz upload na própria pasta avatars');select rls_test.expect_denied('insert into storage.objects (bucket_id, name, owner_id) values (''avatars'', ''7afefc46-fb18-41a5-8b78-57fad6249e69/roubo.png'', ''7afefc46-fb18-41a5-8b78-57fad6249e69'')', 'A: NÃO faz upload na pasta de B');
 select rls_test.expect_affected('update storage.objects set metadata = ''{"hack":true}''::jsonb where name like ''7afefc46%''', 0, 'A: NÃO altera objeto de B');
 -- DELETE direto é bloqueado pelo trigger protect_delete (42501), além do RLS.
 select rls_test.expect_denied('delete from storage.objects where name like ''7afefc46%''', 'A: NÃO deleta objeto de B (trigger protect_delete + RLS)');
@@ -224,6 +229,9 @@ set role authenticated;
 select rls_test.expect_count('select * from public.character_sheets', 1, 'B: só vê a própria ficha');
 select rls_test.expect_count('select * from public.character_sheets where user_id = ''6dbca66c-511a-4959-8919-a03b1bdeff5b''', 0, 'B: NÃO vê a ficha de A');
 select rls_test.expect_affected('update public.profiles set bio = ''hack'' where id = ''6dbca66c-511a-4959-8919-a03b1bdeff5b''', 0, 'B: NÃO atualiza o perfil de A');
+-- rooms: autenticado também é bloqueado (estado da mesa passa pelo servidor)
+select rls_test.expect_count('select * from public.rooms', 0, 'B: não lê rooms (servidor-only)');
+select rls_test.expect_denied('insert into public.rooms (code, room_state) values (''RLSNC-2'', ''{}''::jsonb)', 'B: não insere em rooms');
 select rls_test.expect_count('select * from public.direct_messages', 3, 'B: vê chats A-B e B-C (participa dos dois)');
 select rls_test.expect_denied('insert into storage.objects (bucket_id, name, owner_id) values (''avatars'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b/x.png'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b'')', 'B: NÃO faz upload na pasta de A');
 select rls_test.expect_count('select * from public.friend_requests', 3, 'B: vê solicitações em que participa');

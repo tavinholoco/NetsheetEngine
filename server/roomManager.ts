@@ -147,6 +147,34 @@ export function getRoom(code: string): GameRoom | undefined {
   return rooms[code.trim().toUpperCase()];
 }
 
+// Fase 3 (T3.2) — injeta uma sala vinda da persistência (room_state jsonb).
+// Valida a estrutura mínima, preenche defaults de campos que handlers usam
+// (snapshot antigo de schema evoluído não pode crashar o servidor) e marca
+// todos os jogadores como offline, pois o servidor acabou de reiniciar.
+export function restoreRoom(room: GameRoom): boolean {
+  if (!room || typeof room.code !== "string") return false;
+  const code = room.code.trim().toUpperCase();
+  if (!code || !isValidRoomCode(code)) return false;
+  if (!room.players || typeof room.players !== "object") return false;
+
+  // Defaults defensivos: handlers operam nestes campos (postChatMessage
+  // faz .push, updateTacticalGrid acessa .tokens, nextTurn lê a lista).
+  if (!Array.isArray(room.chatMessages)) room.chatMessages = [];
+  if (!Array.isArray(room.initiativeList)) room.initiativeList = [];
+  if (typeof room.activeTurnIndex !== "number") room.activeTurnIndex = 0;
+  if (!room.tacticalGrid || typeof room.tacticalGrid !== "object") {
+    room.tacticalGrid = { rows: 8, cols: 10, theme: "alley", tokens: [] };
+  }
+  if (!Array.isArray(room.tacticalGrid.tokens)) room.tacticalGrid.tokens = [];
+  if (!room.npcs || typeof room.npcs !== "object") room.npcs = {};
+
+  for (const player of Object.values(room.players)) {
+    if (player) player.isOnline = false;
+  }
+  rooms[code] = room;
+  return true;
+}
+
 export function joinRoom(code: string, peerId: string, handle: string, sheet: CharacterSheet): { room: GameRoom; sessionToken: string } | null {
   const room = getRoom(code);
   if (!room) return null;

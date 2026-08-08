@@ -188,12 +188,13 @@ com RLS adequado. *(Manter `firebase-blueprint.json`/`firestore.rules` apenas co
 ## FASE 3 — MULTIPLAYER: PERSISTÊNCIA E CONFIABILIDADE  **[P1]**
 **Objetivo:** salas não podem mais viver só em memória; reconexão e estado estável.
 
-- [ ] **T3.1** Persistir salas no Supabase (tabela `rooms` + `room_state jsonb`) ou Redis/Upstash; salvar após cada mutação no `roomManager`.
-- [ ] **T3.2** Restaurar salas ativas no boot do servidor (carregar do banco ao iniciar).
+- [x] **T3.1** Persistir salas no Supabase (tabela `rooms` + `room_state jsonb`) ou Redis/Upstash; salvar após cada mutação no `roomManager`. *(✓ concluído em 08/08/2026 — migration `0006_rooms_persistence.sql`: tabela `rooms` (code PK, `room_state jsonb`, `updated_at` timestamptz) com índice em `updated_at`, RLS ativo SEM policies (servidor-only — anon/authenticated bloqueados; a proteção é a RLS, não o GRANT) e grants padrão do Supabase. Novo módulo `server/roomPersistence.ts` com client service-role (bypassa RLS): `queueRoomPersist` com **debounce 2s** (rajadas de mutação = 1 write), `persistRoomNow`, `deleteRoomPersisted` (cancela timer pendente) e `flushAllPending` no shutdown (SIGINT/SIGTERM). Hook no `server.ts`: `queueRoomPersist(code)` dentro do `broadcastRoomUpdate` (funnel central de todas as mutações), `deleteRoomPersisted` no leave quando a mesa encerra, `restoreRoomsFromDb()` no boot antes do listen. Novas envs `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side, nunca `VITE_`) em `.env.example` e `.env.local` (chave local do Kong). Validação E2E: criar sala → linha no banco; mutação (chat) → estado atualizado; **3 reboots do servidor com estado restaurado** (chat com "msg antes do restart" sobreviveu); encerrar mesa → linha removida; bundle de produção `dist/server.cjs` também persiste.)*
+- [x] **T3.2** Restaurar salas ativas no boot do servidor (carregar do banco ao iniciar). *(✓ concluído em 08/08/2026 — `restoreRoomsFromDb()` em `server/roomPersistence.ts` + `restoreRoom(room)` em `server/roomManager.ts`: valida estrutura mínima (code via `isValidRoomCode`, players object) e marca todos os jogadores `isOnline: false` (ninguém conectado após o boot). Log `[roomPersistence] N sala(s) restaurada(s)` no boot. Validado: 1 e 2 salas restauradas em reboots reais, lobby `/api/rooms` lista a sala restaurada e `GET /api/rooms/:code` devolve o estado completo, incluindo ficha do GM e histórico do chat.)*
 - [ ] **T3.3** Reconexão: ao re-joinar com mesmo `peerId`, restaurar ficha/token em vez de duplicar.
 - [ ] **T3.4** Timeout de `isOnline`: marcar como offline após inatividade (heartbeat do cliente).
 - [ ] **T3.5** Decidir e documentar: migrar SSE → WebSockets/Yjs (Fase 5) agora ou depois — se depois, manter SSE com os fixes de reconnection (EventSource auto-reconecta, mas garantir re-sync de estado).
   ⚠️ **Evitar retrabalho:** antes de persistir salas em `room_state jsonb`, decidir o formato de persistência (JSON simples vs **snapshot Yjs**). Se Yjs for escolhido na Fase 5, a Fase 3 já deve guardar snapshots Yjs — senão a persistência será reescrita.
+  ➡️ **Decisão tomada em 08/08/2026 (T3.1/T3.2): persistência em JSON simples (`room_state jsonb`).** Justificativa: a arquitetura é de **servidor autoritativo** (clientes postam → servidor valida e escreve → broadcast SSE), então não há conflitos de escrita concorrente para um CRDT resolver; o `GameRoom` já é 100% JSON-serializável; JSON é debuggável no psql e zero dependências novas. Yjs só faria sentido se houver edição colaborativa concorrente do mesmo dado (ex.: GM e jogador na mesma ficha ao mesmo tempo) — nesse caso (avaliar na Fase 5) o híbrido recomendado é manter o JSON como verdade durável e usar Yjs apenas como camada de sync ao vivo. **Não há retrabalho pendente**: se Yjs for adotado na Fase 5, a persistência JSON continua como fonte de verdade.
 - [ ] ✅ **Fase 3 concluída em:** ____/____/______
 
 ---
@@ -317,7 +318,7 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 | 0 | Fundação e recuperação do código | ✅ concluída | 03/08/2026 |
 | 1 | Correções de segurança | ✅ concluída | 03/08/2026 |
 | 2 | Migração Firebase → Supabase | ✅ concluída (T2.1–T2.20; T2.9 cancelada) | 07/08/2026 |
-| 3 | Multiplayer: persistência | ⬜ | — |
+| 3 | Multiplayer: persistência | 🔄 em andamento (T3.1/T3.2) | — |
 | 4 | Estado frontend (Zustand) | ⬜ | — |
 | 5 | Multiplayer real-time (WS/Yjs) | ⬜ | — |
 | 6 | Motor de dados | ⬜ | — |
@@ -328,7 +329,7 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 | 11 | Regras CP2020 avançadas | ⬜ | — |
 | 12 | Validação final + delete deste arquivo | ⬜ | — |
 
-**Última atualização:** 07/08/2026 — **revisão v1.8**: Fases 0, 1 e **2 concluídas** (T2.1–T2.20; T2.9 cancelada).
+**Última atualização:** 08/08/2026 — **revisão v1.9**: Fases 0, 1 e **2 concluídas** (T2.1–T2.20; T2.9 cancelada). **Fase 3 iniciada** — T3.1/T3.2 concluídas (persistência de salas em `rooms.room_state jsonb` com service-role, debounce 2s, restauração no boot e shutdown gracioso; decisão T3.5: **JSON simples**, documentada).
 Fase 2 (progresso 2.1–2.8/2.10–2.16): ambiente local **rodando** (Docker Desktop instalado; `supabase start` no ar:
 API `127.0.0.1:54321`, Studio `54323`, Postgres `54322`); migrations **0001** (schema + RLS + triggers),
 **0002** (Realtime p/ `direct_messages`/`profiles`/`friend_requests` + bucket `avatars` com RLS de pasta)
