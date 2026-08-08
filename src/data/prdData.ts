@@ -267,7 +267,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'Multiplayer: Persistência e Confiabilidade',
       objective: 'Salas não podem viver só em memória; reconexão e estado estável (P1).',
       priority: 'P1',
-      status: 'em andamento',
+      status: 'concluído',
       tasks: [
         { code: 'T3.1', title: 'Persistir salas (Supabase/Redis)', status: 'concluído' },
         { code: 'T3.2', title: 'Restaurar salas ativas no boot', status: 'concluído' },
