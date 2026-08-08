@@ -1,5 +1,5 @@
 import React from 'react';
-import { CharacterSheet, StatName } from '../../types/cyberpunk';
+import { CharacterSheet, StatName } from '../../../types/cyberpunk';
 import { Heart, Shield, Brain, Wind, Flame } from 'lucide-react';
 
 interface StatBlockProps {

@@ -8,11 +8,11 @@ import {
   saveUserProfile,
   updateProfile,
   onAuthStateChanged
-} from '../lib/supabase';
+} from '../../lib/supabase';
 import { Shield, Mail, User as UserIcon, Lock, AlertTriangle, Loader2, Sparkles, LogIn, UserPlus } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 
 interface AuthModalProps {
   isOpen: boolean;

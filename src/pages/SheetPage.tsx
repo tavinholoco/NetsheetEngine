@@ -1,12 +1,12 @@
 import React from 'react';
 import { CharacterSheet, StatName } from '../types/cyberpunk';
-import { CharacterHeader } from '../components/CharacterSheet/CharacterHeader';
-import { HealthTracker } from '../components/CharacterSheet/HealthTracker';
-import { StatBlock } from '../components/CharacterSheet/StatBlock';
-import { CyberwareManager } from '../components/CharacterSheet/CyberwareManager';
-import { WeaponsArmor } from '../components/CharacterSheet/WeaponsArmor';
-import { SkillsSection } from '../components/CharacterSheet/SkillsSection';
-import { LifepathGenerator } from '../components/CharacterSheet/LifepathGenerator';
+import { CharacterHeader } from '../features/sheet/CharacterSheet/CharacterHeader';
+import { HealthTracker } from '../features/sheet/CharacterSheet/HealthTracker';
+import { StatBlock } from '../features/sheet/CharacterSheet/StatBlock';
+import { CyberwareManager } from '../features/sheet/CharacterSheet/CyberwareManager';
+import { WeaponsArmor } from '../features/sheet/CharacterSheet/WeaponsArmor';
+import { SkillsSection } from '../features/sheet/CharacterSheet/SkillsSection';
+import { LifepathGenerator } from '../features/sheet/CharacterSheet/LifepathGenerator';
 import { Save, CheckCircle2, Plus, Lock } from 'lucide-react';
 
 /**

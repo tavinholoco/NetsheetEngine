@@ -3,9 +3,9 @@ import {
   fetchUserProfile,
   uploadAvatar,
   removeAvatar
-} from '../lib/supabase';
-import { ActivityStatus } from '../hooks/useUserActivity';
-import { useSheetStore } from '../stores/useSheetStore';
+} from '../../lib/supabase';
+import { ActivityStatus } from '../../hooks/useUserActivity';
+import { useSheetStore } from '../../stores/useSheetStore';
 import {
   User as UserIcon,
   LogOut,

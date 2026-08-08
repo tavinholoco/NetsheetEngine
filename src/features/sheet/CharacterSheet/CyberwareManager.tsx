@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CharacterSheet, CyberwareItem } from '../../types/cyberpunk';
+import { CharacterSheet, CyberwareItem } from '../../../types/cyberpunk';
 import { Cpu, Plus, Trash2, Power, AlertTriangle } from 'lucide-react';
 
 interface CyberwareManagerProps {

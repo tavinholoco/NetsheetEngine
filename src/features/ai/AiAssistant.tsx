@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CharacterSheet } from '../types/cyberpunk';
+import { CharacterSheet } from '../../types/cyberpunk';
 import { Bot, Send, Sparkles, Lock, Dices, User } from 'lucide-react';
 
 interface AiAssistantProps {

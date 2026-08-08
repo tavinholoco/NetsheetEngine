@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CharacterSheet } from '../types/cyberpunk';
+import { CharacterSheet } from '../../types/cyberpunk';
 import {
   RoomPlayer,
   ChatMessage,
   InitiativeEntry,
   TacticalGridState
-} from '../types/multiplayer';
+} from '../../types/multiplayer';
 import { TacticalGrid } from './TacticalGrid';
-import { YjsGridConnection, RemoteCursor } from '../lib/yjsConnection';
-import { useRoomStore } from '../stores/useRoomStore';
-import { useSheetStore } from '../stores/useSheetStore';
-import { useUiStore } from '../stores/useUiStore';
+import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
+import { useRoomStore } from '../../stores/useRoomStore';
+import { useSheetStore } from '../../stores/useSheetStore';
+import { useUiStore } from '../../stores/useUiStore';
 import {
   Radio,
   Users,

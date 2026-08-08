@@ -1,5 +1,5 @@
 import React from 'react';
-import { CharacterSheet } from '../../types/cyberpunk';
+import { CharacterSheet } from '../../../types/cyberpunk';
 import { HeartPulse, Skull, Activity, Zap } from 'lucide-react';
 
 interface HealthTrackerProps {

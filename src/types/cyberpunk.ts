@@ -4,7 +4,7 @@
  * Tipos centrais da ficha de personagem (CharacterSheet) e dos
  * resultados de rolagem (RollResult), reconstruídos a partir dos
  * consumidores existentes: App.tsx, server/roomManager.ts,
- * utils/npcGenerator.ts, components/TacticalGrid.tsx e
+ * utils/npcGenerator.ts, src/features/multiplayer/TacticalGrid.tsx e
  * types/multiplayer.ts.
  * ============================================================
  */

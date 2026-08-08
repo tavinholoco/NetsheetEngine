@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ArmorPiece, CharacterSheet, WeaponItem } from '../../types/cyberpunk';
-import { DEFAULT_ARMOR, DEFAULT_WEAPONS } from '../../data/cyberpunkData';
+import { ArmorPiece, CharacterSheet, WeaponItem } from '../../../types/cyberpunk';
+import { DEFAULT_ARMOR, DEFAULT_WEAPONS } from '../../../data/cyberpunkData';
 import { Shield, Target, Plus, Trash2, Dice5, Crosshair } from 'lucide-react';
 
 interface WeaponsArmorProps {

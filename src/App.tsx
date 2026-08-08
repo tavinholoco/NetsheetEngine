@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { CyberpunkMenu, TabType } from './components/CyberpunkMenu';
-import { AuthModal } from './components/AuthModal';
+import { AuthModal } from './features/social/AuthModal';
 import { RollResult, StatName } from './types/cyberpunk';
 import { useCharacterSheet } from './hooks/useCharacterSheet';
 import { useUserActivity } from './hooks/useUserActivity';
@@ -23,12 +23,12 @@ import { Dice5, CheckCircle2 } from 'lucide-react';
 const HomePageLazy = lazy(() => import('./components/HomePage').then((m) => ({ default: m.HomePage })));
 const PrdViewerLazy = lazy(() => import('./components/PrdViewer').then((m) => ({ default: m.PrdViewer })));
 const SheetPageLazy = lazy(() => import('./pages/SheetPage').then((m) => ({ default: m.SheetPage })));
-const DiceRollerLazy = lazy(() => import('./components/DiceRoller').then((m) => ({ default: m.DiceRoller })));
-const AiAssistantLazy = lazy(() => import('./components/AiAssistant').then((m) => ({ default: m.AiAssistant })));
-const MultiplayerRoomLazy = lazy(() => import('./components/MultiplayerRoom').then((m) => ({ default: m.MultiplayerRoom })));
+const DiceRollerLazy = lazy(() => import('./features/sheet/DiceRoller').then((m) => ({ default: m.DiceRoller })));
+const AiAssistantLazy = lazy(() => import('./features/ai/AiAssistant').then((m) => ({ default: m.AiAssistant })));
+const MultiplayerRoomLazy = lazy(() => import('./features/multiplayer/MultiplayerRoom').then((m) => ({ default: m.MultiplayerRoom })));
 const RoomPageLazy = lazy(() => import('./pages/RoomPage').then((m) => ({ default: m.RoomPage })));
 const PresetsManagerLazy = lazy(() => import('./components/PresetsManager').then((m) => ({ default: m.PresetsManager })));
-const UserProfileLazy = lazy(() => import('./components/UserProfile').then((m) => ({ default: m.UserProfile })));
+const UserProfileLazy = lazy(() => import('./features/social/UserProfile').then((m) => ({ default: m.UserProfile })));
 const NotFoundLazy = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
 /** Placeholder exibido enquanto o chunk da rota carrega. */

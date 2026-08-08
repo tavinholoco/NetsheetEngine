@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { MultiplayerRoom } from '../components/MultiplayerRoom';
+import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { useRoomStore } from '../stores/useRoomStore';
 
 /**

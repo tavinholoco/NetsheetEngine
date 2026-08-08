@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { RollResult, StatName } from '../types/cyberpunk';
+import { RollResult, StatName } from '../../types/cyberpunk';
 // Fase 6 (T6.3) — motor de dados FNFF (audit trail via @dice-roller)
 import {
   rollSkill as engineRollSkill,
   rollDamage as engineRollDamage,
   rollDeathSave as engineRollDeathSave
-} from '../utils/diceEngine';
+} from '../../utils/diceEngine';
 import { Dice5, History, Trash2, Target, HeartPulse, Zap } from 'lucide-react';
-import { useSheetStore } from '../stores/useSheetStore';
-import { useRollStore } from '../stores/useRollStore';
+import { useSheetStore } from '../../stores/useSheetStore';
+import { useRollStore } from '../../stores/useRollStore';
 
 interface DiceRollerProps {
   onAddRoll: (roll: RollResult) => void;

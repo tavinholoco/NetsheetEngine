@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { CharacterSheet, SkillItem, StatName } from '../../types/cyberpunk';
-import { SKILL_TABLES } from '../../data/cyberpunkData';
+import { CharacterSheet, SkillItem, StatName } from '../../../types/cyberpunk';
+import { SKILL_TABLES } from '../../../data/cyberpunkData';
 import { Swords, Plus, Trash2, Dice5, Star } from 'lucide-react';
 
 interface SkillsSectionProps {

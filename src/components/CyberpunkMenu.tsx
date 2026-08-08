@@ -25,7 +25,7 @@ import {
 import { User, generateCyberpunkId, fetchUserProfile } from '../lib/supabase';
 import { ActivityStatus } from '../hooks/useUserActivity';
 import { PatchNotesFeed } from './PatchNotesFeed';
-import { FriendsList } from './FriendsList';
+import { FriendsList } from '../features/social/FriendsList';
 import { useUiStore } from '../stores/useUiStore';
 import { useSheetStore } from '../stores/useSheetStore';
 

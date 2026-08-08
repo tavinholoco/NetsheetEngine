@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { CharacterSheet } from '../../types/cyberpunk';
-import { LIFEPATH_TABLES } from '../../data/cyberpunkData';
+import { CharacterSheet } from '../../../types/cyberpunk';
+import { LIFEPATH_TABLES } from '../../../data/cyberpunkData';
 import { BookOpen, Dices, Plus, Trash2 } from 'lucide-react';
 
 interface LifepathGeneratorProps {
