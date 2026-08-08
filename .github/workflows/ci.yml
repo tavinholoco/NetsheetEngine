@@ -7,6 +7,29 @@ on:
     branches: [master]
 
 jobs:
+  secrets-scan:
+    name: Varredura de segredos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar gitleaks (pinado)
+        run: |
+          GITLEAKS_VERSION="v8.23.3"
+          OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          ARCH="$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/')"
+          FILE="gitleaks_${GITLEAKS_VERSION#v}_${OS}_${ARCH}.tar.gz"
+          curl -sfL "https://github.com/zricethezav/gitleaks/releases/download/${GITLEAKS_VERSION}/${FILE}" | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Detectar segredos no código
+        run: |
+          gitleaks detect --source . --config .gitleaks.toml --redact --exit-code 1 --verbose
+
   validate:
     name: tsc + build + testes
     runs-on: ubuntu-latest

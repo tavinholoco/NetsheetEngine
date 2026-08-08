@@ -1,0 +1,82 @@
+# ============================================================
+# NETSHEET ENGINE — gitleaks configuration
+# ============================================================
+# Scanner de segredos executado no CI (todo push/PR) para impedir
+# que chaves vazem para o GitHub — como aconteceu com a Firebase
+# Web API Key (commit ac6d4cac, resolvido em 08/08/2026).
+#
+# Referência: https://github.com/zricethezav/gitleaks
+# Testar localmente:  gitleaks detect --source . --redact
+# ============================================================
+
+title = "NETSHEET ENGINE gitleaks config"
+
+[extend]
+useDefault = true
+
+[version]
+ref = "v8.23.3"
+
+# ------------------------------------------------------------
+# Google OAuth Client Secret — formato GOCSPX-xxxxxxxxxxxxxxxxxx
+# (o que NUNCA deve vazar; hoje vive só em supabase/.env, gitignored)
+# ------------------------------------------------------------
+[[rules]]
+id = "netsheet-google-oauth-client-secret"
+description = "Google OAuth Client Secret (GOCSPX-...)"
+regex = '''GOCSPX-[0-9A-Za-z_-]{18}'''
+entropy = 3.0
+keywords = ["GOCSPX"]
+
+# ------------------------------------------------------------
+# Google / Firebase Web API Key — formato AIzaSyA-Z0-9_-{33}
+# (o que vazou na Fase 0 via firebase.ts e configs legados)
+# ------------------------------------------------------------
+[[rules]]
+id = "netsheet-google-firebase-api-key"
+description = "Google / Firebase Web API Key (AIzaSy...)"
+regex = '''AIzaSy[0-9A-Za-z_-]{33}'''
+entropy = 3.0
+keywords = ["AIzaSy"]
+
+# ------------------------------------------------------------
+# Proteção genérica de alto sinal (defesa em profundidade)
+# ------------------------------------------------------------
+[[rules]]
+id = "netsheet-aws-access-key"
+description = "AWS Access Key ID (AKIA...)"
+regex = '''AKIA[0-9A-Z]{16}'''
+keywords = ["AKIA"]
+
+[[rules]]
+id = "netsheet-github-token"
+description = "GitHub Personal Access Token (ghp_/github_pat_)"
+regex = '''(ghp|gho|ghu|ghs|ghr|github_pat)_[0-9A-Za-z_]{20,}'''
+keywords = ["ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_"]
+
+[[rules]]
+id = "netsheet-private-key"
+description = "Chave privada (PEM)"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY( BLOCK)?-----'''
+keywords = ["PRIVATE KEY"]
+
+[[rules]]
+id = "netsheet-generic-high-entropy"
+description = "Segredo genérico de alta entropia (JWT, token, key, secret)"
+regex = '''(?i)[a-z0-9_.\-]{0,32}(key|secret|token|password|passwd|pwd|apikey|api_key)[a-z0-9_.\-]{0,32}\s*[:=]\s*[0-9A-Za-z\-_+/]{20,}'''
+entropy = 4.0
+secretGroup = 1
+keywords = ["key", "secret", "token", "password", "passwd", "pwd", "apikey", "api_key"]
+
+[allowlist]
+description = "Exceções legítimas do repositório"
+paths = ['''node_modules''', '''package-lock.json''', '''bun.lock''', '''dist''', '''\.git''', '''supabase/\.env''', '''\.env\.local''']
+regexes = [
+  '''REMOVIDA-SEGURANCA''',
+  '''[0-9]{12}-[0-9a-z]{32}\.apps\.googleusercontent\.com''',
+  '''YOUR_''', '''your-''', '''<.*>''', '''placeholder''', '''example''', '''changeme''', '''xxxxx''',
+  # Anon key do Supabase local (fallback em src/lib/supabase.ts) — chave PÚBLICA por
+  # design, enviada no bundle do cliente (igual a todo projeto Supabase). O segredo real
+  # é a service_role, que vive apenas no servidor (.env.local, gitignored).
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9\.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0''',
+]
