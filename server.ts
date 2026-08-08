@@ -7,6 +7,13 @@ import dotenv from "dotenv";
 // Fase 5 (T5.2) — WebSocket puro (ws, já instalado) como transporte base do
 // multiplayer. SSE mantido como fallback automático no cliente.
 import { WebSocketServer, WebSocket } from "ws";
+// Fase 5 (T5.3) — Grid tático como estado CRDT (Yjs) sobre o mesmo WebSocket.
+import * as Y from "yjs";
+import * as encoding from "lib0/encoding";
+import * as decoding from "lib0/decoding";
+import * as syncProtocol from "y-protocols/sync";
+import * as awarenessProtocol from "y-protocols/awareness";
+import { deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
 import {
   createRoom,
   getRoom,
@@ -113,6 +120,9 @@ function broadcastRoomUpdate(code: string) {
   if (!room) return;
   // Fase 3 (T3.1) — persistir a sala após cada mutação (debounce 2s)
   queueRoomPersist(code);
+  // Fase 5 (T5.3) — espelha JSON → doc Yjs quando o grid mudou por REST
+  // (joinRoom, generateNpc, etc.) para os clientes CRDT convergirem.
+  seedDocFromJson(code);
   const payload = JSON.stringify(room);
 
   // SSE (fallback) — mesmo payload JSON
@@ -372,6 +382,8 @@ app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
     // Fase 3 (T3.1) — mesa encerrada: remover do banco (o broadcast não roda).
     // Await para não deixar linha órfã que ressuscitaria a sala no próximo boot.
     await deleteRoomPersisted(req.params.code);
+    // Fase 5 (T5.3) — descarta o doc CRDT/awareness da sala encerrada.
+    destroyRoomYjs(req.params.code);
   }
   res.json({ success: true });
 });
@@ -447,6 +459,241 @@ app.get("/api/rooms/:code/stream", (req, res) => {
 // cai para SSE automaticamente.
 const wss = new WebSocketServer({ noServer: true });
 
+// ==========================================
+// FASE 5 (T5.3) — GRID CRDT (Yjs) POR SALA
+// ==========================================
+// Cada sala com membros WS ativos tem um `Y.Doc` + `Awareness`:
+//   doc: grid tático como estado CRDT (meta + tokens) — camada de sync ao vivo
+//   awareness: cursores do GM (não-persistente)
+// O JSON `room.tacticalGrid` continua a verdade durável (decisão T5.1):
+//   doc → JSON: espelhado quando um update de cliente é autorizado (abaixo)
+//   JSON → doc: seedado em broadcastRoomUpdate (mutações REST convergem)
+//
+// Protocolo de mensagens binárias (y-websocket wire):
+//   [messageSync(0) + syncStep1/syncStep2/update]
+//   [messageAwareness(1) + update]
+//   [messageQueryAwareness(3)] → servidor responde awareness completo
+const messageSync = 0;
+const messageAwareness = 1;
+const messageQueryAwareness = 3;
+
+interface RoomYjsEntry {
+  doc: Y.Doc;
+  awareness: awarenessProtocol.Awareness;
+}
+const roomYjs = new Map<string, RoomYjsEntry>();
+
+/**
+ * Cria (ou reutiliza) o doc CRDT + awareness de uma sala, seedado do JSON,
+ * e acopla os watchers de updates/awareness (uma única vez por entrada).
+ */
+function getRoomYjs(code: string): RoomYjsEntry | null {
+  const key = code.toUpperCase();
+  let entry = roomYjs.get(key);
+  if (entry) return entry;
+  const room = getRoom(key);
+  if (!room) return null;
+  const doc = new Y.Doc();
+  if (room.tacticalGrid) {
+    writeGridToDoc(doc, room.tacticalGrid, "server");
+  }
+  const awareness = new awarenessProtocol.Awareness(doc);
+  entry = { doc, awareness };
+  roomYjs.set(key, entry);
+  watchYjsUpdates(entry, key);
+  return entry;
+}
+
+/**
+ * Watchers do doc/awareness de uma sala:
+ * - update do doc → espelha para o JSON durável (se origin é socket) + propaga
+ *   aos outros sockets (nunca ecoa o autor).
+ * - update do awareness → propaga para os outros sockets (cursores do GM).
+ */
+function watchYjsUpdates(entry: RoomYjsEntry, code: string): void {
+  entry.doc.on("update", (update: Uint8Array, origin: unknown) => {
+    if (origin && typeof (origin as WebSocket).send === "function") {
+      // Mutação de cliente: valida e espelha para o JSON. Se foi REVERTIDA,
+      // o update original NÃO é propagado (o revert já foi, sincronamente,
+      // pelo doc.on('update') aninhado dentro do mirrorDocToJson).
+      if (!mirrorDocToJson(code, origin as WebSocket)) return;
+    }
+    broadcastYjsUpdate(code, update, origin);
+  });
+
+  entry.awareness.on("update", ({ added, updated, removed }: any, origin: unknown) => {
+    const sockets = wsClients[code.toUpperCase()];
+    if (!sockets || sockets.size === 0) return;
+    const changed = [...added, ...updated, ...removed];
+    if (changed.length === 0) return;
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, messageAwareness);
+    encoding.writeVarUint8Array(encoder, awarenessProtocol.encodeAwarenessUpdate(entry.awareness, changed));
+    const payload = encoding.toUint8Array(encoder);
+    for (const ws of sockets) {
+      if (ws === origin) continue;
+      if (ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(payload);
+        } catch {
+          sockets.delete(ws);
+        }
+      }
+    }
+  });
+}
+
+/** Destrói o doc/awareness de uma sala (ex.: sala encerrada). */
+function destroyRoomYjs(code: string): void {
+  const key = code.toUpperCase();
+  const entry = roomYjs.get(key);
+  if (entry) {
+    roomYjs.delete(key);
+    try {
+      entry.awareness.destroy();
+      entry.doc.destroy();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Encaminha um update Yjs para os outros sockets da sala (não ecoa o autor). */
+function broadcastYjsUpdate(code: string, update: Uint8Array, origin: unknown): void {
+  const sockets = wsClients[code.toUpperCase()];
+  if (!sockets || sockets.size === 0) return;
+  const encoder = encoding.createEncoder();
+  encoding.writeVarUint(encoder, messageSync);
+  syncProtocol.writeUpdate(encoder, update);
+  const payload = encoding.toUint8Array(encoder);
+  for (const ws of sockets) {
+    if (ws === origin) continue;
+    if (ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(payload);
+      } catch {
+        sockets.delete(ws);
+      }
+    }
+  }
+}
+
+/**
+ * Espelha doc → JSON (verdade durável) após um update vindo de um cliente.
+ * Valida a permissão da mutação: GM pode tudo; jogador só move o PRÓPRIO
+ * token (x/y). Mutação não autorizada → reverte o doc (os outros clientes
+ * recebem o revert via broadcastYjsUpdate).
+ */
+function mirrorDocToJson(code: string, originWs: WebSocket): boolean {
+  const key = code.toUpperCase();
+  const entry = roomYjs.get(key);
+  const room = getRoom(key);
+  if (!entry || !room) return true;
+  const prev = room.tacticalGrid;
+  if (!prev) return true;
+  const next = deriveGridFromDoc(entry.doc);
+  if (JSON.stringify(prev) === JSON.stringify(next)) return true;
+
+  const originPeerId = (originWs as any)._peerId as string | undefined;
+  const isGm = room.gmPeerId === originPeerId;
+  const prevById = new Map(prev.tokens.map((t) => [t.id, t]));
+  const nextIds = new Set(next.tokens.map((t) => t.id));
+
+  let allowed = true;
+  // Estrutura (meta) só GM
+  if (!isGm && (prev.rows !== next.rows || prev.cols !== next.cols || prev.theme !== next.theme)) {
+    allowed = false;
+  }
+  // Tokens adicionados/removidos só GM
+  if (!isGm) {
+    for (const t of next.tokens) if (!prevById.has(t.id)) { allowed = false; break; }
+    if (allowed) for (const id of prevById.keys()) if (!nextIds.has(id)) { allowed = false; break; }
+  }
+  // Tokens alterados: jogador só pode mudar x/y do PRÓPRIO token
+  if (allowed && !isGm) {
+    for (const t of next.tokens) {
+      const p = prevById.get(t.id);
+      if (!p) continue;
+      const posChanged = p.x !== t.x || p.y !== t.y;
+      const otherChanged =
+        p.name !== t.name ||
+        p.type !== t.type ||
+        p.hp !== t.hp ||
+        p.maxHp !== t.maxHp ||
+        p.spCover !== t.spCover ||
+        p.status !== t.status ||
+        p.color !== t.color ||
+        p.role !== t.role;
+      if (posChanged && t.peerId !== originPeerId) { allowed = false; break; }
+      if (otherChanged) { allowed = false; break; }
+    }
+  }
+
+  if (!allowed) {
+    // Reverte o doc para o estado anterior; o revert é propagado aos clientes
+    // (sincronamente via doc.on('update') aninhado). Retorna false para o
+    // watcher NÃO propagar o update original não autorizado depois do revert.
+    writeGridToDoc(entry.doc, prev, "server");
+    return false;
+  }
+  room.tacticalGrid = next;
+  queueRoomPersist(key);
+  broadcastRoomUpdate(key);
+  return true;
+}
+
+/** Seed JSON → doc quando o grid mudou por REST (no-op se já igual). */
+function seedDocFromJson(code: string): void {
+  const key = code.toUpperCase();
+  const entry = roomYjs.get(key);
+  const room = getRoom(key);
+  if (!entry || !room || !room.tacticalGrid) return;
+  const fromDoc = deriveGridFromDoc(entry.doc);
+  if (JSON.stringify(fromDoc) !== JSON.stringify(room.tacticalGrid)) {
+    writeGridToDoc(entry.doc, room.tacticalGrid, "server");
+  }
+}
+
+/** Processa uma mensagem binária (protocolo Yjs) vinda de um socket. */
+function handleYjsBinary(code: string, ws: WebSocket, raw: Buffer): void {
+  const entry = getRoomYjs(code);
+  if (!entry) return;
+  const decoder = decoding.createDecoder(new Uint8Array(raw));
+  const messageType = decoding.readVarUint(decoder);
+
+  if (messageType === messageSync) {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, messageSync);
+    // Aplica updates no doc com origin=ws; responde syncStep2 se necessário.
+    syncProtocol.readSyncMessage(decoder, encoder, entry.doc, ws);
+    const reply = encoding.toUint8Array(encoder);
+    if (reply.byteLength > 1 && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(reply);
+      } catch {
+        /* ignore */
+      }
+    }
+  } else if (messageType === messageAwareness) {
+    const update = decoding.readVarUint8Array(decoder);
+    awarenessProtocol.applyAwarenessUpdate(entry.awareness, update, ws);
+  } else if (messageType === messageQueryAwareness) {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, messageAwareness);
+    encoding.writeVarUint8Array(
+      encoder,
+      awarenessProtocol.encodeAwarenessUpdate(entry.awareness, Array.from(entry.awareness.getStates().keys()))
+    );
+    if (ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(encoding.toUint8Array(encoder));
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
 interface WsConnMeta {
   code: string;
   peerId: string;
@@ -464,46 +711,56 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
     ws.send(JSON.stringify(room));
   }
 
-  ws.on("message", (raw) => {
-    let msg: any;
-    try {
-      msg = JSON.parse(String(raw));
-    } catch {
+  ws.on("message", (raw: any) => {
+    // Texto → protocolo JSON existente; binário → Yjs (grid CRDT / awareness)
+    if (typeof raw === "string") {
+      let msg: any;
+      try {
+        msg = JSON.parse(raw);
+      } catch {
+        return;
+      }
+      if (!msg || typeof msg !== "object") return;
+
+      switch (msg.type) {
+        case "message": {
+          // Chat ou rolagem — handle/role derivados do servidor (anti-spoofing)
+          const result = postChatMessage(code, peerId, msg.text, msg.rollResult);
+          if (result.room) broadcastRoomUpdate(code);
+          break;
+        }
+        case "heartbeat": {
+          // Mantém isOnline=true; o watcher (T3.4) marca offline após timeout
+          touchPlayer(code, peerId);
+          break;
+        }
+        case "initiative": {
+          const result =
+            msg.action === "next"
+              ? nextTurn(code, peerId)
+              : Array.isArray(msg.initiativeList)
+                ? updateInitiative(code, peerId, msg.initiativeList)
+                : null;
+          if (result?.room) broadcastRoomUpdate(code);
+          break;
+        }
+        default:
+          break;
+      }
       return;
     }
-    if (!msg || typeof msg !== "object") return;
 
-    switch (msg.type) {
-      case "message": {
-        // Chat ou rolagem — handle/role derivados do servidor (anti-spoofing)
-        const result = postChatMessage(code, peerId, msg.text, msg.rollResult);
-        if (result.room) broadcastRoomUpdate(code);
-        break;
-      }
-      case "heartbeat": {
-        // Mantém isOnline=true; o watcher (T3.4) marca offline após timeout
-        touchPlayer(code, peerId);
-        break;
-      }
-      case "initiative": {
-        const result =
-          msg.action === "next"
-            ? nextTurn(code, peerId)
-            : Array.isArray(msg.initiativeList)
-              ? updateInitiative(code, peerId, msg.initiativeList)
-              : null;
-        if (result?.room) broadcastRoomUpdate(code);
-        break;
-      }
-      default:
-        break;
-    }
+    // Binário → Yjs (lida com mensagens fragmentadas ws como Buffer[])
+    const bin = Array.isArray(raw) ? Buffer.concat(raw) : (Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer));
+    handleYjsBinary(code, ws, bin);
   });
 
   ws.on("close", () => {
     wsClients[code]?.delete(ws);
     if (wsClients[code] && wsClients[code].size === 0) {
       delete wsClients[code];
+      // Sem sockets WS — o doc Yjs pode ser descartado (o JSON é a verdade)
+      destroyRoomYjs(code);
     }
   });
 
@@ -511,6 +768,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
     wsClients[code]?.delete(ws);
   });
 });
+
 
 // Health check endpoint
 app.get("/api/health", (_req, res) => {

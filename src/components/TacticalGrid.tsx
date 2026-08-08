@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { TacticalGridState, TacticalToken, RoomPlayer } from '../types/multiplayer';
+import { RemoteCursor } from '../lib/yjsConnection';
 import { WOUND_LEVEL_NAMES } from './CharacterSheet/HealthTracker';
 import { 
   Plus, 
@@ -24,6 +25,10 @@ interface TacticalGridProps {
   onUpdateGrid: (newGrid: TacticalGridState) => void;
   onSelectPlayerForHealthEdit?: (player: RoomPlayer) => void;
   onInspectPlayer?: (player: RoomPlayer) => void;
+  /** Fase 5 (T5.3) — cursores remotos (awareness Yjs) renderizados no grid. */
+  remoteCursors?: RemoteCursor[];
+  /** GM: notifica a posição do cursor (percentuais 0..1) para o awareness. */
+  onCursorMove?: (x: number | null, y: number | null) => void;
 }
 
 interface ThemeConfig {
@@ -93,7 +98,9 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
   players,
   onUpdateGrid,
   onSelectPlayerForHealthEdit,
-  onInspectPlayer
+  onInspectPlayer,
+  remoteCursors = [],
+  onCursorMove
 }) => {
   const gridCanvasRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef<boolean>(false);
@@ -122,6 +129,21 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
   const isRightHalf = selectedToken ? selectedToken.x >= Math.floor(gridState.cols / 2) : false;
   const isBottomHalf = selectedToken ? selectedToken.y >= Math.floor(gridState.rows / 2) : false;
 
+  // GM cursor tracking (Fase 5 T5.3) — publica a posição do mouse no grid
+  // via awareness (percentuais relativos ao canvas). Só o GM emite.
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
+    if (roleMode !== 'gm' || !onCursorMove || !gridCanvasRef.current) return;
+    const rect = gridCanvasRef.current.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const x = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+    onCursorMove(x, y);
+  }, [roleMode, onCursorMove]);
+
+  const handleCanvasMouseLeave = useCallback(() => {
+    if (roleMode === 'gm' && onCursorMove) onCursorMove(null, null);
+  }, [roleMode, onCursorMove]);
+
   // Helper to calculate col/row from mouse position on the grid canvas
   const getSectorFromEvent = (e: React.DragEvent | React.MouseEvent): { x: number; y: number } | null => {
     if (!gridCanvasRef.current) return null;
@@ -140,11 +162,12 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
     };
   };
 
-  // Canvas Drag Over (Only active for GM)
+  // Canvas Drag Over — GM e jogador (mover o próprio token, Fase 5 T5.3)
   const handleCanvasDragOver = (e: React.DragEvent) => {
-    if (roleMode !== 'gm') return;
+    // Permite soltar o próprio token: o drop handler valida o dono.
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    if (roleMode !== 'gm') return;
 
     const sector = getSectorFromEvent(e);
     if (sector && (!dragOverSector || dragOverSector.x !== sector.x || dragOverSector.y !== sector.y)) {
@@ -159,13 +182,12 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
     setDragOverSector(null);
   };
 
-  // Canvas Drop Handler (Only GM can place/move items on the grid) - Instant zero latency drop
+  // Canvas Drop Handler — GM pode tudo; jogador move o PRÓPRIO token
+  // (o servidor T5.3 valida a permissão do dono). Zero latency drop.
   const handleCanvasDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOverSector(null);
     isDraggingRef.current = false;
-
-    if (roleMode !== 'gm') return;
 
     const sector = getSectorFromEvent(e);
     if (!sector) return;
@@ -179,6 +201,10 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
       if (data.type === 'token_drag') {
         // Dragging an existing token already placed on the tactical grid
         const { tokenId } = data;
+        const draggedToken = gridState.tokens.find(t => t.id === tokenId);
+        // Jogador só move o próprio token; GM move qualquer um.
+        if (!draggedToken) return;
+        if (roleMode !== 'gm' && draggedToken.peerId !== peerId) return;
         const updatedTokens = gridState.tokens.map(t => {
           if (t.id === tokenId) {
             return { ...t, x: sector.x, y: sector.y };
@@ -191,6 +217,8 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
           tokens: updatedTokens
         });
       } else if (data.type === 'character_drag') {
+        // Arrastar ficha da barra lateral (criar token) é poder exclusivo do GM
+        if (roleMode !== 'gm') return;
         // Dragging a character sheet or NPC card from the sidebar
         const { peerId: charPeerId, handle, role, isNpc, hp } = data;
 
@@ -412,8 +440,25 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
           onDragLeave={handleCanvasDragLeave}
           onDrop={handleCanvasDrop}
           onClick={() => setSelectedTokenId(null)}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseLeave={handleCanvasMouseLeave}
           className="relative w-full border border-slate-800/80 rounded min-h-[420px] sm:min-h-[500px]"
         >
+          {/* CURSO RES REMOTOS DO GM (awareness Yjs — Fase 5 T5.3) */}
+          {remoteCursors.map((c) => (
+            <div
+              key={c.clientID}
+              className="absolute z-40 pointer-events-none select-none"
+              style={{ left: `${c.x * 100}%`, top: `${c.y * 100}%` }}
+            >
+              <div className="-translate-x-1/2 -translate-y-1/2 relative">
+                <div className="w-4 h-4 rounded-full bg-yellow-300 border-2 border-black shadow-[0_0_10px_rgba(250,204,21,0.9)]" />
+                <span className="absolute top-3.5 left-3 whitespace-nowrap text-[8px] px-1.5 py-0.5 rounded bg-yellow-400 text-black font-black font-mono border border-black">
+                  👁 {c.name}
+                </span>
+              </div>
+            </div>
+          ))}
           {/* VISUAL SECTOR GRID OVERLAY (Pointer-events: NONE - purely visual sectors) */}
           <div
             className="absolute inset-0 grid gap-[1px] pointer-events-none overflow-hidden rounded"
@@ -478,7 +523,9 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                   >
                     {cellTokens.map((token) => {
                       const isSelected = selectedTokenId === token.id;
-                      const canDragToken = roleMode === 'gm';
+                      // Fase 5 (T5.3) — jogador arrasta o PRÓPRIO token (CRDT);
+                      // o servidor valida a permissão do dono.
+                      const canDragToken = roleMode === 'gm' || token.peerId === peerId;
 
                       let badgeBg = 'bg-cyan-950/95 text-cyan-300 border-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.6)]';
                       if (token.type === 'npc') badgeBg = 'bg-red-950/95 text-red-300 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]';

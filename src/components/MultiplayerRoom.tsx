@@ -7,6 +7,7 @@ import {
   TacticalGridState
 } from '../types/multiplayer';
 import { TacticalGrid } from './TacticalGrid';
+import { YjsGridConnection, RemoteCursor } from '../lib/yjsConnection';
 import { useRoomStore } from '../stores/useRoomStore';
 import { useSheetStore } from '../stores/useSheetStore';
 import { useRollStore } from '../stores/useRollStore';
@@ -67,6 +68,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const [roomName, setRoomName] = useState('Mesa de Night City');
   const [chatInput, setChatInput] = useState('');
   const [tab, setTab] = useState<RoomTab['id']>('chat');
+  // Fase 5 (T5.3) — grid vindo do doc CRDT (Yjs) e cursores remotos do GM
+  const [yjsGrid, setYjsGrid] = useState<TacticalGridState | null>(null);
+  const [remoteCursors, setRemoteCursors] = useState<RemoteCursor[]>([]);
+  const yjsConnRef = useRef<YjsGridConnection | null>(null);
+  const yjsActiveRef = useRef(false);
   const [initiativeName, setInitiativeName] = useState('');
   const [initiativeScore, setInitiativeScore] = useState(10);
   const [selectedHealthPlayer, setSelectedHealthPlayer] = useState<RoomPlayer | null>(null);
@@ -83,6 +89,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const reconnectInFlightRef = useRef<Promise<boolean> | null>(null);
 
   const handle = user?.displayName || sheet.handle || 'Edgerunner';
+  // Fase 5 (T5.3) — refs correntes de peerId/handle para o effect de transporte
+  // (não reconectar o WS quando a ficha muda de nome)
+  const peerIdRef = useRef(peerId);
+  peerIdRef.current = peerId;
+  const handleRef = useRef(handle);
+  handleRef.current = handle;
   const isGm = !!room && room.gmPeerId === peerId;
   const players = room?.players || {};
   const npcs = room?.npcs || {};
@@ -167,11 +179,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     load();
     const iv = setInterval(load, 8000);
     return () => clearInterval(iv);
-  }, [view]);
-
-  // Fase 5 (T5.2) — TRANSPORTE UNIFICADO: tenta WebSocket; se não conectar
+  }, [view]);    // Fase 5 (T5.2) — TRANSPORTE UNIFICADO: tenta WebSocket; se não conectar
   // (bloqueado/falhou), cai automaticamente para o SSE (EventSource). Ambos
   // entregam o MESMO payload (room inteiro em JSON).
+  // Fase 5 (T5.3) — sobre o WS também trafega o protocolo binário do Yjs
+  // (grid CRDT + awareness): binário → YjsGridConnection; texto → JSON.
   useEffect(() => {
     if (view !== 'active' || !roomCode) return;
     let disposed = false;
@@ -200,19 +212,48 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     let wsEverOpen = false;
     const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/rooms/${roomCode}?token=${encodeURIComponent(sessionToken)}`;
     const ws = new WebSocket(wsUrl);
+    ws.binaryType = 'arraybuffer';
     wsRef.current = ws;
 
     ws.onopen = () => {
       wsEverOpen = true;
       useRoomStore.getState().setErrorMsg('');
+      // Fase 5 (T5.3) — ativa a camada CRDT do grid sobre este socket
+      if (!yjsConnRef.current) {
+        const conn = new YjsGridConnection(
+          ws,
+          peerIdRef.current,
+          handleRef.current,
+          {
+            onGrid: (g) => {
+              if (!disposed) setYjsGrid(g);
+            },
+            onCursors: (cursors) => {
+              if (!disposed) setRemoteCursors(cursors);
+            }
+          }
+        );
+        yjsConnRef.current = conn;
+        yjsActiveRef.current = true;
+        conn.startSync();
+      }
     };
-    ws.onmessage = (ev) => handlePayload(String(ev.data));
+    ws.onmessage = (ev) => {
+      if (typeof ev.data === 'string') {
+        handlePayload(ev.data);
+      } else if (yjsConnRef.current) {
+        // Binário → protocolo Yjs (grid CRDT / awareness)
+        yjsConnRef.current.handleBinary(ev.data as ArrayBuffer);
+      }
+    };
     ws.onerror = () => {
       // Sem conexão → o onclose decide o fallback SSE
     };
     ws.onclose = () => {
       if (disposed) return;
       wsRef.current = null;
+      yjsConnRef.current = null;
+      yjsActiveRef.current = false;
       if (!wsEverOpen && !sse) {
         // Nunca conectou → SSE (fallback automático)
         sse = connectSse();
@@ -228,6 +269,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     return () => {
       disposed = true;
       ws.onclose = null;
+      yjsConnRef.current?.destroy();
+      yjsConnRef.current = null;
+      yjsActiveRef.current = false;
       if (wsRef.current === ws) wsRef.current = null;
       try {
         ws.close();
@@ -397,8 +441,25 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       .catch(() => {});
   };
 
+  // Fase 5 (T5.3) — grid editado pelo TacticalGrid:
+  // - Yjs ativo → escreve no doc CRDT (latência zero, o servidor espelha e
+  //   propaga para a mesa); jogador só move o próprio token (validado lá).
+  // - Fallback (SSE/REST) → endpoint antigo /tactical-grid.
   const updateGrid = (gridState: TacticalGridState) => {
+    if (yjsConnRef.current) {
+      yjsConnRef.current.applyLocalGrid(gridState);
+      return;
+    }
     roomAction(`/api/rooms/${roomCode}/tactical-grid`, { gridState });
+  };
+
+  // GM: publica o cursor no grid via awareness Yjs (T5.3)
+  const handleGmCursorMove = (x: number | null, y: number | null) => {
+    if (!isGm) return;
+    const conn = yjsConnRef.current;
+    if (!conn) return;
+    if (x === null || y === null) conn.clearCursor();
+    else conn.setCursor(x, y);
   };
 
   const generateNpc = (archetypeId?: string) => {
@@ -582,7 +643,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
      ============================================================ */
   const chatMessages: ChatMessage[] = room?.chatMessages || [];
   const initiative = room?.initiativeList || [];
-  const gridState = room?.tacticalGrid || { rows: 8, cols: 10, theme: 'alley', tokens: [] };
+  const gridState = yjsGrid || room?.tacticalGrid || { rows: 8, cols: 10, theme: 'alley', tokens: [] };
 
   return (
     <div className="space-y-4 font-mono animate-fadeIn">
@@ -837,6 +898,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             onUpdateGrid={updateGrid}
             onSelectPlayerForHealthEdit={isGm ? (p) => setSelectedHealthPlayer(p) : undefined}
             onInspectPlayer={(p) => setInspectedPlayer(p)}
+            remoteCursors={remoteCursors}
+            onCursorMove={handleGmCursorMove}
           />
         </div>
       )}
