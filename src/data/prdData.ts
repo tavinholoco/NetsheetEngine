@@ -237,7 +237,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'Migração Firebase → Supabase',
       objective: 'Substituir Firebase (Auth/Firestore) por Supabase com RLS e Realtime (P1).',
       priority: 'P1',
-      status: 'em andamento',
+      status: 'concluído',
       tasks: [
         { code: 'T2.1', title: 'Supabase CLI + ambiente local', status: 'concluído' },
         { code: 'T2.2', title: 'Projeto Supabase na nuvem (.env.local)', status: 'concluído' },
@@ -258,7 +258,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T2.17', title: 'Upload de avatar no UserProfile', status: 'concluído' },
         { code: 'T2.18', title: 'Testes manuais de auth/social/chat/fichas', status: 'concluído' },
         { code: 'T2.19', title: 'Testes de RLS (acessos anônimos/cross-user)', status: 'concluído' },
-        { code: 'T2.20', title: 'tsc + build verdes pós-migração', status: 'pendente' }
+        { code: 'T2.20', title: 'tsc + build verdes pós-migração', status: 'concluído' }
       ]
     },
     {
