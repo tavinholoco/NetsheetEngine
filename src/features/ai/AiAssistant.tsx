@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CharacterSheet } from '../../types/cyberpunk';
 import { Bot, Send, Sparkles, Lock, Dices, User } from 'lucide-react';
+// Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
+import { askGemini } from '../../api/gemini';
 
 interface AiAssistantProps {
   sheet: CharacterSheet;
@@ -51,17 +53,8 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user,
     setLoading(true);
 
     try {
-      const res = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: content,
-          systemInstruction: SYSTEM_PROMPT
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Falha na conexão com a IA');
-      setMessages((prev) => [...prev, { id: 'a_' + Date.now(), role: 'assistant', text: data.text || 'Sem resposta.' }]);
+      const text = await askGemini(content, SYSTEM_PROMPT);
+      setMessages((prev) => [...prev, { id: 'a_' + Date.now(), role: 'assistant', text }]);
     } catch (e: any) {
       setMessages((prev) => [
         ...prev,

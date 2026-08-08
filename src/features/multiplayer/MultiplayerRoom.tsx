@@ -11,6 +11,8 @@ import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSheetStore } from '../../stores/useSheetStore';
 import { useUiStore } from '../../stores/useUiStore';
+// Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
+import * as roomsApi from '../../api/rooms';
 import {
   Radio,
   Users,
@@ -37,10 +39,6 @@ interface MultiplayerRoomProps {
 interface RoomTab {
   id: 'chat' | 'grid' | 'initiative';
   label: string;
-}
-
-function generatePeerId(): string {
-  return 'peer_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
 }
 
 export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModal }) => {
@@ -83,10 +81,6 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // Fase 5 (T5.2) — contador para retry do WebSocket após queda (backoff simples)
   const [wsAttempt, setWsAttempt] = useState(0);
 
-  // Fase 3 (T3.3) — ref com o valor corrente do token para auto-reconexão sem closures stale
-  const sessionTokenRef = useRef(sessionToken);
-  sessionTokenRef.current = sessionToken;
-  const reconnectInFlightRef = useRef<Promise<boolean> | null>(null);
 
   const handle = user?.displayName || sheet.handle || 'Edgerunner';
   // Fase 5 (T5.3) — refs correntes de peerId/handle para o effect de transporte
@@ -99,80 +93,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const players = room?.players || {};
   const npcs = room?.npcs || {};
 
-  const ensurePeerId = () => {
-    const cur = useRoomStore.getState();
-    if (!cur.peerId) {
-      const id = generatePeerId();
-      cur.setPeerId(id);
-      sessionStorage.setItem('cyberpunk_peer_id', id);
-      return id;
-    }
-    return cur.peerId;
-  };
-
-  // Fase 3 (T3.3) — re-join automático com o MESMO peerId após o servidor
-  // reiniciar (token de sessão morre com o processo). O servidor reconhece a
-  // reconexão e preserva a ficha persistida; aqui só trocamos o token novo.
-  const reconnectSession = useCallback(async (): Promise<boolean> => {
-    if (reconnectInFlightRef.current) return reconnectInFlightRef.current;
-    const attempt = (async () => {
-      try {
-        const code = useRoomStore.getState().roomCode;
-        const id = ensurePeerId();
-        const curSheet = useSheetStore.getState().sheet;
-        const curHandle = useSheetStore.getState().user?.displayName || curSheet.handle || 'Edgerunner';
-        const res = await fetch('/api/rooms/join', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, peerId: id, handle: curHandle, sheet: curSheet })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          useRoomStore.getState().setErrorMsg('Sessão expirada e reconexão falhou — a sala pode ter sido encerrada. Saia e entre novamente.');
-          return false;
-        }
-        sessionTokenRef.current = data.sessionToken;
-        useRoomStore.getState().setSessionToken(data.sessionToken);
-        sessionStorage.setItem('cyberpunk_session_token', data.sessionToken);
-        useRoomStore.getState().setRoom(data.room);
-        useRoomStore.getState().setErrorMsg('');
-        return true;
-      } catch {
-        useRoomStore.getState().setErrorMsg('Sessão expirada e reconexão falhou. Verifique a conexão com o servidor.');
-        return false;
-      }
-    })();
-    reconnectInFlightRef.current = attempt;
-    try {
-      return await attempt;
-    } finally {
-      reconnectInFlightRef.current = null;
-    }
-  }, [peerId, handle, sheet]);
-
-  // POST autenticado com retry: se o servidor reiniciou e o token expirou (401
-  // "Sessão inválida"), reconecta automaticamente e re-tenta a ação original.
-  const authedFetch = useCallback(async (path: string, body: object): Promise<Response> => {
-    const doFetch = () =>
-      fetch(path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...body, sessionToken: sessionTokenRef.current })
-      });
-    let res = await doFetch();
-    if (res.status === 401) {
-      const reconnected = await reconnectSession();
-      if (reconnected) res = await doFetch();
-    }
-    return res;
-  }, [reconnectSession]);
+  const ensurePeerId = roomsApi.getPeerId;
 
   // Lista salas públicas no lobby
   useEffect(() => {
     if (view !== 'lobby') return;
     const load = () => {
-      fetch('/api/rooms')
-        .then((r) => r.json())
+      roomsApi
+        .listRooms()
         .then((data) => useRoomStore.getState().setActiveRooms(data))
         .catch(() => useRoomStore.getState().setActiveRooms([]));
     };
@@ -311,12 +239,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     if (view !== 'active' || !roomCode || !peerId || !sessionToken) return;
     const beat = () => {
       if (wsSend({ type: 'heartbeat' })) return;
-      authedFetch(`/api/rooms/${roomCode}/heartbeat`, {}).catch(() => {});
+      roomsApi.postHeartbeat(roomCode).catch(() => {});
     };
     beat();
     const iv = setInterval(beat, 20_000); // 20s < timeout default de 60s
     return () => clearInterval(iv);
-  }, [view, roomCode, peerId, sessionToken, authedFetch, wsSend]);
+  }, [view, roomCode, peerId, sessionToken, wsSend]);
 
   // Sincroniza a ficha na mesa APENAS quando ela muda de fato.
   // (Antes dependia de `room`, que muda a cada evento SSE, criando um loop
@@ -331,10 +259,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     const t = setTimeout(() => {
       // Fase 3 (T3.3) — authedFetch: se o token expirou (restart do servidor),
       // reconecta automaticamente e re-tenta o sync da ficha.
-      authedFetch(`/api/rooms/${roomCode}/sheet`, { sheet }).catch(() => {});
+      roomsApi.syncSheet(roomCode, sheet).catch(() => {});
     }, 600);
     return () => clearTimeout(t);
-  }, [view, peerId, sessionToken, sheet, roomCode, authedFetch]);
+  }, [view, peerId, sessionToken, sheet, roomCode]);
 
   const createRoom = async () => {
     if (!user) {
@@ -345,51 +273,24 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       setErrorMsg('Informe um código de sala (ex.: NC-2020).');
       return;
     }
-    const id = ensurePeerId();
     setErrorMsg('');
     try {
-      const res = await fetch('/api/rooms/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: roomCode.trim(), name: roomName, gmHandle: handle, gmPeerId: id })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorMsg(data?.error || 'Erro ao criar sala.');
-        return;
-      }
-      useRoomStore.getState().setSessionToken(data.sessionToken);
-      sessionStorage.setItem('cyberpunk_session_token', data.sessionToken);
-      useRoomStore.getState().setRoom(data.room);
+      await roomsApi.createRoom({ code: roomCode.trim(), name: roomName, gmHandle: handle });
       useRoomStore.getState().setView('active');
-    } catch (e) {
-      setErrorMsg('Falha de conexão com o servidor.');
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Erro ao criar sala.');
     }
   };
 
   const joinRoom = async (code?: string) => {
     const targetCode = (code || roomCode).trim();
     if (!targetCode) return;
-    const id = ensurePeerId();
     setErrorMsg('');
     try {
-      const res = await fetch('/api/rooms/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: targetCode, peerId: id, handle, sheet })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorMsg(data?.error || 'Sala não encontrada.');
-        return;
-      }
-      useRoomStore.getState().setSessionToken(data.sessionToken);
-      sessionStorage.setItem('cyberpunk_session_token', data.sessionToken);
-      useRoomStore.getState().setRoomCode(targetCode);
-      useRoomStore.getState().setRoom(data.room);
+      await roomsApi.joinRoom({ code: targetCode, handle, sheet });
       useRoomStore.getState().setView('active');
-    } catch (e) {
-      setErrorMsg('Falha de conexão com o servidor.');
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Sala não encontrada.');
     }
   };
 
@@ -401,7 +302,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     // T5.4 — sem rollResult: rolagens só existem via { type: 'roll' }.
     if (wsSend({ type: 'message', text: content })) return;
     try {
-      await authedFetch(`/api/rooms/${roomCode}/message`, { text: content });
+      await roomsApi.postMessage(roomCode, content);
     } catch {
       /* ignore */
     }
@@ -413,24 +314,17 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // POST /roll (clientes SSE).
   const requestTableRoll = (kind: 'attack' | 'damage' | 'save' | 'skill', skillName?: string) => {
     if (wsSend({ type: 'roll', kind, skillName })) return;
-    authedFetch(`/api/rooms/${roomCode}/roll`, { kind, skillName }).catch(() => {});
+    roomsApi.postRoll(roomCode, kind, skillName).catch(() => {});
   };
 
   const rollAttack = () => requestTableRoll('attack');
   const rollTableDamage = () => requestTableRoll('damage');
   const rollTableSave = () => requestTableRoll('save');
 
-  // Helper: ações autenticadas por token de sessão (T1.7), com auto-reconexão
-  // na Fase 3 (T3.3) via authedFetch (401 → re-join com mesmo peerId → retry).
-  const roomAction = (path: string, body: object) => {
-    authedFetch(path, body)
-      .then(async (r) => {
-        if (!r.ok) {
-          const data = await r.json().catch(() => ({}));
-          setErrorMsg(data?.error || 'Ação negada pelo servidor.');
-        }
-      })
-      .catch(() => {});
+  // Helper: ação autenticada fire-and-forget (T7.3 — camada api). A api lança
+  // ApiError com a mensagem do servidor; o banner mostra o motivo.
+  const roomAction = (p: Promise<unknown>) => {
+    p.catch((e: any) => setErrorMsg(e?.message || 'Ação negada pelo servidor.'));
   };
 
   // Fase 5 (T5.3) — grid editado pelo TacticalGrid:
@@ -442,7 +336,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       yjsConnRef.current.applyLocalGrid(gridState);
       return;
     }
-    roomAction(`/api/rooms/${roomCode}/tactical-grid`, { gridState });
+    roomAction(roomsApi.updateTacticalGrid(roomCode, gridState));
   };
 
   // GM: publica o cursor no grid via awareness Yjs (T5.3)
@@ -455,27 +349,27 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   };
 
   const generateNpc = (archetypeId?: string) => {
-    roomAction(`/api/rooms/${roomCode}/npcs/generate`, { archetypeId });
+    roomAction(roomsApi.generateNpc(roomCode, archetypeId));
   };
 
   const generatePlayerEdgerunner = () => {
-    roomAction(`/api/rooms/${roomCode}/players/generate`, {});
+    roomAction(roomsApi.generatePlayers(roomCode));
   };
 
   const updatePlayerHealth = (targetPeerId: string, woundLevel: number) => {
-    roomAction(`/api/rooms/${roomCode}/player-health`, { targetPeerId, woundLevel });
+    roomAction(roomsApi.setPlayerHealth(roomCode, targetPeerId, woundLevel));
   };
 
   const updateNpcHealth = (npcId: string, woundLevel: number) => {
-    roomAction(`/api/rooms/${roomCode}/npcs/${npcId}/health`, { woundLevel });
+    roomAction(roomsApi.setNpcHealth(roomCode, npcId, woundLevel));
   };
 
   const deleteNpc = (npcId: string) => {
-    roomAction(`/api/rooms/${roomCode}/npcs/${npcId}/delete`, {});
+    roomAction(roomsApi.deleteNpc(roomCode, npcId));
   };
 
   const deletePlayer = (targetPeerId: string) => {
-    roomAction(`/api/rooms/${roomCode}/players/${targetPeerId}/delete`, {});
+    roomAction(roomsApi.deletePlayer(roomCode, targetPeerId));
   };
 
   const addInitiative = () => {
@@ -490,12 +384,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         isCurrentTurn: false
       }
     ].sort((a, b) => b.score - a.score);
-    roomAction(`/api/rooms/${roomCode}/initiative`, { initiativeList: list });
+    roomAction(roomsApi.setInitiativeList(roomCode, list));
     setInitiativeName('');
   };
 
   const nextTurn = () => {
-    roomAction(`/api/rooms/${roomCode}/initiative`, { action: 'next' });
+    roomAction(roomsApi.nextTurn(roomCode));
   };
 
   const leaveRoom = async () => {
@@ -503,7 +397,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     if (code && token) {
       // T3.3 — authedFetch: após restart, "Sair" reconecta (token novo) e
       // então sai de fato — evita deixar player fantasma online na sala.
-      await authedFetch(`/api/rooms/${code}/leave`, {}).catch(() => {});
+      await roomsApi.leaveRoom(code).catch(() => {});
     }
     sessionStorage.removeItem('cyberpunk_session_token');
     resetRoom();
