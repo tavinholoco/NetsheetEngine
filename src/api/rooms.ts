@@ -60,6 +60,20 @@ function persistSession(token: string, room?: GameRoom, roomCode?: string): void
   if (roomCode) s.setRoomCode(roomCode);
 }
 
+/**
+ * T7.4 — hidrata a store com a sessão persistida no sessionStorage (reload).
+ * No boot a useRoomStore começa vazia; peerId/token sobrevivem no
+ * sessionStorage e são restaurados para o deep link reconectar sozinho.
+ */
+export function hydrateSession(): { peerId: string; sessionToken: string } {
+  const s = useRoomStore.getState();
+  const peerId = s.peerId || sessionStorage.getItem('cyberpunk_peer_id') || '';
+  const sessionToken = s.sessionToken || sessionStorage.getItem('cyberpunk_session_token') || '';
+  if (peerId && peerId !== s.peerId) s.setPeerId(peerId);
+  if (sessionToken && sessionToken !== s.sessionToken) s.setSessionToken(sessionToken);
+  return { peerId, sessionToken };
+}
+
 let reconnectInFlight: Promise<boolean> | null = null;
 
 /**

@@ -325,12 +325,12 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'Roteamento e Estrutura de Código',
       objective: 'URLs reais e organização por features (P2).',
       priority: 'P2',
-      status: 'pendente',
+      status: 'concluído',
       tasks: [
         { code: 'T7.1', title: 'React Router: /, /sheet, /dice, /ai, /multiplayer, /room/:code...', status: 'concluído' },
         { code: 'T7.2', title: 'Estrutura por features (social, sheet, multiplayer, ai)', status: 'concluído' },
         { code: 'T7.3', title: 'Camada src/api/ centralizada', status: 'concluído' },
-        { code: 'T7.4', title: 'Validar build e deep-links', status: 'pendente' }
+        { code: 'T7.4', title: 'Validar build e deep-links', status: 'concluído' }
       ]
     },
     {
