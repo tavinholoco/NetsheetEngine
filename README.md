@@ -10,6 +10,8 @@ cyberware, lifepath, rolagem de dados FNFF, mesa virtual multiplayer em tempo re
 
 **Status:** 🚧 Alpha — em desenvolvimento ativo
 
+[![CI](https://github.com/tavinholoco/NetsheetEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/tavinholoco/NetsheetEngine/actions/workflows/ci.yml)
+
 </div>
 
 ---

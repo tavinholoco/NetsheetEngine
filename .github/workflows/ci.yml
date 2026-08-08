@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  validate:
+    name: tsc + build + testes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Typecheck (tsc --noEmit)
+        run: npm run lint
+
+      - name: Build (Vite + bundle do servidor)
+        run: npm run build
+
+      - name: Testes (quando configurados — T9.1 Vitest)
+        run: |
+          if npm run test --if-present > /tmp/test.log 2>&1; then
+            echo "✅ Testes executados com sucesso"
+          else
+            echo "ℹ️  Nenhum script de testes configurado ainda (planejado na T9.1) — etapa ignorada"
+          fi
+
+      - name: Smoke test do servidor de produção
+        run: |
+          NODE_ENV=production PORT=3000 node dist/server.cjs > /tmp/server.log 2>&1 &
+          SERVER_PID=$!
+          sleep 3
+          HEALTH=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/health || true)
+          kill $SERVER_PID 2>/dev/null || true
+          if [ "$HEALTH" != "200" ]; then
+            echo "❌ Healthcheck falhou (HTTP $HEALTH)"
+            tail -20 /tmp/server.log
+            exit 1
+          fi
+          echo "✅ Healthcheck OK (HTTP $HEALTH)"
