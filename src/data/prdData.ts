@@ -346,7 +346,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T8.3', title: 'README reescrito sem créditos de scaffold', status: 'concluído' },
         { code: 'T8.4', title: 'index.html com identidade própria (pt-BR)', status: 'concluído' },
         { code: 'T8.5', title: 'UI exibindo apenas NETSHEET ENGINE', status: 'concluído' },
-        { code: 'T8.6', title: 'ADRs (Supabase, Yjs, Zustand, dice-roller)', status: 'pendente' },
+        { code: 'T8.6', title: 'ADRs (Supabase, Yjs, Zustand, dice-roller)', status: 'concluído' },
         { code: 'T8.7', title: 'metadata.json sem campos de plataforma', status: 'pendente' }
       ]
     },

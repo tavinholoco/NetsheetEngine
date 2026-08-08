@@ -261,8 +261,8 @@ ws 8.21 · yjs 13.6 + y-protocols · @dice-roller/rpg-dice-roller 5 ·
 Supabase (supabase-js 2) · @google/genai · lucide-react · motion · esbuild
 (bundle do servidor) · tsx (dev).
 
-**Decisões de arquitetura registradas** (detalhes em
-[`docs/PROTOCOLO_MULTIPLAYER.md`](./PROTOCOLO_MULTIPLAYER.md)):
+**Decisões de arquitetura registradas** (ADRs em [`docs/adr/`](./adr/);
+detalhes do protocolo em [`docs/PROTOCOLO_MULTIPLAYER.md`](./PROTOCOLO_MULTIPLAYER.md)):
 
 - **Transporte híbrido**: WebSocket base + fallback SSE + REST — decidido na
   T5.1/T5.2 (avaliação Yjs+Hocuspocus vs Socket.IO vs ws puro; escolhido
