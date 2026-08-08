@@ -316,7 +316,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T6.1', title: 'Instalar @dice-roller/rpg-dice-roller', status: 'concluído' },
         { code: 'T6.2', title: 'utils/diceEngine.ts (rollSkill, rollDamage, rollDeathSave, rollLocation)', status: 'concluído' },
         { code: 'T6.3', title: 'Substituir lógica manual em App.tsx e DiceRoller', status: 'concluído' },
-        { code: 'T6.4', title: 'Unit tests do motor', status: 'pendente' }
+        { code: 'T6.4', title: 'Unit tests do motor', status: 'concluído' }
       ]
     },
     {
