@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🦾 Cyberpunk 2020 Sheet Builder & PRD Suite
+# 🦾 NETSHEET ENGINE
+
+**Cyberpunk 2020 Sheet Builder & PRD Suite**
 
 Suíte completa para mesas de Cyberpunk 2020: criação de fichas com calculador de estatísticas,
 cyberware, lifepath, rolagem de dados FNFF, mesa virtual multiplayer em tempo real, sistema social
@@ -20,18 +22,28 @@ cyberware, lifepath, rolagem de dados FNFF, mesa virtual multiplayer em tempo re
 - **Netrunner IA** — assistente com integração Gemini
 - **Lendas** — biblioteca de presets e NPCs
 - **Social** — perfis, amigos, solicitações e mensagens diretas
-- **PRD** — especificação e roadmap do produto (em construção)
+- **PRD** — especificação e roadmap do produto
 
 ## Stack
 
-React 19 · Vite · TypeScript · Tailwind CSS 4 · shadcn/ui (Radix) · Express · Supabase (Auth/PostgreSQL)
-· WebSockets/SSE · Gemini API
+React 19 · Vite · TypeScript · Tailwind CSS 4 · shadcn/ui (Radix) · Express · Supabase (Auth/PostgreSQL/Realtime/Storage)
+· SSE (multiplayer) · Gemini API
+
+## Roadmap
+
+O desenvolvimento segue um plano de 13 fases documentado em [`PLANO_DE_ACAO.md`](./PLANO_DE_ACAO.md),
+com o detalhamento em [`src/data/prdData.ts`](./src/data/prdData.ts) (consumido pelo visualizador de PRD do app).
+
+Fases concluídas até agora: **0** (fundação), **1** (segurança), **2** (migração Firebase → Supabase) e **3** (multiplayer: persistência e confiabilidade).
 
 ## Rodando localmente
 
-1. Instale as dependências: `npm install`
-2. Crie um `.env.local` a partir de `.env.example` (Supabase URL/keys + `GEMINI_API_KEY`)
-3. Rode o servidor de desenvolvimento: `npm run dev`
-4. Acesse `http://localhost:3000`
+Pré-requisitos: Node ≥ 20 e [Supabase CLI](https://supabase.com/docs/guides/cli) (Docker) para o ambiente local.
 
-> O documento de acompanhamento das mudanças e do roadmap vive em [`PLANO_DE_ACAO.md`](./PLANO_DE_ACAO.md).
+1. Instale as dependências: `npm install`
+2. Inicie o Supabase local: `npx supabase start`
+3. Crie um `.env.local` a partir de `.env.example` (Supabase URL/keys + `GEMINI_API_KEY`)
+4. Rode o servidor de desenvolvimento: `npm run dev`
+5. Acesse `http://localhost:3000`
+
+> ⚠️ As chaves de `service_role` do Supabase são **exclusivas do servidor** — nunca as coloque com prefixo `VITE_`.
