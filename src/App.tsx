@@ -22,6 +22,8 @@ import { useSheetStore, syncSheetStore } from './stores/useSheetStore';
 import { useRollStore } from './stores/useRollStore';
 import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
+// Fase 6 (T6.3) — motor de dados FNFF (audit trail via @dice-roller)
+import { rollSkill, rollDamage, rollDeathSave } from './utils/diceEngine';
 import { Dice5, Save, CheckCircle2, Plus, Lock } from 'lucide-react';
 
 export default function App() {
@@ -107,44 +109,13 @@ export default function App() {
     addRoll(roll);
   };
 
-  // Roll Skill directly from Skill section
+  // Roll Skill directly from Skill section (Fase 6 T6.3 — motor diceEngine)
   const handleRollSkill = (skillName: string, statName: StatName, statVal: number, skillRank: number) => {
-    let baseD10 = Math.floor(Math.random() * 10) + 1;
-    let isExploding = false;
-    let isFumble = false;
-    let extraRoll = 0;
-
-    if (baseD10 === 10) {
-      isExploding = true;
-      extraRoll = Math.floor(Math.random() * 10) + 1;
-    } else if (baseD10 === 1) {
-      isFumble = true;
-      extraRoll = Math.floor(Math.random() * 10) + 1;
-    }
-
-    const total = baseD10 + (isExploding ? extraRoll : 0) - (isFumble ? extraRoll : 0) + statVal + skillRank;
-
-    let details = `Dado 1d10: ${baseD10}`;
-    if (isExploding) details += ` + 🔥 Explosão (10!): +${extraRoll}`;
-    if (isFumble) details += ` - 💀 Falha Crítica (1!): -${extraRoll}`;
-    details += ` + ${statName} (${statVal}) + Perícia (${skillRank})`;
-
-    const newRoll: RollResult = {
-      id: 'roll_' + Date.now(),
-      timestamp: new Date().toLocaleTimeString(),
+    handleAddRollResult(rollSkill(statVal, skillRank, {
       characterName: sheet.handle || 'Edgerunner',
-      rollType: 'SKILL',
       label: `Rolagem: ${skillName}`,
-      diceFormula: isExploding ? '1d10! (Explodiu!)' : isFumble ? '1d10! (Fumble!)' : '1d10',
-      baseRoll: baseD10,
-      bonus: statVal + skillRank,
-      total,
-      isCriticalSuccess: isExploding,
-      isCriticalFailure: isFumble,
-      details
-    };
-
-    handleAddRollResult(newRoll);
+      statName
+    }));
   };
 
   // Roll Weapon Attack directly
@@ -153,75 +124,24 @@ export default function App() {
     handleRollSkill(`Ataque com ${weaponName}`, 'REF', refVal, wa);
   };
 
-  // Roll Damage Only
+  // Roll Damage Only (Fase 6 T6.3 — motor diceEngine; fórmula inválida é
+  // ignorada silenciosamente, mesmo comportamento de antes)
   const handleRollDamageOnly = (weaponName: string, damageFormula: string) => {
-    const match = damageFormula.trim().toLowerCase().match(/^(\d+)d(\d+)([\+\-]\d+)?$/);
-    if (!match) return;
-
-    const numDice = parseInt(match[1]) || 1;
-    const dieSides = parseInt(match[2]) || 6;
-    const modifier = match[3] ? parseInt(match[3]) : 0;
-
-    let totalDmg = 0;
-    const rolls: number[] = [];
-
-    for (let i = 0; i < numDice; i++) {
-      const r = Math.floor(Math.random() * dieSides) + 1;
-      rolls.push(r);
-      totalDmg += r;
+    try {
+      handleAddRollResult(rollDamage(damageFormula, {
+        characterName: sheet.handle || 'Edgerunner',
+        label: `Dano da Arma: ${weaponName}`
+      }));
+    } catch {
+      /* fórmula de dano inválida */
     }
-    totalDmg += modifier;
-
-    const locRoll = Math.floor(Math.random() * 10) + 1;
-    let locName = 'Tronco (2-4)';
-    if (locRoll === 1) locName = 'Cabeça (1) [DANO DOBRADO X2!]';
-    else if (locRoll === 5) locName = 'Braço Direito (5)';
-    else if (locRoll === 6) locName = 'Braço Esquerdo (6)';
-    else if (locRoll >= 7 && locRoll <= 8) locName = 'Perna Direita (7-8)';
-    else if (locRoll >= 9) locName = 'Perna Esquerda (9-0)';
-
-    const newRoll: RollResult = {
-      id: 'roll_' + Date.now(),
-      timestamp: new Date().toLocaleTimeString(),
-      characterName: sheet.handle || 'Edgerunner',
-      rollType: 'DAMAGE',
-      label: `Dano da Arma: ${weaponName}`,
-      diceFormula: damageFormula,
-      baseRoll: totalDmg,
-      bonus: 0,
-      total: totalDmg,
-      isCriticalSuccess: false,
-      isCriticalFailure: false,
-      details: `Dados: [${rolls.join(', ')}] • Local de Impacto: ${locName}`
-    };
-
-    handleAddRollResult(newRoll);
   };
 
-  // Roll Death Save
+  // Roll Death Save (Fase 6 T6.3 — motor diceEngine)
   const handleRollDeathSave = () => {
-    const d10 = Math.floor(Math.random() * 10) + 1;
-    const targetBody = sheet.stats.BODY;
-    const isSuccess = d10 <= targetBody;
-
-    const newRoll: RollResult = {
-      id: 'roll_' + Date.now(),
-      timestamp: new Date().toLocaleTimeString(),
-      characterName: sheet.handle || 'Edgerunner',
-      rollType: 'SAVE',
-      label: 'Teste de Atordoamento/Morte (Death Save)',
-      diceFormula: '1d10 ≤ BODY',
-      baseRoll: d10,
-      bonus: targetBody,
-      total: d10,
-      isCriticalSuccess: isSuccess,
-      isCriticalFailure: !isSuccess,
-      details: isSuccess
-        ? `PASSOU! Resultado ${d10} ≤ Corpo ${targetBody}`
-        : `FALHOU! Resultado ${d10} > Corpo ${targetBody} (Personagem Inconsciente ou Morto!)`
-    };
-
-    handleAddRollResult(newRoll);
+    handleAddRollResult(rollDeathSave(sheet.stats.BODY, {
+      characterName: sheet.handle || 'Edgerunner'
+    }));
   };
 
   return (
