@@ -175,6 +175,27 @@ export function restoreRoom(room: GameRoom): boolean {
   return true;
 }
 
+/** Ficha "utilizável" = tem handle ou stats (não é placeholder vazio). */
+function isUsableSheet(sheet: unknown): boolean {
+  if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) return false;
+  const s = sheet as Partial<CharacterSheet>;
+  return !!s.handle || (!!s.stats && typeof s.stats === "object");
+}
+
+/**
+ * T3.3 — resolve qual ficha vale na reconexão (last-write-wins por updatedAt).
+ * - Cliente mandou ficha vazia → mantém a persistida.
+ * - Ambas usáveis → vence a de `updatedAt` mais recente (ou a do cliente se
+ *   as persistidas não tiverem timestamp — ficha nova/placeholder do servidor).
+ */
+function pickSheet(clientSheet: CharacterSheet, persistedSheet: CharacterSheet | undefined): CharacterSheet {
+  if (!isUsableSheet(clientSheet)) return persistedSheet ?? clientSheet;
+  if (!persistedSheet) return clientSheet;
+  const clientTs = clientSheet.updatedAt ? new Date(clientSheet.updatedAt).getTime() : 0;
+  const persistedTs = persistedSheet.updatedAt ? new Date(persistedSheet.updatedAt).getTime() : 0;
+  return clientTs >= persistedTs ? clientSheet : persistedSheet;
+}
+
 export function joinRoom(code: string, peerId: string, handle: string, sheet: CharacterSheet): { room: GameRoom; sessionToken: string } | null {
   const room = getRoom(code);
   if (!room) return null;
@@ -190,18 +211,34 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
     room.gmPeerId = safePeerId;
   }
 
-  const player: RoomPlayer = {
-    peerId: safePeerId,
-    handle: safeHandle || sheet?.handle || "Edgerunner",
-    role: sheet?.role || "Edgerunner",
-    sheet,
-    isOnline: true,
-    joinedAt: new Date().toISOString()
-  };
+  // Fase 3 (T3.3) — RECONEXÃO: mesmo peerId já está na mesa (incl. sala
+  // restaurada do banco no boot). Em vez de criar um player novo (que perderia
+  // a ficha persistida e duplicaria tokens/mensagens), atualizamos o existente.
+  const existing = room.players[safePeerId];
+  const isReconnect = !!existing;
+
+  const player: RoomPlayer = existing
+    ? {
+        ...existing,
+        handle: safeHandle || existing.handle || "Edgerunner",
+        role: sheet?.role || existing.role || "Edgerunner",
+        // T3.3 — ficha resolvida por last-write-wins (updatedAt): cliente com
+        // ficha antiga/estale não sobrescreve a versão mais recente do banco.
+        sheet: pickSheet(sheet, existing.sheet),
+        isOnline: true
+      }
+    : {
+        peerId: safePeerId,
+        handle: safeHandle || sheet?.handle || "Edgerunner",
+        role: sheet?.role || "Edgerunner",
+        sheet,
+        isOnline: true,
+        joinedAt: new Date().toISOString()
+      };
 
   room.players[safePeerId] = player;
 
-  // Auto-create tactical token for player if not existing
+  // Auto-create tactical token for player if not existing (reconexão reutiliza)
   if (room.tacticalGrid) {
     const existingToken = room.tacticalGrid.tokens.find(t => t.peerId === safePeerId);
     if (!existingToken) {
@@ -220,15 +257,22 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
     }
   }
 
-  // Add system message
-  room.chatMessages.push({
-    id: "msg_join_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
-    senderHandle: "SISTEMA_NET",
-    senderRole: "gm",
-    text: `⚡ Edgerunner [${player.handle}] (${player.role}) conectou-se à mesa!`,
-    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-  });
+  // Mensagem de sistema: silenciosa em reconexão (evita spam de "conectou-se"
+  // a cada EventSource retry). Só anuncia primeiro join ou reconexão pós-offline.
+  if (!isReconnect || !existing.isOnline) {
+    room.chatMessages.push({
+      id: "msg_join_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+      senderHandle: "SISTEMA_NET",
+      senderRole: "gm",
+      text: isReconnect
+        ? `🔌 Edgerunner [${player.handle}] reconectou-se à mesa!`
+        : `⚡ Edgerunner [${player.handle}] (${player.role}) conectou-se à mesa!`,
+      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    });
+  }
 
+  // Revoga tokens antigos do mesmo peer (1 sessão ativa por jogador) e emite novo.
+  revokeSessionsForPeer(room.code, safePeerId);
   const sessionToken = bindSession(room.code, safePeerId);
   return { room, sessionToken };
 }

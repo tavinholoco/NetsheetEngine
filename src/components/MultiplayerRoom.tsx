@@ -62,10 +62,79 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
   const [errorMsg, setErrorMsg] = useState('');
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  // Fase 3 (T3.3) — refs com o valor corrente para auto-reconexão sem closures stale
+  const sessionTokenRef = useRef(sessionToken);
+  sessionTokenRef.current = sessionToken;
+  const reconnectInFlightRef = useRef<Promise<boolean> | null>(null);
+
   const handle = user?.displayName || sheet.handle || 'Edgerunner';
   const isGm = !!room && room.gmPeerId === peerId;
   const players = room?.players || {};
   const npcs = room?.npcs || {};
+
+  const ensurePeerId = () => {
+    if (!peerId) {
+      const id = generatePeerId();
+      setPeerId(id);
+      sessionStorage.setItem('cyberpunk_peer_id', id);
+      return id;
+    }
+    return peerId;
+  };
+
+  // Fase 3 (T3.3) — re-join automático com o MESMO peerId após o servidor
+  // reiniciar (token de sessão morre com o processo). O servidor reconhece a
+  // reconexão e preserva a ficha persistida; aqui só trocamos o token novo.
+  const reconnectSession = useCallback(async (): Promise<boolean> => {
+    if (reconnectInFlightRef.current) return reconnectInFlightRef.current;
+    const attempt = (async () => {
+      try {
+        const id = ensurePeerId();
+        const res = await fetch('/api/rooms/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: roomCode, peerId: id, handle, sheet })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setErrorMsg('Sessão expirada e reconexão falhou — a sala pode ter sido encerrada. Saia e entre novamente.');
+          return false;
+        }
+        sessionTokenRef.current = data.sessionToken;
+        setSessionToken(data.sessionToken);
+        sessionStorage.setItem('cyberpunk_session_token', data.sessionToken);
+        setRoom(data.room);
+        setErrorMsg('');
+        return true;
+      } catch {
+        setErrorMsg('Sessão expirada e reconexão falhou. Verifique a conexão com o servidor.');
+        return false;
+      }
+    })();
+    reconnectInFlightRef.current = attempt;
+    try {
+      return await attempt;
+    } finally {
+      reconnectInFlightRef.current = null;
+    }
+  }, [roomCode, peerId, handle, sheet]);
+
+  // POST autenticado com retry: se o servidor reiniciou e o token expirou (401
+  // "Sessão inválida"), reconecta automaticamente e re-tenta a ação original.
+  const authedFetch = useCallback(async (path: string, body: object): Promise<Response> => {
+    const doFetch = () =>
+      fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...body, sessionToken: sessionTokenRef.current })
+      });
+    let res = await doFetch();
+    if (res.status === 401) {
+      const reconnected = await reconnectSession();
+      if (reconnected) res = await doFetch();
+    }
+    return res;
+  }, [reconnectSession]);
 
   // Lista salas públicas no lobby
   useEffect(() => {
@@ -113,24 +182,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     if (sheetKey === lastSyncedSheetRef.current) return;
     lastSyncedSheetRef.current = sheetKey;
     const t = setTimeout(() => {
-      fetch(`/api/rooms/${roomCode}/sheet`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken, sheet })
-      }).catch(() => {});
+      // Fase 3 (T3.3) — authedFetch: se o token expirou (restart do servidor),
+      // reconecta automaticamente e re-tenta o sync da ficha.
+      authedFetch(`/api/rooms/${roomCode}/sheet`, { sheet }).catch(() => {});
     }, 600);
     return () => clearTimeout(t);
-  }, [view, peerId, sessionToken, sheet, roomCode]);
-
-  const ensurePeerId = () => {
-    if (!peerId) {
-      const id = generatePeerId();
-      setPeerId(id);
-      sessionStorage.setItem('cyberpunk_peer_id', id);
-      return id;
-    }
-    return peerId;
-  };
+  }, [view, peerId, sessionToken, sheet, roomCode, authedFetch]);
 
   const createRoom = async () => {
     if (!user) {
@@ -194,11 +251,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     if (!content && !rollResult) return;
     if (text === undefined) setChatInput('');
     try {
-      await fetch(`/api/rooms/${roomCode}/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken, text: content, rollResult })
-      });
+      await authedFetch(`/api/rooms/${roomCode}/message`, { text: content, rollResult });
     } catch {
       /* ignore */
     }
@@ -233,13 +286,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
     sendChat(undefined, roll);
   };
 
-  // Helper: ações autenticadas por token de sessão (T1.7)
+  // Helper: ações autenticadas por token de sessão (T1.7), com auto-reconexão
+  // na Fase 3 (T3.3) via authedFetch (401 → re-join com mesmo peerId → retry).
   const roomAction = (path: string, body: object) => {
-    fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...body, sessionToken })
-    })
+    authedFetch(path, body)
       .then(async (r) => {
         if (!r.ok) {
           const data = await r.json().catch(() => ({}));
@@ -299,11 +349,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ sheet, onUpdat
 
   const leaveRoom = async () => {
     if (roomCode && sessionToken) {
-      await fetch(`/api/rooms/${roomCode}/leave`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken })
-      }).catch(() => {});
+      // T3.3 — authedFetch: após restart, "Sair" reconecta (token novo) e
+      // então sai de fato — evita deixar player fantasma online na sala.
+      await authedFetch(`/api/rooms/${roomCode}/leave`, {}).catch(() => {});
     }
     sessionStorage.removeItem('cyberpunk_session_token');
     setSessionToken('');
