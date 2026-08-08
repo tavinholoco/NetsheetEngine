@@ -358,7 +358,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       priority: 'P2',
       status: 'pendente',
       tasks: [
-        { code: 'T9.1', title: 'Vitest + React Testing Library', status: 'pendente' },
+        { code: 'T9.1', title: 'Vitest + React Testing Library', status: 'concluído' },
         { code: 'T9.2', title: 'Unit: estatísticas derivadas, dice, npcGenerator', status: 'pendente' },
         { code: 'T9.3', title: 'Integração do servidor (salas, GM permissions)', status: 'pendente' },
         { code: 'T9.4', title: 'E2E Playwright (2 navegadores)', status: 'pendente' },

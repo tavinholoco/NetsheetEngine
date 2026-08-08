@@ -283,7 +283,7 @@ pública é 100% própria — **sem nenhum crédito a ferramentas de scaffold na
 ## FASE 9 — TESTES  **[P2]**
 **Objetivo:** regras do jogo e fluxos críticos protegidos.
 
-- [ ] **T9.1** Configurar Vitest + React Testing Library.
+- [x] **T9.1** Configurar Vitest + React Testing Library. *(✓ concluído em 08/08/2026 — devDeps: `vitest@4.1`, `jsdom@29`, `@testing-library/react@16`, `@testing-library/jest-dom@7`, `@testing-library/user-event@14`. Infra: `vitest.config.ts` (plugin React + alias `@` + environment jsdom + setup), `src/test/setup.ts` (matchers jest-dom + cleanup automático entre testes). Scripts: `test:unit` (`vitest run`) e `test` agora roda **dice engine (52) + vitest (3)** num comando só — o CI pega tudo com `npm run test --if-present`. **Smoke tests** `src/__tests__/ui-smoke.test.tsx` (3/3): Button shadcn com variante cva, página 404 dentro do Router e navegação real com `user-event` (MemoryRouter + Routes). Nota: localmente o `npm run test` esbarra no `&` do caminho da pasta (problema conhecido T2.15 — binários invocados direto; no CI o caminho é limpo e o script funciona). Validação: tsc 0 erros (testes tipam com imports explícitos do vitest) + build ✓ + 52/52 + 3/3.)*
 - [ ] **T9.2** Testes unit: estatísticas derivadas (BTM, SP, perda de humanidade), dice engine, npcGenerator, regras de ferimento.
 - [ ] **T9.3** Testes de integração do servidor: criar/join/leave sala, iniciativa, GM permissions (usando supertest ou node:test).
 - [ ] **T9.4** Testes e2e (Playwright): fluxo de auth → criar ficha → sala multiplayer (2 navegadores).
