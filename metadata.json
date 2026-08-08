@@ -1,7 +1,4 @@
 {
-  "name": "Cyberpunk 2020 Sheet Builder & PRD Suite",
-  "description": "Documento PRD completo, arquitetura técnica e gerador de fichas de RPG Cyberpunk 2020 com calculador de estatísticas, cyberware, lifepath e rolagem de dados.",
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "name": "NETSHEET ENGINE",
+  "description": "Suíte completa para mesas de Cyberpunk 2020: fichas com calculador de estatísticas, cyberware e lifepath, rolador FNFF, mesa multiplayer em tempo real, assistente Netrunner IA e PRD."
 }

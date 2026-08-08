@@ -339,7 +339,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'PRD Real, Documentação e Identidade',
       objective: 'PRD passa a existir de verdade e identidade pública é 100% própria (P1).',
       priority: 'P1',
-      status: 'em andamento',
+      status: 'concluído',
       tasks: [
         { code: 'T8.1', title: 'docs/PRD.md (visão, personas, escopo, métricas)', status: 'concluído' },
         { code: 'T8.2', title: 'Popular data/prdData.ts para o PrdViewer', status: 'concluído' },
@@ -347,7 +347,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T8.4', title: 'index.html com identidade própria (pt-BR)', status: 'concluído' },
         { code: 'T8.5', title: 'UI exibindo apenas NETSHEET ENGINE', status: 'concluído' },
         { code: 'T8.6', title: 'ADRs (Supabase, Yjs, Zustand, dice-roller)', status: 'concluído' },
-        { code: 'T8.7', title: 'metadata.json sem campos de plataforma', status: 'pendente' }
+        { code: 'T8.7', title: 'metadata.json sem campos de plataforma', status: 'concluído' }
       ]
     },
     {
