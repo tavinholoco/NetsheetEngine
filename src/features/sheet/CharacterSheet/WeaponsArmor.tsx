@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArmorPiece, CharacterSheet, WeaponItem } from '../../../types/cyberpunk';
+import { armorSpAt } from '../../../utils/derivedStats';
 import { DEFAULT_ARMOR, DEFAULT_WEAPONS } from '../../../data/cyberpunkData';
 import { Shield, Target, Plus, Trash2, Dice5, Crosshair } from 'lucide-react';
 
@@ -63,9 +64,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
     onChange({ armor: updated });
   };
 
-  // Map armor locations
-  const armorByLoc = new Map<string, ArmorPiece>();
-  sheet.armor.forEach(a => armorByLoc.set(a.location, a));
+  // SP por localização vem da regra pura em src/utils/derivedStats.ts
 
   return (
     <div className="bg-slate-900/70 border-l-4 border-yellow-500 border-y border-r border-slate-800 rounded-lg p-5 shadow-[0_0_20px_rgba(234,179,8,0.1)] space-y-4 relative overflow-hidden">
@@ -225,8 +224,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
                 { loc: 'Right Leg' as const, label: 'Perna Dir (7-8)', icon: '🦿' },
                 { loc: 'Left Leg' as const, label: 'Perna Esq (9-0)', icon: '🦿' }
               ].map(({ loc, label, icon }) => {
-                const piece = armorByLoc.get(loc);
-                const spVal = piece ? piece.sp : 0;
+                const spVal = armorSpAt(sheet.armor, loc);
 
                 return (
                   <div key={loc} className="bg-slate-900/90 p-3 rounded border border-slate-800 text-center space-y-2 hover:border-cyan-500/50 transition-all">

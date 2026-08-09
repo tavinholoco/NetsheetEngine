@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { TacticalGridState, TacticalToken, RoomPlayer } from '../../types/multiplayer';
 import { RemoteCursor } from '../../lib/yjsConnection';
-import { WOUND_LEVEL_NAMES } from '../sheet/CharacterSheet/HealthTracker';
+import { WOUND_LEVEL_NAMES } from '../../utils/injuryRules';
 import { 
   Plus, 
   Trash2, 

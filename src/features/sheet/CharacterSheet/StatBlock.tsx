@@ -1,5 +1,6 @@
 import React from 'react';
 import { CharacterSheet, StatName } from '../../../types/cyberpunk';
+import { btmFromStats, humanityFromEmp, runFromMa, walkFromMa } from '../../../utils/derivedStats';
 import { Heart, Shield, Brain, Wind, Flame } from 'lucide-react';
 
 interface StatBlockProps {
@@ -37,22 +38,11 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
     onChange({ stats: { ...stats, [stat]: next } });
   };
 
-  // BTM (Body Type Modifier): tabela CP2020 baseada em BODY + REF
-  const btmTable: Record<string, number> = {
-    '2-4': -1,
-    '5-6': 0,
-    '7-8': 1,
-    '9-10': 2,
-    '11-12': 3,
-    '13-14': 4,
-    '15': 5
-  };
-  const bodyRef = stats.BODY + stats.REF;
-  const btm =
-    bodyRef >= 26 ? 5 : bodyRef >= 24 ? 4 : bodyRef >= 22 ? 3 : bodyRef >= 20 ? 2 : bodyRef >= 18 ? 1 : bodyRef >= 16 ? 0 : bodyRef >= 14 ? -1 : -2;
+  // BTM (Body Type Modifier): tabela CP2020 baseada em BODY + REF (src/utils/derivedStats.ts)
+  const btm = btmFromStats(stats.BODY, stats.REF);
 
-  const humanity = stats.EMP * 10;
-  const runMove = stats.MA * 3;
+  const humanity = humanityFromEmp(stats.EMP);
+  const runMove = runFromMa(stats.MA);
 
   return (
     <div className="bg-slate-900/70 border-l-4 border-cyan-500 border-y border-r border-slate-800 rounded-lg p-5 shadow-[0_0_20px_rgba(6,182,212,0.1)] space-y-4 relative overflow-hidden">
@@ -141,7 +131,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
             </div>
             <div className="bg-slate-900 p-2 rounded border border-slate-800">
               <span className="text-[9px] text-slate-400 block uppercase">Walk (m/turno)</span>
-              <span className="text-cyan-400 font-black text-lg">{Math.floor(runMove / 2)}</span>
+              <span className="text-cyan-400 font-black text-lg">{walkFromMa(stats.MA)}</span>
             </div>
           </div>
           <p className="text-[9px] text-slate-500 leading-relaxed">

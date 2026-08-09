@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CharacterSheet, CyberwareItem } from '../../../types/cyberpunk';
+import { humanityFromEmp, humanityRemaining } from '../../../utils/derivedStats';
 import { Cpu, Plus, Trash2, Power, AlertTriangle } from 'lucide-react';
 
 interface CyberwareManagerProps {
@@ -19,9 +20,8 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
 
   const cyberware = sheet.cyberware || [];
 
-  const totalHumanityLoss = cyberware.reduce((acc, cw) => acc + (cw.actualHL || 0), 0);
-  const maxHumanity = sheet.stats.EMP * 10;
-  const humanityRemaining = Math.max(0, maxHumanity - totalHumanityLoss);
+  const maxHumanity = humanityFromEmp(sheet.stats.EMP);
+  const humanityLeft = humanityRemaining(sheet.stats.EMP, cyberware);
 
   const addCyberware = () => {
     if (!name.trim()) return;
@@ -67,8 +67,8 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
           <span className="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-300">
             Empatia: <strong className="text-purple-400">{maxHumanity}</strong>
           </span>
-          <span className={`px-2 py-1 rounded border ${humanityRemaining < 3 ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-slate-950 border-slate-700 text-slate-300'}`}>
-            Restante: <strong>{humanityRemaining}</strong>
+          <span className={`px-2 py-1 rounded border ${humanityLeft < 3 ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-slate-950 border-slate-700 text-slate-300'}`}>
+            Restante: <strong>{humanityLeft}</strong>
           </span>
         </div>
       </div>
@@ -126,7 +126,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
       </div>
 
       {/* Aviso de humanidade */}
-      {humanityRemaining <= 0 && (
+      {humanityLeft <= 0 && (
         <div className="flex items-center space-x-2 bg-red-950/60 border border-red-500/50 p-2.5 rounded text-[11px] font-mono text-red-300 relative z-10">
           <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
           <span>

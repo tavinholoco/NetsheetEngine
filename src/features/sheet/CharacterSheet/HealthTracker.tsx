@@ -1,5 +1,6 @@
 import React from 'react';
 import { CharacterSheet } from '../../../types/cyberpunk';
+import { WOUND_LEVEL_NAMES, clampWoundLevel, isDead, woundPenaltyText } from '../../../utils/injuryRules';
 import { HeartPulse, Skull, Activity, Zap } from 'lucide-react';
 
 interface HealthTrackerProps {
@@ -8,45 +9,13 @@ interface HealthTrackerProps {
   onRollDeathSave: () => void;
 }
 
-/**
- * Nomes dos níveis de ferimento (índice = woundLevel 0..10).
- * Exportado porque o TacticalGrid.tsx também consome este símbolo.
- */
-export const WOUND_LEVEL_NAMES: { name: string; color: string }[] = [
-  { name: 'Saudável (OK)', color: 'text-emerald-400' },
-  { name: 'Ferimento Leve (Light)', color: 'text-yellow-400' },
-  { name: 'Ferimento Sério (Serious)', color: 'text-orange-400' },
-  { name: 'Ferimento Crítico (Critical)', color: 'text-red-400' },
-  { name: 'Mortal 0', color: 'text-red-500' },
-  { name: 'Mortal 1', color: 'text-red-500' },
-  { name: 'Mortal 2', color: 'text-red-600' },
-  { name: 'Mortal 3', color: 'text-red-600' },
-  { name: 'Mortal 4', color: 'text-rose-600' },
-  { name: 'Mortal 5', color: 'text-rose-700' },
-  { name: 'Mortal 6 (Morte Iminente)', color: 'text-rose-700' }
-];
-
 export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, onRollDeathSave }) => {
-  const woundLevel = sheet.woundLevel;
+  const woundLevel = clampWoundLevel(sheet.woundLevel);
   const current = WOUND_LEVEL_NAMES[woundLevel] || WOUND_LEVEL_NAMES[0];
-  const isDead = woundLevel >= 10;
+  const dead = isDead(woundLevel);
 
   const setWound = (level: number) => {
-    onChange({ woundLevel: Math.max(0, Math.min(10, level)) });
-  };
-
-  const woundRefPenalties: Record<number, string> = {
-    0: '—',
-    1: '—',
-    2: 'REF −2, MA −2',
-    3: 'REF −2, MA −2',
-    4: 'REF −4, MA −4, consciência 50%',
-    5: 'REF −4, MA −4',
-    6: 'REF −5, MA −5',
-    7: 'REF −5, MA −5',
-    8: 'REF −6, MA −6, morte provável',
-    9: 'REF −6, MA −6',
-    10: 'Morte iminente'
+    onChange({ woundLevel: clampWoundLevel(level) });
   };
 
   return (
@@ -62,7 +31,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
             Bio-Monitor // Ferimentos
           </h2>
         </div>
-        <span className={`text-xs font-mono font-black px-2.5 py-1 rounded border ${isDead ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-slate-950 border-slate-700 text-slate-200'}`}>
+        <span className={`text-xs font-mono font-black px-2.5 py-1 rounded border ${dead ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-slate-950 border-slate-700 text-slate-200'}`}>
           {current.name}
         </span>
       </div>
@@ -107,7 +76,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
             <span className="text-[10px] font-mono text-slate-400 uppercase">Penalidades (REF/MA)</span>
           </div>
           <span className="font-mono font-black text-sm text-red-300">
-            {woundRefPenalties[woundLevel] || '—'}
+            {woundPenaltyText(woundLevel)}
           </span>
         </div>
 
@@ -118,7 +87,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
           </div>
           <button
             onClick={onRollDeathSave}
-            disabled={isDead}
+            disabled={dead}
             className="px-3 py-2 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-[11px] uppercase rounded transition-all font-mono shadow-[0_0_12px_rgba(250,204,21,0.4)] cursor-pointer"
           >
             1d10 ≤ BODY

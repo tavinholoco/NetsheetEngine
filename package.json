@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx scripts/test-dice-engine.ts && vitest run",
+    "test": "vitest run",
     "test:unit": "vitest run"
   },
   "dependencies": {

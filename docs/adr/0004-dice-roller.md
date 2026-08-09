@@ -52,7 +52,7 @@ dos testes determinísticos.
   ao motor; zero `Math.random` restante no rolador).
 - **Audit trail** confiável (`1d10!: [10!, 5] = 15 + REF (8) + Perícia (3) =
   26`) — transparência para a mesa.
-- **52/52 testes determinísticos** (`scripts/test-dice-engine.ts`): explosão
+- **Testes determinísticos** (suíte migrada na T9.2 para `src/__tests__/dice-engine.test.ts` via Vitest, originalmente 52/52 em `scripts/test-dice-engine.ts`): explosão
   encadeada, fumble, faixas de dano, death save, local de impacto exato —
   integrados ao CI (`npm run test`).
 
@@ -67,5 +67,5 @@ dos testes determinísticos.
 ## Referências
 
 - `src/utils/diceEngine.ts` — motor FNFF.
-- `scripts/test-dice-engine.ts` — suíte determinística (52/52).
+- `src/__tests__/dice-engine.test.ts` — suíte determinística (18 testes, Vitest).
 - Fase 6 do `PLANO_DE_ACAO.md` (T6.1–T6.4).
