@@ -14,18 +14,17 @@
 --   docker exec -i supabase_db_cyberpunk-2020-sheet-builder-_-prd-suite \
 --     psql -U postgres -d postgres -f supabase/tests/rls_tests.sql
 --
--- Pré-requisitos: usuários A, B, C com perfis (o script re-seeda amizade,
--- solicitações, mensagens, fichas e objeto avatars/<uidA>/seed.png).
--- Os UIDs são fixos e descartáveis. Se os usuários não existirem, crie-os
--- (senha placeholder — não há login, só RLS):
---   delete from auth.users where email in ('rls_a@test.local','rls_b@test.local','rls_c@test.local');
---   insert into auth.users (instance_id, id, aud, role, email, encrypted_password,
---     email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
---   values
---     ('00000000-0000-0000-0000-000000000000', '6dbca66c-511a-4959-8919-a03b1bdeff5b', 'authenticated', 'authenticated', 'rls_a@test.local', 'SCRAM', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
---     ('00000000-0000-0000-0000-000000000000', '7afefc46-fb18-41a5-8b78-57fad6249e69', 'authenticated', 'authenticated', 'rls_b@test.local', 'SCRAM', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
---     ('00000000-0000-0000-0000-000000000000', 'da1a9ef2-dc3d-459c-9366-71e757a75737', 'authenticated', 'authenticated', 'rls_c@test.local', 'SCRAM', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now());
---   (o trigger handle_new_user cria os perfis automaticamente)
+-- Pré-requisitos: usuários A, B, C com perfis — o script agora é
+-- AUTO-SEED (T9.5): cria os 3 usuários se não existirem (on conflict do
+-- nothing) e o trigger handle_new_user gera os perfis. Os UIDs são fixos e
+-- descartáveis (senha placeholder — não há login, só RLS).
+--
+-- Executar (automatizado, recomenda-se):
+--   node scripts/test-rls.mjs
+--
+-- Executar manualmente (substitua o nome do container do banco local):
+--   docker exec -i supabase_db_cyberpunk-2020-sheet-builder-_-prd-suite \
+--     psql -U postgres -d postgres -f supabase/tests/rls_tests.sql
 -- ============================================================
 
 \set ON_ERROR_STOP off
@@ -109,6 +108,19 @@ grant execute on all functions in schema rls_test to anon, authenticated;
 -- A = 6dbca66c-511a-4959-8919-a03b1bdeff5b
 -- B = 7afefc46-fb18-41a5-8b78-57fad6249e69
 -- C = da1a9ef2-dc3d-459c-9366-71e757a75737
+
+-- ============================================================
+-- SELF-SEED DOS USUÁRIOS DE TESTE (T9.5 — idempotente)
+-- Cria A/B/C em auth.users se ainda não existirem; o trigger
+-- handle_new_user cria os perfis correspondentes automaticamente.
+-- ============================================================
+insert into auth.users (instance_id, id, aud, role, email, encrypted_password,
+  email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+values
+  ('00000000-0000-0000-0000-000000000000', '6dbca66c-511a-4959-8919-a03b1bdeff5b', 'authenticated', 'authenticated', 'rls_a@test.local', 'SCRAM', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '7afefc46-fb18-41a5-8b78-57fad6249e69', 'authenticated', 'authenticated', 'rls_b@test.local', 'SCRAM', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'da1a9ef2-dc3d-459c-9366-71e757a75737', 'authenticated', 'authenticated', 'rls_c@test.local', 'SCRAM', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now())
+on conflict (email) do nothing;
 
 -- ============================================================
 -- RESET + RE-SEED (idempotência: re-executar não acumula estado)
