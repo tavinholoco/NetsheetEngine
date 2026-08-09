@@ -50,22 +50,28 @@ import {
 // Fase 3 — o servidor lê .env.local (VITE_* + chaves de serviço)
 dotenv.config({ path: ['.env', '.env.local'] });
 
-const app = express();
+// `app` exportado para testes de integração (T9.3 — supertest) sem subir o
+// listener; o `startServer()` (porta 3000 + Vite/SPA + restore do banco) roda
+// em produção/dev mas é pulado quando NODE_ENV === "test".
+export const app = express();
 const PORT = 3000;
 
 // T1.4 — limite de payload (fichas de personagem cabem folgadamente em 1MB)
 app.use(express.json({ limit: "1mb" }));
 
-// T1.4 — rate limit simples por IP (anti-abuso)
-const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-
+// T1.4 — rate limit simples por IP (anti-abuso).
+// NOTA (T9.3): cada limiter tem o PRÓPRIO mapa de buckets — antes, roomLimiter
+// e chatLimiter compartilhavam um único mapa keyed por IP, então o limite do
+// chat (30/min) contava TODAS as requisições da sala e derrubava o chat com
+// 429 em mesas ativas após 30 req/min em qualquer endpoint.
 function makeRateLimiter(maxRequests: number, windowMs: number) {
+  const buckets = new Map<string, { count: number; resetAt: number }>();
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     const now = Date.now();
-    const bucket = rateBuckets.get(ip);
+    const bucket = buckets.get(ip);
     if (!bucket || bucket.resetAt <= now) {
-      rateBuckets.set(ip, { count: 1, resetAt: now + windowMs });
+      buckets.set(ip, { count: 1, resetAt: now + windowMs });
       return next();
     }
     bucket.count += 1;
@@ -929,4 +935,8 @@ function shutdown(signal: string) {
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-startServer();
+// T9.3 — em testes (Vitest define NODE_ENV=test), o módulo é importado via
+// supertest: NÃO sobe listener, watcher de presença nem restore do banco.
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}

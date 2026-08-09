@@ -27,6 +27,9 @@ const pendingTimers = new Map<string, NodeJS.Timeout>();
 
 function getDb(): SupabaseClient | null {
   if (db) return db;
+  // T9.3 — testes de integração NUNCA tocam o banco, mesmo que .env.local
+  // tenha credenciais (supertest roda o app em processo, sem listener).
+  if (process.env.NODE_ENV === "test") return null;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
