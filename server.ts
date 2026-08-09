@@ -54,7 +54,12 @@ dotenv.config({ path: ['.env', '.env.local'] });
 // listener; o `startServer()` (porta 3000 + Vite/SPA + restore do banco) roda
 // em produção/dev mas é pulado quando NODE_ENV === "test".
 export const app = express();
-const PORT = 3000;
+
+// T10.1 — deploy: porta e host vêm do ambiente (Railway/Fly.io/Render
+// injetam PORT; 3000 é só o default local). 0.0.0.0 é obrigatório nos
+// containers das plataformas (aceitam tráfego externo pelo proxy).
+const PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || "0.0.0.0";
 
 // T1.4 — limite de payload (fichas de personagem cabem folgadamente em 1MB)
 app.use(express.json({ limit: "1mb" }));
@@ -877,7 +882,13 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (_req, res) => {
+    // T10.1 — fallback SPA: qualquer rota client-side serve o index.html,
+    // mas /api/* desconhecida responde JSON 404 (não HTML) — healthchecks e
+    // uptime bots não devem receber o bundle da SPA.
+    app.get("*", (req, res) => {
+      if (req.path.startsWith("/api/")) {
+        return res.status(404).json({ error: "Rota não encontrada" });
+      }
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
@@ -919,8 +930,8 @@ async function startServer() {
     }
   });
 
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Cyberpunk 2020 Engine & Multiplayer Server] Active on http://0.0.0.0:${PORT} (SSE + WebSocket)`);
+  server.listen(PORT, HOST, () => {
+    console.log(`[Cyberpunk 2020 Engine & Multiplayer Server] Active on http://${HOST}:${PORT} (SSE + WebSocket)`);
   });
 }
 

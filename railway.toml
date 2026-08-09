@@ -1,0 +1,20 @@
+# ============================================================
+# NETSHEET ENGINE — Railway (Fase 10, T10.1)
+# ============================================================
+# O Railway detecta este arquivo na raiz ao criar um serviço a partir
+# do repo (Nixpacks). O Railway injeta PORT automaticamente.
+#
+# Variáveis no painel (Variables) ou CLI (`railway variables`):
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY  (build-time — inline no bundle)
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY (runtime)
+# ============================================================
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "node dist/server.cjs"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

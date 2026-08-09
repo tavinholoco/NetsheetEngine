@@ -1,0 +1,40 @@
+# ============================================================
+# NETSHEET ENGINE — Render Blueprint (Fase 10, T10.1)
+# ============================================================
+# Deploy: o Render detecta `render.yaml` na raiz (Blueprints) ao criar
+# um "New Blueprint" a partir do repositório. Roda com runtime NATIVO
+# do Node (funciona no plano free) — o Dockerfile da raiz é a alternativa
+# para outras plataformas (Fly.io/Railway).
+#
+# Variáveis com `sync: false` são definidas no painel (secrets):
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY  (build-time — inline no bundle)
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY (runtime)
+# O Render injeta o PORT automaticamente no runtime; o servidor usa
+# process.env.PORT (default 3000).
+# ============================================================
+services:
+  - type: web
+    name: netsheet-engine
+    runtime: node
+    plan: free
+    region: sa-east-1
+    buildCommand: npm run build
+    startCommand: node dist/server.cjs
+    healthCheckPath: /api/health
+    healthCheckTimeout: 100
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Build-time (cliente) — defina os valores no painel
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      # Runtime (servidor) — defina os valores no painel
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

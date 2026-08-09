@@ -1,0 +1,41 @@
+# ============================================================
+# NETSHEET ENGINE — Fly.io (Fase 10, T10.1)
+# ============================================================
+# Primeiro deploy:
+#   fly launch --no-deploy --name netsheet-engine
+#   fly secrets set SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... GEMINI_API_KEY=...
+#   fly deploy --build-arg VITE_SUPABASE_URL=... --build-arg VITE_SUPABASE_ANON_KEY=...
+#
+# O app roda numa única máquina (1 réplica) — veja docs/DEPLOY.md:
+# o estado das salas é em memória, então NÃO escale horizontalmente.
+# ============================================================
+app = "netsheet-engine"
+
+[build]
+  dockerfile = "Dockerfile"
+  [build.args]
+    VITE_SUPABASE_URL = ""
+    VITE_SUPABASE_ANON_KEY = ""
+
+[env]
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.checks]
+    [http_service.checks.health]
+      interval = "30s"
+      timeout = "3s"
+      grace_period = "15s"
+      method = "GET"
+      path = "/api/health"
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

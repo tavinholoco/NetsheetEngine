@@ -1,0 +1,28 @@
+# Dependências e build (o Dockerfile regenera dentro do container)
+node_modules
+dist
+dist-ssr
+
+# Controle de versão e CI
+.git
+.gitignore
+.github
+
+# Ambientes locais / segredos — NUNCA entram na imagem
+.env
+.env.local
+.env.*.local
+
+# Artefatos de teste
+test-results
+playwright-report
+blob-report
+e2e
+supabase/tests
+
+# Logs e editor
+*.log
+.vscode
+.idea
+.DS_Store
+Thumbs.db

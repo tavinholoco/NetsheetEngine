@@ -50,6 +50,18 @@ Pré-requisitos: Node ≥ 20 e [Supabase CLI](https://supabase.com/docs/guides/c
 
 > ⚠️ As chaves de `service_role` do Supabase são **exclusivas do servidor** — nunca as coloque com prefixo `VITE_`.
 
+## Deploy
+
+O backend (Express + WebSocket + Yjs) é um **processo único** — o estado das salas vive em memória (com persistência JSON). Veja [`docs/DEPLOY.md`](./docs/DEPLOY.md) para o passo a passo completo, variáveis de ambiente e healthcheck.
+
+- **Docker** — `docker build -t netsheet-engine . && docker run -p 3000:3000 netsheet-engine` (imagem multi-stage já valida build + testes + E2E WS)
+- **Railway** — usa o `Dockerfile` diretamente (`PORT` injetada automaticamente)
+- **Render** — config em [`render.yaml`](./render.yaml) (Web Service via Docker)
+- **Fly.io** — config em [`fly.toml`](./fly.toml)
+- **Frontend** — o SPA é servido pelo próprio backend na mesma porta (sem CORS); também pode ser hospedado estático no Vercel/Netlify apontando o `VITE_SUPABASE_URL` para o Supabase cloud
+
+> ⚠️ Por causa do estado em memória (Yjs/salas), o servidor deve rodar como **instância única** — não escale horizontalmente sem um backend de persistência compartilhado.
+
 ## Segurança
 
 O repositório usa o [gitleaks](https://github.com/zricethezav/gitleaks) para bloquear segredos:
