@@ -361,7 +361,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T9.1', title: 'Vitest + React Testing Library', status: 'concluído' },
         { code: 'T9.2', title: 'Unit: estatísticas derivadas, dice, npcGenerator', status: 'concluído' },
         { code: 'T9.3', title: 'Integração do servidor (salas, GM permissions)', status: 'concluído' },
-        { code: 'T9.4', title: 'E2E Playwright (2 navegadores)', status: 'pendente' },
+        { code: 'T9.4', title: 'E2E Playwright (2 navegadores)', status: 'concluído' },
         { code: 'T9.5', title: 'Testes de RLS via SQL', status: 'pendente' }
       ]
     },

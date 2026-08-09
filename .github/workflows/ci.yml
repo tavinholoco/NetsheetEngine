@@ -113,3 +113,39 @@ jobs:
             exit 1
           fi
           echo "✅ E2E WebSocket OK"
+
+  e2e:
+    name: E2E Playwright (auth, ficha, multiplayer 2 navegadores)
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build (Vite + bundle do servidor)
+        run: npm run build
+
+      - name: Instalar navegador Chromium
+        run: npx playwright install --with-deps chromium
+
+      # T9.4 — o webServer do playwright.config.ts sobe o servidor de produção
+      # (dist/server.cjs, NODE_ENV=production) e os 6 testes E2E rodam contra ele.
+      - name: Rodar E2E (auth → ficha → multiplayer 2 navegadores)
+        run: npm run test:e2e
+
+      - name: Publicar relatório HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

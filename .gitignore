@@ -32,3 +32,8 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Playwright (T9.4)
+test-results/
+playwright-report/
+blob-report/
