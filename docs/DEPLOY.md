@@ -99,9 +99,11 @@ Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Railway
    - **Vercel** — `vercel.json` (build `npm run build:web`, output `dist`,
      SPA rewrites para os deep-links `/room/ABC123`);
    - **Netlify** — `netlify.toml` (mesma ideia, redirect `/* → /index.html`).
-3. **Env var de build**: `VITE_API_URL=https://SEU-BACKEND` (sem barra final)
-   + `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`. O `import.meta.env` é
-   inline no build — um build por ambiente (staging/produção).
+3. **Env var de build**: `VITE_API_URL=https://SEU-BACKEND` — **apenas a
+   origin, sem path nem barra final** (o WS deriva trocando http→ws; um path
+   quebraria a rota `/ws/rooms/:code`, que vive na raiz do servidor) +
+   `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`. O `import.meta.env` é inline
+   no build — um build por ambiente (staging/produção).
 
 > O proxy `/api/*` das plataformas estáticas é uma alternativa só para REST
 > (não faz streaming SSE nem WebSocket). Para o realtime da mesa, use sempre
