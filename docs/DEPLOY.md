@@ -1,4 +1,4 @@
-# NETSHEET ENGINE — Guia de Deploy (Fase 10, T10.1)
+# NETSHEET ENGINE — Guia de Deploy (Fase 10, T10.1–T10.3)
 
 O app é **um único processo Node** que serve tudo: API Express (`/api/*`),
 WebSocket (`/ws/rooms/:code`), SSE de fallback e a **SPA estática** (`dist/`)
@@ -108,6 +108,83 @@ Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Railway
 > O proxy `/api/*` das plataformas estáticas é uma alternativa só para REST
 > (não faz streaming SSE nem WebSocket). Para o realtime da mesa, use sempre
 > `VITE_API_URL` direto ao backend.
+
+---
+
+## Domínio próprio + HTTPS (T10.3)
+
+O HTTPS é **obrigatório** para o multiplayer: o WebSocket do navegador exige
+`wss://` (o cliente já deriva `ws→wss` automaticamente quando a página e o
+`VITE_API_URL` usam `https` — `src/api/base.ts`). Todas as plataformas
+abaixo emitem **Let's Encrypt automaticamente** ao detectar o domínio.
+
+### Modelo 1 — Tudo num domínio (mais simples)
+
+O backend serve a SPA + API + WS no mesmo domínio; `VITE_API_URL` fica vazio.
+
+```
+netsheet.app ──► Railway/Render/Fly.io (SPA + /api + wss://netsheet.app)
+```
+
+1. **Compre o domínio** em um registrar (Namecheap, Registro.br, Google…).
+2. **No painel do backend**, adicione o domínio customizado:
+   - **Railway** → aba *Settings → Custom Domains*: `netsheet.app` (+ `www`).
+     A plataforma mostra o registro DNS esperado (A record → IP do serviço).
+   - **Render** → *Settings → Custom Domains*: digite o domínio e copie o
+     registro indicado (A record para o IP dedicado). *(Custom domain no
+     Render exige plano pago — free não aceita domínio próprio.)*
+   - **Fly.io** → `fly certs create netsheet.app` e depois aponte os DNS:
+     `fly ips list` dá os IPs IPv4 (A record) e IPv6 (AAAA) do app.
+3. **No painel do registrar**, crie o registro:
+   - Apex (`netsheet.app`): **A record** → IP fornecido pela plataforma.
+   - Subdomínio (`www.netsheet.app`): **CNAME** → `www.netsheet.app` para o
+     domínio canônico da plataforma (ex.: `netsheet.up.railway.app`).
+4. **Aguarde a propagação** (minutos a ~24h) e verifique:
+   `dig netsheet.app +short` / `nslookup netsheet.app`.
+5. O HTTPS é emitido sozinho; confira com `curl -I https://netsheet.app/api/health`.
+
+### Modelo 2 — Frontend estático + subdomínio de API
+
+Frontend no Vercel/Netlify, backend no Railway/Render/Fly.io.
+
+```
+netsheet.app (Vercel/Netlify) ──► api.netsheet.app (backend, wss://api.netsheet.app)
+```
+
+1. **Frontend**:
+   - **Vercel** → *Project → Settings → Domains*: adicione `netsheet.app`.
+     Registro no registrar: apex → **A `76.76.21.21`**; `www` → **CNAME
+     `cname.vercel-dns.com`**. TLS automático + redirect `www → apex`
+     opcional. Depois, **env de build** `VITE_API_URL=https://api.netsheet.app`
+     e redeploy.
+   - **Netlify** → *Domain settings → Add a domain*: apex → **A record**
+     para o IP do Netlify (a plataforma exibe o valor exato); `www` → **CNAME**
+     para `<site>.netlify.app`. TLS automático (Let's Encrypt).
+2. **Backend**: siga o Modelo 1 com `api.netsheet.app` no lugar do apex
+   (subdomínio → mesmo processo: A/CNAME + certificado automático).
+3. **Env de build** do frontend: `VITE_API_URL=https://api.netsheet.app`
+   (apenas origin, sem path — T10.2) → REST/SSE apontam para o backend e o
+   WebSocket vira `wss://api.netsheet.app/ws/rooms/:code`.
+
+### Cloudflare (opcional)
+
+Se usar o Cloudflare como DNS/proxy na frente:
+
+- **DNS-only (cinza)**: mais simples — os certificados das plataformas bastam.
+- **Proxy (laranja)**: use o modo **Full (strict)** (não "Flexible") e
+  mantenha o certificado de origem válido; o Cloudflare suporta WebSocket.
+  Em "Flexible", o TLS termina no Cloudflare e o backend recebe HTTP — o
+  navegador ainda vê `wss`, mas é uma camada a menos de segurança.
+
+### Checklist de verificação
+
+```bash
+dig netsheet.app +short                          # IP correto após propagação
+curl -I https://netsheet.app/api/health          # 200 + HTTPS (TLS 1.2+)
+curl -I https://api.netsheet.app/api/health      # backend direto (Modelo 2)
+# SPA serve por HTTPS e o WS conecta (o E2E WS aceita BASE_URL=https://...):
+BASE_URL=https://netsheet.app node scripts/test-ws-e2e.mjs
+```
 
 ---
 
