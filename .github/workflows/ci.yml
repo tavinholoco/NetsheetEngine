@@ -8,10 +8,17 @@ on:
   # O job de segredos também roda em qualquer branch (push + PR), para
   # bloquear chaves ANTES de chegarem ao master — ver job secrets-scan.
 
+# T10.5 — um único pipeline em andamento por ref; push em sequência cancela a
+# execução anterior (economiza minutos e evita corridas em estado obsoleto).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   secrets-scan:
     name: Varredura de segredos (gitleaks)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       security-events: write # para registrar achados na aba Security (SARIF)
@@ -58,6 +65,9 @@ jobs:
   validate:
     name: tsc + build + testes
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -81,13 +91,8 @@ jobs:
       - name: Build (Vite + bundle do servidor)
         run: npm run build
 
-      - name: Testes (quando configurados — T9.1 Vitest)
-        run: |
-          if npm run test --if-present > /tmp/test.log 2>&1; then
-            echo "✅ Testes executados com sucesso"
-          else
-            echo "ℹ️  Nenhum script de testes configurado ainda (planejado na T9.1) — etapa ignorada"
-          fi
+      - name: Testes (unit + integração — Vitest, T9.1+)
+        run: npm run test
 
       - name: Smoke test do servidor de produção
         run: |
@@ -117,6 +122,9 @@ jobs:
   e2e:
     name: E2E Playwright (auth, ficha, multiplayer 2 navegadores)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
     needs: validate
     steps:
       - name: Checkout
