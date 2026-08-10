@@ -28,10 +28,42 @@ Cliente (React) ──►  Express + WebSocket (dist/server.cjs)  ──►  Sup
 
 ## Healthcheck
 
-`GET /api/health` → `200 {"status":"online",...}`. Já configurado em todas as
-plataformas abaixo e no `HEALTHCHECK` do Dockerfile. Rotas `/api/*`
-desconhecidas respondem **JSON 404** (não HTML da SPA) — seguro para uptime
-bots.
+`GET /api/health` → **sempre `200` quando o processo está vivo** (sem rate
+limit — bots externos não podem ser bloqueados por IP). Desde a T10.4 o
+payload é rico para monitoramento:
+
+```json
+{
+  "status": "online",
+  "system": "NETSHEET ENGINE — Cyberpunk 2020 Multiplayer API",
+  "version": "0.4.0",          // versão do build (do package.json)
+  "uptime": 48213,             // segundos desde o boot do processo
+  "timestamp": "2026-08-10T…Z",
+  "env": "production",
+  "rooms": { "active": 3, "players": 7 }  // salas/jogadores na memória
+}
+```
+
+Já configurado no `HEALTHCHECK` do Dockerfile e nas plataformas. Rotas
+`/api/*` desconhecidas respondem **JSON 404** (não HTML da SPA) — seguro para
+uptime bots.
+
+## Monitoramento externo (T10.4)
+
+O healthcheck serve de pulso para um **uptime bot** externo (fora da
+plataforma — para avisar quando o deploy "morre" mas o provedor não nota):
+
+| Serviço | Setup | Observações |
+|---|---|---|
+| **UptimeRobot** | *Add New Monitor → HTTP(S)* → URL `https://SEU-DOMINIO/api/health`, intervalo 5 min, resposta esperada `200` + *Alert when keywords exist* = `online` | Plano free: 50 monitores. Adicione também um **monitor de SSL** (`https://SEU-DOMINIO`) para avisar 14/7/3 dias antes da expiração do certificado |
+| **StatusCake** | *Uptime Test → HTTP(s)* → mesma URL + *Validation: keyword* `online` | Inclui verificação de **SSL/TLS** e alertas por e-mail, Slack, Telegram |
+| **Alternativas** | Better Uptime, Hetrix, Grafana Cloud (sintetizado) | Mesma ideia: GET no `/api/health` esperando 200 + keyword `online` |
+
+- **Contatos de alerta**: e-mail + canal do grupo (Telegram/Slack/Discord).
+- **SLA de alerta**: falha em 1–2 checks consecutivos (5 min) antes de notificar.
+- **Não** use o `/api/health` para decisões de tráfego (ele não mede latência
+  nem estado do Supabase — é só liveness). A contagem `rooms.active` serve
+  como termômetro manual: mesa vazia e subindo = deploy saudável e com uso.
 
 ## ⚠️ Operacional: UMA instância
 

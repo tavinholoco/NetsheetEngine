@@ -1,5 +1,9 @@
 import express, { Response } from "express";
 import http from "http";
+import pkg from "./package.json";
+
+// T10.4 — versão do build embutida no healthcheck (o esbuild inline o JSON).
+const APP_VERSION: string = (pkg as { version?: string }).version || "0.0.0";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
@@ -851,9 +855,21 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
 });
 
 
-// Health check endpoint
+// T10.4 — healthcheck enriquecido para uptime bots: versão do build, uptime
+// do processo e contagem de salas/jogadores ativos. Sempre 200 quando vivo
+// (sem rate limit — bots externos não podem ser bloqueados por IP).
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "online", system: "Cyberpunk 2020 Sheet Builder & Multiplayer API" });
+  const activeRooms = getAllActiveRooms();
+  const playersActive = activeRooms.reduce((acc, r) => acc + r.playersCount, 0);
+  res.json({
+    status: "online",
+    system: "NETSHEET ENGINE — Cyberpunk 2020 Multiplayer API",
+    version: APP_VERSION,
+    uptime: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || "development",
+    rooms: { active: activeRooms.length, players: playersActive }
+  });
 });
 
 // T1.4 — erro de parsing/payload do express.json em formato JSON

@@ -54,6 +54,20 @@ const authed = (token: string) => ({ sessionToken: token });
 // ---------------------------------------------------------------------------
 // 1. Ciclo de vida da sala — criar / listar / entrar / sair / remover
 // ---------------------------------------------------------------------------
+describe("Healthcheck (T10.4)", () => {
+  it("GET /api/health expõe status, versão, uptime e contagem de salas", async () => {
+    const res = await request(app).get("/api/health");
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("online");
+    expect(typeof res.body.version).toBe("string");
+    expect(res.body.version.length).toBeGreaterThan(0);
+    expect(typeof res.body.uptime).toBe("number");
+    expect(res.body.uptime).toBeGreaterThanOrEqual(0);
+    expect(typeof res.body.timestamp).toBe("string");
+    expect(res.body.rooms).toMatchObject({ active: expect.any(Number), players: expect.any(Number) });
+  });
+});
+
 describe("API de salas — criar/join/leave", () => {
   it("cria sala e retorna room + sessionToken do GM", async () => {
     const { res, token, room } = await createRoom(uniqueCode());
