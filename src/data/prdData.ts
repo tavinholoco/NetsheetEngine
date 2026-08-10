@@ -371,7 +371,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'Deploy, CI/CD e Hardening',
       objective: 'Aplicação pública com pipeline automatizado e produção endurecida (P1).',
       priority: 'P1',
-      status: 'pendente',
+      status: 'concluído',
       tasks: [
         { code: 'T10.1', title: 'Backend em Railway/Fly.io/Render', status: 'concluído' },
         { code: 'T10.2', title: 'Frontend estático no Vercel/Netlify', status: 'concluído' },
@@ -379,8 +379,8 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T10.4', title: 'Healthcheck /api/health monitorado', status: 'concluído' },
         { code: 'T10.5', title: 'GitHub Actions (tsc, lint, testes, build)', status: 'concluído' },
         { code: 'T10.6', title: 'Hardening: CORS, helmet, rate limit, logs', status: 'concluído' },
-        { code: 'T10.7', title: 'Checklist de produção (secrets fora do bundle)', status: 'pendente' },
-        { code: 'T10.8', title: 'Backups/PITR + supabase db push no CI', status: 'pendente' }
+        { code: 'T10.7', title: 'Checklist de produção (secrets fora do bundle)', status: 'concluído' },
+        { code: 'T10.8', title: 'Backups/PITR + supabase db push no CI', status: 'concluído' }
       ]
     },
     {
