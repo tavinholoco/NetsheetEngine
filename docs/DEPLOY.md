@@ -20,6 +20,7 @@ Cliente (React) ──►  Express + WebSocket (dist/server.cjs)  ──►  Sup
 | `SUPABASE_URL` | runtime | URL do Supabase (persistência de salas, Fase 3) |
 | `SUPABASE_SERVICE_ROLE_KEY` | runtime | **Service role — bypassa RLS. Sempre como SECRET.** |
 | `GEMINI_API_KEY` | runtime | Chave da API Gemini (Netrunner AI, `/api/gemini`) |
+| `CORS_ORIGINS` | runtime | **Allowlist CORS (T10.6)** — origins do frontend estático, separadas por vírgula (ex.: `https://netsheet.app,https://www.netsheet.app`). Vazio = sem CORS; `*` = qualquer origin (legado) |
 | `PORT` | runtime | Injetada automaticamente pelas plataformas (default 3000) |
 | `HOST` | runtime | Obrigatório `0.0.0.0` em containers (default já é esse) |
 | `ROOM_OFFLINE_TIMEOUT_MS` | runtime | Opcional — timeout de `isOnline` da mesa (T3.4) |
@@ -140,6 +141,12 @@ Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Railway
 > O proxy `/api/*` das plataformas estáticas é uma alternativa só para REST
 > (não faz streaming SSE nem WebSocket). Para o realtime da mesa, use sempre
 > `VITE_API_URL` direto ao backend.
+>
+> **CORS (T10.6):** desde o hardening, o servidor **não responde CORS por
+> padrão**. Configure a env de runtime `CORS_ORIGINS` com as origins exatas
+> do frontend (separadas por vírgula) — ex.: `CORS_ORIGINS=https://netsheet.app,https://www.netsheet.app`.
+> Sem isso, o navegador bloqueia as chamadas cross-origin (mesmo origin
+> continua funcionando).
 
 ---
 
@@ -240,6 +247,26 @@ curl -s -X POST https://SEU-DOMINIO/api/gemini \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Diga oi"}' | head -c 200
 ```
+
+## Hardening (T10.6)
+
+O servidor aplica as seguintes proteções (todas validadas por curl em
+produção):
+
+- **CORS por allowlist** — `CORS_ORIGINS` (env). Sem a env, nenhum origin
+  recebe headers CORS; `*` reabilita o legado. Auth por token de sessão no
+  body (sem cookies), então origin permitida não abre CSRF.
+- **Rate limit global** — 600 req/min por IP em `/api/*`, **exceto
+  `/api/health`** (uptime bots não podem ser bloqueados), somado aos limiters
+  específicos de mesa (`roomLimiter` 120/min, `chatLimiter` 30/min).
+- **helmet (production)** — security headers: `Content-Security-Policy`
+  customizada (script só do próprio origin; estilos inline liberados para
+  Tailwind/React; imagens `https:` para avatares do storage; conexões
+  `ws/wss/https` para o WebSocket das mesas e Supabase), `X-Content-Type-Options:
+  nosniff`, `X-Frame-Options`, `Referrer-Policy`, HSTS. Em dev o helmet é
+  pulado (o Vite HMR precisa de inline/eval).
+- **Logs estruturados** — JSON lines no stdout (`{"t","level","event",...}`),
+  parseáveis por qualquer coletor; nunca logam segredos.
 
 ## Build local (docker)
 

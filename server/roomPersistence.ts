@@ -18,6 +18,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getRoom, restoreRoom } from "./roomManager.js";
 import type { GameRoom } from "../src/types/multiplayer.js";
+import { logger } from "./logger.js";
 
 const ROOMS_TABLE = "rooms";
 const SAVE_DEBOUNCE_MS = 2000;
@@ -33,7 +34,7 @@ function getDb(): SupabaseClient | null {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
-    console.warn("[roomPersistence] SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY ausentes — persistência de salas DESATIVADA.");
+    logger.warn("persistence_disabled", { reason: "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY ausentes" });
     return null;
   }
   db = createClient(url, key, {
@@ -71,7 +72,7 @@ export async function persistRoomNow(code: string): Promise<void> {
   if (error) {
     // Retry em 2s: evita perder a janela de debounce em falha de rede
     // transitória (sem retry, o estado daquela janela se perderia).
-    console.warn(`[roomPersistence] falha ao salvar sala ${key} (retry em 2s):`, error.message);
+    logger.warn("persistence_save_failed", { room: key, retryInMs: SAVE_DEBOUNCE_MS, message: error.message });
     const timer = pendingTimers.get(key);
     if (timer) clearTimeout(timer);
     pendingTimers.set(key, setTimeout(() => {
@@ -93,7 +94,7 @@ export async function deleteRoomPersisted(code: string): Promise<void> {
   }
   const { error } = await client.from(ROOMS_TABLE).delete().eq("code", key);
   if (error) {
-    console.warn(`[roomPersistence] falha ao remover sala ${key}:`, error.message);
+    logger.warn("persistence_delete_failed", { room: key, message: error.message });
   }
 }
 
@@ -106,7 +107,7 @@ export async function restoreRoomsFromDb(): Promise<number> {
     .select("code, room_state")
     .order("updated_at", { ascending: false });
   if (error) {
-    console.warn("[roomPersistence] falha ao restaurar salas:", error.message);
+    logger.warn("persistence_restore_failed", { message: error.message });
     return 0;
   }
   let restored = 0;
@@ -117,7 +118,7 @@ export async function restoreRoomsFromDb(): Promise<number> {
       restored += 1;
     }
   }
-  console.log(`[roomPersistence] ${restored} sala(s) restaurada(s) do banco.`);
+  logger.info("persistence_restored", { count: restored });
   return restored;
 }
 

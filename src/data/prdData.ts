@@ -378,7 +378,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         { code: 'T10.3', title: 'Domínio customizado + HTTPS', status: 'concluído' },
         { code: 'T10.4', title: 'Healthcheck /api/health monitorado', status: 'concluído' },
         { code: 'T10.5', title: 'GitHub Actions (tsc, lint, testes, build)', status: 'concluído' },
-        { code: 'T10.6', title: 'Hardening: CORS, helmet, rate limit, logs', status: 'pendente' },
+        { code: 'T10.6', title: 'Hardening: CORS, helmet, rate limit, logs', status: 'concluído' },
         { code: 'T10.7', title: 'Checklist de produção (secrets fora do bundle)', status: 'pendente' },
         { code: 'T10.8', title: 'Backups/PITR + supabase db push no CI', status: 'pendente' }
       ]

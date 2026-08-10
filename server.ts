@@ -54,6 +54,10 @@ import {
 // Fase 3 — o servidor lê .env.local (VITE_* + chaves de serviço)
 dotenv.config({ path: ['.env', '.env.local'] });
 
+// T10.6 — hardening: helmet (security headers, produção) e logger JSON.
+import helmet from "helmet";
+import { logger } from "./server/logger.js";
+
 // `app` exportado para testes de integração (T9.3 — supertest) sem subir o
 // listener; o `startServer()` (porta 3000 + Vite/SPA + restore do banco) roda
 // em produção/dev mas é pulado quando NODE_ENV === "test".
@@ -68,21 +72,67 @@ const HOST = process.env.HOST || "0.0.0.0";
 // T1.4 — limite de payload (fichas de personagem cabem folgadamente em 1MB)
 app.use(express.json({ limit: "1mb" }));
 
-// T10.2 — CORS para o frontend estático (Vercel/Netlify). Quando o SPA é
-// servido por outra origem e aponta VITE_API_URL para cá, os browsers exigem
-// headers CORS em /api/* (REST + SSE). A autenticação é por token de sessão
-// no body (T1.7) — sem cookies/credentials — então origin aberta não abre
-// vetor de CSRF. Em dev (SPA no mesmo origin) o header é inócuo.
-app.use("/api", (_req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (_req.method === "OPTIONS") {
+// T10.6 — CORS por ALLOWLIST (env CORS_ORIGINS, separada por vírgula). O
+// frontend estático (T10.2) deve declarar explicitamente as origins que podem
+// chamar a API: sem a env, NENHUM origin recebe CORS (mesmo origin continua
+// funcionando; deploy estático exige configurar). "*" reabilita o legado.
+// Auth por token de sessão no body (T1.7) — sem cookies — então origin
+// permitida não traz risco de CSRF.
+const CORS_ALLOWED: string[] = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+const CORS_ANY = CORS_ALLOWED.includes("*");
+
+app.use("/api", (req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (CORS_ANY || CORS_ALLOWED.includes(origin))) {
+    res.setHeader("Access-Control-Allow-Origin", CORS_ANY ? "*" : origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (req.method === "OPTIONS") {
     res.sendStatus(204);
     return;
   }
   next();
 });
+
+// T10.6 — rate limit GLOBAL da API (anti-flood por IP), além dos limiters
+// específicos de mesa (roomLimiter/chatLimiter). O /api/health é isento:
+// uptime bots externos (T10.4) não podem ser bloqueados.
+const apiLimiter = makeRateLimiter(600, 60_000); // 600 req/min por IP
+app.use("/api", (req, res, next) => {
+  // req.path aqui é relativo ao mount "/api" — usar originalUrl para o health.
+  if (req.originalUrl === "/api/health") return next();
+  apiLimiter(req, res, next);
+});
+
+// T10.6 — helmet (security headers) apenas em PRODUÇÃO: o CSP bloqueia
+// inline/eval, que o Vite usa em dev (HMR/React refresh). O CSP é customizado
+// para o app: assets do próprio origin, imagens https (avatars do Supabase
+// storage + unsplash), estilos inline (Tailwind/React) e conexões
+// ws/wss/https (WebSocket das mesas + Supabase Realtime).
+if (process.env.NODE_ENV === "production") {
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          "default-src": ["'self'"],
+          "script-src": ["'self'"],
+          "style-src": ["'self'", "'unsafe-inline'"],
+          "img-src": ["'self'", "data:", "blob:", "https:"],
+          "font-src": ["'self'", "data:"],
+          "connect-src": ["'self'", "ws:", "wss:", "https:"],
+          "object-src": ["'none'"],
+          "base-uri": ["'self'"],
+          "form-action": ["'self'"],
+          "frame-ancestors": ["'self'"]
+        }
+      }
+    })
+  );
+}
 
 // T1.4 — rate limit simples por IP (anti-abuso).
 // NOTA (T9.3): cada limiter tem o PRÓPRIO mapa de buckets — antes, roomLimiter
@@ -206,7 +256,7 @@ app.post("/api/gemini", async (req, res) => {
 
     res.json({ text: response.text });
   } catch (error: any) {
-    console.error("Gemini API error:", error);
+    logger.error("gemini_api_error", { message: error?.message || String(error) });
     res.status(500).json({ error: error?.message || "Failed to contact Gemini Netrunner AI" });
   }
 });
@@ -836,7 +886,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
     } catch (e) {
       // Frame Yjs malformado (payload truncado/aleatório) — nunca derruba o
       // socket nem o processo; o servidor continua atendendo a mesa.
-      console.warn(`[ws] frame Yjs inválido ignorado (${code}):`, (e as Error).message);
+      logger.warn("ws_invalid_yjs_frame", { room: code, message: (e as Error).message });
     }
   });
 
@@ -880,7 +930,7 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   if (err?.type === "entity.parse.failed" || err instanceof SyntaxError) {
     return res.status(400).json({ error: "JSON inválido no corpo da requisição." });
   }
-  console.error("Erro não tratado:", err);
+  logger.error("unhandled_error", { message: err?.message || String(err), stack: err?.stack });
   return res.status(500).json({ error: "Erro interno do servidor." });
 });
 
@@ -963,13 +1013,13 @@ async function startServer() {
   });
 
   server.listen(PORT, HOST, () => {
-    console.log(`[Cyberpunk 2020 Engine & Multiplayer Server] Active on http://${HOST}:${PORT} (SSE + WebSocket)`);
+    logger.info("server_started", { host: HOST, port: PORT, env: process.env.NODE_ENV || "development", version: APP_VERSION });
   });
 }
 
 // Fase 3 (T3.1) — grava pendências de persistência no shutdown gracioso
 function shutdown(signal: string) {
-  console.log(`[server] ${signal} recebido — persistindo salas pendentes...`);
+  logger.info("server_shutdown", { signal });
   if (presenceWatcher) clearInterval(presenceWatcher);
   void flushAllPending().finally(() => {
     process.exit(0);
