@@ -13,6 +13,7 @@ import { useSheetStore } from '../../stores/useSheetStore';
 import { useUiStore } from '../../stores/useUiStore';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
+import { apiUrl, wsUrl } from '../../api/base';
 import {
   Radio,
   Users,
@@ -134,7 +135,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
 
     // Fallback SSE (comportamento original — auto-reconecta via EventSource)
     const connectSse = () => {
-      const es = new EventSource(`/api/rooms/${roomCode}/stream`);
+      // T10.2 — frontend estático: base do backend vem de VITE_API_URL
+      const es = new EventSource(apiUrl(`/api/rooms/${roomCode}/stream`));
       eventSourceRef.current = es;
       es.onmessage = (ev) => handlePayload(ev.data);
       es.onerror = () => {
@@ -145,8 +147,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
 
     let sse: EventSource | null = null;
     let wsEverOpen = false;
-    const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/rooms/${roomCode}?token=${encodeURIComponent(sessionToken)}`;
-    const ws = new WebSocket(wsUrl);
+    const socketUrl = wsUrl(`/ws/rooms/${roomCode}?token=${encodeURIComponent(sessionToken)}`);
+    const ws = new WebSocket(socketUrl);
     ws.binaryType = 'arraybuffer';
     wsRef.current = ws;
 

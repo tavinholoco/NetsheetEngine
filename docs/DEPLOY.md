@@ -16,6 +16,7 @@ Cliente (React) ──►  Express + WebSocket (dist/server.cjs)  ──►  Sup
 |---|---|---|
 | `VITE_SUPABASE_URL` | **build** | URL do projeto Supabase (inline no bundle do cliente) |
 | `VITE_SUPABASE_ANON_KEY` | **build** | Chave anon do Supabase (pública por design — cliente) |
+| `VITE_API_URL` | **build** | Base do backend multiplayer — **obrigatória no frontend estático** (T10.2); vazia = mesmo origin |
 | `SUPABASE_URL` | runtime | URL do Supabase (persistência de salas, Fase 3) |
 | `SUPABASE_SERVICE_ROLE_KEY` | runtime | **Service role — bypassa RLS. Sempre como SECRET.** |
 | `GEMINI_API_KEY` | runtime | Chave da API Gemini (Netrunner AI, `/api/gemini`) |
@@ -74,6 +75,37 @@ fly deploy --build-arg VITE_SUPABASE_URL=... --build-arg VITE_SUPABASE_ANON_KEY=
 
 HTTPS + healthcheck (`/api/health`) já vêm configurados no `fly.toml`
 (1 máquina, 1 GB). Logs: `fly logs`; console: `fly ssh console`.
+
+---
+
+## Opção D — Frontend estático (Vercel/Netlify) + backend na nuvem
+
+Quando o SPA é hospedado estático (Vercel/Netlify) e o backend mora no
+Railway/Render/Fly.io, o cliente precisa saber onde está a API. Isso é
+resolvido por **`VITE_API_URL`** (Fase 10, T10.2) — uma só variável da qual
+REST, SSE e WebSocket derivam:
+
+```
+Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Railway)
+        VITE_API_URL=https://netsheet-api.onrender.com
+```
+
+### Configuração
+
+1. **Backend** (Railway/Render/Fly — Opção A/B/C acima): suba normalmente.
+   O servidor já responde **CORS em `/api/*`** (qualquer origin — auth por
+   token de sessão, sem cookies).
+2. **Frontend** (Vercel ou Netlify): importe o repo e use as configs prontas:
+   - **Vercel** — `vercel.json` (build `npm run build:web`, output `dist`,
+     SPA rewrites para os deep-links `/room/ABC123`);
+   - **Netlify** — `netlify.toml` (mesma ideia, redirect `/* → /index.html`).
+3. **Env var de build**: `VITE_API_URL=https://SEU-BACKEND` (sem barra final)
+   + `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`. O `import.meta.env` é
+   inline no build — um build por ambiente (staging/produção).
+
+> O proxy `/api/*` das plataformas estáticas é uma alternativa só para REST
+> (não faz streaming SSE nem WebSocket). Para o realtime da mesa, use sempre
+> `VITE_API_URL` direto ao backend.
 
 ---
 

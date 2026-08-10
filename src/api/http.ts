@@ -11,6 +11,8 @@
  * deve chamar `fetch()` diretamente.
  */
 
+import { apiUrl } from './base';
+
 export class ApiError extends Error {
   readonly status: number;
 
@@ -24,7 +26,9 @@ export class ApiError extends Error {
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(path, {
+    // T10.2 — frontend estático: VITE_API_URL prefixa a chamada quando o
+    // backend mora em outra origem; vazio = mesmo origin (deploy atual).
+    res = await fetch(apiUrl(path), {
       ...init,
       headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) }
     });

@@ -64,6 +64,22 @@ const HOST = process.env.HOST || "0.0.0.0";
 // T1.4 — limite de payload (fichas de personagem cabem folgadamente em 1MB)
 app.use(express.json({ limit: "1mb" }));
 
+// T10.2 — CORS para o frontend estático (Vercel/Netlify). Quando o SPA é
+// servido por outra origem e aponta VITE_API_URL para cá, os browsers exigem
+// headers CORS em /api/* (REST + SSE). A autenticação é por token de sessão
+// no body (T1.7) — sem cookies/credentials — então origin aberta não abre
+// vetor de CSRF. Em dev (SPA no mesmo origin) o header é inócuo.
+app.use("/api", (_req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (_req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
 // T1.4 — rate limit simples por IP (anti-abuso).
 // NOTA (T9.3): cada limiter tem o PRÓPRIO mapa de buckets — antes, roomLimiter
 // e chatLimiter compartilhavam um único mapa keyed por IP, então o limite do
