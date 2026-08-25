@@ -17,11 +17,10 @@ services:
     name: netsheet-engine
     runtime: node
     plan: free
-    region: sa-east-1
+    region: virginia
     buildCommand: npm run build
     startCommand: node dist/server.cjs
     healthCheckPath: /api/health
-    healthCheckTimeout: 100
     autoDeploy: true
     envVars:
       - key: NODE_ENV
