@@ -210,9 +210,9 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 - [ ] **A.6** Fixar o **Render** como alvo único de backend; arquivar `fly.toml` e `railway.toml` em
       `docs/deploy-alternativas/`. Manter `vercel.json`/`netlify.toml` — o frontend estático neles é
       recomendado pelo contrato de custo. *(DOC-02)*
-- [ ] **A.7** Criar `docs/varreduras/` como casa dos ledgers das fases E–I.
+- [ ] **A.7** Criar `docs/varreduras/` como casa dos ledgers das fases E e G–J.
 - [ ] **A.8** Marcar o `PLANO_DE_ACAO.md` como **substituído** — *não* como concluído. O encerramento
-      formal (T12.2–T12.6) é da Fase L. *(DOC-05, parte 1)*
+      formal (T12.2–T12.6) é da Fase M. *(DOC-05, parte 1)*
 - [ ] ✅ **Fase A concluída em:** ____/____/______
 
 ---
@@ -317,7 +317,7 @@ Existe estado que cresce sem limite? Que suposição quebra se duas requisiçõe
 
 ---
 
-### FASE F — REESTRUTURAÇÃO VISUAL: IDENTIDADE CYBERPUNK 2020 🔨 *(3–4 dias)*
+### FASE F — REESTRUTURAÇÃO VISUAL: IDENTIDADE CYBERPUNK 2020 🔨 *(4 dias)*
 
 > **Por que é fase própria e vem antes da varredura.** Redesign e caça a bug têm posturas opostas:
 > a varredura pergunta "isto é necessário?" e tem ADIAR como padrão — se as duas coisas
@@ -546,8 +546,8 @@ descubro em produção? Todo estado de erro do servidor tem estado de UI corresp
 A Fase B fecha os seis buracos conhecidos. Esta procura os que a auditoria não achou —
 sistematicamente, e depois de todo o código novo de C, D e F ter entrado.
 
-- [ ] **M.1** Varredura → ledger em `docs/varreduras/J-seguranca.md`.
-- [ ] **M.2** Executar apenas os itens FAZER.
+- [ ] **J.1** Varredura → ledger em `docs/varreduras/J-seguranca.md`.
+- [ ] **J.2** Executar apenas os itens FAZER.
 
 **Como varrer:**
 - **Tabela completa:** cada endpoint e cada mensagem de WebSocket × autenticado? autorizado? entrada
@@ -572,13 +572,13 @@ modelo de ameaça real da decisão 3) Que dado sai do servidor para quem não de
 A Fase 11 do plano antigo, reordenada por retorno: export/import primeiro (dá confiança para usar de
 verdade), netrunning por último (é meio jogo à parte).
 
-- [ ] **M.1** *(era T11.5)* Export/import de ficha (JSON + impressão em PDF) — reaproveita o validador
+- [ ] **K.1** *(era T11.5)* Export/import de ficha (JSON + impressão em PDF) — reaproveita o validador
       de `src/rules/sheetSchema.ts`.
-- [ ] **M.2** *(era T11.1)* Inventário, peso e EV: Carry (BODY×10 kg), Lift (BODY×40 kg), encumbrance
+- [ ] **K.2** *(era T11.1)* Inventário, peso e EV: Carry (BODY×10 kg), Lift (BODY×40 kg), encumbrance
       automático, penalidade de REF por armadura. *(RUL-11)*
-- [ ] **M.3** *(era T11.3)* Pós-ferimento automático — em boa parte já entregue pela Fase C.
-- [ ] **M.4** *(era T11.4)* Inventário e drops de NPC.
-- [ ] **M.5** *(era T11.2)* Netrunning: MU, programas, data walls, ações por turno.
+- [ ] **K.3** *(era T11.3)* Pós-ferimento automático — em boa parte já entregue pela Fase C.
+- [ ] **K.4** *(era T11.4)* Inventário e drops de NPC.
+- [ ] **K.5** *(era T11.2)* Netrunning: MU, programas, data walls, ações por turno.
 - [ ] **K.6** Criação de personagem com orçamento (pontos de atributo, perícia por INT+REF, carreira)
       e evolução por IP. *(RUL-10)*
 - [ ] **K.7** Completar `SKILL_TABLES` (remover "Social" de INT; adicionar Accounting, Anthropology,
@@ -593,13 +593,13 @@ verdade), netrunning por último (é meio jogo à parte).
 Com jogadores convidados (decisão 3), é a fase que mais pode esperar — e a primeira a antecipar se o
 público mudar.
 
-- [ ] **M.1** Broadcast por delta (`chat:new`, `player:health`, `initiative:set`); estado completo só
+- [ ] **L.1** Broadcast por delta (`chat:new`, `player:health`, `initiative:set`); estado completo só
       no join e na reconexão. *(ARQ-01)*
-- [ ] **M.2** `manualChunks` separando supabase e yjs; Yjs sob demanda na rota de mesa; revisar se
+- [ ] **L.2** `manualChunks` separando supabase e yjs; Yjs sob demanda na rota de mesa; revisar se
       `motion` paga o próprio peso. *(ARQ-04)*
-- [ ] **M.3** Fatiar os arquivos grandes aproveitando os cortes que E–I mapearam. *(ARQ-05)*
-- [ ] **M.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
-- [ ] **M.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
+- [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que E e G–J mapearam. *(ARQ-05)*
+- [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
+- [ ] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
       `--max-warnings 0` no CI. *(ARQ-07)*
 - [ ] ✅ **Fase L concluída em:** ____/____/______
 

@@ -2,7 +2,7 @@
 
 - **Status:** Aceito
 - **Data:** 02/09/2026 *(duas revisões no mesmo dia — ver histórico ao final)*
-- **Decisores:** Desenvolvimento (Fase F — Reestruturação visual do frontend)
+- **Decisores:** Desenvolvimento (Fase F — Reestruturação visual: identidade Cyberpunk 2020)
 - **Fase do plano:** Fase F do [`PLANO_MESTRE.md`](../PLANO_MESTRE.md)
 
 ## Contexto
@@ -125,4 +125,4 @@ falta o repertório gráfico impresso, e as animações de identidade nunca fora
 confundia matéria-prima com resultado.
 
 **Versão 3 — esta.** Identidade CP2020 reconstruída com faces livres, sobre o encanamento de tokens.
-Fase de 2 para 3–4 dias.
+Fase de 2 para 4 dias.
