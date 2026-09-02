@@ -189,7 +189,7 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 
 ## 🗂️ AS 13 FASES
 
-**Esforço total: 27,5 a 36,5 dias de trabalho concentrado** — quatro a sete meses de calendário para
+**Esforço total: 26,5 a 34,5 dias de trabalho concentrado** — quatro a sete meses de calendário para
 quem tem outra ocupação. Ponto de corte natural: **fechando A–D o jogo já roda certo**; F entrega a
 identidade visual nova; e as varreduras viram manutenção de fim de semana.
 
@@ -317,7 +317,7 @@ Existe estado que cresce sem limite? Que suposição quebra se duas requisiçõe
 
 ---
 
-### FASE F — REESTRUTURAÇÃO VISUAL DO FRONTEND 🔨 *(3–4 dias)*
+### FASE F — REESTRUTURAÇÃO VISUAL DO FRONTEND 🔨 *(2 dias)*
 
 > **Por que é fase própria e vem antes da varredura.** Redesign e caça a bug têm posturas opostas:
 > a varredura pergunta "isto é necessário?" e tem ADIAR como padrão — se as duas coisas
@@ -325,76 +325,104 @@ Existe estado que cresce sem limite? Que suposição quebra se duas requisiçõe
 > redesign corromperia o filtro. E varrer código que você está prestes a reestilizar repete
 > exatamente o erro que o plano já evita ao pôr as varreduras depois de B, C e D.
 
-#### 🐛 F.0 — O bug que precede o redesign
+#### 🎯 O que esta fase é — e o que ela não é
+
+**Não é** redesenhar telas nem trocar a identidade do produto. É **encanamento**: fazer o estilo que
+já existe passar a ter uma fonte única, do mesmo jeito que a Fase C faz isso com as regras do jogo.
+
+O diagnóstico, com números medidos no repositório:
+
+| Medida | Valor |
+|---|---|
+| Ocorrências de cor literal em `.tsx` (`text-cyan-400`, `bg-slate-900/70`…) | **1.722** |
+| Combinações distintas de cor em uso | **107** |
+| Tokens de cor definidos no `@theme` do `index.css` | 5 (`--color-neon-cyan`, `--color-neon-yellow`, `--color-neon-red`, `--color-night-950`, `--color-night-900`) |
+| Componentes que usam esses tokens | **0** |
+| Animações de identidade definidas (`scanline`, `glitch`) | 2 |
+| Componentes que as usam | **0** |
+
+O sistema de design **já foi escrito e nunca foi conectado**. É o mesmo padrão do `combatModifier` e
+do `currentStats` — construído de ponta a ponta, sem um único leitor. Terceiro caso.
+
+Consequência prática: hoje, mudar qualquer coisa na identidade visual custa busca e substituição em
+1.722 lugares. É esse custo que a fase remove.
+
+#### ✅ Direção estética: Cyberpunk 2020, não 2077
+
+Decisão revista em 02/09/2026. O Cyberpunk **2077** (jogo) e o Cyberpunk **RED** (sistema de mesa
+atual) compartilham uma linguagem visual moderna: limpa, sistemática, militar, vermelho primário,
+fios finos, HUD curvo. O **2020** é outra coisa: mesa de 1988, estética de impressão dos anos 80/90 —
+neon sobre preto, terminal CRT, alto contraste, faixas de perigo amarelo-e-preto, ruído analógico.
+
+**A identidade atual do projeto já é a de 2020.** Rajdhani é uma sans quadrada de fatura técnica,
+Share Tech Mono é literalmente uma fonte de terminal, e a paleta é neon-sobre-quase-preto. O
+`index.css` inclusive já define animações de `scanline` e `glitch` — vocabulário 80s, não 2077 (que
+é justamente o oposto: limpo e sem ruído).
+
+Ou seja: **não há troca de estilo a fazer.** O que havia era um sistema desligado e uma fonte que não
+carrega. Isso reduz a fase de 3–4 dias para 2, e a referência do Behance sai do escopo (fica
+registrada na ADR 0006 pelo vocabulário que ofereceu, não como alvo).
+
+#### F.0 — 🐛 O bug que precede tudo *(meio dia)*
 
 - [ ] **F.0** **As fontes do projeto não carregam em produção.** O `src/index.css` importa Rajdhani e
       Share Tech Mono do Google Fonts, e o `@import` sobrevive ao build (confirmado em
       `dist/assets/index-*.css`). Mas o CSP do helmet em produção declara
       `style-src: 'self' 'unsafe-inline'` e `font-src: 'self' data:` — a folha do
       `fonts.googleapis.com` é bloqueada, e os arquivos do `fonts.gstatic.com` também. Como o helmet
-      é pulado em dev, **o problema só existe no ar**: a produção renderiza em fontes de sistema.
-      Corrigir **antes** de escolher tipografia nova, senão a Fase F inteira é validada num ambiente
-      que não é o real.
-      - Solução recomendada: **auto-hospedar as fontes** (`@fontsource/*` ou arquivos em
-        `public/fonts/` com `@font-face` local). Mantém o CSP apertado, remove dependência de
-        terceiro, melhora o LCP e não volta a acontecer quando você adicionar mais uma fonte.
-      - Alternativa: afrouxar o CSP para `fonts.googleapis.com` / `fonts.gstatic.com`. Funciona, mas
-        troca uma correção permanente por uma exceção.
+      é pulado em dev, **o problema só existe no ar**: a produção renderiza em fontes de sistema,
+      provavelmente desde a Fase 10. *(ARQ-09)*
+      - Solução: **auto-hospedar as fontes** (`@fontsource/rajdhani` e `@fontsource/share-tech-mono`,
+        ou arquivos em `public/fonts/` com `@font-face` local). Mantém o CSP apertado, remove
+        dependência de terceiro do caminho de render e não volta a acontecer.
+      - Verificar com `NODE_ENV=production` e helmet ativo. É a única forma de confirmar.
 
-#### F.1 — Definir o sistema tipográfico
+#### F.1 — Ligar os tokens que já existem *(1 dia)*
 
-> **O que a referência do Behance realmente entrega.** A galeria é o portfólio de Vladimír
-> Vilimovský, Senior UI Artist da CD PROJEKT RED. Ela **não nomeia nenhuma fonte** — o texto diz que
-> as razões da escolha estão na "UI Art Bible", que fica na *apresentação anterior* (Parte 1), e a
-> tipografia aparece só dentro das imagens. Não há lista para extrair.
->
-> O que ela **dá**, e é aproveitável, é o vocabulário visual: rótulos em CAIXA ALTA com numeração de
-> seção (`PART_04`, `PART_05`), tokens unidos por underscore (`USER_INTERFACE`,
-> `FULL—SCREEN_PANELS`), fragmentos de código como motivo de carregamento, e a decisão deliberada de
-> usar **vermelho como cor primária** — que o próprio autor descreve como andar contra a corrente,
-> assumindo o conflito com o vermelho de erro/aviso.
+O Tailwind v4 gera as utilities a partir do `@theme`: declarar `--color-accent` cria automaticamente
+`text-accent`, `bg-accent`, `border-accent`. Então a migração é **renomeação mecânica**, greppável e
+revisável — não reescrita de componente.
 
-- [ ] **F.1.1** Registrar a stack tipográfica na ADR 0006. Realidade de licenciamento: o
-      **Blender Pro** e o **Refrigerator Deluxe**, que o CP2077 de fato usa, são **comerciais** e não
-      podem ser embarcados sem licença de webfont. O **Rajdhani** é livre (Google Fonts), é a fonte
-      mais associada a esse visual — e **o projeto já usa**.
-- [ ] **F.1.2** Completar a stack livre: manter Rajdhani (display/títulos) e Share Tech Mono
-      (terminal/código), e avaliar **Chakra Petch** ou **Saira Condensed** como substituto livre do
-      Blender Pro para rótulos, números e chapéus de seção.
-- [ ] **F.1.3** Escala tipográfica explícita, tracking definido para caixa alta e
-      `font-variant-numeric: tabular-nums` em toda coluna de número da ficha (atributos, SP, dano,
-      iniciativa).
+- [ ] **F.1.1** Definir o vocabulário semântico no `@theme`, substituindo os nomes por cor
+      (`neon-cyan`) por nomes por **papel**:
 
-#### F.2 — Tokens de design
+      --color-surface        fundo dos painéis
+      --color-surface-raised painéis elevados / hover
+      --color-line           bordas e divisores
+      --color-accent         ciano — ação, foco, links
+      --color-signal         amarelo — destaque, GM, atenção
+      --color-danger         vermelho — SÓ dano e perigo
+      --color-ok             verde — sucesso, online
 
-- [ ] **F.2.1** As cores hoje são classes Tailwind literais (`text-cyan-400`, `bg-slate-900/70`,
-      `border-cyan-500`) espalhadas por 20 componentes — trocar a identidade exige achar e substituir
-      em todos. Extrair para tokens CSS (`--nse-accent`, `--nse-surface`, `--nse-danger`…) é o que
-      torna esta troca, e a próxima, barata.
-- [ ] **F.2.2** **Decisão pendente — vermelho primário colide com vermelho de dano.** O CP2077 usa
-      vermelho como cor primária; o NetSheet usa ciano/amarelo e reserva o vermelho para ferimento
-      (`HealthTracker` usa `text-red-400/500/600` e `text-rose-600/700` na escala de wound level).
-      Adotar vermelho primário faz "primário" e "você está morrendo" falarem a mesma língua. O artista
-      tinha um jogo inteiro para sustentar essa aposta; uma ficha de RPG não tem. **Duas saídas:**
-      (a) manter o amarelo/ciano como primário e o vermelho só para dano — recomendado; (b) adotar o
-      vermelho primário e mover o dano para outro sinal (peso, moldura, ícone).
+- [ ] **F.1.2** **Regra de política, não de gosto: vermelho significa exclusivamente dano/perigo.**
+      O `HealthTracker` já usa a escala vermelha para wound level; nada mais no produto pode competir
+      com esse significado. É o que impede a paleta de voltar a ambiguar sozinha.
+- [ ] **F.1.3** Migrar arquivo por arquivo, do maior para o menor
+      (`MultiplayerRoom` 211 → `FriendsList` 154 → `CyberpunkMenu` 154 → `TacticalGrid` 150 → …).
+      A app continua funcionando o tempo todo; cada arquivo é um commit conferível por `git diff`.
+- [ ] **F.1.4** Ao terminar, o grep de cor literal em `.tsx` deve tender a zero. Esse número é o
+      critério de pronto da fase — não "está bonito".
 
-#### F.3 — Aplicar e verificar
+#### F.2 — Acabamento tipográfico *(meio dia)*
 
-- [ ] **F.3.1** Aplicar tipografia e tokens nos componentes, começando pela ficha (maior superfície
-      visual) e terminando na mesa.
-- [ ] **F.3.2** Acessibilidade do tema novo: contraste conferido nos dois modos, foco visível, ordem
-      de tabulação nos modais. *(auditar contra a paleta nova, não a antiga)*
-- [ ] **F.3.3** **Verificar em produção** (`NODE_ENV=production`, com helmet ativo) que as fontes
-      realmente carregam. É a única forma de confirmar o F.0.
-- [ ] **F.3.4** `git tag v0.4.4`.
+Dentro da direção que já existe, sem trocar de fonte.
+
+- [ ] **F.2.1** Escala tipográfica explícita em vez de tamanhos avulsos por componente.
+- [ ] **F.2.2** `font-variant-numeric: tabular-nums` em toda coluna de número da ficha (atributos,
+      SP, dano, iniciativa) — hoje os dígitos dançam quando o valor muda.
+- [ ] **F.2.3** Tracking padronizado para os rótulos em caixa alta, que hoje variam entre
+      `tracking-wider` e `tracking-widest` sem critério.
+- [ ] **F.2.4** *(opcional, sob o filtro)* Uma display condensada para títulos de seção, se e somente
+      se houver sintoma — "os títulos não se distinguem do corpo" é sintoma; "seria mais bonito" não.
+- [ ] **F.2.5** Acessibilidade: contraste conferido, foco visível, ordem de tabulação nos modais.
+- [ ] **F.2.6** `git tag v0.4.4`.
 - [ ] ✅ **Fase F concluída em:** ____/____/______
 
-> **Nota de identidade.** A referência é Cyberpunk **2077** (jogo de 2020) e o produto é Cyberpunk
-> **2020** (mesa de 1988). Adotar a linguagem visual do 2077 dá um resultado reconhecível como "a
-> franquia Cyberpunk", não como "o RPG de mesa dos anos 80". É uma escolha de produto legítima — hoje
-> a imagem mental de cyberpunk da maioria das pessoas *é* o 2077 — mas vale ser escolha, e não
-> deriva.
+> **O que ficou de fora, e por quê.** Trocar a paleta para o vermelho primário do 2077 foi
+> **DESCARTADO** pelo próprio filtro da seção anterior: não há sintoma observado (pergunta 1), o
+> produto é CP2020 e não a era moderna da franquia, e o vermelho já tem significado ocupado por dano.
+> A referência do Behance permanece citada na ADR 0006 pelo vocabulário que ofereceu — caixa alta com
+> numeração de seção, tokens com underscore, código como motivo — não como alvo estético.
 
 ---
 
