@@ -189,7 +189,7 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 
 ## 🗂️ AS 13 FASES
 
-**Esforço total: 26,5 a 34,5 dias de trabalho concentrado** — quatro a sete meses de calendário para
+**Esforço total: 28,5 a 36,5 dias de trabalho concentrado** — quatro a sete meses de calendário para
 quem tem outra ocupação. Ponto de corte natural: **fechando A–D o jogo já roda certo**; F entrega a
 identidade visual nova; e as varreduras viram manutenção de fim de semana.
 
@@ -317,7 +317,7 @@ Existe estado que cresce sem limite? Que suposição quebra se duas requisiçõe
 
 ---
 
-### FASE F — REESTRUTURAÇÃO VISUAL DO FRONTEND 🔨 *(2 dias)*
+### FASE F — REESTRUTURAÇÃO VISUAL: IDENTIDADE CYBERPUNK 2020 🔨 *(3–4 dias)*
 
 > **Por que é fase própria e vem antes da varredura.** Redesign e caça a bug têm posturas opostas:
 > a varredura pergunta "isto é necessário?" e tem ADIAR como padrão — se as duas coisas
@@ -325,66 +325,91 @@ Existe estado que cresce sem limite? Que suposição quebra se duas requisiçõe
 > redesign corromperia o filtro. E varrer código que você está prestes a reestilizar repete
 > exatamente o erro que o plano já evita ao pôr as varreduras depois de B, C e D.
 
-#### 🎯 O que esta fase é — e o que ela não é
+#### 🎯 O alvo: o Cyberpunk de 1988, não o de 2020 (o jogo)
 
-**Não é** redesenhar telas nem trocar a identidade do produto. É **encanamento**: fazer o estilo que
-já existe passar a ter uma fonte única, do mesmo jeito que a Fase C faz isso com as regras do jogo.
+O produto é **Cyberpunk 2020**, RPG de mesa da R. Talsorian publicado em 1990 (sucessor do
+*Cyberpunk* de 1988). Sua estética é a do cyberpunk **oitentista**: impressão de alto contraste,
+neon sobre preto, terminal CRT, faixas de perigo, ruído analógico, colagem de fanzine.
 
-O diagnóstico, com números medidos no repositório:
+Isso é **outra coisa** do Cyberpunk 2077 (jogo, 2020) e do Cyberpunk RED (sistema de mesa atual), que
+compartilham uma linguagem moderna: limpa, sistemática, militar, vermelho primário, fios finos, HUD
+curvo. A migração para o 2077 foi **descartada** — ver ADR 0006.
 
-| Medida | Valor |
-|---|---|
-| Ocorrências de cor literal em `.tsx` (`text-cyan-400`, `bg-slate-900/70`…) | **1.722** |
-| Combinações distintas de cor em uso | **107** |
-| Tokens de cor definidos no `@theme` do `index.css` | 5 (`--color-neon-cyan`, `--color-neon-yellow`, `--color-neon-red`, `--color-night-950`, `--color-night-900`) |
-| Componentes que usam esses tokens | **0** |
-| Animações de identidade definidas (`scanline`, `glitch`) | 2 |
-| Componentes que as usam | **0** |
+#### ⚠️ Honestidade sobre as fontes originais
 
-O sistema de design **já foi escrito e nunca foi conectado**. É o mesmo padrão do `combatModifier` e
-do `currentStats` — construído de ponta a ponta, sem um único leitor. Terceiro caso.
+**Não há documentação pública das fontes exatas que a R. Talsorian usou nos livros.** As buscas
+devolvem história editorial e listas de suplementos, não créditos tipográficos, e a identificação por
+comunidade nesse nicho é especulativa. Não vou fingir precisão que não tenho.
 
-Consequência prática: hoje, mudar qualquer coisa na identidade visual custa busca e substituição em
-1.722 lugares. É esse custo que a fase remove.
+O que **é** documentado é o vocabulário tipográfico da era que o livro estava usando:
 
-#### ✅ Direção estética: Cyberpunk 2020, não 2077
+| Face | Papel histórico | Situação |
+|---|---|---|
+| **Eurostile** (Novarese, 1962; de Microgramma, 1952) | *A* face de ficção científica e técnica dos anos 60–80 — quadrada, cantos arredondados, extendida. Em *2001*, *De Volta para o Futuro*, *Starship Troopers* | **Comercial** |
+| **Bank Gothic** | A referência de sci-fi dos anos 90 | **Comercial** |
+| **OCR-A / Data 70 / Compacta** | Vozes de "computador" e de ação dos anos 70–80 | Comerciais ou de origem incerta |
 
-Decisão revista em 02/09/2026. O Cyberpunk **2077** (jogo) e o Cyberpunk **RED** (sistema de mesa
-atual) compartilham uma linguagem visual moderna: limpa, sistemática, militar, vermelho primário,
-fios finos, HUD curvo. O **2020** é outra coisa: mesa de 1988, estética de impressão dos anos 80/90 —
-neon sobre preto, terminal CRT, alto contraste, faixas de perigo amarelo-e-preto, ruído analógico.
-
-**A identidade atual do projeto já é a de 2020.** Rajdhani é uma sans quadrada de fatura técnica,
-Share Tech Mono é literalmente uma fonte de terminal, e a paleta é neon-sobre-quase-preto. O
-`index.css` inclusive já define animações de `scanline` e `glitch` — vocabulário 80s, não 2077 (que
-é justamente o oposto: limpo e sem ruído).
-
-Ou seja: **não há troca de estilo a fazer.** O que havia era um sistema desligado e uma fonte que não
-carrega. Isso reduz a fase de 3–4 dias para 2, e a referência do Behance sai do escopo (fica
-registrada na ADR 0006 pelo vocabulário que ofereceu, não como alvo).
+Nenhuma pode ser embarcada sem licença de webfont — o que colide com o contrato de custo zero. A
+estratégia, portanto, é **reconstruir a linguagem com faces livres**, não copiar arquivos.
 
 #### F.0 — 🐛 O bug que precede tudo *(meio dia)*
 
 - [ ] **F.0** **As fontes do projeto não carregam em produção.** O `src/index.css` importa Rajdhani e
       Share Tech Mono do Google Fonts, e o `@import` sobrevive ao build (confirmado em
-      `dist/assets/index-*.css`). Mas o CSP do helmet em produção declara
-      `style-src: 'self' 'unsafe-inline'` e `font-src: 'self' data:` — a folha do
-      `fonts.googleapis.com` é bloqueada, e os arquivos do `fonts.gstatic.com` também. Como o helmet
-      é pulado em dev, **o problema só existe no ar**: a produção renderiza em fontes de sistema,
-      provavelmente desde a Fase 10. *(ARQ-09)*
-      - Solução: **auto-hospedar as fontes** (`@fontsource/rajdhani` e `@fontsource/share-tech-mono`,
-        ou arquivos em `public/fonts/` com `@font-face` local). Mantém o CSP apertado, remove
-        dependência de terceiro do caminho de render e não volta a acontecer.
+      `dist/assets/index-*.css`). Mas o CSP do helmet declara `style-src: 'self' 'unsafe-inline'` e
+      `font-src: 'self' data:` — a folha do `fonts.googleapis.com` é bloqueada, e os arquivos do
+      `fonts.gstatic.com` também. Como o helmet é pulado em dev, **o problema só existe no ar**: a
+      produção renderiza em fontes de sistema, provavelmente desde a Fase 10. *(ARQ-09)*
+      - Solução: **auto-hospedar** (`@fontsource/*` ou `public/fonts/` com `@font-face` local).
+        Mantém o CSP apertado e é o mesmo mecanismo que as fontes novas vão usar.
       - Verificar com `NODE_ENV=production` e helmet ativo. É a única forma de confirmar.
 
-#### F.1 — Ligar os tokens que já existem *(1 dia)*
+#### F.1 — O sistema tipográfico 2020 *(1 dia)*
 
-O Tailwind v4 gera as utilities a partir do `@theme`: declarar `--color-accent` cria automaticamente
-`text-accent`, `bg-accent`, `border-accent`. Então a migração é **renomeação mecânica**, greppável e
-revisável — não reescrita de componente.
+Cinco papéis. Duas faces já existem no projeto e ficam; as adições passam pelo filtro de necessidade,
+com o sintoma declarado.
 
-- [ ] **F.1.1** Definir o vocabulário semântico no `@theme`, substituindo os nomes por cor
-      (`neon-cyan`) por nomes por **papel**:
+- [ ] **F.1.1** **Corpo e UI → `Rajdhani`** *(já em uso, mantém)*. Sans quadrada de fatura técnica,
+      livre (SIL OFL). Já é a escolha certa; custo de migração zero.
+- [ ] **F.1.2** **Terminal e dados → `Share Tech Mono`** *(já em uso, mantém)*. Mono de terminal,
+      livre. Sustenta o motivo de "leitura de máquina" do livro.
+- [ ] **F.1.3** **Display / títulos de seção → `Orbitron`** *(adicionar)*.
+      *Sintoma:* hoje não existe voz de display — títulos são a fonte do corpo, só maior e em caixa
+      alta, e por isso as seções não se distinguem. `Orbitron` é a alternativa livre mais citada ao
+      **Eurostile**, tem eixo de peso 400–900 e cobre exatamente o papel de manchete quadrada
+      oitentista. *(Considerar `Michroma` só para o wordmark: é mais próxima do Eurostile Extended,
+      mas tem peso único.)*
+- [ ] **F.1.4** **Números da ficha → condicional.** Primeiro aplicar `tabular-nums` no Rajdhani
+      (F.2.2). *Só se* os dígitos continuarem desalinhados, adicionar `Saira Condensed` para blocos
+      de estatística. Não adicionar fonte antes de medir — é o filtro aplicado à própria tipografia.
+- [ ] **F.1.5** **Momentos de terminal → condicional.** `VT323` é uma face de CRT autêntica, livre e
+      pequena (~30 KB). *Sintoma que a justifica:* o Netrunner IA, as mensagens de `SISTEMA_NET` no
+      chat e as telas de carregamento hoje falam com a mesma voz do resto da interface. Se a
+      distinção não aparecer com Share Tech Mono, `VT323` entra **só nesses lugares** — nunca em
+      corpo de texto, onde é ilegível.
+- [ ] **F.1.6** Escala tipográfica explícita e tracking padronizado para caixa alta (hoje varia entre
+      `tracking-wider` e `tracking-widest` sem critério).
+
+#### F.2 — Ligar os tokens *(1 dia)*
+
+O sistema de design **já existe e nunca foi conectado**. Medido no repositório:
+
+| Medida | Valor |
+|---|---|
+| Ocorrências de cor literal em `.tsx` | **1.722** |
+| Combinações distintas de cor | **107** |
+| Tokens de cor no `@theme` do `index.css` | 5 |
+| **Componentes que os usam** | **0** |
+| Animações de identidade definidas (`scanline`, `glitch`) | 2 |
+| **Componentes que as usam** | **0** |
+
+Terceiro caso do mesmo padrão, depois do `combatModifier` e do `currentStats`: construído de ponta a
+ponta, sem um único leitor. **Sem esta etapa, aplicar a identidade nova custa 1.722 substituições —
+e a próxima mudança custará outras 1.722.**
+
+- [ ] **F.2.1** Trocar nomes por cor (`--color-neon-cyan`) por nomes por **papel**. O Tailwind v4 gera
+      as utilities a partir do `@theme`: declarar `--color-accent` cria `text-accent`, `bg-accent`,
+      `border-accent`. A migração vira **renomeação mecânica**, greppável e revisável.
 
       --color-surface        fundo dos painéis
       --color-surface-raised painéis elevados / hover
@@ -394,35 +419,48 @@ revisável — não reescrita de componente.
       --color-danger         vermelho — SÓ dano e perigo
       --color-ok             verde — sucesso, online
 
-- [ ] **F.1.2** **Regra de política, não de gosto: vermelho significa exclusivamente dano/perigo.**
-      O `HealthTracker` já usa a escala vermelha para wound level; nada mais no produto pode competir
-      com esse significado. É o que impede a paleta de voltar a ambiguar sozinha.
-- [ ] **F.1.3** Migrar arquivo por arquivo, do maior para o menor
-      (`MultiplayerRoom` 211 → `FriendsList` 154 → `CyberpunkMenu` 154 → `TacticalGrid` 150 → …).
-      A app continua funcionando o tempo todo; cada arquivo é um commit conferível por `git diff`.
-- [ ] **F.1.4** Ao terminar, o grep de cor literal em `.tsx` deve tender a zero. Esse número é o
-      critério de pronto da fase — não "está bonito".
-
-#### F.2 — Acabamento tipográfico *(meio dia)*
-
-Dentro da direção que já existe, sem trocar de fonte.
-
-- [ ] **F.2.1** Escala tipográfica explícita em vez de tamanhos avulsos por componente.
-- [ ] **F.2.2** `font-variant-numeric: tabular-nums` em toda coluna de número da ficha (atributos,
+- [ ] **F.2.2** **Regra de política: vermelho significa exclusivamente dano.** O `HealthTracker` já
+      ocupa a escala vermelha com wound level; nada mais no produto pode competir com esse
+      significado. É o que impede a paleta de voltar a ambiguar sozinha.
+- [ ] **F.2.3** `font-variant-numeric: tabular-nums` em toda coluna de número da ficha (atributos,
       SP, dano, iniciativa) — hoje os dígitos dançam quando o valor muda.
-- [ ] **F.2.3** Tracking padronizado para os rótulos em caixa alta, que hoje variam entre
-      `tracking-wider` e `tracking-widest` sem critério.
-- [ ] **F.2.4** *(opcional, sob o filtro)* Uma display condensada para títulos de seção, se e somente
-      se houver sintoma — "os títulos não se distinguem do corpo" é sintoma; "seria mais bonito" não.
-- [ ] **F.2.5** Acessibilidade: contraste conferido, foco visível, ordem de tabulação nos modais.
-- [ ] **F.2.6** `git tag v0.4.4`.
+- [ ] **F.2.4** Migrar arquivo por arquivo, do maior para o menor (`MultiplayerRoom` 211 →
+      `FriendsList` 154 → `CyberpunkMenu` 154 → `TacticalGrid` 150 → …). A app funciona o tempo todo;
+      cada arquivo é um commit conferível por `git diff`.
+
+#### F.3 — O vocabulário visual oitentista *(1 dia)*
+
+A tipografia é metade. A outra metade é o repertório gráfico do livro impresso — e boa parte dele
+**já está paga**: as animações `scanline` e `glitch` existem no `index.css` e nenhum componente as usa.
+
+- [ ] **F.3.1** Ligar `scanline` e `glitch` onde fazem sentido narrativo (cabeçalho da mesa, telas de
+      carregamento, Bio-Monitor em nível mortal) — não como enfeite global.
+- [ ] **F.3.2** **Barras pretas com caixa alta reversa** — o traço mais reconhecível da diagramação
+      da Talsorian. Vira um componente de cabeçalho de seção, não uma classe repetida.
+- [ ] **F.3.3** **Faixas de perigo amarelo-e-preto** para estados de alerta (ferimento grave, turno
+      do jogador, sala em combate). Usa o `--color-signal` já definido.
+- [ ] **F.3.4** **Numeração de seção e rótulos técnicos** em caixa alta com underscore
+      (`FICHA_01`, `MESA_TATICA`) — vocabulário que o próprio material da franquia usa e que combina
+      com a fatura de impressão do livro.
+- [ ] **F.3.5** *(opcional, sob o filtro)* Textura de impressão/xerox e aberração cromática sutil.
+      **Só entra com sintoma** — "falta sujeira analógica" é gosto, não sintoma. E qualquer textura
+      precisa passar no F.4.2.
+
+#### F.4 — Aplicar e verificar *(meio dia)*
+
+- [ ] **F.4.1** Aplicar começando pela ficha (maior superfície visual) e terminando na mesa.
+- [ ] **F.4.2** **Acessibilidade — não negociável.** Efeitos oitentistas destroem legibilidade com
+      facilidade: conferir contraste com a paleta nova nos dois modos, foco visível, ordem de
+      tabulação nos modais, e **respeitar `prefers-reduced-motion`** em scanline, glitch e pulse.
+- [ ] **F.4.3** Conferir o peso das fontes auto-hospedadas no bundle. Cada face adicionada é payload:
+      se `Orbitron` só aparece em títulos, carregar **apenas os pesos usados**, com `font-display: swap`.
+- [ ] **F.4.4** Verificar com `NODE_ENV=production` e helmet ativo. Fecha o F.0.
+- [ ] **F.4.5** `git tag v0.4.4`.
 - [ ] ✅ **Fase F concluída em:** ____/____/______
 
-> **O que ficou de fora, e por quê.** Trocar a paleta para o vermelho primário do 2077 foi
-> **DESCARTADO** pelo próprio filtro da seção anterior: não há sintoma observado (pergunta 1), o
-> produto é CP2020 e não a era moderna da franquia, e o vermelho já tem significado ocupado por dano.
-> A referência do Behance permanece citada na ADR 0006 pelo vocabulário que ofereceu — caixa alta com
-> numeração de seção, tokens com underscore, código como motivo — não como alvo estético.
+> **Critério de pronto:** duas medidas objetivas, não "está bonito". (1) O grep de cor literal em
+> `.tsx` tendendo a zero. (2) As fontes carregando com helmet ativo em produção. A identidade nova é
+> a consequência visível; a capacidade de mudá-la barato é a entrega real.
 
 ---
 
@@ -590,7 +628,7 @@ público mudar.
 | C | 🔨 | Fonte única de regras | ⬜ | — |
 | D | 🔨 | Loop de combate | ⬜ | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
-| F | 🔨 | **Reestruturação visual do frontend** | ⬜ | — |
+| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |

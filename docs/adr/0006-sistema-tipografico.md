@@ -1,118 +1,128 @@
-# ADR 0006 — Sistema visual: manter a direção Cyberpunk 2020 e ligar os tokens que já existem
+# ADR 0006 — Identidade visual: reconstruir a linguagem do Cyberpunk 2020 com faces livres
 
-- **Status:** Proposto
-- **Data:** 02/09/2026 *(revisado no mesmo dia — ver "Decisão revista" ao final)*
+- **Status:** Aceito
+- **Data:** 02/09/2026 *(duas revisões no mesmo dia — ver histórico ao final)*
 - **Decisores:** Desenvolvimento (Fase F — Reestruturação visual do frontend)
 - **Fase do plano:** Fase F do [`PLANO_MESTRE.md`](../PLANO_MESTRE.md)
 
 ## Contexto
 
-A proposta inicial era migrar a identidade visual do NetSheet para a linguagem do **Cyberpunk 2077**,
-tendo como referência a galeria
-[Cyberpunk 2077 — User Interface (Part 2)](https://www.behance.net/gallery/133185623/Cyberpunk-2077User-Interface-(Part-2)),
-de Vladimír Vilimovský, Senior UI Artist da CD PROJEKT RED.
+O NetSheet é uma suíte para **Cyberpunk 2020**, RPG de mesa publicado pela R. Talsorian em 1990
+(sucessor do *Cyberpunk* de 1988). A identidade visual do produto deve ser a **desse** livro — não a
+do Cyberpunk 2077 (jogo, 2020) nem a do Cyberpunk RED (sistema de mesa atual), que compartilham uma
+linguagem moderna: limpa, sistemática, militar, vermelho primário, fios finos, HUD curvo.
 
-A investigação anterior à decisão levantou quatro fatos que mudaram a conclusão.
+A estética alvo é a do cyberpunk **oitentista**: impressão de alto contraste, neon sobre preto,
+terminal CRT, faixas de perigo, ruído analógico, colagem de fanzine.
 
-### 1. A referência não nomeia nenhuma fonte
+### As fontes originais não são documentadas
 
-A galeria descreve o **conceito**, não a especificação. O texto remete à *UI Art Bible*, que fica na
-apresentação anterior (Parte 1), e a tipografia aparece apenas dentro das imagens. Não havia lista de
-fontes para extrair.
+Pesquisa em setembro de 2026 não encontrou **nenhuma fonte pública** que documente os tipos usados
+nos livros da R. Talsorian. As buscas devolvem história editorial e listas de suplementos, não
+créditos de design, e a identificação por comunidade nesse nicho é especulativa.
 
-O que ela oferece, e vale registrar como vocabulário: rótulos em CAIXA ALTA com numeração de seção
-(`PART_04`), tokens unidos por underscore (`USER_INTERFACE`), fragmentos de código como motivo de
-carregamento, e vermelho primário assumindo conscientemente o conflito com vermelho de erro.
+Registro isso explicitamente para que ninguém, mais tarde, trate a stack abaixo como "as fontes
+oficiais". Ela **não** é reprodução — é reconstrução da linguagem da época.
 
-### 2. As fontes reais do CP2077 são comerciais
+### O que é documentado: o vocabulário tipográfico da era
 
-O jogo usa **Blender Pro** e **Refrigerator Deluxe**, ambos tipos comerciais, que não podem ser
-embarcados num site sem licença de webfont. Bloqueio jurídico, não técnico.
+| Face | Papel histórico | Licença |
+|---|---|---|
+| **Eurostile** (Novarese, 1962; derivada da Microgramma, 1952) | *A* face de ficção científica e técnica dos anos 60–80 — quadrada, cantos arredondados, extendida. Em *2001*, *De Volta para o Futuro*, *Starship Troopers* | Comercial |
+| **Bank Gothic** | Referência de sci-fi dos anos 90 | Comercial |
+| **OCR-A / Data 70 / Compacta** | Vozes de "computador" e de ação dos anos 70–80 | Comerciais ou de origem incerta |
 
-### 3. O projeto já é Cyberpunk 2020 esteticamente
+Nenhuma pode ser embarcada sem licença de webfont, o que colide com o contrato de custo zero do
+plano mestre.
 
-O Cyberpunk **2077** (jogo) e o Cyberpunk **RED** (sistema de mesa atual) compartilham uma linguagem
-moderna: limpa, sistemática, militar, vermelho primário, fios finos, HUD curvo. O **2020** é outra
-coisa — mesa de 1988, estética de impressão dos anos 80/90: neon sobre preto, terminal CRT, alto
-contraste, ruído analógico.
+### Dois fatos do repositório que condicionam a decisão
 
-A identidade atual do NetSheet **já é a segunda**:
-
-- **Rajdhani** — sans quadrada de fatura técnica, livre (SIL OFL), já em uso;
-- **Share Tech Mono** — literalmente uma fonte de terminal, já em uso;
-- paleta neon (ciano/amarelo) sobre quase-preto;
-- o `src/index.css` já define animações de `scanline` e `glitch` — vocabulário 80s, e justamente o
-  oposto do 2077, que é limpo e sem ruído.
-
-### 4. O sistema de design existe e está desligado
-
-Medido no repositório:
-
-| Medida | Valor |
-|---|---|
-| Ocorrências de cor literal em `.tsx` | **1.722** |
-| Combinações distintas de cor | **107** |
-| Tokens de cor no `@theme` do `index.css` | 5 |
-| Componentes que os usam | **0** |
-| Animações de identidade definidas | 2 (`scanline`, `glitch`) |
-| Componentes que as usam | **0** |
-
-É o mesmo padrão do `combatModifier` e do `currentStats`: construído de ponta a ponta, sem um único
-leitor. Terceiro caso no mesmo repositório.
-
-### 5. As fontes não carregam em produção
-
-O `src/index.css` importa as duas fontes do Google Fonts via `@import url(...)`, e esse `@import`
-**sobrevive ao build** (confirmado em `dist/assets/index-*.css`). Mas o CSP do helmet, aplicado
-apenas em produção, declara:
-
-```
-"style-src": ["'self'", "'unsafe-inline'"],
-"font-src":  ["'self'", "data:"],
-```
-
-A folha do `fonts.googleapis.com` é bloqueada por `style-src`, e os arquivos do `fonts.gstatic.com`
-por `font-src`. Como o helmet é pulado em desenvolvimento, **o problema só existe no ar**: a produção
-renderiza em fontes de sistema, silenciosamente, provavelmente desde a Fase 10. *(ARQ-09)*
+1. **As fontes atuais não carregam em produção.** O `@import` do Google Fonts em `src/index.css`
+   sobrevive ao build, mas o CSP do helmet (`style-src 'self' 'unsafe-inline'`,
+   `font-src 'self' data:`) bloqueia tanto a folha quanto os arquivos. Como o helmet é pulado em dev,
+   o problema só existe no ar — a produção renderiza em fontes de sistema, provavelmente desde a
+   Fase 10. *(ARQ-09)*
+2. **O sistema de design existe e está desligado.** 1.722 ocorrências de cor literal em `.tsx`, em
+   107 combinações; 5 tokens de cor no `@theme` com **zero** componentes usando; 2 animações de
+   identidade (`scanline`, `glitch`) com **zero** usos. Terceiro caso do mesmo padrão, depois do
+   `combatModifier` e do `currentStats`.
 
 ## Decisão
 
-**Manter a direção estética atual (Cyberpunk 2020) e tratar a Fase F como encanamento, não como
-redesign.** Três entregas:
+**Reconstruir a linguagem do CP2020 com faces livres e auto-hospedadas**, e ligar o sistema de tokens
+antes de aplicar qualquer coisa — sem isso, a identidade nova custa 1.722 substituições, e a próxima
+mudança custará outras 1.722.
 
-1. **Auto-hospedar as fontes** (`@fontsource/*` ou arquivos em `public/fonts/` com `@font-face`
-   local), em vez de afrouxar o CSP. Mantém o CSP apertado, remove dependência de terceiro do caminho
-   de render, melhora o LCP e não volta a quebrar quando outra fonte for adicionada.
-2. **Ligar os tokens.** Substituir os nomes por cor (`--color-neon-cyan`) por nomes por papel
-   (`--color-accent`, `--color-signal`, `--color-danger`, `--color-surface`, `--color-line`,
-   `--color-ok`) e migrar as 1.722 ocorrências literais para as utilities que o Tailwind v4 gera a
-   partir do `@theme`. É renomeação mecânica, arquivo por arquivo, com a app funcionando o tempo todo.
-3. **Acabamento tipográfico** dentro da direção existente: escala explícita, `tabular-nums` nas
-   colunas de número da ficha, tracking padronizado para caixa alta.
+### Stack tipográfica
+
+| Papel | Face | Situação | Justificativa |
+|---|---|---|---|
+| Corpo e UI | **Rajdhani** | Já em uso | Sans quadrada de fatura técnica, livre (SIL OFL). Já é a escolha certa; migração zero |
+| Terminal e dados | **Share Tech Mono** | Já em uso | Mono de terminal, livre. Sustenta o motivo de "leitura de máquina" do livro |
+| Display / títulos | **Orbitron** | **Adicionar** | Alternativa livre mais citada ao Eurostile; eixo 400–900. *Sintoma:* hoje não há voz de display — títulos são a fonte do corpo, só maior, e as seções não se distinguem |
+| Números da ficha | **Saira Condensed** | **Condicional** | Só se `tabular-nums` no Rajdhani não resolver o desalinhamento dos dígitos. Medir antes de adicionar |
+| Momentos de terminal | **VT323** | **Condicional** | CRT autêntica, livre, ~30 KB. Só para Netrunner IA, `SISTEMA_NET` e telas de carregamento — nunca em corpo de texto, onde é ilegível |
+
+`Michroma` fica considerada apenas para o wordmark: é mais próxima do Eurostile Extended, mas tem
+peso único.
+
+### Tokens por papel, não por cor
+
+Substituir `--color-neon-cyan` por `--color-accent`, e assim por diante:
+`surface`, `surface-raised`, `line`, `accent`, `signal`, `danger`, `ok`. O Tailwind v4 gera as
+utilities a partir do `@theme`, então a migração é renomeação mecânica, arquivo por arquivo, com a
+app funcionando o tempo todo.
 
 ### Regra de política: vermelho significa exclusivamente dano
 
 O `HealthTracker` percorre `text-red-400/500/600` e `text-rose-600/700` conforme o wound level sobe.
-Nada mais no produto pode competir com esse significado. É o que impede a paleta de voltar a ambiguar
-sozinha — e é a razão de fundo pela qual o vermelho primário do 2077 não cabe aqui.
+Nada mais no produto pode competir com esse significado — é o que impede a paleta de voltar a
+ambiguar sozinha, e é a razão de fundo pela qual o vermelho primário do 2077 nunca caberia aqui.
 
-## Decisão revista
+### Vocabulário gráfico
 
-A versão inicial desta ADR propunha adotar a linguagem do 2077, com substitutos livres para as fontes
-comerciais (Chakra Petch / Saira Condensed no lugar do Blender Pro) e uma decisão pendente sobre
-vermelho primário.
+Barras pretas com caixa alta reversa (o traço mais reconhecível da diagramação da Talsorian), faixas
+de perigo amarelo-e-preto para estados de alerta, numeração de seção com underscore
+(`FICHA_01`, `MESA_TATICA`), e as animações `scanline`/`glitch` que já existem e nunca foram ligadas —
+usadas com intenção narrativa, não como enfeite global.
 
-**Revista no mesmo dia**, por dois motivos: o produto é Cyberpunk **2020** e não a era moderna da
-franquia, e a medição mostrou que não havia troca de estilo a fazer — havia um sistema desligado e
-uma fonte que não carrega. Aplicando o filtro de necessidade do plano, a troca de paleta não passa na
-pergunta 1: não há sintoma observado, só preferência.
+Textura de impressão e aberração cromática ficam **opcionais e sob o filtro**: "falta sujeira
+analógica" é gosto, não sintoma.
 
-Consequências da revisão: a Fase F cai de 3–4 para 2 dias, a referência do Behance sai do escopo
-(fica citada aqui pelo vocabulário, não como alvo), e Chakra Petch / Saira Condensed ficam como item
-opcional da F.2.4, sujeito ao filtro.
+## Consequências
+
+- **Acessibilidade não é negociável.** Efeitos oitentistas destroem legibilidade com facilidade:
+  contraste conferido nos dois modos, foco visível, e `prefers-reduced-motion` respeitado em
+  scanline, glitch e pulse.
+- **Peso do bundle.** Cada face adicionada é payload. Carregar apenas os pesos efetivamente usados,
+  com `font-display: swap`. É o que mantém as duas adições condicionais realmente condicionais.
+- **Auto-hospedagem** resolve o ARQ-09 e é o mesmo mecanismo que as fontes novas usarão. O CSP
+  permanece apertado.
 
 ## Critério de pronto
 
-O grep de cor literal em `.tsx` tendendo a zero — não "está bonito". A fase entrega a capacidade de
-mudar a identidade barato; qual identidade continua sendo decisão de produto, tomada depois e com o
-custo já baixo.
+Duas medidas objetivas, não "está bonito":
+
+1. O grep de cor literal em `.tsx` tendendo a zero.
+2. As fontes carregando com `NODE_ENV=production` e helmet ativo.
+
+A identidade nova é a consequência visível; a capacidade de mudá-la barato é a entrega real.
+
+## Histórico de revisões
+
+**Versão 1 — migrar para o Cyberpunk 2077.** Proposta a partir da galeria
+[Cyberpunk 2077 — User Interface (Part 2)](https://www.behance.net/gallery/133185623/Cyberpunk-2077User-Interface-(Part-2)),
+de Vladimír Vilimovský (Senior UI Artist, CD PROJEKT RED). Descartada: a galeria **não nomeia
+nenhuma fonte** (o texto remete à *UI Art Bible* da Parte 1, e a tipografia só aparece nas imagens),
+as faces reais do jogo — Blender Pro e Refrigerator Deluxe — são comerciais, e o vermelho primário do
+2077 colide com o vermelho de dano do produto.
+
+**Versão 2 — não mexer no estilo, só no encanamento.** Sustentava que a identidade atual já era
+"suficientemente 2020" e que a fase deveria ser apenas tokens e correção de fontes. Revista: a
+direção estava certa, mas a conclusão foi longe demais. O projeto tem os *ingredientes* certos
+(Rajdhani, Share Tech Mono, neon sobre preto, scanline) e não tem o *sistema* — falta voz de display,
+falta o repertório gráfico impresso, e as animações de identidade nunca foram ligadas. "Já está certo"
+confundia matéria-prima com resultado.
+
+**Versão 3 — esta.** Identidade CP2020 reconstruída com faces livres, sobre o encanamento de tokens.
+Fase de 2 para 3–4 dias.
