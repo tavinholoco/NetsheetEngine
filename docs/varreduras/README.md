@@ -1,6 +1,6 @@
 # 🔍 Ledgers das varreduras
 
-Casa dos resultados das **Fases E–I** do [`PLANO_MESTRE.md`](../PLANO_MESTRE.md).
+Casa dos resultados das **Fases E e G–J** do [`PLANO_MESTRE.md`](../PLANO_MESTRE.md).
 
 Cada varredura produz **um arquivo**, e o arquivo é o entregável — mesmo que nenhum item vire código.
 Uma varredura que não gerou ledger não aconteceu.
@@ -8,10 +8,15 @@ Uma varredura que não gerou ledger não aconteceu.
 | Arquivo | Fase | Escopo |
 |---|---|---|
 | `E-backend.md` | E | `server.ts`, `server/*` |
-| `F-frontend.md` | F | `src/components`, `src/features`, `src/pages`, `src/stores`, `src/hooks` |
-| `G-multiplayer.md` | G | WebSocket, SSE, Yjs, awareness, reconexão, presença |
-| `H-integracao.md` | H | `src/api/*` contra os endpoints do Express |
-| `I-seguranca.md` | I | Superfície completa de autenticação, autorização, entrada e saída |
+| `G-frontend.md` | G | `src/components`, `src/features`, `src/pages`, `src/stores`, `src/hooks` |
+| `H-multiplayer.md` | H | WebSocket, SSE, Yjs, awareness, reconexão, presença |
+| `I-integracao.md` | I | `src/api/*` contra os endpoints do Express |
+| `J-seguranca.md` | J | Superfície completa de autenticação, autorização, entrada e saída |
+
+> A **Fase F** fica entre E e G e **não é varredura** — é reestruturação visual do frontend
+> (construção). Redesign e caça a bug têm posturas opostas: o filtro abaixo tem ADIAR como padrão e
+> mataria um redesign, que é discricionário por natureza. Por isso são fases separadas, e a
+> reestruturação vem antes de varrer o código que ela reescreve.
 
 ---
 

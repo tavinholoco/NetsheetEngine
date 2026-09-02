@@ -38,13 +38,13 @@ Estas três respostas fecham ambiguidades que mudariam o trabalho. Não reabrir 
 |---|---|---|---|
 | 1 | A explosão do d10 encadeia? | **Sim, encadeia** | Cliente e PRD já estão certos. Corrigir só o servidor, sem configuração por mesa. |
 | 2 | Fidelidade estrita ou regras de casa? | **Fidelidade estrita ao CP2020** | Nenhuma divergência vira "regra de casa". A Fase C ganha conferência sistemática contra o livro. |
-| 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase K (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. |
+| 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase L (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. |
 
 ---
 
 ## 🔎 FILTRO DE NECESSIDADE
 
-Aplicado obrigatoriamente a **toda mudança candidata** nas fases de varredura (E–I), e recomendado
+Aplicado obrigatoriamente a **toda mudança candidata** nas fases de varredura (E e G–J), e recomendado
 em qualquer decisão de escopo nas demais.
 
 ### As cinco perguntas
@@ -131,7 +131,7 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 
 ## 📊 ÍNDICE DE ACHADOS
 
-31 achados no código. IDs referenciados pelas fases.
+32 achados no código. IDs referenciados pelas fases.
 
 ### Segurança (6)
 
@@ -157,22 +157,23 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 | RUL-07 | 🟠 Alto | Atributo da Special Ability escolhido por ternário — erra 7 dos 10 roles | C |
 | RUL-08 | 🟡 Médio | Death save sem modificador cumulativo | C |
 | RUL-09 | 🟡 Médio | Iniciativa digitada à mão, sem `1d10 + REF` | D |
-| RUL-10 | 🟡 Médio | Criação de personagem sem orçamento (pontos, perícias, IP) | J |
-| RUL-11 | 🔵 Baixo | Faltam Leap/Carry/Lift e EV; "Walk" é invenção | J |
-| RUL-12 | 🔵 Baixo | Tabelas de perícia incompletas; "Social" duplicado em INT | J |
+| RUL-10 | 🟡 Médio | Criação de personagem sem orçamento (pontos, perícias, IP) | K |
+| RUL-11 | 🔵 Baixo | Faltam Leap/Carry/Lift e EV; "Walk" é invenção | K |
+| RUL-12 | 🔵 Baixo | Tabelas de perícia incompletas; "Social" duplicado em INT | K |
 
-### Arquitetura (8)
+### Arquitetura (9)
 
 | ID | Sev. | Achado | Fase |
 |---|---|---|---|
-| ARQ-01 | 🟠 Alto | Broadcast do estado completo da sala a cada mutação (100–300 KB) | K |
+| ARQ-01 | 🟠 Alto | Broadcast do estado completo da sala a cada mutação (100–300 KB) | L |
 | ARQ-02 | 🟠 Alto | Regras do jogo implementadas duas vezes, sem teste de paridade | C |
 | ARQ-03 | 🟡 Médio | Instância única obrigatória combinada com plano que hiberna | B |
-| ARQ-04 | 🟡 Médio | 1,34 MB no chunk de entrada | K |
-| ARQ-05 | 🟡 Médio | Quatro arquivos concentram ~4.000 das 14.282 linhas | E/F/K |
-| ARQ-06 | 🔵 Baixo | Camada Supabase ainda exporta nomes do Firebase | K |
-| ARQ-07 | 🔵 Baixo | Sem ESLint; 23 `any` e 16 `console.*` | K |
-| ARQ-08 | 🔵 Baixo | 3 smoke tests para 20 componentes React | C/D/F/G |
+| ARQ-04 | 🟡 Médio | 1,34 MB no chunk de entrada | L |
+| ARQ-05 | 🟡 Médio | Quatro arquivos concentram ~4.000 das 14.282 linhas | E/G/L |
+| ARQ-06 | 🔵 Baixo | Camada Supabase ainda exporta nomes do Firebase | L |
+| ARQ-07 | 🔵 Baixo | Sem ESLint; 23 `any` e 16 `console.*` | L |
+| ARQ-08 | 🔵 Baixo | 3 smoke tests para 20 componentes React | C/D/G/H |
+| ARQ-09 | 🟠 Alto | **As fontes não carregam em produção** — o `@import` do Google Fonts sobrevive ao build, mas o CSP (`style-src`/`font-src`) o bloqueia; como o helmet é pulado em dev, só quebra no ar | F |
 
 ### Documentação e processo (5)
 
@@ -182,15 +183,15 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 | DOC-02 | 🟡 Médio | Seis alvos de deploy configurados, nenhum eleito | A |
 | DOC-03 | 🟡 Médio | T10.8 fechada com PITR e secrets do `db-sync` pendentes | A |
 | DOC-04 | 🔵 Baixo | Sem tags nem releases | A |
-| DOC-05 | 🔵 Baixo | Plano mestre programado para se autodeletar | A/L |
+| DOC-05 | 🔵 Baixo | Plano mestre programado para se autodeletar | A/M |
 
 ---
 
-## 🗂️ AS 12 FASES
+## 🗂️ AS 13 FASES
 
-**Esforço total: 24,5 a 32,5 dias de trabalho concentrado** — três a seis meses de calendário para
-quem tem outra ocupação. Ponto de corte natural: **fechando A–D o jogo já roda certo**, e E–I viram
-manutenção de fim de semana.
+**Esforço total: 27,5 a 36,5 dias de trabalho concentrado** — quatro a sete meses de calendário para
+quem tem outra ocupação. Ponto de corte natural: **fechando A–D o jogo já roda certo**; F entrega a
+identidade visual nova; e as varreduras viram manutenção de fim de semana.
 
 Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório)
 
@@ -287,8 +288,8 @@ cliente e servidor para ela.
 - [ ] **D.7** `git tag v0.4.3`.
 - [ ] ✅ **Fase D concluída em:** ____/____/______
 
-> **Ponto de corte:** com A–D fechadas o jogo roda certo. Dá para jogar aqui e tratar E–I como
-> manutenção.
+> **Ponto de corte:** com A–D fechadas o jogo roda certo. Dá para jogar aqui e tratar o resto como
+> manutenção — com a exceção da F, que é a única fase restante que muda o que o jogador vê.
 
 ---
 
@@ -316,12 +317,94 @@ Existe estado que cresce sem limite? Que suposição quebra se duas requisiçõe
 
 ---
 
-### FASE F — 🔍 VARREDURA: FRONTEND *(1–2 dias)*
+### FASE F — REESTRUTURAÇÃO VISUAL DO FRONTEND 🔨 *(3–4 dias)*
 
-Escopo: `src/components`, `src/features`, `src/pages`, `src/stores`, `src/hooks`.
+> **Por que é fase própria e vem antes da varredura.** Redesign e caça a bug têm posturas opostas:
+> a varredura pergunta "isto é necessário?" e tem ADIAR como padrão — se as duas coisas
+> compartilhassem uma fase, ou o filtro mataria o redesign (que é discricionário por natureza), ou o
+> redesign corromperia o filtro. E varrer código que você está prestes a reestilizar repete
+> exatamente o erro que o plano já evita ao pôr as varreduras depois de B, C e D.
 
-- [ ] **F.1** Varredura → ledger em `docs/varreduras/F-frontend.md`.
-- [ ] **F.2** Executar apenas os itens FAZER.
+#### 🐛 F.0 — O bug que precede o redesign
+
+- [ ] **F.0** **As fontes do projeto não carregam em produção.** O `src/index.css` importa Rajdhani e
+      Share Tech Mono do Google Fonts, e o `@import` sobrevive ao build (confirmado em
+      `dist/assets/index-*.css`). Mas o CSP do helmet em produção declara
+      `style-src: 'self' 'unsafe-inline'` e `font-src: 'self' data:` — a folha do
+      `fonts.googleapis.com` é bloqueada, e os arquivos do `fonts.gstatic.com` também. Como o helmet
+      é pulado em dev, **o problema só existe no ar**: a produção renderiza em fontes de sistema.
+      Corrigir **antes** de escolher tipografia nova, senão a Fase F inteira é validada num ambiente
+      que não é o real.
+      - Solução recomendada: **auto-hospedar as fontes** (`@fontsource/*` ou arquivos em
+        `public/fonts/` com `@font-face` local). Mantém o CSP apertado, remove dependência de
+        terceiro, melhora o LCP e não volta a acontecer quando você adicionar mais uma fonte.
+      - Alternativa: afrouxar o CSP para `fonts.googleapis.com` / `fonts.gstatic.com`. Funciona, mas
+        troca uma correção permanente por uma exceção.
+
+#### F.1 — Definir o sistema tipográfico
+
+> **O que a referência do Behance realmente entrega.** A galeria é o portfólio de Vladimír
+> Vilimovský, Senior UI Artist da CD PROJEKT RED. Ela **não nomeia nenhuma fonte** — o texto diz que
+> as razões da escolha estão na "UI Art Bible", que fica na *apresentação anterior* (Parte 1), e a
+> tipografia aparece só dentro das imagens. Não há lista para extrair.
+>
+> O que ela **dá**, e é aproveitável, é o vocabulário visual: rótulos em CAIXA ALTA com numeração de
+> seção (`PART_04`, `PART_05`), tokens unidos por underscore (`USER_INTERFACE`,
+> `FULL—SCREEN_PANELS`), fragmentos de código como motivo de carregamento, e a decisão deliberada de
+> usar **vermelho como cor primária** — que o próprio autor descreve como andar contra a corrente,
+> assumindo o conflito com o vermelho de erro/aviso.
+
+- [ ] **F.1.1** Registrar a stack tipográfica na ADR 0006. Realidade de licenciamento: o
+      **Blender Pro** e o **Refrigerator Deluxe**, que o CP2077 de fato usa, são **comerciais** e não
+      podem ser embarcados sem licença de webfont. O **Rajdhani** é livre (Google Fonts), é a fonte
+      mais associada a esse visual — e **o projeto já usa**.
+- [ ] **F.1.2** Completar a stack livre: manter Rajdhani (display/títulos) e Share Tech Mono
+      (terminal/código), e avaliar **Chakra Petch** ou **Saira Condensed** como substituto livre do
+      Blender Pro para rótulos, números e chapéus de seção.
+- [ ] **F.1.3** Escala tipográfica explícita, tracking definido para caixa alta e
+      `font-variant-numeric: tabular-nums` em toda coluna de número da ficha (atributos, SP, dano,
+      iniciativa).
+
+#### F.2 — Tokens de design
+
+- [ ] **F.2.1** As cores hoje são classes Tailwind literais (`text-cyan-400`, `bg-slate-900/70`,
+      `border-cyan-500`) espalhadas por 20 componentes — trocar a identidade exige achar e substituir
+      em todos. Extrair para tokens CSS (`--nse-accent`, `--nse-surface`, `--nse-danger`…) é o que
+      torna esta troca, e a próxima, barata.
+- [ ] **F.2.2** **Decisão pendente — vermelho primário colide com vermelho de dano.** O CP2077 usa
+      vermelho como cor primária; o NetSheet usa ciano/amarelo e reserva o vermelho para ferimento
+      (`HealthTracker` usa `text-red-400/500/600` e `text-rose-600/700` na escala de wound level).
+      Adotar vermelho primário faz "primário" e "você está morrendo" falarem a mesma língua. O artista
+      tinha um jogo inteiro para sustentar essa aposta; uma ficha de RPG não tem. **Duas saídas:**
+      (a) manter o amarelo/ciano como primário e o vermelho só para dano — recomendado; (b) adotar o
+      vermelho primário e mover o dano para outro sinal (peso, moldura, ícone).
+
+#### F.3 — Aplicar e verificar
+
+- [ ] **F.3.1** Aplicar tipografia e tokens nos componentes, começando pela ficha (maior superfície
+      visual) e terminando na mesa.
+- [ ] **F.3.2** Acessibilidade do tema novo: contraste conferido nos dois modos, foco visível, ordem
+      de tabulação nos modais. *(auditar contra a paleta nova, não a antiga)*
+- [ ] **F.3.3** **Verificar em produção** (`NODE_ENV=production`, com helmet ativo) que as fontes
+      realmente carregam. É a única forma de confirmar o F.0.
+- [ ] **F.3.4** `git tag v0.4.4`.
+- [ ] ✅ **Fase F concluída em:** ____/____/______
+
+> **Nota de identidade.** A referência é Cyberpunk **2077** (jogo de 2020) e o produto é Cyberpunk
+> **2020** (mesa de 1988). Adotar a linguagem visual do 2077 dá um resultado reconhecível como "a
+> franquia Cyberpunk", não como "o RPG de mesa dos anos 80". É uma escolha de produto legítima — hoje
+> a imagem mental de cyberpunk da maioria das pessoas *é* o 2077 — mas vale ser escolha, e não
+> deriva.
+
+---
+
+### FASE G — 🔍 VARREDURA: FRONTEND *(1–2 dias)*
+
+Escopo: `src/components`, `src/features`, `src/pages`, `src/stores`, `src/hooks`. Vem **depois** da
+Fase F para não varrer código que acabou de ser reestilizado.
+
+- [ ] **G.1** Varredura → ledger em `docs/varreduras/G-frontend.md`.
+- [ ] **G.2** Executar apenas os itens FAZER.
 
 **Pistas já levantadas:**
 - `syncSheetStore(sheetResult)` é chamado **no corpo do render** do `App.tsx` — efeito colateral fora
@@ -331,25 +414,23 @@ Escopo: `src/components`, `src/features`, `src/pages`, `src/stores`, `src/hooks`
 - `StatBlock.handleSet` altera `stats` sem tocar em `currentStats`; `handleChange` aplica um
   `Math.min` difícil de justificar.
 - 16 `console.*` sobrevivendo ao logger estruturado. *(ARQ-07, parte 1)*
-- Acessibilidade nunca auditada: foco visível, rótulos de formulário, contraste, ordem de tabulação
-  nos modais.
 - Candidatos a refactor: `MultiplayerRoom` 944, `FriendsList` 723, `CyberpunkMenu` 608. *(ARQ-05)*
 
 **O que a varredura pergunta:** que estado existe em dois lugares e pode divergir? O que a UI faz
 quando a rede falha, o token expira ou a resposta demora? Dá para operar a ficha só com teclado?
 
-- [ ] ✅ **Fase F concluída em:** ____/____/______
+- [ ] ✅ **Fase G concluída em:** ____/____/______
 
 ---
 
-### FASE G — 🔍 VARREDURA: MULTIPLAYER *(2 dias)*
+### FASE H — 🔍 VARREDURA: MULTIPLAYER *(2 dias)*
 
 Escopo: transporte WebSocket, fallback SSE, CRDT Yjs, awareness, reconexão, presença. A varredura
 mais cara — os bugs aqui só aparecem com duas pessoas e rede ruim, e é onde a decisão 3 concentra o
 uso real.
 
-- [ ] **G.1** Varredura → ledger em `docs/varreduras/G-multiplayer.md`.
-- [ ] **G.2** Executar apenas os itens FAZER.
+- [ ] **H.1** Varredura → ledger em `docs/varreduras/H-multiplayer.md`.
+- [ ] **H.2** Executar apenas os itens FAZER.
 
 **Pistas já levantadas:**
 - `destroyRoomYjs` dispara quando o último socket fecha — corrida se alguém reconecta no mesmo
@@ -365,17 +446,17 @@ uso real.
 reiniciado com a mesa aberta. Não é teste automatizado — é meia hora quebrando de propósito com o log
 aberto. *(ARQ-08, parte 3)*
 
-- [ ] ✅ **Fase G concluída em:** ____/____/______
+- [ ] ✅ **Fase H concluída em:** ____/____/______
 
 ---
 
-### FASE H — 🔍 VARREDURA: INTEGRAÇÃO BACKEND ↔ FRONTEND *(1–2 dias)*
+### FASE I — 🔍 VARREDURA: INTEGRAÇÃO BACKEND ↔ FRONTEND *(1–2 dias)*
 
 Escopo: `src/api/*` contra os endpoints do Express — a costura que nenhuma das varreduras anteriores
 olha, porque cada lado parece correto sozinho.
 
-- [ ] **H.1** Varredura → ledger em `docs/varreduras/H-integracao.md`.
-- [ ] **H.2** Executar apenas os itens FAZER.
+- [ ] **I.1** Varredura → ledger em `docs/varreduras/I-integracao.md`.
+- [ ] **I.2** Executar apenas os itens FAZER.
 
 **Pistas já levantadas:**
 - Contratos de rota escritos duas vezes à mão: conferir se cada endpoint tem tipo compartilhado de
@@ -390,17 +471,17 @@ olha, porque cada lado parece correto sozinho.
 **O que a varredura pergunta:** se eu mudar este endpoint, o TypeScript me avisa no cliente — ou
 descubro em produção? Todo estado de erro do servidor tem estado de UI correspondente?
 
-- [ ] ✅ **Fase H concluída em:** ____/____/______
+- [ ] ✅ **Fase I concluída em:** ____/____/______
 
 ---
 
-### FASE I — 🔍 VARREDURA: SEGURANÇA *(1–2 dias)*
+### FASE J — 🔍 VARREDURA: SEGURANÇA *(1–2 dias)*
 
 A Fase B fecha os seis buracos conhecidos. Esta procura os que a auditoria não achou —
-sistematicamente, e depois de todo o código novo de C e D ter entrado.
+sistematicamente, e depois de todo o código novo de C, D e F ter entrado.
 
-- [ ] **I.1** Varredura → ledger em `docs/varreduras/I-seguranca.md`.
-- [ ] **I.2** Executar apenas os itens FAZER.
+- [ ] **M.1** Varredura → ledger em `docs/varreduras/J-seguranca.md`.
+- [ ] **M.2** Executar apenas os itens FAZER.
 
 **Como varrer:**
 - **Tabela completa:** cada endpoint e cada mensagem de WebSocket × autenticado? autorizado? entrada
@@ -416,58 +497,58 @@ sistematicamente, e depois de todo o código novo de C e D ter entrado.
 **O que a varredura pergunta:** se um jogador convidado virar hostil, o que ele consegue fazer? (é o
 modelo de ameaça real da decisão 3) Que dado sai do servidor para quem não deveria vê-lo?
 
-- [ ] ✅ **Fase I concluída em:** ____/____/______
-
----
-
-### FASE J — PROFUNDIDADE DE SISTEMA 🔨 *(4–5 dias)*
-
-A Fase 11 do plano antigo, reordenada por retorno: export/import primeiro (dá confiança para usar de
-verdade), netrunning por último (é meio jogo à parte).
-
-- [ ] **J.1** *(era T11.5)* Export/import de ficha (JSON + impressão em PDF) — reaproveita o validador
-      de `src/rules/sheetSchema.ts`.
-- [ ] **J.2** *(era T11.1)* Inventário, peso e EV: Carry (BODY×10 kg), Lift (BODY×40 kg), encumbrance
-      automático, penalidade de REF por armadura. *(RUL-11)*
-- [ ] **J.3** *(era T11.3)* Pós-ferimento automático — em boa parte já entregue pela Fase C.
-- [ ] **J.4** *(era T11.4)* Inventário e drops de NPC.
-- [ ] **J.5** *(era T11.2)* Netrunning: MU, programas, data walls, ações por turno.
-- [ ] **J.6** Criação de personagem com orçamento (pontos de atributo, perícia por INT+REF, carreira)
-      e evolução por IP. *(RUL-10)*
-- [ ] **J.7** Completar `SKILL_TABLES` (remover "Social" de INT; adicionar Accounting, Anthropology,
-      Gamble, Shadow/Track, Wilderness Survival, Interrogation, Pharmaceuticals) e adicionar Leap
-      (Run÷4). Remover "Walk", que não existe no livro. *(RUL-12, RUL-11)*
 - [ ] ✅ **Fase J concluída em:** ____/____/______
 
 ---
 
-### FASE K — AGUENTAR UMA MESA DE VERDADE 🔨 *(3 dias)*
+### FASE K — PROFUNDIDADE DE SISTEMA 🔨 *(4–5 dias)*
 
-Com jogadores convidados (decisão 3), é a fase que mais pode esperar — e a primeira a antecipar se o
-público mudar.
+A Fase 11 do plano antigo, reordenada por retorno: export/import primeiro (dá confiança para usar de
+verdade), netrunning por último (é meio jogo à parte).
 
-- [ ] **K.1** Broadcast por delta (`chat:new`, `player:health`, `initiative:set`); estado completo só
-      no join e na reconexão. *(ARQ-01)*
-- [ ] **K.2** `manualChunks` separando supabase e yjs; Yjs sob demanda na rota de mesa; revisar se
-      `motion` paga o próprio peso. *(ARQ-04)*
-- [ ] **K.3** Fatiar os arquivos grandes aproveitando os cortes que E–I mapearam. *(ARQ-05)*
-- [ ] **K.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
-- [ ] **K.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
-      `--max-warnings 0` no CI. *(ARQ-07)*
+- [ ] **M.1** *(era T11.5)* Export/import de ficha (JSON + impressão em PDF) — reaproveita o validador
+      de `src/rules/sheetSchema.ts`.
+- [ ] **M.2** *(era T11.1)* Inventário, peso e EV: Carry (BODY×10 kg), Lift (BODY×40 kg), encumbrance
+      automático, penalidade de REF por armadura. *(RUL-11)*
+- [ ] **M.3** *(era T11.3)* Pós-ferimento automático — em boa parte já entregue pela Fase C.
+- [ ] **M.4** *(era T11.4)* Inventário e drops de NPC.
+- [ ] **M.5** *(era T11.2)* Netrunning: MU, programas, data walls, ações por turno.
+- [ ] **K.6** Criação de personagem com orçamento (pontos de atributo, perícia por INT+REF, carreira)
+      e evolução por IP. *(RUL-10)*
+- [ ] **K.7** Completar `SKILL_TABLES` (remover "Social" de INT; adicionar Accounting, Anthropology,
+      Gamble, Shadow/Track, Wilderness Survival, Interrogation, Pharmaceuticals) e adicionar Leap
+      (Run÷4). Remover "Walk", que não existe no livro. *(RUL-12, RUL-11)*
 - [ ] ✅ **Fase K concluída em:** ____/____/______
 
 ---
 
-### FASE L — VALIDAÇÃO E ENCERRAMENTO 🔨 *(1 dia)*
+### FASE L — AGUENTAR UMA MESA DE VERDADE 🔨 *(3 dias)*
 
-- [ ] **L.1** Suíte completa: `tsc --noEmit`, build, unit, integração, E2E, RLS, `npm audit`.
+Com jogadores convidados (decisão 3), é a fase que mais pode esperar — e a primeira a antecipar se o
+público mudar.
+
+- [ ] **M.1** Broadcast por delta (`chat:new`, `player:health`, `initiative:set`); estado completo só
+      no join e na reconexão. *(ARQ-01)*
+- [ ] **M.2** `manualChunks` separando supabase e yjs; Yjs sob demanda na rota de mesa; revisar se
+      `motion` paga o próprio peso. *(ARQ-04)*
+- [ ] **M.3** Fatiar os arquivos grandes aproveitando os cortes que E–I mapearam. *(ARQ-05)*
+- [ ] **M.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
+- [ ] **M.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
+      `--max-warnings 0` no CI. *(ARQ-07)*
+- [ ] ✅ **Fase L concluída em:** ____/____/______
+
+---
+
+### FASE M — VALIDAÇÃO E ENCERRAMENTO 🔨 *(1 dia)*
+
+- [ ] **M.1** Suíte completa: `tsc --noEmit`, build, unit, integração, E2E, RLS, `npm audit`.
       *(é a T12.2 do plano antigo)*
-- [ ] **L.2** **Uma sessão de jogo real**, 2+ pessoas, do zero ao combate. É o teste que nenhuma suíte
+- [ ] **M.2** **Uma sessão de jogo real**, 2+ pessoas, do zero ao combate. É o teste que nenhuma suíte
       substitui e o único que valida C e D. *(é a T12.3 do plano antigo)*
-- [ ] **L.3** Revisar os cinco ledgers de varredura: todo ADIAR ainda tem gatilho plausível?
-- [ ] **L.4** Arquivar o roadmap concluído no `README.md`. *(é a T12.5)*
-- [ ] **L.5** Encerrar formalmente o `PLANO_DE_ACAO.md` (`git rm` + commit). *(é a T12.6, DOC-05)*
-- [ ] **L.6** `git tag v0.5.0`.
+- [ ] **M.3** Revisar os cinco ledgers de varredura: todo ADIAR ainda tem gatilho plausível?
+- [ ] **M.4** Arquivar o roadmap concluído no `README.md`. *(é a T12.5)*
+- [ ] **M.5** Encerrar formalmente o `PLANO_DE_ACAO.md` (`git rm` + commit). *(é a T12.6, DOC-05)*
+- [ ] **M.6** `git tag v0.5.0`.
 - [ ] ✅ **Plano concluído em:** ____/____/______
 
 ---
@@ -481,10 +562,11 @@ público mudar.
 | C | 🔨 | Fonte única de regras | ⬜ | — |
 | D | 🔨 | Loop de combate | ⬜ | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
-| F | 🔍 | Varredura: frontend | ⬜ | — |
-| G | 🔍 | Varredura: multiplayer | ⬜ | — |
-| H | 🔍 | Varredura: integração | ⬜ | — |
-| I | 🔍 | Varredura: segurança | ⬜ | — |
-| J | 🔨 | Profundidade de sistema | ⬜ | — |
-| K | 🔨 | Performance e escala | ⬜ | — |
-| L | 🔨 | Validação e encerramento | ⬜ | — |
+| F | 🔨 | **Reestruturação visual do frontend** | ⬜ | — |
+| G | 🔍 | Varredura: frontend | ⬜ | — |
+| H | 🔍 | Varredura: multiplayer | ⬜ | — |
+| I | 🔍 | Varredura: integração | ⬜ | — |
+| J | 🔍 | Varredura: segurança | ⬜ | — |
+| K | 🔨 | Profundidade de sistema | ⬜ | — |
+| L | 🔨 | Performance e escala | ⬜ | — |
+| M | 🔨 | Validação e encerramento | ⬜ | — |
