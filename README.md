@@ -33,8 +33,13 @@ React 19 · Vite · TypeScript · Tailwind CSS 4 · shadcn/ui (Radix) · Express
 
 ## Roadmap
 
-O desenvolvimento segue um plano de 13 fases documentado em [`PLANO_DE_ACAO.md`](./PLANO_DE_ACAO.md),
-com o detalhamento em [`src/data/prdData.ts`](./src/data/prdData.ts) (consumido pelo visualizador de PRD do app).
+O documento mestre do projeto é o [`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md) — 13 fases, das
+quais 5 são varreduras de qualidade com filtro contra overengineering, mais um contrato de custo zero
+para a hospedagem. Ele substituiu o [`PLANO_DE_ACAO.md`](./PLANO_DE_ACAO.md), que guiou as Fases 0–10
+e ainda será encerrado formalmente na Fase M.
+
+O detalhamento de produto está em [`docs/PRD.md`](./docs/PRD.md) e em
+[`src/data/prdData.ts`](./src/data/prdData.ts) (consumido pelo visualizador de PRD do app).
 
 Fases concluídas até agora: **0** (fundação), **1** (segurança), **2** (migração Firebase → Supabase), **3** (multiplayer: persistência e confiabilidade), **4** (estado global com Zustand) e **5** (multiplayer em tempo real: WebSockets/Yjs). O protocolo de rede está documentado em [`docs/PROTOCOLO_MULTIPLAYER.md`](./docs/PROTOCOLO_MULTIPLAYER.md).
 
@@ -56,7 +61,7 @@ O backend (Express + WebSocket + Yjs) é um **processo único** — o estado das
 
 - **Docker** — `docker build -t netsheet-engine . && docker run -p 3000:3000 netsheet-engine` (imagem multi-stage já valida build + testes + E2E WS)
 - **Railway** — usa o `Dockerfile` diretamente (`PORT` injetada automaticamente)
-- **Render** — config em [`render.yaml`](./render.yaml) (Web Service via Docker)
+- **Render** — config em [`render.yaml`](./render.yaml) (Web Service com runtime Node nativo) — **alvo primário** (ver `docs/PLANO_MESTRE.md`)
 - **Fly.io** — config em [`fly.toml`](./fly.toml)
 - **Frontend** — o SPA é servido pelo próprio backend na mesma porta (sem CORS); também pode ser hospedado estático no Vercel/Netlify apontando o `VITE_SUPABASE_URL` para o Supabase cloud
 

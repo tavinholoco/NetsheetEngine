@@ -51,8 +51,30 @@ uptime bots.
 
 ## Monitoramento externo (T10.4)
 
-O healthcheck serve de pulso para um **uptime bot** externo (fora da
-plataforma — para avisar quando o deploy "morre" mas o provedor não nota):
+> ### 🛑 NÃO aponte um uptime bot para o `/api/health` enquanto estiver no plano gratuito
+>
+> A recomendação original desta seção era um monitor a cada 5 minutos. **Ela quebra o free tier do
+> Render — e não só o deste projeto.**
+>
+> O Render concede **750 horas de instância grátis por _workspace_ por mês** e hiberna um serviço
+> gratuito após 15 minutos sem tráfego de entrada. Um monitor de 5 em 5 minutos nunca deixa o
+> serviço hibernar: ele passa a consumir **~730 h/mês sozinho**, de um orçamento compartilhado por
+> **todos** os serviços do workspace. Quando as 750 h acabam, o Render **suspende os serviços
+> gratuitos até a virada do mês**.
+>
+> Na prática, ligar esse monitor derrubaria também o `newra-news-api`, que divide o mesmo workspace.
+>
+> **O que fazer em vez disso:**
+> - Aceitar a hibernação. O cliente manda heartbeat a cada 20 s enquanto a mesa está aberta, então o
+>   serviço **não hiberna durante uma sessão** — só entre sessões, e voltar leva ~1 min.
+> - O incômodo real da hibernação não é a espera, é a perda das sessões em memória (SEC-03). A
+>   correção está na Fase B do [`PLANO_MESTRE.md`](./PLANO_MESTRE.md), não num uptime bot.
+> - Se quiser aviso de queda, use um check **de baixa frequência** (1×/dia ou 1×/semana) ou um
+>   monitor que só rode em janela de jogo. A tabela abaixo vale **apenas em plano pago**.
+
+Em **plano pago** (sem hibernação e sem cota de horas), o healthcheck serve de pulso para um
+**uptime bot** externo — fora da plataforma, para avisar quando o deploy "morre" mas o provedor não
+nota:
 
 | Serviço | Setup | Observações |
 |---|---|---|

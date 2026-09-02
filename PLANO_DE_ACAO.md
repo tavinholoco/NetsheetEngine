@@ -1,5 +1,23 @@
 # 📋 PLANO DE AÇÃO — Cyberpunk 2020 Sheet Builder & PRD Suite
 
+> ## 🔁 SUBSTITUÍDO EM 02/09/2026 — mas ainda **não** concluído
+>
+> O documento mestre do projeto passou a ser o [`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md).
+> Este arquivo permanece no repositório porque **duas fases dele continuam abertas**:
+>
+> - **Fase 11** (regras CP2020 avançadas) foi reordenada e vive agora na **Fase J** do plano novo.
+> - **Fase 12** (validação final e encerramento) vive na **Fase L** — e é lá que a T12.6 (`git rm`
+>   deste arquivo) deve ser executada, **depois** de cumpridas a T12.2 (suíte completa) e a T12.3
+>   (sessão de jogo real em produção), que são pré-requisitos dela.
+>
+> Apagar este arquivo agora pularia os próprios pré-requisitos que ele define. Ele sai na Fase L,
+> não antes.
+>
+> **O que este plano entregou:** Fases 0 a 10 — recuperação de 24 arquivos-fonte vazios, controle de
+> versão, correções de segurança, migração completa Firebase → Supabase, multiplayer com persistência
+> e tempo real (WebSocket + Yjs), estado global, motor de dados, roteamento, PRD, 141 testes
+> automatizados e pipeline de CI/CD com deploy. Nada disso foi desfeito.
+
 > **Como usar este arquivo:** este é o **documento mestre de acompanhamento** do projeto.
 > Em cada sessão de trabalho, leia este arquivo, marque os checkboxes `[x]` das tarefas já concluídas
 > e continue a partir do primeiro item não marcado. Atualize as **datas** e o **status** de cada fase.
