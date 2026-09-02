@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🦾 NETSHEET ENGINE
+# NETSHEET ENGINE
 
 **Cyberpunk 2020 Sheet Builder & PRD Suite**
 
@@ -8,7 +8,7 @@ Suíte completa para mesas de Cyberpunk 2020: criação de fichas com calculador
 cyberware, lifepath, rolagem de dados FNFF, mesa virtual multiplayer em tempo real, sistema social
 (amigos, mensagens, perfis) e visualizador de PRD.
 
-**Status:** 🚧 Alpha — em desenvolvimento ativo
+**Status:** Alpha — em desenvolvimento ativo
 
 [![CI](https://github.com/tavinholoco/NetsheetEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/tavinholoco/NetsheetEngine/actions/workflows/ci.yml)
 
@@ -53,7 +53,7 @@ Pré-requisitos: Node ≥ 20 e [Supabase CLI](https://supabase.com/docs/guides/c
 4. Rode o servidor de desenvolvimento: `npm run dev`
 5. Acesse `http://localhost:3000`
 
-> ⚠️ As chaves de `service_role` do Supabase são **exclusivas do servidor** — nunca as coloque com prefixo `VITE_`.
+> As chaves de `service_role` do Supabase são **exclusivas do servidor** — nunca as coloque com prefixo `VITE_`.
 
 ## Deploy
 
@@ -65,7 +65,7 @@ O backend (Express + WebSocket + Yjs) é um **processo único** — o estado das
 - **Fly.io** — config em [`fly.toml`](./fly.toml)
 - **Frontend** — o SPA é servido pelo próprio backend na mesma porta (sem CORS); também pode ser hospedado estático no Vercel/Netlify apontando o `VITE_SUPABASE_URL` para o Supabase cloud
 
-> ⚠️ Por causa do estado em memória (Yjs/salas), o servidor deve rodar como **instância única** — não escale horizontalmente sem um backend de persistência compartilhado.
+> Por causa do estado em memória (Yjs/salas), o servidor deve rodar como **instância única** — não escale horizontalmente sem um backend de persistência compartilhado.
 
 ## Segurança
 
