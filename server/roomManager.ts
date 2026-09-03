@@ -142,6 +142,62 @@ export function touchPlayer(code: string, peerId: string): boolean {
   return true;
 }
 
+// B.5 (SEC-04) — janela de abandono. Uma mesa sem NINGUÉM ativo por este
+// tempo é considerada encerrada e recolhida. Sobrescrevível por env.
+//
+// 24 h é deliberadamente conservador. O risco de recolher cedo demais não é
+// simétrico: recolher tarde custa uma linha a mais no banco por mais um dia;
+// recolher cedo apaga a mesa de alguém, e o `deleteRoomPersisted` é
+// irreversível. Uma sessão de jogo que "pausa" (todos desconectam no
+// intervalo) volta em minutos, nunca em um dia.
+export const ROOM_ABANDONED_TIMEOUT_MS =
+  Number(process.env.ROOM_ABANDONED_TIMEOUT_MS) || 24 * 60 * 60 * 1000;
+
+/** Timestamp em ms, ou `null` se a data for ausente/inválida. */
+function parseTime(value: unknown): number | null {
+  if (typeof value !== "string" || !value) return null;
+  const t = new Date(value).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+/**
+ * B.5 (SEC-04) — implementa a transição `Ociosa → Encerrada` do
+ * [ciclo de vida](../docs/ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que
+ * o diagrama especificava e o código não tinha: o `markStalePlayersOffline`
+ * marcava jogador como offline, mas a sala ficava na memória e no banco para
+ * sempre, e as sessões junto.
+ *
+ * Remove da memória e revoga as sessões (via `deleteRoom`). O chamador
+ * completa o encerramento apagando a linha no banco e destruindo o Y.Doc — os
+ * outros dois passos que a nota do diagrama lista.
+ *
+ * Retorna os códigos recolhidos.
+ */
+export function collectAbandonedRooms(maxIdleMs: number = ROOM_ABANDONED_TIMEOUT_MS): string[] {
+  const now = Date.now();
+  const doomed: string[] = [];
+
+  for (const room of Object.values(rooms)) {
+    const players = Object.values(room.players);
+    const times = players
+      .map((p) => parseTime(p.lastActiveAt))
+      .filter((t): t is number => t !== null);
+
+    // Sem jogador, ou sem nenhum timestamp legível: cai para a criação da
+    // sala. Se nem isso der, a linha é lixo e vai embora.
+    const lastActivity = times.length > 0 ? Math.max(...times) : parseTime(room.createdAt);
+
+    if (lastActivity === null || now - lastActivity > maxIdleMs) {
+      doomed.push(room.code);
+    }
+  }
+
+  // Deletar só depois de percorrer — mutar o mapa durante a iteração é
+  // exatamente o tipo de bug que aparece com a mesa cheia e não no teste.
+  for (const code of doomed) deleteRoom(code);
+  return doomed;
+}
+
 /** T3.4 — varre todas as salas e marca OFFLINE players sem heartbeat recente.
  *  Retorna os códigos das salas que mudaram (para broadcast + persistência). */
 export function markStalePlayersOffline(): string[] {

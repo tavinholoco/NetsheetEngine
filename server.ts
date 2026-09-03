@@ -47,6 +47,7 @@ import {
   isValidRoomCode,
   touchPlayer,
   markStalePlayersOffline,
+  collectAbandonedRooms,
   ROOM_OFFLINE_TIMEOUT_MS
 } from "./server/roomManager.js";
 import {
@@ -144,11 +145,44 @@ if (process.env.NODE_ENV === "production") {
 // e chatLimiter compartilhavam um único mapa keyed por IP, então o limite do
 // chat (30/min) contava TODAS as requisições da sala e derrubava o chat com
 // 429 em mesas ativas após 30 req/min em qualquer endpoint.
+// B.5 (SEC-04) — a cada N requisições o limiter varre e descarta buckets
+// vencidos. Sem isso, o mapa ganhava uma entrada por IP distinto e NUNCA
+// perdia nenhuma: um bucket vencido só era sobrescrito se aquele mesmo IP
+// voltasse. Três limiters = três mapas crescendo para sempre.
+//
+// Varredura amortizada em vez de timer: custo O(n) diluído a cada N
+// requisições, e nenhum intervalo novo para gerenciar no shutdown ou no HMR.
+const LIMITER_SWEEP_EVERY = 500;
+
+/** Descarta buckets vencidos. Exportada para ser testável — o mapa vive num
+ *  closure, e uma poda que nunca roda falharia em silêncio. */
+export function pruneExpiredBuckets(
+  buckets: Map<string, { count: number; resetAt: number }>,
+  now: number
+): number {
+  let removed = 0;
+  for (const [key, b] of buckets) {
+    if (b.resetAt <= now) {
+      buckets.delete(key);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
 function makeRateLimiter(maxRequests: number, windowMs: number) {
   const buckets = new Map<string, { count: number; resetAt: number }>();
+  let sinceSweep = 0;
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     const now = Date.now();
+
+    sinceSweep += 1;
+    if (sinceSweep >= LIMITER_SWEEP_EVERY) {
+      sinceSweep = 0;
+      pruneExpiredBuckets(buckets, now);
+    }
+
     const bucket = buckets.get(ip);
     if (!bucket || bucket.resetAt <= now) {
       buckets.set(ip, { count: 1, resetAt: now + windowMs });
@@ -1048,12 +1082,45 @@ function startPresenceWatcher(): void {
   }, Math.min(15_000, Math.max(2_000, ROOM_OFFLINE_TIMEOUT_MS / 2)));
 }
 
+// Fase B (B.5 — SEC-04) — coletor de salas abandonadas. Implementa a
+// transição `Ociosa → Encerrada` do ciclo de vida em docs/ARQUITETURA.md,
+// que o diagrama especificava e o código não tinha.
+//
+// Encerrar uma mesa são TRÊS passos, e a nota do diagrama lista os três:
+// revogar as sessões (dentro de collectAbandonedRooms), apagar a linha no
+// Supabase e destruir o Y.Doc + awareness. Fazer só o primeiro deixaria uma
+// linha órfã que ressuscitaria a sala no próximo boot.
+//
+// Intervalo separado do presenceWatcher de propósito: presença é questão de
+// segundos, abandono é de horas. Varrer de 15 em 15 s por algo que muda uma
+// vez por dia seria desperdício.
+const ROOM_COLLECT_INTERVAL_MS = 15 * 60 * 1000;
+let roomCollector: NodeJS.Timeout | null = null;
+function startRoomCollector(): void {
+  roomCollector = setInterval(() => {
+    void (async () => {
+      const collected = collectAbandonedRooms();
+      if (collected.length === 0) return;
+      logger.info("rooms_collected", { count: collected.length, codes: collected.slice(0, 10) });
+      for (const code of collected) {
+        destroyRoomYjs(code);
+        await deleteRoomPersisted(code);
+      }
+    })();
+  }, ROOM_COLLECT_INTERVAL_MS);
+}
+
 async function startServer() {
   // Fase 3 (T3.2) — restaurar salas persistidas antes de aceitar conexões
   await restoreRoomsFromDb();
 
   // Fase 3 (T3.4) — watcher de presença (timeout de isOnline)
   startPresenceWatcher();
+
+  // Fase B (B.5 — SEC-04) — coletor de salas abandonadas. Inicia junto com o
+  // watcher de presença, depois do restore: recolher antes das salas voltarem
+  // do banco não recolheria nada.
+  startRoomCollector();
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -1121,6 +1188,7 @@ async function startServer() {
 function shutdown(signal: string) {
   logger.info("server_shutdown", { signal });
   if (presenceWatcher) clearInterval(presenceWatcher);
+  if (roomCollector) clearInterval(roomCollector);
   void flushAllPending().finally(() => {
     process.exit(0);
   });

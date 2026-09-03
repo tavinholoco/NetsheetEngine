@@ -529,8 +529,24 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
         nunca emitiu, que é o caso real do restart.
       - *Nota sobre ARQ-03:* a metade "hiberna e perde as mesas" está resolvida. A metade "instância
         única" continua, por desenho — as salas vivem em memória (ADR 0002).
-- [ ] **B.5** Coletor de salas abandonadas (sem jogador online há N horas) e poda dos buckets vencidos
-      do rate limiter. *(SEC-04)*
+- [x] **B.5** Coletor de salas abandonadas (sem jogador online há N horas) e poda dos buckets vencidos
+      do rate limiter. *(SEC-04 — 03/09/2026)*
+      - **Os três vazamentos, os três fechados.** (1) Salas: `collectAbandonedRooms`, varrido de 15 em
+        15 min, com janela `ROOM_ABANDONED_TIMEOUT_MS` (24 h). (2) Sessões: vão junto, porque o
+        coletor usa `deleteRoom`, que já revoga. (3) Buckets: poda amortizada a cada 500 requisições.
+      - **Encerrar são três passos, e o coletor faz os três** — revogar sessões, apagar a linha no
+        Supabase, destruir o Y.Doc. Fazer só o primeiro deixaria linha órfã que ressuscitaria a sala
+        no próximo boot.
+      - **24 h é conservador de propósito:** o risco não é simétrico. Recolher tarde custa uma linha a
+        mais no banco por um dia; recolher cedo apaga a mesa de alguém, e o delete é irreversível.
+      - **Poda amortizada em vez de timer** — nenhum intervalo novo para gerenciar no shutdown ou no
+        HMR, custo O(n) diluído.
+      - *Refatoração da própria fase:* a poda vivia dentro do closure do limiter, invisível para
+        teste. Extraída para `pruneExpiredBuckets`, pura e exportada — uma poda que nunca roda
+        falharia em silêncio.
+      - 13 testes, **metade deles sobre o que o coletor NÃO pode fazer**: sala nova, sala um minuto
+        abaixo do limite, mesa em pausa de 6 h, e sessões de outras salas intactas.
+- [x] **B.10** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe. *(03/09/2026 — implementado contra o diagrama, e o diagrama atualizado no mesmo commit: a nota que dizia "HOJE ESTE ESTADO NAO EXISTE" saiu, e entrou a tabela dos dois limiares.)*
 - [ ] **B.6** `npm audit fix` + passo de audit no CI falhando em severidade alta. *(SEC-06)*
 - [ ] **B.7** **Instrumentar o fallback SSE** — uma linha de log estruturado quando um cliente cai
       do WebSocket para o `EventSource`. O suporte a WebSocket passa de 99% e o motivo real de

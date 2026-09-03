@@ -182,7 +182,7 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-01 | `/api/gemini` sem autenticação, com `systemInstruction` do cliente | B | ✅ fechado 03/09 (B.1) |
 | SEC-02 | Leitura de sala e stream SSE sem sessão | B | ✅ fechado 03/09 (B.3) |
 | SEC-03 | Sessões só em memória — restart derruba as mesas | B | ✅ fechado 03/09 (B.4) |
-| SEC-04 | Salas, sessões e buckets nunca expiram | B | ⬜ aberto (B.5) |
+| SEC-04 | Salas, sessões e buckets nunca expiram | B | ✅ fechado 03/09 (B.5) |
 | SEC-05 | Ficha gravada sem validação | B | ✅ fechado 03/09 (B.2) |
 | SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ⬜ aberto (B.6) |
 

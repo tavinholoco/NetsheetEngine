@@ -106,12 +106,9 @@ stateDiagram-v2
     end note
 
     note right of Ociosa
-        HOJE ESTE ESTADO NAO EXISTE.
-        markStalePlayersOffline marca os
-        jogadores como offline, mas a sala
-        fica na memoria e no banco para
-        sempre, e as sessoes nunca sao
-        revogadas. Isso e o SEC-04.
+        ROOM_OFFLINE_TIMEOUT_MS (60 s)
+        markStalePlayersOffline marca
+        os jogadores como offline
     end note
 
     note right of Encerrada
@@ -121,9 +118,21 @@ stateDiagram-v2
     end note
 ```
 
-**O que falta hoje:** a transição `Ociosa --> Encerrada`. Sem ela, uma mesa que todo mundo fechou a
-aba nunca morre. O `ROOM_OFFLINE_TIMEOUT_MS` (60 s por padrão) governa `Ativa --> Ociosa`; o coletor
-precisa de um limiar próprio, em horas.
+**Implementado na Fase B (B.5 — SEC-04), em 03/09/2026.** A transição `Ociosa --> Encerrada` era o
+buraco: uma mesa que todo mundo fechou a aba nunca morria, e as sessões dela iam junto.
+
+Dois limiares, porque são perguntas diferentes:
+
+| Transição | Env | Padrão | Pergunta |
+|---|---|---|---|
+| `Ativa --> Ociosa` | `ROOM_OFFLINE_TIMEOUT_MS` | 60 s | o jogador ainda está aí? |
+| `Ociosa --> Encerrada` | `ROOM_ABANDONED_TIMEOUT_MS` | 24 h | a mesa foi abandonada? |
+
+O coletor (`collectAbandonedRooms`, varrido de 15 em 15 min) cumpre os **três** passos da nota de
+`Encerrada`. Fazer só o primeiro deixaria uma linha órfã que ressuscitaria a sala no próximo boot.
+
+As 24 h são conservadoras de propósito: o risco não é simétrico. Recolher tarde custa uma linha a
+mais no banco por mais um dia; recolher cedo apaga a mesa de alguém, e o delete é irreversível.
 
 ---
 
