@@ -49,7 +49,10 @@ Dois documentos vivos sustentam o plano e são atualizados pelas fases que mudam
 - [`docs/SEGURANCA.md`](./docs/SEGURANCA.md) — o portão de segurança (seis perguntas STRIDE que toda
   fase de construção responde antes de fechar) e o modelo de ameaça.
 
-Fases concluídas até agora: **0** (fundação), **1** (segurança), **2** (migração Firebase → Supabase), **3** (multiplayer: persistência e confiabilidade), **4** (estado global com Zustand) e **5** (multiplayer em tempo real: WebSockets/Yjs). O protocolo de rede está documentado em [`docs/PROTOCOLO_MULTIPLAYER.md`](./docs/PROTOCOLO_MULTIPLAYER.md).
+Fases 0–10 do plano antigo concluídas: fundação, segurança, migração Firebase → Supabase, multiplayer
+(persistência, estado global, tempo real com WebSockets/Yjs), motor de dados FNFF, roteamento, PRD,
+testes e deploy/CI-CD/hardening. Nada disso foi desfeito — o plano novo continua a partir daí, na
+**Fase A**. O protocolo de rede está documentado em [`docs/PROTOCOLO_MULTIPLAYER.md`](./docs/PROTOCOLO_MULTIPLAYER.md).
 
 ## Rodando localmente
 
@@ -67,11 +70,10 @@ Pré-requisitos: Node ≥ 20 e [Supabase CLI](https://supabase.com/docs/guides/c
 
 O backend (Express + WebSocket + Yjs) é um **processo único** — o estado das salas vive em memória (com persistência JSON). Veja [`docs/DEPLOY.md`](./docs/DEPLOY.md) para o passo a passo completo, variáveis de ambiente e healthcheck.
 
+- **Render** — config em [`render.yaml`](./render.yaml) (Web Service com runtime Node nativo) — **único alvo de backend** (Fase A do `docs/PLANO_MESTRE.md`, DOC-02)
 - **Docker** — `docker build -t netsheet-engine . && docker run -p 3000:3000 netsheet-engine` (imagem multi-stage já valida build + testes + E2E WS)
-- **Railway** — usa o `Dockerfile` diretamente (`PORT` injetada automaticamente)
-- **Render** — config em [`render.yaml`](./render.yaml) (Web Service com runtime Node nativo) — **alvo primário** (ver `docs/PLANO_MESTRE.md`)
-- **Fly.io** — config em [`fly.toml`](./fly.toml)
 - **Frontend** — o SPA é servido pelo próprio backend na mesma porta (sem CORS); também pode ser hospedado estático no Vercel/Netlify apontando o `VITE_SUPABASE_URL` para o Supabase cloud
+- Railway e Fly.io foram avaliados e **arquivados** em [`docs/deploy-alternativas/`](./docs/deploy-alternativas/) — rodar em duas plataformas ao mesmo tempo não soma nada ao orçamento de custo zero, só duplica manutenção
 
 > Por causa do estado em memória (Yjs/salas), o servidor deve rodar como **instância única** — não escale horizontalmente sem um backend de persistência compartilhado.
 

@@ -1,0 +1,45 @@
+name: Keep-alive Supabase
+
+# Regra 5 do contrato de custo zero (docs/PLANO_MESTRE.md): o plano gratuito do
+# Supabase pausa o projeto com ~7 dias de baixa atividade NO BANCO. Projeto
+# pausado derruba a mesa, o job db-sync do CI e qualquer sessão de jogo.
+#
+# Este workflow abre uma conexão real com o Postgres remoto a cada 3 dias, o que
+# reseta o contador de inatividade. Não escreve nada.
+#
+# Por que 3 dias e não 7: com intervalo igual ao limite não há margem — uma
+# execução atrasada ou falha já deixa o projeto dormir.
+
+on:
+  schedule:
+    - cron: "0 6 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Manter o projeto Supabase acordado
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Tocar o banco remoto
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        # `migration list --linked` abre conexão com o Postgres remoto e só lê a
+        # tabela de controle de migrations. É o toque mais barato que conta como
+        # atividade de banco, e reaproveita os secrets que o db-sync já usa —
+        # sem precisar de anon key nem senha de banco.
+        #
+        # Se o projeto JÁ estiver pausado, o script avisa e sai 0: só um admin
+        # despausa pelo painel. O keep-alive previne, não ressuscita.
+        run: bash scripts/supabase-ci.sh migration list --linked

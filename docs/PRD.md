@@ -11,7 +11,7 @@
 | **Produto** | NETSHEET ENGINE |
 | **Versão** | v0.4.0-RELEASE |
 | **Status** | 🚧 ALPHA — desenvolvimento ativo |
-| **Última atualização** | 08/08/2026 |
+| **Última atualização** | 03/09/2026 |
 | **Público-alvo** | Mestres e jogadores de Cyberpunk 2020 |
 
 ---
@@ -283,16 +283,19 @@ detalhes do protocolo em [`docs/PROTOCOLO_MULTIPLAYER.md`](./PROTOCOLO_MULTIPLAY
 
 ## 9. Roadmap e Estado
 
-O desenvolvimento segue um plano de **13 fases** (P0–P3) documentado no
-[`PLANO_DE_ACAO.md`](../PLANO_DE_ACAO.md) e espelhado no visualizador de PRD
-do app (`/prd`).
+O documento mestre do projeto é o [`docs/PLANO_MESTRE.md`](./PLANO_MESTRE.md) — 13 fases (A–M),
+que substituiu o [`PLANO_DE_ACAO.md`](../PLANO_DE_ACAO.md) em 02/09/2026. Espelhado no
+visualizador de PRD do app (`/prd`).
 
-**Fases concluídas:** 0 (fundação) · 1 (segurança) · 2 (migração
+**Fases 0–10 do plano antigo fechadas:** 0 (fundação) · 1 (segurança) · 2 (migração
 Firebase → Supabase) · 3 (multiplayer: persistência e confiabilidade) ·
 4 (estado global com Zustand) · 5 (WebSockets/Yjs + RNG autoritativo) ·
-6 (motor de dados FNFF) · 7 (roteamento, features e camada api).
+6 (motor de dados FNFF) · 7 (roteamento, features e camada api) · 8 (PRD real,
+documentação e identidade do produto) · 9 (testes) · 10 (deploy/CI-CD/hardening).
+As Fases 11 e 12 foram reordenadas para as Fases K e M do plano novo.
 
-**Em andamento:** Fase 8 (PRD real, documentação e identidade do produto).
+**Em andamento:** Fase A (reancorar o projeto) do `PLANO_MESTRE.md`.
 
-**Próximas:** 9 (testes), 10 (deploy/CI-CD/hardening), 11 (regras avançadas),
-12 (validação final e encerramento do plano).
+**Próximas:** B (fechar buracos de autorização) · C (fonte única de regras) · D (loop de
+combate) · E–J (varreduras) · F (identidade visual Cyberpunk 2020) · K (profundidade de
+sistema) · L (performance e escala) · M (validação e encerramento).

@@ -83,7 +83,64 @@ regras que ele expressa:
 
 ### Fase A — Reancorar o projeto
 
-*(a preencher)*
+**03/09/2026.** Nenhuma linha de código de produto mudou — documentação, configuração de deploy, uma
+tag git e a ativação de um job de CI que já existia.
+
+1. **Entrada nova?** Nenhuma. Nenhum endpoint, campo ou parâmetro novo.
+2. **Dado novo exposto?** Nenhum. Os arquivos movidos (`fly.toml`/`railway.toml` →
+   `docs/deploy-alternativas/`) não continham segredo — eram templates com `sync: false`/env vars
+   sem valor. O `SUPABASE_PROJECT_REF` gravado como secret é identificador **público** (já vai no
+   bundle do cliente); virou secret só porque é assim que o workflow o consome.
+3. **Autorização nova? SIM — é o achado da fase.** O job `db-sync` deixou de ser inerte. O CI agora
+   tem autoridade para **aplicar migrations no banco de produção** usando um PAT do Supabase guardado
+   como secret do repositório. Consequência: quem consegue dar push no `master` — ou alterar o
+   próprio workflow — altera o schema de produção. Hoje isso é só o dono, num repo sem branch
+   protection.
+4. **Jogador convidado hostil?** Sem mudança de superfície — nada nesta fase toca em `server.ts`,
+   `roomManager` ou qualquer caminho que um jogador alcança. O `db-sync` não é acessível por jogador.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** **Quase.** O item A.5 original pedia ativar PITR no
+   Supabase, recurso pago (plano Pro). Registrado como decisão 4 e **ADIAR**: o dono confirmou que
+   fica no free tier, sem cartão vinculado a nada. Nenhum custo novo foi introduzido.
+
+**O que virou trabalho:** o passo de verificação antes de ligar o `db-sync`. Confirmado por
+`supabase migration list --linked` que as 6 migrations constam local **e** remoto — se tivessem sido
+aplicadas à mão, ficariam fora da tabela de controle e o primeiro `db push` tentaria re-executá-las.
+
+**Levado para a Fase J, com gatilho:** o caminho `push no master → schema de produção` não tem
+aprovação humana no meio. **Gatilho:** quando um segundo colaborador ganhar permissão de push, ou
+quando a primeira migration destrutiva (`DROP`/`ALTER ... DROP COLUMN`) for escrita. A mitigação
+seria branch protection ou um GitHub Environment com aprovação — desproporcional para repo solo hoje.
+
+**Nota de precisão (corrigida em 03/09/2026, após ler os logs do CI):** o DOC-03 dizia que os dois
+secrets estavam pendentes. **Os dois já existiam** — o `SUPABASE_PROJECT_REF` aparece preenchido nos
+logs de 02/09 e 03/09, e um secret vazio teria feito o job pular com `exit 0` em vez de falhar. Logo,
+o `db-sync` não estava inerte: estava **vivo e falhando em todo push no `master`** desde 02/09,
+porque o projeto Supabase tinha pausado. Ninguém notou porque a falha só ocorre pós-merge, nunca no
+PR.
+
+Registro do meu próprio erro, pelo mesmo motivo que o do plano: eu havia escrito aqui que só o token
+existia, lendo a data do `gh secret list` como se fosse de criação quando é de **última atualização**.
+Afirmação a partir de leitura, sem verificação. A checagem que desfez o engano foi ler o log do CI.
+
+### Adendo — o workflow `keepalive.yml` (A.12)
+
+Nasceu do conserto do CI e passa pelas mesmas seis perguntas:
+
+1. **Entrada nova?** Nenhuma — roda por agendamento, sem receber dado externo.
+2. **Dado novo exposto?** Nenhum. O `migration list` só lê a tabela de controle de migrations e a
+   saída vai para o log do Actions, que é privado como o repositório.
+3. **Autorização nova?** Não amplia nada: usa os mesmos dois secrets que o `db-sync` já usava.
+   Vale registrar que **mais um workflow passa a ter acesso ao PAT do Supabase** — a superfície de um
+   vazamento por workflow comprometido cresce de um job para dois.
+4. **Jogador convidado hostil?** Fora de alcance — não há caminho do jogador até o Actions.
+5. **Estado novo sem limite?** Não. Uma execução a cada 3 dias, sem escrita.
+6. **Custo?** Zero em dinheiro. Consome minutos do GitHub Actions (~30 s a cada 3 dias) e existe
+   justamente para *proteger* o custo zero, evitando que o projeto durma.
+
+A tolerância a `project is paused` no `db-sync` é redução de ruído, não de rigor: se houver migration
+pendente e o banco estiver dormindo, ela entra no push seguinte. O que a tolerância evita é um build
+vermelho por motivo alheio ao commit.
 
 ### Fase B — Fechar os buracos de autorização
 

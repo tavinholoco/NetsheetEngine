@@ -1,0 +1,7 @@
+# Shell scripts rodam nos runners Linux do GitHub Actions. Se um deles for
+# commitado com CRLF a partir de uma máquina Windows, o bash quebra com erros
+# de `\r` difíceis de diagnosticar — a mensagem não menciona fim de linha.
+#
+# Regra restrita a *.sh de propósito: um `* text=auto` renormalizaria o
+# repositório inteiro num diff enorme, sem sintoma que justifique.
+*.sh text eol=lf

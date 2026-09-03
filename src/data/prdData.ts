@@ -373,7 +373,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       priority: 'P1',
       status: 'concluído',
       tasks: [
-        { code: 'T10.1', title: 'Backend em Railway/Fly.io/Render', status: 'concluído' },
+        { code: 'T10.1', title: 'Backend no Render', status: 'concluído' },
         { code: 'T10.2', title: 'Frontend estático no Vercel/Netlify', status: 'concluído' },
         { code: 'T10.3', title: 'Domínio customizado + HTTPS', status: 'concluído' },
         { code: 'T10.4', title: 'Healthcheck /api/health monitorado', status: 'concluído' },
