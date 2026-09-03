@@ -89,6 +89,71 @@ Os ledgers das varreduras ficam em [`docs/varreduras/`](./varreduras/).
 
 ---
 
+## 🔒 PORTÃO DE SEGURANÇA
+
+**Nenhuma fase de construção fecha sem passar por ele.** Seis perguntas, 30 minutos, sobre o que
+*aquela fase* mudou — nunca sobre o sistema inteiro. Definição completa, com o mapeamento STRIDE e a
+origem de cada pergunta, em [`SEGURANCA.md`](./SEGURANCA.md).
+
+| # | Pergunta | STRIDE | Nasceu de |
+|---|---|---|---|
+| 1 | Que **entrada nova** este trabalho aceita? Está validada no limite do servidor? | Tampering | SEC-05 |
+| 2 | Que **dado novo sai**? Quem pode lê-lo, e isso é verificado ou presumido? | Info. Disclosure | SEC-02 |
+| 3 | Que **autorização nova** existe? O autor vem da sessão, nunca do corpo? | Spoofing / EoP | T1.7 |
+| 4 | O que um **jogador convidado hostil** consegue fazer aqui? | EoP | Decisão 3 |
+| 5 | Que **estado novo cresce sem limite**, e quem recolhe? | DoS | SEC-04 |
+| 6 | Isso adiciona **custo por requisição** a um serviço externo pago? | DoS / financeiro | SEC-01 |
+
+### Por que portão por fase, e não só a varredura da Fase J
+
+Os seis achados de segurança da auditoria nasceram do mesmo jeito: a funcionalidade foi construída e
+as perguntas não foram feitas **naquele momento**. O `/api/gemini` foi escrito para funcionar, e
+ninguém perguntou quem pode chamar. A ficha passou a ser sincronizada, e ninguém perguntou se era
+confiável.
+
+Uma auditoria no fim encontra isso — e é o que a Fase J faz. Mas encontrar custa muito mais caro do
+que não introduzir. A prática corrente para times ágeis é rodar STRIDE de forma **iterativa e
+timeboxed** sobre as mudanças de cada ciclo, alimentando critérios de aceitação e a definição de
+pronto, em vez de uma análise monolítica no final.
+
+**O portão previne; a varredura confere.** São camadas diferentes, e a segunda não substitui a
+primeira.
+
+### Saída
+
+Uma entrada no registro de [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase), mesmo que curta.
+**"Nada mudou nessa frente" é resposta válida** — o que não é válido é não ter perguntado. Achado que
+não justifica interromper vai para o ledger da Fase J com gatilho escrito.
+
+---
+
+## 📐 DESENHO ANTES DO CÓDIGO
+
+**Um diagrama desenhado antes do trabalho é especificação. Desenhado depois, é documentação que
+apodrece.** Os diagramas vivem em [`ARQUITETURA.md`](./ARQUITETURA.md) e são mantidos pelas fases que
+mudam a forma do sistema — atualizar o diagrama afetado faz parte do portão de segurança.
+
+Entregues junto com este plano, porque são especificação do que vem pela frente:
+
+| Diagrama | Tipo | Serve a | Sintoma que o justifica |
+|---|---|---|---|
+| **Contêineres e fronteiras de confiança** | `flowchart` | A, B | O SEC-05 existiu porque ninguém tinha desenhado onde fica a fronteira |
+| **Ciclo de vida de sala e sessão** | `stateDiagram` | B | O SEC-04 é um estado que não existe: nada define quando uma sala morre |
+| **Pipeline de dano FNFF** | `flowchart` | C, D | O RUL-04 tem as peças implementadas e nenhuma conectada; o desenho é o alvo |
+| **Máquina de estados do ferimento** | `stateDiagram` | C | O RUL-06 e o RUL-08 divergem do livro; onze estados precisam de espec. sem ambiguidade |
+
+Quatro outros foram **adiados com gatilho escrito** — desenho sem sintoma também é overengineering.
+A lista está no fim do [`ARQUITETURA.md`](./ARQUITETURA.md#diagramas-adiados).
+
+### Nota técnica
+
+Usamos `flowchart` + `subgraph` para os níveis de contexto e contêiner do
+[modelo C4](https://c4model.com/), **não** a sintaxe `C4Context` do Mermaid: ela é experimental e o
+renderizador do GitHub não a suporta — os diagramas não apareceriam no repositório, que é justamente
+onde precisam ser lidos.
+
+---
+
 ## 💸 CONTRATO DE CUSTO ZERO
 
 Objetivo declarado: **o projeto não gera despesa.** Cinco regras. Se todas valerem, o pior caso de
@@ -189,7 +254,7 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 
 ## 🗂️ AS 13 FASES
 
-**Esforço total: 28,5 a 36,5 dias de trabalho concentrado** — quatro a sete meses de calendário para
+**Esforço total: 30,5 a 38,5 dias de trabalho concentrado** — quatro a sete meses de calendário para
 quem tem outra ocupação. Ponto de corte natural: **fechando A–D o jogo já roda certo**; F entrega a
 identidade visual nova; e as varreduras viram manutenção de fim de semana.
 
@@ -197,7 +262,7 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 
 ---
 
-### FASE A — REANCORAR O PROJETO 🔨 *(meio dia)*
+### FASE A — REANCORAR O PROJETO 🔨 *(1 dia)*
 
 - [ ] **A.1** Conferir se o projeto Supabase pausou (ocioso desde 25/08; o plano gratuito pausa com
       7 dias de baixa atividade). Checar e-mail do dono e o dashboard. Restaurar se necessário.
@@ -213,11 +278,15 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 - [ ] **A.7** Criar `docs/varreduras/` como casa dos ledgers das fases E e G–J.
 - [ ] **A.8** Marcar o `PLANO_DE_ACAO.md` como **substituído** — *não* como concluído. O encerramento
       formal (T12.2–T12.6) é da Fase M. *(DOC-05, parte 1)*
+- [ ] **A.9** 📐 **Desenho** — conferir que o diagrama de contêineres e fronteiras de confiança
+      em [`ARQUITETURA.md`](./ARQUITETURA.md) bate com a realidade. Ele foi desenhado a partir da
+      leitura do código; validar é seu.
+- [ ] **A.10** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Fase A concluída em:** ____/____/______
 
 ---
 
-### FASE B — FECHAR OS BURACOS DE AUTORIZAÇÃO 🔨 *(2 dias)*
+### FASE B — FECHAR OS BURACOS DE AUTORIZAÇÃO 🔨 *(2,5 dias)*
 
 - [ ] **B.1** Travar `/api/gemini`: system prompt fixo no servidor (mover o `SYSTEM_PROMPT` de
       `AiAssistant.tsx`), ignorar `systemInstruction` do cliente, exigir JWT do Supabase, limiter
@@ -237,11 +306,13 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 - [ ] **B.7** Testes de integração para cada item — a suíte atual cobre bem quem *pode* agir e não
       cobre quem não deveria conseguir *ler*.
 - [ ] **B.8** `git tag v0.4.1`.
+- [ ] **B.9** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe.
+- [ ] **B.10** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Fase B concluída em:** ____/____/______
 
 ---
 
-### FASE C — UMA FONTE ÚNICA DE REGRAS 🔨 *(5–7 dias)*
+### FASE C — UMA FONTE ÚNICA DE REGRAS 🔨 *(5,5–7,5 dias)*
 
 Fase estruturante. Criar `src/rules/` — funções puras, RNG injetado, sem DOM nem rede — e migrar
 cliente e servidor para ela.
@@ -270,6 +341,8 @@ cliente e servidor para ela.
 - [ ] **C.10** Testes de paridade cliente↔servidor com a mesma entrada nos dois RNGs. *(ARQ-08, parte 1)*
 - [ ] **C.11** Atualizar `docs/PRD.md` §5 no mesmo commit de cada correção. *(DOC-01, parte 2)*
 - [ ] **C.12** `git tag v0.4.2`.
+- [ ] **C.13** 📐 **Desenho** — a C.9 confere o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) e a [máquina de ferimento](./ARQUITETURA.md#máquina-de-estados-do-ferimento) contra o livro, e **corrige os diagramas** com o que a conferência determinar. Eles são hipótese de trabalho, não autoridade.
+- [ ] **C.14** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Fase C concluída em:** ____/____/______
 
 ---
@@ -286,6 +359,8 @@ cliente e servidor para ela.
 - [ ] **D.5** Death saves entrando na virada de turno de quem está em nível mortal.
 - [ ] **D.6** Testes de comportamento do loop (aplicar dano, avançar turno). *(ARQ-08, parte 2)*
 - [ ] **D.7** `git tag v0.4.3`.
+- [ ] **D.8** 📐 **Desenho** — implementar o `applyDamage` contra o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) já confirmado pela Fase C. Se a implementação divergir do desenho, o desenho muda junto no mesmo commit.
+- [ ] **D.9** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Fase D concluída em:** ____/____/______
 
 > **Ponto de corte:** com A–D fechadas o jogo roda certo. Dá para jogar aqui e tratar o resto como
@@ -456,6 +531,7 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
       se `Orbitron` só aparece em títulos, carregar **apenas os pesos usados**, com `font-display: swap`.
 - [ ] **F.4.4** Verificar com `NODE_ENV=production` e helmet ativo. Fecha o F.0.
 - [ ] **F.4.5** `git tag v0.4.4`.
+- [ ] **F.5** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Fase F concluída em:** ____/____/______
 
 > **Critério de pronto:** duas medidas objetivas, não "está bonito". (1) O grep de cor literal em
@@ -541,7 +617,7 @@ descubro em produção? Todo estado de erro do servidor tem estado de UI corresp
 
 ---
 
-### FASE J — 🔍 VARREDURA: SEGURANÇA *(1–2 dias)*
+### FASE J — 🔍 VARREDURA: SEGURANÇA *(1,5–2,5 dias)*
 
 A Fase B fecha os seis buracos conhecidos. Esta procura os que a auditoria não achou —
 sistematicamente, e depois de todo o código novo de C, D e F ter entrado.
@@ -550,6 +626,7 @@ sistematicamente, e depois de todo o código novo de C, D e F ter entrado.
 - [ ] **J.2** Executar apenas os itens FAZER.
 
 **Como varrer:**
+- **Conferir o registro do portão** em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase): toda fase de construção respondeu as seis perguntas? Alguma resposta envelheceu?
 - **Tabela completa:** cada endpoint e cada mensagem de WebSocket × autenticado? autorizado? entrada
   validada? saída filtrada? Uma linha por rota, sem exceção.
 - Superfície de entrada: todo campo que entra em `sheet`, `gridState`, `initiativeList` e no
@@ -584,6 +661,7 @@ verdade), netrunning por último (é meio jogo à parte).
 - [ ] **K.7** Completar `SKILL_TABLES` (remover "Social" de INT; adicionar Accounting, Anthropology,
       Gamble, Shadow/Track, Wilderness Survival, Interrogation, Pharmaceuticals) e adicionar Leap
       (Run÷4). Remover "Walk", que não existe no livro. *(RUL-12, RUL-11)*
+- [ ] **K.8** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Fase K concluída em:** ____/____/______
 
 ---
@@ -601,6 +679,7 @@ público mudar.
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [ ] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
       `--max-warnings 0` no CI. *(ARQ-07)*
+- [ ] **L.6** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Fase L concluída em:** ____/____/______
 
 ---
@@ -615,6 +694,7 @@ público mudar.
 - [ ] **M.4** Arquivar o roadmap concluído no `README.md`. *(é a T12.5)*
 - [ ] **M.5** Encerrar formalmente o `PLANO_DE_ACAO.md` (`git rm` + commit). *(é a T12.6, DOC-05)*
 - [ ] **M.6** `git tag v0.5.0`.
+- [ ] **M.7** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Plano concluído em:** ____/____/______
 
 ---
