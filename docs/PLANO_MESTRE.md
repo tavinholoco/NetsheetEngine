@@ -7,8 +7,82 @@
 > **Como usar:** leia antes de cada sessão de trabalho, marque `[x]` no que concluir e continue do
 > primeiro item aberto. Preencha a data ao fechar cada fase.
 >
+> **O desenvolvimento acontece em sessões separadas do Claude Code, com contexto zerado.** O
+> [Protocolo de sessão](#-protocolo-de-sessão) abaixo é obrigatório na abertura e no encerramento
+> de cada fase — é o que faz o trabalho sobreviver à troca de sessão.
+>
 > A versão narrativa desta auditoria — com evidências, trechos de código e justificativas — está
 > publicada como artefato e é a fonte de contexto quando um item aqui parecer arbitrário.
+
+---
+
+## 🔄 PROTOCOLO DE SESSÃO
+
+> **Este projeto é desenvolvido em sessões separadas do Claude Code, cada uma com contexto zerado.**
+> Uma sessão nova não sabe nada do que a anterior fez — a não ser o que estiver escrito. Este
+> protocolo é o que faz o trabalho sobreviver à troca de sessão.
+
+### Divisão de responsabilidade: repo × memória
+
+**O repositório é a fonte da verdade do estado.** Checkbox marcado, data preenchida, ledger escrito,
+registro de segurança atualizado, tag criada — é isso que diz onde o projeto está.
+
+**A memória do Claude complementa, não substitui.** Ela é local da máquina, não é versionada e pode
+simplesmente não existir numa sessão nova. Guardar "estamos na Fase C, tarefa C.4" nela seria
+duplicar os checkboxes — e estado escrito em dois lugares diverge em três meses, exatamente o
+problema que o [`varreduras/README.md`](./varreduras/README.md) foi deduplicado para evitar.
+
+| Vai para o **repo** | Vai para a **memória** |
+|---|---|
+| Qual fase, qual tarefa, quais datas | Que o desenvolvimento acontece em sessões de contexto zerado |
+| Achados, veredictos, gatilhos de ADIAR | Preferências de trabalho do usuário |
+| Decisões arquiteturais (ADRs) | Ponteiro para o plano e para os documentos vivos |
+| Respostas do portão de segurança | Correções que o usuário fez em rumo errado |
+
+O [`CLAUDE.md`](../CLAUDE.md) na raiz é o que amarra os dois: é carregado automaticamente em toda
+sessão e manda ler o plano antes de propor trabalho.
+
+### Ritual de ABERTURA — ao começar ou retomar uma fase
+
+- [ ] **1.** Ler o [`CLAUDE.md`](../CLAUDE.md) (carregado automaticamente) e **este plano**.
+- [ ] **2.** Achar o **primeiro item `[ ]` não marcado** — é de onde o trabalho continua. Se o item
+      anterior está marcado mas a fase não tem data, a fase está em andamento.
+- [ ] **3.** `git log --oneline -15` e `git tag -l` — as tags fecham as fases de construção
+      (`v0.4.0` na A, `v0.4.1` na B, `v0.4.2` na C, `v0.4.3` na D, `v0.4.4` na F, `v0.5.0` na M).
+      Se o último commit não corresponde ao último checkbox marcado, **alguém parou no meio**:
+      reconcilie antes de escrever código.
+- [ ] **4.** Ler o registro de [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase) das fases já
+      fechadas, e as decisões do [`CLAUDE.md`](../CLAUDE.md) — para não reabrir questão resolvida.
+- [ ] **5.** Varrer os **ADIAR em aberto** nos ledgers de [`varreduras/`](./varreduras/) e nas ADRs:
+      algum gatilho disparou desde a última sessão? Um gatilho que disparou vira trabalho da fase
+      corrente.
+- [ ] **6.** Rodar `npx tsc --noEmit` e `npx vitest run` **antes de mudar qualquer coisa**. É a linha
+      de base: sem ela, você não sabe se quebrou algo ou se já estava quebrado.
+
+### Ritual de ENCERRAMENTO — ao fechar uma fase
+
+Cada fase de construção tem estes três últimos itens na própria lista. Não são opcionais:
+
+- [ ] **1.** 🔒 **Portão de segurança** — as seis perguntas, registradas em
+      [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase).
+- [ ] **2.** 🧠 **Atualizar o estado durável** — marcar os checkboxes da fase, preencher a data,
+      atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema
+      mudou, e a tabela de progresso no fim deste arquivo.
+- [ ] **3.** 🧠 **Atualizar a memória do Claude** — mas **só o que o repo não carrega**: uma decisão
+      nova que valha para as próximas sessões, uma preferência de trabalho que você expressou, uma
+      correção de rumo. **Não** copie o estado da fase para lá.
+- [ ] **4.** Commit com mensagem que explique o *porquê*, e a tag da fase quando houver.
+
+### Se a sessão anterior parou no meio de uma fase
+
+É o caso mais provável, e o plano prevê:
+
+1. O **último checkbox marcado** diz o que terminou. O **primeiro desmarcado** diz o que falta.
+2. `git status` e `git log` dizem se há trabalho não commitado ou commitado sem checkbox.
+3. Se houver divergência entre os dois, **o código ganha** — marque o checkbox que o código já
+      cumpriu, em vez de refazer.
+4. Se não estiver claro se uma tarefa foi feita, rode a verificação dela (a suíte, o grep, o
+      endpoint) em vez de adivinhar. Quase toda tarefa deste plano tem um critério verificável.
 
 ---
 
@@ -283,6 +357,7 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
       em [`ARQUITETURA.md`](./ARQUITETURA.md) bate com a realidade. Ele foi desenhado a partir da
       leitura do código; validar é seu.
 - [ ] **A.10** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **A.11** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase A concluída em:** ____/____/______
 
 ---
@@ -315,6 +390,7 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 - [ ] **B.9** `git tag v0.4.1`.
 - [ ] **B.10** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe.
 - [ ] **B.11** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **B.12** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase B concluída em:** ____/____/______
 
 ---
@@ -350,6 +426,7 @@ cliente e servidor para ela.
 - [ ] **C.12** `git tag v0.4.2`.
 - [ ] **C.13** 📐 **Desenho** — a C.9 confere o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) e a [máquina de ferimento](./ARQUITETURA.md#máquina-de-estados-do-ferimento) contra o livro, e **corrige os diagramas** com o que a conferência determinar. Eles são hipótese de trabalho, não autoridade.
 - [ ] **C.14** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **C.15** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase C concluída em:** ____/____/______
 
 ---
@@ -368,6 +445,7 @@ cliente e servidor para ela.
 - [ ] **D.7** `git tag v0.4.3`.
 - [ ] **D.8** 📐 **Desenho** — implementar o `applyDamage` contra o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) já confirmado pela Fase C. Se a implementação divergir do desenho, o desenho muda junto no mesmo commit.
 - [ ] **D.9** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **D.10** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase D concluída em:** ____/____/______
 
 > **Ponto de corte:** com A–D fechadas o jogo roda certo. Dá para jogar aqui e tratar o resto como
@@ -539,6 +617,7 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
 - [ ] **F.4.4** Verificar com `NODE_ENV=production` e helmet ativo. Fecha o F.0.
 - [ ] **F.4.5** `git tag v0.4.4`.
 - [ ] **F.5** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **F.6** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase F concluída em:** ____/____/______
 
 > **Critério de pronto:** duas medidas objetivas, não "está bonito". (1) O grep de cor literal em
@@ -669,6 +748,7 @@ verdade), netrunning por último (é meio jogo à parte).
       Gamble, Shadow/Track, Wilderness Survival, Interrogation, Pharmaceuticals) e adicionar Leap
       (Run÷4). Remover "Walk", que não existe no livro. *(RUL-12, RUL-11)*
 - [ ] **K.8** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **K.9** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase K concluída em:** ____/____/______
 
 ---
@@ -693,6 +773,7 @@ público mudar.
       o endpoint, o mapa `sseClients`, o caminho duplo do broadcast e o `EventSource` do cliente. Alguém
       caiu? Mantém, e a dúvida está encerrada com evidência em vez de opinião.
 - [ ] **L.7** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **L.8** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase L concluída em:** ____/____/______
 
 ---
@@ -708,6 +789,7 @@ público mudar.
 - [ ] **M.5** Encerrar formalmente o `PLANO_DE_ACAO.md` (`git rm` + commit). *(é a T12.6, DOC-05)*
 - [ ] **M.6** `git tag v0.5.0`.
 - [ ] **M.7** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **M.8** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Plano concluído em:** ____/____/______
 
 ---
