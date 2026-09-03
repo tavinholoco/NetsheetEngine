@@ -104,6 +104,44 @@ modificador do Mestre não entra em rolagem nenhuma, e a tabela de BTM não é a
 
 ---
 
+## 🔬 AUDITORIA DAS AFIRMAÇÕES DESTE PLANO (03/09/2026)
+
+Feita na Fase A, a pedido do dono, depois que dois defeitos apareceram no mesmo dia. **Todos os
+defeitos encontrados são da mesma classe: afirmação escrita a partir de leitura de arquivo, sem
+verificar o estado real.** As afirmações sobre *código* se sustentaram; as sobre *estado de
+configuração* não.
+
+### Confirmadas por medição
+
+| Afirmação | Medido |
+|---|---|
+| 141 testes, `tsc` limpo | 141/141, 0 erros ✅ |
+| 6 vulnerabilidades (3 altas, 3 moderadas) | exato ✅ |
+| Bundle 1,34 MB / 390 KB gzip | 1.335,78 kB / 389,56 kB ✅ |
+| `combatModifier` não é lido por rolagem nenhuma | 12 ocorrências: tipo, testes, clamp e persistência. **Zero leituras** ✅ |
+| `currentStats` sem um único leitor | 7 ocorrências, todas escrita/tipo/teste. **Zero leituras** ✅ |
+| Tokens de cor com 0 consumidores | 0 usos dos 8 tokens em `.tsx` ✅ |
+| ARQ-05: 4 arquivos concentram ~4.000 linhas | 3.909 ✅ |
+| ~1.700 cores literais em `.tsx` | 1.670 ✅ |
+
+### Corrigidas
+
+| Onde | O plano dizia | O real |
+|---|---|---|
+| **DOC-03** | secrets do `db-sync` pendentes | **Os dois já existiam.** O job estava vivo e **falhando em todo push no `master`** desde 02/09 — não inerte |
+| **A.5** | ativar PITR | PITR exige plano pago; colide com o custo zero → decisão 4 |
+| **SEC-06** | cadeia `express → body-parser → qs` | Três pacotes independentes: `qs`, **`mathjs`** e **`nanoid`**. A correção da B.6 é maior que o descrito |
+| **F.2** | 5 tokens no `@theme` | 8 tokens *(a conclusão — 0 consumidores — permanece)* |
+| **F.2** | `scanline`/`glitch` com 0 componentes usando | Correto para as **animações**. Mas existe uma classe estática `.crt-scanlines` em uso no `HomePage.tsx:38` — nem tudo da identidade está desligado |
+
+### O que isso implica para as próximas fases
+
+Antes de executar um item, **verifique a premissa dele** em vez de confiar no texto. As fases E e
+G–J já têm isso embutido (varredura é verificação), mas B, C, D, F e K executam a partir de
+descrição — e é ali que uma premissa velha vira trabalho errado.
+
+---
+
 ## ⚖️ Decisões tomadas (02/09/2026)
 
 Estas três respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo.
@@ -281,7 +319,7 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 | SEC-05 | 🟠 Alto | Ficha gravada sem validação (`sheet` verbatim) — anula o RNG server-authoritative da T5.4 | B |
 | SEC-02 | 🟠 Alto | Leitura de sala e stream SSE sem sessão — expõe fichas, chat e grid | B |
 | SEC-03 | 🟠 Alto | Sessões só em memória — restart derruba todas as mesas | B |
-| SEC-06 | 🟡 Médio | 6 vulnerabilidades em dependências de produção (`express → body-parser → qs`) | B |
+| SEC-06 | 🟡 Médio | 6 vulnerabilidades em dependências de produção — **três pacotes independentes**: `qs` (via `express → body-parser`), `mathjs` e `nanoid`. *(Corrigido em 03/09: o achado original citava só a cadeia do `qs`)* | B |
 | SEC-04 | 🟡 Médio | Salas, sessões e buckets do rate limiter nunca expiram | B |
 
 ### Regras CP2020 (12)
@@ -350,17 +388,18 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 - [x] **A.4** Atualizar a seção 9 do `docs/PRD.md` e o roadmap do `README.md` para o estado real
       (Fases 0–10 fechadas). *(DOC-01, parte 1 — 03/09/2026)*
 - [x] **A.5** **PITR adiado** (decisão 4 — exige plano pago, dono fica no free tier; backup diário
-      grátis continua ativo). **Secrets do `db-sync` resolvidos em 03/09/2026:**
-      - `SUPABASE_ACCESS_TOKEN` **já existia** desde 25/08 — o DOC-03 afirmava que os dois estavam
-        pendentes, mas foi redigido a partir do comentário no `ci.yml`, não de verificação real.
-      - `SUPABASE_PROJECT_REF` (`frsoqgtekrafdhfvlkqu`) criado nesta sessão. O ref é identificador
-        **público** — vai no bundle do cliente —, por isso não é credencial.
-      - Antes de ligar, conferido com `supabase migration list --linked`: as 6 migrations constam
-        **local e remoto**, logo o primeiro `db push` não re-executa nada. Era o risco real (migration
-        aplicada à mão fica fora da tabela de controle e o CI tentaria rodar de novo).
-      - **Efeito:** o job `db-sync` deixa de ser inerte. A partir do próximo push no `master`, migration
-        nova em `supabase/migrations/` é aplicada no banco de produção automaticamente.
-      *(DOC-03)*
+      grátis continua ativo). **Secrets: o DOC-03 estava inteiramente desatualizado.**
+      - **Os dois secrets já existiam** antes desta sessão. Provado pelos logs do CI: o
+        `SUPABASE_PROJECT_REF` aparece preenchido (`***`) nas execuções de 02/09 19:58, 03/09 00:25 e
+        03/09 02:22 — e se estivesse vazio o job teria pulado com `exit 0` em vez de falhar.
+      - **Correção de um erro cometido nesta sessão:** eu havia registrado que só o token existia e
+        que criei o `PROJECT_REF`. Errado — `gh secret list` mostra a data de **última atualização**,
+        não de criação, e meu `gh secret set` foi sobrescrita, não criação. Mesmo defeito que o plano
+        tem: afirmar a partir de leitura em vez de verificação.
+      - **O que a A.5 de fato entregou:** a verificação com `supabase migration list --linked` (as 6
+        migrations constam local **e** remoto, então o `db push` não re-executa nada) e o diagnóstico
+        de que o `db-sync` estava **vivo e falhando** desde 02/09 — não inerte, como o plano supunha.
+      *(DOC-03 — achado deve ser reescrito na Fase M: a pendência que ele descreve não existia)*
 - [x] **A.6** Fixar o **Render** como alvo único de backend; arquivar `fly.toml` e `railway.toml` em
       `docs/deploy-alternativas/`. Manter `vercel.json`/`netlify.toml` — o frontend estático neles é
       recomendado pelo contrato de custo. *(DOC-02 — 03/09/2026)*
@@ -375,7 +414,17 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
       mostrava Groq como já implementado quando só o Gemini existe hoje.)*
 - [x] **A.10** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.** *(03/09/2026 — achado na pergunta 3: o `db-sync` dá ao CI autoridade de alterar o schema de produção; item levado à Fase J com gatilho escrito.)*
 - [x] **A.11** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [x] ✅ **Fase A concluída em:** __03__/__09__/__2026__
+- [x] **A.12** *(acrescentado após o fechamento, na revisão pedida pelo dono em 03/09)*
+      **Consertar o CI vermelho.** Todo push no `master` falhava desde 02/09 — os quatro merges de PR.
+      Causa lida no log: `project is paused`. O `db-sync` derrubava a build inteira porque o projeto
+      Supabase tinha dormido, e o plano gratuito dorme a cada ~7 dias de baixa atividade no banco.
+      - `ci.yml`: projeto pausado agora vira **warning**, não falha. Migration entra no push seguinte.
+      - `.github/workflows/keepalive.yml`: toca o banco a cada 3 dias, resetando o contador de
+        inatividade. É a "cron semanal" que a regra 5 do contrato de custo zero já previa —
+        3 dias em vez de 7 porque intervalo igual ao limite não tem margem.
+      - Corrigido também `src/data/prdData.ts:376`, que dizia "Backend em Railway/Fly.io/Render" na
+        tela de PRD do app — sobra da A.6, que eu não peguei na primeira passada.
+- [x] ✅ **Fase A concluída em:** __03__/__09__/__2026__ *(revisada e complementada no mesmo dia)*
 
 ---
 

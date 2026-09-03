@@ -112,10 +112,35 @@ aprovação humana no meio. **Gatilho:** quando um segundo colaborador ganhar pe
 quando a primeira migration destrutiva (`DROP`/`ALTER ... DROP COLUMN`) for escrita. A mitigação
 seria branch protection ou um GitHub Environment com aprovação — desproporcional para repo solo hoje.
 
-**Nota de precisão:** o DOC-03 dizia que os dois secrets estavam pendentes; na verificação, o
-`SUPABASE_ACCESS_TOKEN` já existia desde 25/08. O achado tinha sido redigido a partir do comentário
-no `ci.yml`, não de checagem real — mesmo padrão do PITR, que foi planejado sem verificar que exigia
-plano pago.
+**Nota de precisão (corrigida em 03/09/2026, após ler os logs do CI):** o DOC-03 dizia que os dois
+secrets estavam pendentes. **Os dois já existiam** — o `SUPABASE_PROJECT_REF` aparece preenchido nos
+logs de 02/09 e 03/09, e um secret vazio teria feito o job pular com `exit 0` em vez de falhar. Logo,
+o `db-sync` não estava inerte: estava **vivo e falhando em todo push no `master`** desde 02/09,
+porque o projeto Supabase tinha pausado. Ninguém notou porque a falha só ocorre pós-merge, nunca no
+PR.
+
+Registro do meu próprio erro, pelo mesmo motivo que o do plano: eu havia escrito aqui que só o token
+existia, lendo a data do `gh secret list` como se fosse de criação quando é de **última atualização**.
+Afirmação a partir de leitura, sem verificação. A checagem que desfez o engano foi ler o log do CI.
+
+### Adendo — o workflow `keepalive.yml` (A.12)
+
+Nasceu do conserto do CI e passa pelas mesmas seis perguntas:
+
+1. **Entrada nova?** Nenhuma — roda por agendamento, sem receber dado externo.
+2. **Dado novo exposto?** Nenhum. O `migration list` só lê a tabela de controle de migrations e a
+   saída vai para o log do Actions, que é privado como o repositório.
+3. **Autorização nova?** Não amplia nada: usa os mesmos dois secrets que o `db-sync` já usava.
+   Vale registrar que **mais um workflow passa a ter acesso ao PAT do Supabase** — a superfície de um
+   vazamento por workflow comprometido cresce de um job para dois.
+4. **Jogador convidado hostil?** Fora de alcance — não há caminho do jogador até o Actions.
+5. **Estado novo sem limite?** Não. Uma execução a cada 3 dias, sem escrita.
+6. **Custo?** Zero em dinheiro. Consome minutos do GitHub Actions (~30 s a cada 3 dias) e existe
+   justamente para *proteger* o custo zero, evitando que o projeto durma.
+
+A tolerância a `project is paused` no `db-sync` é redução de ruído, não de rigor: se houver migration
+pendente e o banco estiver dormindo, ela entra no push seguinte. O que a tolerância evita é um build
+vermelho por motivo alheio ao commit.
 
 ### Fase B — Fechar os buracos de autorização
 

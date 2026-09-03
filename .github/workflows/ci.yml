@@ -189,6 +189,22 @@ jobs:
             echo "   etapa de db push pulada. Configure-os no repo para ativar (docs/PRODUCTION_CHECKLIST.md §6)."
             exit 0
           fi
-          supabase link --project-ref "$SUPABASE_PROJECT_REF"
-          # --yes: CI é non-interactive (sem TTY) — aplica sem prompt
-          supabase db push --yes
+          # O plano gratuito do Supabase pausa o projeto com ~7 dias de baixa
+          # atividade no banco. Projeto pausado NÃO é falha de build: nada foi
+          # quebrado, e as migrations entram no próximo push depois de acordar.
+          # Sem esta tolerância, todo push no master vira vermelho enquanto o
+          # projeto dorme — foi o que aconteceu entre 02/09 e 03/09/2026.
+          # O keepalive.yml existe para que esse caso seja raro.
+          set +e
+          out=$(supabase link --project-ref "$SUPABASE_PROJECT_REF" 2>&1 \
+                && supabase db push --yes 2>&1)
+          status=$?
+          set -e
+          echo "$out"
+          if [ $status -ne 0 ]; then
+            if echo "$out" | grep -qi "project is paused"; then
+              echo "::warning::Projeto Supabase pausado — migrations adiadas para o próximo push. Restaure em https://supabase.com/dashboard"
+              exit 0
+            fi
+            exit $status
+          fi
