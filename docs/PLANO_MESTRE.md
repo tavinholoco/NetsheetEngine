@@ -430,10 +430,48 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 
 ### FASE B — FECHAR OS BURACOS DE AUTORIZAÇÃO 🔨 *(2,5 dias)*
 
-- [ ] **B.1** Travar `/api/gemini`: system prompt fixo no servidor (mover o `SYSTEM_PROMPT` de
+- [x] **B.0** 🔍 **Verificação de premissas** *(03/09/2026 — disciplina nova, nascida da
+      [auditoria da Fase A](#-auditoria-das-afirmações-deste-plano-03092026): não executar a partir
+      de descrição sem conferir o estado real).* **Os seis achados se confirmaram todos.** Refinamentos
+      que mudam o trabalho:
+      - **SEC-01 é maior que o descrito.** Além de não ter autenticação e aceitar `systemInstruction`
+        do cliente, o `/api/gemini` (`server.ts:242`) não tem **limiter dedicado** nem **teto de
+        tamanho de prompt**. Só o limiter global de 600/min por IP se aplica.
+      - **"Exigir JWT do Supabase" não é ajuste, é infraestrutura nova.** Não existe **nenhuma**
+        verificação de JWT no servidor hoje — `grep` por `jwt|getUser|verifyToken` volta vazio. O
+        servidor só conhece o `sessionToken` próprio das salas. A B.1 precisa construir isso do zero.
+      - **SEC-02: metade do trabalho já existe.** `getAllActiveRooms()` (`roomManager.ts:1028`) já
+        devolve exatamente o payload público que a B.3 pede (`code`, `name`, `gmHandle`,
+        `playersCount`). Falta aplicar a mesma separação ao `GET /api/rooms/:code` e ao SSE.
+      - **SEC-05: o autor já é confiável, o conteúdo não.** `POST /api/rooms/:code/sheet` autentica
+        via `getSessionPeerId` (a regra 2 da fronteira de confiança se sustenta). O que falta é
+        validar **campos** — hoje só checa se é objeto e não array.
+      - **SEC-04 são três vazamentos distintos**, não um: buckets do rate limiter (`server.ts:143`,
+        uma entrada por IP que nunca é removida, em três mapas), sessões (`roomManager.ts:18`, só
+        saem por revogação explícita) e salas (o `presenceWatcher` marca jogador offline, mas nunca
+        recolhe sala — exatamente o estado `Ociosa` que o diagrama diz não existir).
+      - **SEC-03 confirmado:** `roomPersistence.ts` não tem nenhuma função de sessão. Restart derruba
+        todas as mesas.
+
+- [x] **B.1** Travar `/api/gemini`: system prompt fixo no servidor (mover o `SYSTEM_PROMPT` de
       `AiAssistant.tsx`), ignorar `systemInstruction` do cliente, exigir JWT do Supabase, limiter
       dedicado, teto de tamanho de prompt. *Sem regressão de UX — o `AiAssistant` já bloqueia
-      visitante no cliente.* *(SEC-01)*
+      visitante no cliente.* *(SEC-01 — 03/09/2026)*
+      - `server/aiPrompt.ts`: o prompt virou código do servidor. O que o cliente mandar em
+        `systemInstruction` é **descartado**, e o campo saiu do contrato de `askGemini`.
+      - `server/supabaseAuth.ts`: verificação de JWT construída do zero (não existia nada).
+        `auth.getUser(jwt)` por requisição — escolhido sobre validar assinatura localmente para não
+        introduzir um `SUPABASE_JWT_SECRET` novo. **Falha fechada** em toda condição de erro.
+      - Limiter dedicado de **10/min por IP** (o global de 600/min não protegia nada aqui) e teto de
+        **4.000 caracteres** no prompt.
+      - Ordem de checagem deliberada: sem token → 401 sem tocar em rede; com token e sem verificação
+        configurada → 503 (a verdade é "problema do servidor", não "sua sessão é inválida").
+      - Erro do provedor vira **502 genérico** — a mensagem original podia carregar detalhe interno.
+      - 8 testes em `src/__tests__/ai-endpoint.integration.test.ts`, cobrindo os caminhos de
+        rejeição. O caminho feliz exige rede e cota, e ficou deliberadamente fora da suíte.
+      - `docs/DEPLOY.md`: o curl de verificação agora espera **401**. Se vier 200, o SEC-01 voltou.
+      - **Groq adiado** (ADR 0005): a troca de provedor entra depois, para não misturar correção
+        crítica com migração num commit só. O endpoint já está isolado para isso.
 - [ ] **B.2** Criar `src/rules/sheetSchema.ts` com validador de `CharacterSheet` no limite do
       servidor: atributos 2–15, perícias 0–10, `woundLevel` 0–10, arrays com teto, campos
       desconhecidos descartados. Aplicar em `joinRoom` e `updatePlayerSheet`. *(SEC-05)*

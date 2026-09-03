@@ -17,13 +17,9 @@ interface ChatMessage {
   text: string;
 }
 
-const SYSTEM_PROMPT = `Você é o NETRUNNER IA, assistente especialista em Cyberpunk 2020 (R. Talsorian Games). 
-Responda em português do Brasil, de forma técnica e concisa, focada nas regras do sistema:
-- Atributos: INT, REF, TECH, COOL, ATTR, LUCK, MA, BODY, EMP (2-10).
-- Perícias, special abilities dos 10 roles, cyberware e perda de humanidade.
-- Combate FNFF: 1d10 + atributo + perícia, crítico 10 (explosivo), fumble 1, dano por localização.
-- Ferimentos (0-10), death saves (1d10 <= BODY), BTM, SP de armadura.
-Ajude o jogador a otimizar builds, interpretar regras e criar lifepath.`;
+// O SYSTEM_PROMPT vivia aqui e era enviado a cada requisição. Ele passou para
+// `server/aiPrompt.ts` na Fase B (B.1 — SEC-01): enquanto era o cliente que o
+// mandava, qualquer um podia trocá-lo e usar a chave do dono como proxy de LLM.
 
 export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user, onOpenAuthModal }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -53,7 +49,7 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user,
     setLoading(true);
 
     try {
-      const text = await askGemini(content, SYSTEM_PROMPT);
+      const text = await askGemini(content);
       setMessages((prev) => [...prev, { id: 'a_' + Date.now(), role: 'assistant', text }]);
     } catch (e: any) {
       setMessages((prev) => [

@@ -18,6 +18,10 @@ import * as decoding from "lib0/decoding";
 import * as syncProtocol from "y-protocols/sync";
 import * as awarenessProtocol from "y-protocols/awareness";
 import { deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
+// Fase B (B.1 — SEC-01) — o Netrunner IA passa a exigir identidade verificada,
+// e a instrução do modelo passa a ser código do servidor, não entrada do cliente.
+import { bearerFromHeader, isAuthVerificationConfigured, verifySupabaseJwt } from "./server/supabaseAuth.js";
+import { MAX_PROMPT_CHARS, NETRUNNER_SYSTEM_PROMPT } from "./server/aiPrompt.js";
 import {
   createRoom,
   getRoom,
@@ -159,6 +163,10 @@ function makeRateLimiter(maxRequests: number, windowMs: number) {
 
 const roomLimiter = makeRateLimiter(120, 60_000); // 120 req/min por IP
 const chatLimiter = makeRateLimiter(30, 60_000);  // chat mais restrito (30 msg/min)
+// B.1 (SEC-01) — a IA é o único endpoint que gasta cota de serviço externo na
+// chave do dono. 10/min por IP é folgado para conversa humana (uma pergunta a
+// cada 6 s) e apertado para script. Somado ao JWT, o abuso exige conta válida.
+const aiLimiter = makeRateLimiter(10, 60_000);
 
 // T1.7 — autor do request é derivado do token de sessão, nunca do peerId livre
 function getSessionPeerId(req: express.Request, code: string): string | null {
@@ -238,26 +246,68 @@ function broadcastRoomUpdate(code: string) {
   }
 }
 
-// Server-side Gemini API route for Cyberpunk Netrunner assistant
-app.post("/api/gemini", async (req, res) => {
+// ==========================================
+// NETRUNNER IA (Fase B, B.1 — SEC-01)
+// ==========================================
+// Este endpoint gasta a chave do dono a cada chamada. Antes da Fase B ele
+// aceitava qualquer requisição da internet e ainda deixava o cliente escolher
+// o `systemInstruction` — um proxy de LLM genérico aberto, pago por quem
+// hospeda. Quatro travas agora, todas necessárias:
+//   1. Limiter dedicado, muito mais apertado que o de sala.
+//   2. Identidade verificada por JWT do Supabase (o autor vem do token).
+//   3. `systemInstruction` do cliente IGNORADO — a instrução é código.
+//   4. Teto de tamanho no prompt.
+app.post("/api/gemini", aiLimiter, async (req, res) => {
+  // Ordem deliberada: rejeição mais barata primeiro. Sem token não há nada a
+  // decidir — 401 sem tocar em rede nem em configuração.
+  const token = bearerFromHeader(req.headers.authorization);
+  if (!token) {
+    return res.status(401).json({ error: "Faça login para usar o Netrunner IA." });
+  }
+
+  // Falha fechada: com token, mas sem verificação configurada, o servidor não
+  // consegue saber se ele vale. Preferimos o assistente indisponível a ele
+  // aberto — e 503 diz a verdade (problema do servidor), enquanto 401 mentiria
+  // culpando a sessão do usuário.
+  if (!isAuthVerificationConfigured()) {
+    logger.warn("ai_unavailable", { reason: "verificação de identidade não configurada" });
+    return res.status(503).json({ error: "Netrunner IA indisponível: verificação de identidade não configurada no servidor." });
+  }
+
+  const user = await verifySupabaseJwt(token);
+  if (!user) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Entre novamente." });
+  }
+
+  const { prompt } = req.body ?? {};
+  if (typeof prompt !== "string" || !prompt.trim()) {
+    return res.status(400).json({ error: "Prompt é obrigatório." });
+  }
+  if (prompt.length > MAX_PROMPT_CHARS) {
+    return res.status(413).json({ error: `Prompt longo demais (máx. ${MAX_PROMPT_CHARS} caracteres).` });
+  }
+
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(400).json({ error: "GEMINI_API_KEY environment variable is not configured." });
+      return res.status(503).json({ error: "Netrunner IA indisponível: GEMINI_API_KEY não configurada." });
     }
     const ai = new GoogleGenAI({ apiKey });
-    const { prompt, systemInstruction } = req.body;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
-      config: systemInstruction ? { systemInstruction } : undefined,
+      // A instrução do sistema vem do servidor, SEMPRE. O que o cliente mandar
+      // em `systemInstruction` é descartado sem aviso — é entrada hostil.
+      config: { systemInstruction: NETRUNNER_SYSTEM_PROMPT },
     });
 
+    logger.info("ai_request", { userId: user.id, promptChars: prompt.length });
     res.json({ text: response.text });
   } catch (error: any) {
     logger.error("gemini_api_error", { message: error?.message || String(error) });
-    res.status(500).json({ error: error?.message || "Failed to contact Gemini Netrunner AI" });
+    // Mensagem do provedor pode conter detalhe interno — não repassa ao cliente.
+    res.status(502).json({ error: "Falha ao contatar o Netrunner IA. Tente de novo em instantes." });
   }
 });
 
