@@ -1,4 +1,8 @@
-# NETSHEET ENGINE — Guia de Deploy (Fase 10, T10.1–T10.3)
+# NETSHEET ENGINE — Guia de Deploy
+
+> **Render é o único alvo de backend** (Fase A, `A.6` do
+> [`PLANO_MESTRE.md`](./PLANO_MESTRE.md), DOC-02). Railway e Fly.io foram arquivados em
+> [`docs/deploy-alternativas/`](./deploy-alternativas/) — não mantidos ativamente.
 
 O app é **um único processo Node** que serve tudo: API Express (`/api/*`),
 WebSocket (`/ws/rooms/:code`), SSE de fallback e a **SPA estática** (`dist/`)
@@ -102,16 +106,7 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
 
 ---
 
-## Opção A — Railway (mais simples)
-
-1. Crie o projeto em [railway.app](https://railway.app) e conecte o repo
-   (o `railway.toml` é detectado automaticamente).
-2. Em **Variables**, defina:
-   - Build-time: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-   - Runtime: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`
-3. Deploy automático em cada push no `master` (healthcheck `/api/health`).
-
-## Opção B — Render
+## Render — alvo único de backend
 
 1. Em [render.com](https://render.com): **New → Blueprint** e selecione o repo
    (detecta `render.yaml`).
@@ -120,34 +115,27 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
 3. O serviço sobe com runtime Node nativo (plano free ok), healthcheck
    `/api/health` e auto-deploy em push.
 
-## Opção C — Fly.io
-
-```bash
-fly launch --no-deploy --name netsheet-engine      # cria o app (fly.toml)
-fly secrets set SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... GEMINI_API_KEY=...
-fly deploy --build-arg VITE_SUPABASE_URL=... --build-arg VITE_SUPABASE_ANON_KEY=...
-```
-
-HTTPS + healthcheck (`/api/health`) já vêm configurados no `fly.toml`
-(1 máquina, 1 GB). Logs: `fly logs`; console: `fly ssh console`.
+> Railway e Fly.io tinham seções próprias aqui até a Fase A. Os configs
+> (`railway.toml`, `fly.toml`) e o porquê de terem saído do caminho principal
+> estão em [`docs/deploy-alternativas/`](./deploy-alternativas/).
 
 ---
 
-## Opção D — Frontend estático (Vercel/Netlify) + backend na nuvem
+## Frontend estático (Vercel/Netlify) + backend no Render
 
 Quando o SPA é hospedado estático (Vercel/Netlify) e o backend mora no
-Railway/Render/Fly.io, o cliente precisa saber onde está a API. Isso é
+Render, o cliente precisa saber onde está a API. Isso é
 resolvido por **`VITE_API_URL`** (Fase 10, T10.2) — uma só variável da qual
 REST, SSE e WebSocket derivam:
 
 ```
-Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Railway)
+Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Render)
         VITE_API_URL=https://netsheet-api.onrender.com
 ```
 
 ### Configuração
 
-1. **Backend** (Railway/Render/Fly — Opção A/B/C acima): suba normalmente.
+1. **Backend** (Render — seção acima): suba normalmente.
    O servidor já responde **CORS em `/api/*`** (qualquer origin — auth por
    token de sessão, sem cookies).
 2. **Frontend** (Vercel ou Netlify): importe o repo e use as configs prontas:
@@ -176,37 +164,32 @@ Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Railway
 
 O HTTPS é **obrigatório** para o multiplayer: o WebSocket do navegador exige
 `wss://` (o cliente já deriva `ws→wss` automaticamente quando a página e o
-`VITE_API_URL` usam `https` — `src/api/base.ts`). Todas as plataformas
-abaixo emitem **Let's Encrypt automaticamente** ao detectar o domínio.
+`VITE_API_URL` usam `https` — `src/api/base.ts`). O Render emite
+**Let's Encrypt automaticamente** ao detectar o domínio.
 
 ### Modelo 1 — Tudo num domínio (mais simples)
 
 O backend serve a SPA + API + WS no mesmo domínio; `VITE_API_URL` fica vazio.
 
 ```
-netsheet.app ──► Railway/Render/Fly.io (SPA + /api + wss://netsheet.app)
+netsheet.app ──► Render (SPA + /api + wss://netsheet.app)
 ```
 
 1. **Compre o domínio** em um registrar (Namecheap, Registro.br, Google…).
-2. **No painel do backend**, adicione o domínio customizado:
-   - **Railway** → aba *Settings → Custom Domains*: `netsheet.app` (+ `www`).
-     A plataforma mostra o registro DNS esperado (A record → IP do serviço).
-   - **Render** → *Settings → Custom Domains*: digite o domínio e copie o
-     registro indicado (A record para o IP dedicado). *(Custom domain no
-     Render exige plano pago — free não aceita domínio próprio.)*
-   - **Fly.io** → `fly certs create netsheet.app` e depois aponte os DNS:
-     `fly ips list` dá os IPs IPv4 (A record) e IPv6 (AAAA) do app.
+2. **No painel do Render**, *Settings → Custom Domains*: digite o domínio e
+   copie o registro indicado (A record para o IP dedicado). *(Custom domain
+   no Render exige plano pago — free não aceita domínio próprio.)*
 3. **No painel do registrar**, crie o registro:
-   - Apex (`netsheet.app`): **A record** → IP fornecido pela plataforma.
-   - Subdomínio (`www.netsheet.app`): **CNAME** → `www.netsheet.app` para o
-     domínio canônico da plataforma (ex.: `netsheet.up.railway.app`).
+   - Apex (`netsheet.app`): **A record** → IP fornecido pelo Render.
+   - Subdomínio (`www.netsheet.app`): **CNAME** → domínio canônico do serviço
+     (`netsheet-engine.onrender.com`).
 4. **Aguarde a propagação** (minutos a ~24h) e verifique:
    `dig netsheet.app +short` / `nslookup netsheet.app`.
 5. O HTTPS é emitido sozinho; confira com `curl -I https://netsheet.app/api/health`.
 
 ### Modelo 2 — Frontend estático + subdomínio de API
 
-Frontend no Vercel/Netlify, backend no Railway/Render/Fly.io.
+Frontend no Vercel/Netlify, backend no Render.
 
 ```
 netsheet.app (Vercel/Netlify) ──► api.netsheet.app (backend, wss://api.netsheet.app)

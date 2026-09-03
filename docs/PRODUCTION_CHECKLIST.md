@@ -30,7 +30,7 @@ segredo. Tudo que é secreto entra por variável de runtime do servidor
 |---|---|---|---|
 | Cliente | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | **build** (inline no bundle) | Plataforma estática + backend (Docker build-args) |
 | Cliente | `VITE_API_URL` | **build** | Plataforma estática (frontend) |
-| Servidor | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY` | **runtime** (secrets) | Painel do Railway/Render/Fly (secrets) |
+| Servidor | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY` | **runtime** (secrets) | Painel do Render (secrets) |
 | Servidor | `CORS_ORIGINS` | **runtime** | Allowlist de origins do frontend (T10.6) |
 | Servidor | `PORT`, `HOST` | runtime | Plataformas injetam `PORT` |
 

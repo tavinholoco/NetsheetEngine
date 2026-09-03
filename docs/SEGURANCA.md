@@ -83,7 +83,25 @@ regras que ele expressa:
 
 ### Fase A — Reancorar o projeto
 
-*(a preencher)*
+**03/09/2026.** Fase só de documentação, configuração de deploy e uma tag git — nenhuma linha de
+código de produto mudou. *(A.2 e a parte de secrets da A.5 seguem em aberto, aguardando o dono.)*
+
+1. **Entrada nova?** Nenhuma. Nenhum endpoint, campo ou parâmetro novo.
+2. **Dado novo exposto?** Nenhum. Os arquivos movidos (`fly.toml`/`railway.toml` →
+   `docs/deploy-alternativas/`) não continham segredo — eram templates com `sync: false`/env vars
+   sem valor.
+3. **Autorização nova?** Nenhuma.
+4. **Jogador convidado hostil?** Sem mudança de superfície — nada nesta fase toca em `server.ts`,
+   `roomManager` ou qualquer caminho que um jogador alcança.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** **Quase — e é o achado da fase.** O item A.5 original
+   pedia ativar PITR no Supabase, recurso pago (Pro plan). Registrado como decisão 4 e **ADIAR**: o
+   dono confirmou que fica no free tier, sem cartão vinculado a nada. Nenhum custo novo foi
+   introduzido.
+
+**O que virou trabalho:** nada além do próprio ADIAR documentado. A pergunta 6 quase gerou uma
+violação do contrato de custo zero se o item tivesse sido executado sem checar — é exatamente o tipo
+de coisa que o portão existe para pegar antes do código (ou, aqui, antes do clique no painel).
 
 ### Fase B — Fechar os buracos de autorização
 

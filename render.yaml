@@ -3,8 +3,9 @@
 # ============================================================
 # Deploy: o Render detecta `render.yaml` na raiz (Blueprints) ao criar
 # um "New Blueprint" a partir do repositório. Roda com runtime NATIVO
-# do Node (funciona no plano free) — o Dockerfile da raiz é a alternativa
-# para outras plataformas (Fly.io/Railway).
+# do Node (funciona no plano free). Render é o único alvo de backend
+# desde a Fase A do PLANO_MESTRE.md (A.6, DOC-02) — Fly.io/Railway
+# arquivados em docs/deploy-alternativas/.
 #
 # Variáveis com `sync: false` são definidas no painel (secrets):
 #   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY  (build-time — inline no bundle)

@@ -42,7 +42,7 @@ flowchart TB
 
     subgraph externo["SERVICOS EXTERNOS"]
         SB[("Supabase<br/>Auth - Postgres+RLS - Storage")]
-        AI["Provedor de IA<br/>Groq / Gemini"]
+        AI["Provedor de IA<br/>Gemini hoje - Groq previsto na Fase B"]
     end
 
     SPA -->|"REST + sessionToken"| API
