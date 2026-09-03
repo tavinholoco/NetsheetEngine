@@ -508,9 +508,27 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
       - **Verificado revertendo o `server.ts`:** 5 dos 6 falham contra o código antigo. Os quatro de
         stream levam 5 s cada antes de falhar — porque o servidor antigo **aceitava a conexão e
         começava a transmitir**. O vazamento aparece no próprio tempo do teste.
-- [ ] **B.4** Persistir as sessões junto com a sala, na mesma gravação da T3.1. **Não** trocar por JWT
+- [x] **B.4** Persistir as sessões junto com a sala, na mesma gravação da T3.1. **Não** trocar por JWT
       stateless: `revokeSessionsForPeer` e `deleteRoom` dependem de revogação server-side e têm
-      teste. *(SEC-03, ARQ-03)*
+      teste. *(SEC-03, ARQ-03 — 03/09/2026)*
+      - **Migration `0007_room_sessions.sql`** — a primeira desde que o `db-sync` está ativo.
+        **Coluna própria, não dentro de `room_state`:** aquele jsonb é o `GameRoom`, que é
+        exatamente o objeto transmitido a todos a cada mutação. Sessão ali dentro vazaria o token de
+        cada jogador para a mesa inteira — trocaria o SEC-03 por algo pior.
+      - **Grava o SHA-256 do token, nunca o token.** O mapa em memória também passou a ser keyed por
+        hash. Como as sessões agora existem em disco, persistir segredo em claro abriria um buraco
+        novo enquanto se fecha outro: um dump do banco entregaria sessões vivas. O token existe só no
+        cliente e em trânsito.
+      - Restore tolera linha antiga sem a coluna (`undefined` = nenhuma sessão) e ignora dado
+        corrompido em vez de criar sessão inválida.
+      - **Migration validada localmente antes de ir para o CI:** aplicada no Supabase do Docker,
+        conferido que a coluna é `jsonb NOT NULL DEFAULT '{}'`, que a RLS continua ativa com zero
+        policies (postura da 0006 intacta) e que as **56 de RLS** seguem passando.
+      - 10 testes novos. O central prova a propriedade que o SEC-03 pedia: um token emitido por um
+        processo, exportado e restaurado, continua válido — inclusive um token que o processo atual
+        nunca emitiu, que é o caso real do restart.
+      - *Nota sobre ARQ-03:* a metade "hiberna e perde as mesas" está resolvida. A metade "instância
+        única" continua, por desenho — as salas vivem em memória (ADR 0002).
 - [ ] **B.5** Coletor de salas abandonadas (sem jogador online há N horas) e poda dos buckets vencidos
       do rate limiter. *(SEC-04)*
 - [ ] **B.6** `npm audit fix` + passo de audit no CI falhando em severidade alta. *(SEC-06)*
