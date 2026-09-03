@@ -1050,11 +1050,32 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
   return { room };
 }
 
-export function getAllActiveRooms(): { code: string; name: string; gmHandle: string; playersCount: number }[] {
-  return Object.values(rooms).map(r => ({
+/**
+ * Recorte PÚBLICO de uma sala (B.3 — SEC-02).
+ * Só o que já é exposto no lobby por `getAllActiveRooms`: nada de fichas,
+ * chat, grid ou iniciativa. É o payload de quem ainda não entrou na mesa.
+ */
+export interface RoomPublicSummary {
+  code: string;
+  name: string;
+  gmHandle: string;
+  playersCount: number;
+}
+
+function toPublicSummary(r: GameRoom): RoomPublicSummary {
+  return {
     code: r.code,
     name: r.name,
     gmHandle: r.gmHandle,
     playersCount: Object.keys(r.players).length
-  }));
+  };
+}
+
+export function getRoomPublicSummary(code: string): RoomPublicSummary | null {
+  const room = getRoom(code);
+  return room ? toPublicSummary(room) : null;
+}
+
+export function getAllActiveRooms(): RoomPublicSummary[] {
+  return Object.values(rooms).map(toPublicSummary);
 }

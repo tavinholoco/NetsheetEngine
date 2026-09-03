@@ -489,8 +489,25 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
         A K.1 reaproveita no import de ficha: JSON de disco é tão não confiável quanto corpo de requisição.
       - 14 testes. **Verificado revertendo o `roomManager`:** os 2 testes de HTTP falham contra o
         código antigo e passam contra o novo — reproduzem o sintoma, como o filtro exige.
-- [ ] **B.3** Exigir `sessionToken` na leitura de sala e no stream SSE (via header); separar payload
-      público (código, nome, GM, contagem) do payload de mesa. *(SEC-02)*
+- [x] **B.3** Exigir `sessionToken` na leitura de sala e no stream SSE (via header); separar payload
+      público (código, nome, GM, contagem) do payload de mesa. *(SEC-02 — 03/09/2026)*
+      - **`GET /api/rooms/:code` em três casos:** sem token → recorte público (`getRoomPublicSummary`,
+        o mesmo que o lobby já expunha); token válido → sala completa; token **inválido → 401**, para
+        não mascarar bug de cliente devolvendo meio payload.
+      - **Descoberta que simplificou tudo:** esse endpoint **não tinha nenhum caller na aplicação** —
+        só nos testes. O cliente recebe a sala do `create`/`join` e depois pelo WS/SSE. Trancar não
+        quebrou UX nenhuma.
+      - **O stream exigiu solução diferente do que o plano previa.** O plano dizia "via header", mas
+        `EventSource` **não permite header customizado** — é limitação da API do navegador. O token
+        vai na query, como o WebSocket já fazia desde a T5.2. Token em URL aparece em log de proxy,
+        então esse caminho ficou **confinado ao stream**: nenhuma outra rota aceita `?token=`.
+      - Um teste existente assertava que qualquer um lia a sala inteira — era a vulnerabilidade
+        escrita como expectativa. Substituído por quatro, cobrindo os três casos e o 404.
+      - 6 testes novos em `room-read-auth.integration.test.ts`, incluindo **token válido de outra
+        sala** (o escopo por sala é o que impede um convidado de ler a mesa do vizinho).
+      - **Verificado revertendo o `server.ts`:** 5 dos 6 falham contra o código antigo. Os quatro de
+        stream levam 5 s cada antes de falhar — porque o servidor antigo **aceitava a conexão e
+        começava a transmitir**. O vazamento aparece no próprio tempo do teste.
 - [ ] **B.4** Persistir as sessões junto com a sala, na mesma gravação da T3.1. **Não** trocar por JWT
       stateless: `revokeSessionsForPeer` e `deleteRoom` dependem de revogação server-side e têm
       teste. *(SEC-03, ARQ-03)*

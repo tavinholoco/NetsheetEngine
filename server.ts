@@ -33,6 +33,7 @@ import {
   nextTurn,
   leaveRoom,
   getAllActiveRooms,
+  getRoomPublicSummary,
   updatePlayerWoundLevel,
   updateTacticalGrid,
   generateRoomNpc,
@@ -171,6 +172,31 @@ const aiLimiter = makeRateLimiter(10, 60_000);
 // T1.7 — autor do request é derivado do token de sessão, nunca do peerId livre
 function getSessionPeerId(req: express.Request, code: string): string | null {
   const token = typeof req.body?.sessionToken === "string" ? req.body.sessionToken : null;
+  if (!token) return null;
+  return verifySession(code, token);
+}
+
+// B.3 (SEC-02) — leitura autenticada. Um GET não tem corpo, então o token vem
+// por header. Cabeçalho próprio em vez de `Authorization` para não confundir
+// com o JWT do Supabase que o /api/gemini passou a exigir: são credenciais
+// diferentes, de escopos diferentes (mesa × conta).
+function getSessionPeerIdFromHeader(req: express.Request, code: string): string | null {
+  const raw = req.get("X-Session-Token");
+  const token = typeof raw === "string" ? raw.trim() : "";
+  if (!token) return null;
+  return verifySession(code, token);
+}
+
+// B.3 (SEC-02) — SÓ para o stream SSE. O `EventSource` do navegador não
+// permite header customizado; é limitação da API, não escolha. Por isso o
+// token vai na query, exatamente como o WebSocket já fazia desde a T5.2.
+//
+// Token em URL é pior que em header (aparece em log de proxy e no histórico
+// do navegador), então este caminho fica confinado ao endpoint que não tem
+// alternativa. Nenhuma outra rota aceita `?token=`.
+function getSessionPeerIdFromQuery(req: express.Request, code: string): string | null {
+  const raw = req.query?.token;
+  const token = typeof raw === "string" ? raw.trim() : "";
   if (!token) return null;
   return verifySession(code, token);
 }
@@ -351,11 +377,26 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   res.json({ room: result.room, sessionToken: result.sessionToken });
 });
 
-// Get current room state
+// Get current room state (B.3 — SEC-02)
+// Antes devolvia a sala INTEIRA — fichas, chat e grid — para quem soubesse o
+// código. Agora o payload depende de haver sessão na mesa:
+//   sem token          → recorte público (o mesmo que o lobby já expõe)
+//   token válido       → sala completa
+//   token inválido     → 401, para não mascarar bug de cliente com meio payload
 app.get("/api/rooms/:code", (req, res) => {
   const room = getRoom(req.params.code);
   if (!room) {
     return res.status(404).json({ error: "Room not found" });
+  }
+
+  const rawToken = req.get("X-Session-Token");
+  if (!rawToken || !rawToken.trim()) {
+    return res.json(getRoomPublicSummary(req.params.code));
+  }
+
+  const peerId = getSessionPeerIdFromHeader(req, req.params.code);
+  if (!peerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
   res.json(room);
 });
@@ -564,6 +605,15 @@ app.get("/api/rooms/:code/stream", (req, res) => {
   const room = getRoom(code);
   if (!room) {
     return res.status(404).json({ error: "Room not found" });
+  }
+
+  // B.3 (SEC-02) — o stream despejava a sala inteira, a cada mutação, para
+  // qualquer um que soubesse o código. Era o vazamento mais grave dos dois:
+  // não é uma leitura pontual, é assinatura contínua do estado da mesa.
+  // Sem recorte público aqui — stream sem sessão não tem para que servir.
+  const peerId = getSessionPeerIdFromQuery(req, code);
+  if (!peerId) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
 
   res.setHeader("Content-Type", "text/event-stream");
