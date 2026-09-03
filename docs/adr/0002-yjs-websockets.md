@@ -70,3 +70,51 @@ Usar **`ws` (WebSocket puro) + Yjs sobre o MESMO socket**:
 - `server.ts` — handler WS com discriminador `isBinary`.
 - `src/lib/yjsConnection.ts` — camada CRDT no cliente.
 - Fase 5 do `PLANO_DE_ACAO.md` (T5.1–T5.5).
+
+---
+
+## Revisão de 02/09/2026 — o CRDT continua, mas sob observação
+
+Uma varredura de overengineering questionou se o Yjs se paga neste caso. **A decisão é manter**, mas
+o questionamento fica registrado para não ser refeito do zero.
+
+### O que a análise encontrou
+
+A autorização do grid (`mirrorDocToJson` em `server.ts`) faz diff campo a campo e reverte o que não
+for permitido: **jogador só altera `x`/`y` do próprio token; o GM faz o resto**. Ou seja, a
+autorização garante **dono único por token** — duas pessoas nunca escrevem no mesmo dado.
+
+Um CRDT existe para resolver escrita concorrente sobre o mesmo dado. Aqui, **a autorização já
+eliminou os conflitos que o CRDT resolveria**. A literatura corrente é direta: CRDTs resolveram
+sincronização *descentralizada*, um problema que a maioria dos produtos não tem, e *last-write-wins*
+é honesto quando a sobreposição é rara.
+
+### O custo que isso cobra
+
+- 3 dependências (`yjs`, `y-protocols`, `lib0`);
+- ~313 linhas de máquina de sincronização entre `server.ts`, `gridDoc.ts` e `yjsConnection.ts`;
+- espelhamento em três caminhos (doc → JSON, JSON → doc, broadcast);
+- **60 linhas de autorização por diff**, que só existem *porque* o CRDT deixa o cliente escrever o
+  documento inteiro e obriga o servidor a conferir o resultado depois.
+
+Um protocolo de intenção (`{ move: tokenId, x, y }`) seria da ordem de 10 linhas, com a autorização
+verificada *antes* de aplicar em vez de revertida depois.
+
+### Por que mesmo assim fica
+
+Funciona, está coberto por testes, e trocar é refactor de vários dias em código que não está dando
+problema. Trocar agora seria exatamente o tipo de mudança sem sintoma que o filtro de necessidade do
+plano existe para barrar.
+
+### Gatilho para reabrir
+
+**Quando a Fase H (varredura de multiplayer) achar um bug de convergência do grid** — por exemplo a
+corrida do `destroyRoomYjs` quando o último socket fecha e alguém reconecta no mesmo instante. Se o
+CRDT começar a *causar* bugs em vez de prevenir, a troca pelo protocolo de intenção passa a ter
+sintoma e vira FAZER.
+
+### Consequência imediata no plano
+
+A tarefa **L.2** planejava carregar o Yjs sob demanda na rota de mesa. Não vale investir em
+lazy-loading de algo que pode sair inteiro: a tarefa passa a priorizar a separação do **Supabase**,
+que está no chunk de entrada e é carregado até para quem só quer rolar dados.

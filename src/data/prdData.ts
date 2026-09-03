@@ -421,7 +421,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       layer: 'Frontend',
       description:
         'Aplicação SPA construída com React 19 e Vite, estilizada com Tailwind CSS 4 (configuração via CSS/@theme) e componentes shadcn/ui sobre Radix. Estado gerenciado com hooks; migração planejada para Zustand (Fase 4).',
-      tech: ['React 19', 'Vite 6', 'TypeScript 5.8', 'Tailwind CSS 4', 'shadcn/ui (Radix)', 'lucide-react', 'motion']
+      tech: ['React 19', 'Vite 6', 'TypeScript 5.8', 'Tailwind CSS 4', 'shadcn/ui (Radix)', 'lucide-react']
     },
     {
       id: 'arch-backend',

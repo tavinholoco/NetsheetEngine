@@ -1,4 +1,4 @@
-# 🔍 Ledgers das varreduras
+# Ledgers das varreduras
 
 Casa dos resultados das **Fases E e G–J** do [`PLANO_MESTRE.md`](../PLANO_MESTRE.md).
 
@@ -14,26 +14,17 @@ Uma varredura que não gerou ledger não aconteceu.
 | `J-seguranca.md` | J | Superfície completa de autenticação, autorização, entrada e saída |
 
 > A **Fase F** fica entre E e G e **não é varredura** — é reestruturação visual do frontend
-> (construção). Redesign e caça a bug têm posturas opostas: o filtro abaixo tem ADIAR como padrão e
-> mataria um redesign, que é discricionário por natureza. Por isso são fases separadas, e a
-> reestruturação vem antes de varrer o código que ela reescreve.
+> (construção). Redesign e caça a bug têm posturas opostas: o filtro tem ADIAR como padrão e mataria
+> um redesign, que é discricionário por natureza.
 
----
+## As regras
 
-## Os dois tempos
+Estão no plano, não aqui — [o filtro de necessidade](../PLANO_MESTRE.md#-filtro-de-necessidade)
+define as cinco perguntas, os três veredictos, a separação em dois tempos (*achar e classificar*,
+depois *executar só os FAZER*) e a regra de calibragem de 1/3.
 
-**Não misture.** Achar um problema e já consertar é irresistível, e é exatamente assim que o filtro
-morre.
-
-1. **Achar e classificar** — sem tocar em código. Preencher o ledger inteiro, com veredito em cada
-   linha.
-2. **Executar** — apenas os itens marcados FAZER.
-
-## A regra de calibragem
-
-**Se mais de 1/3 dos itens virar FAZER, o critério está frouxo.** Recalibre a régua e passe a lista
-de novo. A resposta agradável ("tudo isso é importante") é o sintoma de que o filtro não foi
-aplicado.
+**Este arquivo não repete essas regras de propósito.** Regra escrita em dois lugares vira duas regras
+diferentes em três meses.
 
 ---
 
@@ -74,16 +65,8 @@ Copie o bloco abaixo ao abrir uma varredura.
 
 ---
 
-## Por que isto existe
+## Varreduras já realizadas fora das fases
 
-O projeto tem as provas de que o filtro é necessário:
-
-- **`combatModifier`** foi construído de ponta a ponta — validação, clamp em ±10, persistência,
-  broadcast, exibição na UI — e nenhuma rolagem o lê.
-- **`currentStats`** existe no tipo, é escrito a cada edição, é persistido — e não tem um único
-  leitor no repositório.
-- **Seis configurações de deploy** para um serviço que roda num lugar só.
-- **Cinco tabelas de lifepath** escritas antes de o dano virar ferimento.
-
-Todos passariam pela pergunta 1 com um "não". É esse tipo de trabalho que o filtro devolve para a
-fila — e é bastante trabalho.
+| Data | Escopo | Resultado |
+|---|---|---|
+| 02/09/2026 | Overengineering em dependências, arquitetura e no próprio plano | 6 pacotes npm e 8 arquivos removidos; Yjs analisado e **adiado com gatilho** ([ADR 0002](../adr/0002-yjs-websockets.md#revisão-de-02092026--o-crdt-continua-mas-sob-observação)); fallback SSE marcado para **medir antes de decidir**; 2 dos 3 cortes propostos ao plano **rejeitados na avaliação** |

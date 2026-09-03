@@ -196,7 +196,7 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 
 ## 📊 ÍNDICE DE ACHADOS
 
-32 achados no código. IDs referenciados pelas fases.
+33 achados no código. IDs referenciados pelas fases.
 
 ### Segurança (6)
 
@@ -226,7 +226,7 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 | RUL-11 | 🔵 Baixo | Faltam Leap/Carry/Lift e EV; "Walk" é invenção | K |
 | RUL-12 | 🔵 Baixo | Tabelas de perícia incompletas; "Social" duplicado em INT | K |
 
-### Arquitetura (9)
+### Arquitetura (10)
 
 | ID | Sev. | Achado | Fase |
 |---|---|---|---|
@@ -238,6 +238,7 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 | ARQ-06 | 🔵 Baixo | Camada Supabase ainda exporta nomes do Firebase | L |
 | ARQ-07 | 🔵 Baixo | Sem ESLint; 23 `any` e 16 `console.*` | L |
 | ARQ-08 | 🔵 Baixo | 3 smoke tests para 20 componentes React | C/D/G/H |
+| ARQ-10 | 🟡 Médio | **Dependências e arquivos mortos** — `motion` instalado sem nenhum import, 7 wrappers `components/ui/*` sem consumidor (com 5 pacotes Radix), e `bun.lock` desatualizado desde 07/08 enquanto o CI usa `npm ci` | ✅ resolvido em 02/09 |
 | ARQ-09 | 🟠 Alto | **As fontes não carregam em produção** — o `@import` do Google Fonts sobrevive ao build, mas o CSP (`style-src`/`font-src`) o bloqueia; como o helmet é pulado em dev, só quebra no ar | F |
 
 ### Documentação e processo (5)
@@ -303,11 +304,17 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 - [ ] **B.5** Coletor de salas abandonadas (sem jogador online há N horas) e poda dos buckets vencidos
       do rate limiter. *(SEC-04)*
 - [ ] **B.6** `npm audit fix` + passo de audit no CI falhando em severidade alta. *(SEC-06)*
-- [ ] **B.7** Testes de integração para cada item — a suíte atual cobre bem quem *pode* agir e não
+- [ ] **B.7** **Instrumentar o fallback SSE** — uma linha de log estruturado quando um cliente cai
+      do WebSocket para o `EventSource`. O suporte a WebSocket passa de 99% e o motivo real de
+      manter fallback é proxy corporativo que quebra o handshake de Upgrade — algo que a sua mesa
+      de convidados pode simplesmente nunca encontrar. Como esta fase já mexe no SSE por causa do
+      SEC-02, o log sai de graça. **Decidir na Fase L, com dado**: se em meses de mesa ninguém caiu,
+      o fallback sai; se alguém caiu, você descobriu que era necessário.
+- [ ] **B.8** Testes de integração para cada item — a suíte atual cobre bem quem *pode* agir e não
       cobre quem não deveria conseguir *ler*.
-- [ ] **B.8** `git tag v0.4.1`.
-- [ ] **B.9** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe.
-- [ ] **B.10** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **B.9** `git tag v0.4.1`.
+- [ ] **B.10** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe.
+- [ ] **B.11** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Fase B concluída em:** ____/____/______
 
 ---
@@ -673,13 +680,19 @@ público mudar.
 
 - [ ] **L.1** Broadcast por delta (`chat:new`, `player:health`, `initiative:set`); estado completo só
       no join e na reconexão. *(ARQ-01)*
-- [ ] **L.2** `manualChunks` separando supabase e yjs; Yjs sob demanda na rota de mesa; revisar se
+- [ ] **L.2** `manualChunks` separando **o Supabase**, que está no chunk de entrada e é carregado até
+      para quem só quer rolar dados — é o maior contribuinte identificado do 1,3 MB. **Não** investir em
+      lazy-loading do Yjs: a [ADR 0002](./adr/0002-yjs-websockets.md) o deixou sob observação, e não vale
+      otimizar o carregamento de algo que pode sair inteiro. Revisar se
       `motion` paga o próprio peso. *(ARQ-04)*
 - [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que E e G–J mapearam. *(ARQ-05)*
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [ ] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
       `--max-warnings 0` no CI. *(ARQ-07)*
-- [ ] **L.6** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [ ] **L.6** **Decidir o fallback SSE com o dado da B.7.** Ninguém caiu para SSE em meses de uso? Remove
+      o endpoint, o mapa `sseClients`, o caminho duplo do broadcast e o `EventSource` do cliente. Alguém
+      caiu? Mantém, e a dúvida está encerrada com evidência em vez de opinião.
+- [ ] **L.7** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] ✅ **Fase L concluída em:** ____/____/______
 
 ---
