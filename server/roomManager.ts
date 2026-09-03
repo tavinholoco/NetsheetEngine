@@ -2,6 +2,11 @@ import crypto from "crypto";
 import { GameRoom, RoomPlayer, ChatMessage, InitiativeEntry, TacticalGridState } from "../src/types/multiplayer.js";
 import { CharacterSheet, RollResult } from "../src/types/cyberpunk.js";
 import { generateRandomNpc } from "../src/utils/npcGenerator.js";
+// Fase B (B.2 — SEC-05) — a ficha é entrada não confiável. A validação mora
+// aqui, e não na rota HTTP, para cobrir TODO caminho que escreve ficha
+// (REST, WebSocket e o que vier), não só o endpoint que existe hoje.
+import { sanitizeCharacterSheet } from "../src/rules/sheetSchema.js";
+import { logger } from "./logger.js";
 
 // ============================================================
 // SESSÕES (T1.7) — token secreto por jogador, nunca na broadcast
@@ -239,6 +244,15 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
   const safePeerId = sanitizeText(peerId, 64);
   if (!safePeerId) return null;
 
+  // B.2 (SEC-05) — a ficha do join é a primeira coisa que o servidor grava a
+  // partir do navegador. Sem isto, atributos e woundLevel entravam verbatim.
+  const validated = sanitizeCharacterSheet(sheet);
+  if (!validated) return null;
+  if (validated.changed.length > 0) {
+    logger.warn("sheet_sanitized", { at: "joinRoom", code, peerId: safePeerId, fields: validated.changed.slice(0, 20), count: validated.changed.length });
+  }
+  const safeSheet = validated.sheet;
+
   const safeHandle = sanitizeText(handle, 30);
 
   // Se gmPeerId ainda não está definido, quem reivindica o handle do GM assume
@@ -257,10 +271,10 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
     ? {
         ...existing,
         handle: safeHandle || existing.handle || "Edgerunner",
-        role: sheet?.role || existing.role || "Edgerunner",
+        role: safeSheet.role || existing.role || "Edgerunner",
         // T3.3 — ficha resolvida por last-write-wins (updatedAt): cliente com
         // ficha antiga/estale não sobrescreve a versão mais recente do banco.
-        sheet: pickSheet(sheet, existing.sheet),
+        sheet: pickSheet(safeSheet, existing.sheet),
         isOnline: true,
         // T3.4 — renova lastActiveAt na reconexão: sem isso, um player que
         // voltou de um restart (timestamp velho preservado) seria marcado
@@ -269,9 +283,9 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
       }
     : {
         peerId: safePeerId,
-        handle: safeHandle || sheet?.handle || "Edgerunner",
-        role: sheet?.role || "Edgerunner",
-        sheet,
+        handle: safeHandle || safeSheet.handle || "Edgerunner",
+        role: safeSheet.role || "Edgerunner",
+        sheet: safeSheet,
         isOnline: true,
         joinedAt: new Date().toISOString(),
         lastActiveAt: new Date().toISOString()
@@ -323,17 +337,28 @@ export function updatePlayerSheet(code: string, peerId: string, sheet: Character
   if (!room) return { room: null, error: "Sala não encontrada" };
   if (!room.players[peerId]) return { room: null, error: "Jogador não encontrado na mesa" };
 
-  room.players[peerId].sheet = sheet;
-  room.players[peerId].handle = sanitizeText(sheet.handle, 30) || room.players[peerId].handle;
-  room.players[peerId].role = sanitizeText(sheet.role, 30) || room.players[peerId].role;
+  // B.2 (SEC-05) — caminho quente do problema: a ficha era gravada verbatim a
+  // cada edição. O autor já vinha da sessão (T1.7); o que faltava era conferir
+  // o CONTEÚDO. Sem isto, `woundLevel: -999` ou `BODY: 9999` viravam estado da
+  // mesa, eram persistidos e transmitidos a todos.
+  const validated = sanitizeCharacterSheet(sheet);
+  if (!validated) return { room: null, error: "Ficha inválida" };
+  if (validated.changed.length > 0) {
+    logger.warn("sheet_sanitized", { at: "updatePlayerSheet", code, peerId, fields: validated.changed.slice(0, 20), count: validated.changed.length });
+  }
+  const safeSheet = validated.sheet;
+
+  room.players[peerId].sheet = safeSheet;
+  room.players[peerId].handle = sanitizeText(safeSheet.handle, 30) || room.players[peerId].handle;
+  room.players[peerId].role = sanitizeText(safeSheet.role, 30) || room.players[peerId].role;
   room.players[peerId].isOnline = true;
 
   // Also sync player's token name and HP in grid
   if (room.tacticalGrid) {
     const playerToken = room.tacticalGrid.tokens.find(t => t.peerId === peerId);
     if (playerToken) {
-      playerToken.name = sheet.handle || playerToken.name;
-      playerToken.hp = sheet.woundLevel;
+      playerToken.name = safeSheet.handle || playerToken.name;
+      playerToken.hp = safeSheet.woundLevel;
     }
   }
 

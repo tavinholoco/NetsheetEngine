@@ -472,9 +472,23 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
       - `docs/DEPLOY.md`: o curl de verificação agora espera **401**. Se vier 200, o SEC-01 voltou.
       - **Groq adiado** (ADR 0005): a troca de provedor entra depois, para não misturar correção
         crítica com migração num commit só. O endpoint já está isolado para isso.
-- [ ] **B.2** Criar `src/rules/sheetSchema.ts` com validador de `CharacterSheet` no limite do
+- [x] **B.2** Criar `src/rules/sheetSchema.ts` com validador de `CharacterSheet` no limite do
       servidor: atributos 2–15, perícias 0–10, `woundLevel` 0–10, arrays com teto, campos
-      desconhecidos descartados. Aplicar em `joinRoom` e `updatePlayerSheet`. *(SEC-05)*
+      desconhecidos descartados. Aplicar em `joinRoom` e `updatePlayerSheet`. *(SEC-05 — 03/09/2026)*
+      - **Saneia em vez de rejeitar:** número fora da faixa é grampeado, campo desconhecido é
+        descartado, item estruturalmente inválido (perícia com atributo inexistente, armadura com
+        localização inválida) é removido. Rejeitar a ficha inteira por um campo estranho tiraria o
+        jogador da sincronia sem ele entender por quê.
+      - Toda correção volta em `changed` e o servidor **loga** (`sheet_sanitized`). Ficha corrigida a
+        cada sync é sinal: bug no cliente ou alguém testando limites.
+      - **Aplicado no `roomManager`, não na rota** — assim cobre todo caminho que escreve ficha
+        (REST, WebSocket, o que vier), não só o endpoint que existe hoje.
+      - Tetos de string e de array também entraram: um `handle` de 10 MB ou um array de 100 mil
+        perícias seria persistido e transmitido a todos — mesmo vetor de DoS do SEC-04, por outra porta.
+      - **Primeiro arquivo de `src/rules/`**, já no contrato da Fase C (função pura, sem DOM nem rede).
+        A K.1 reaproveita no import de ficha: JSON de disco é tão não confiável quanto corpo de requisição.
+      - 14 testes. **Verificado revertendo o `roomManager`:** os 2 testes de HTTP falham contra o
+        código antigo e passam contra o novo — reproduzem o sintoma, como o filtro exige.
 - [ ] **B.3** Exigir `sessionToken` na leitura de sala e no stream SSE (via header); separar payload
       público (código, nome, GM, contagem) do payload de mesa. *(SEC-02)*
 - [ ] **B.4** Persistir as sessões junto com a sala, na mesma gravação da T3.1. **Não** trocar por JWT
