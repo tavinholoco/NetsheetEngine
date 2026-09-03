@@ -83,25 +83,39 @@ regras que ele expressa:
 
 ### Fase A — Reancorar o projeto
 
-**03/09/2026.** Fase só de documentação, configuração de deploy e uma tag git — nenhuma linha de
-código de produto mudou. *(A.2 e a parte de secrets da A.5 seguem em aberto, aguardando o dono.)*
+**03/09/2026.** Nenhuma linha de código de produto mudou — documentação, configuração de deploy, uma
+tag git e a ativação de um job de CI que já existia.
 
 1. **Entrada nova?** Nenhuma. Nenhum endpoint, campo ou parâmetro novo.
 2. **Dado novo exposto?** Nenhum. Os arquivos movidos (`fly.toml`/`railway.toml` →
    `docs/deploy-alternativas/`) não continham segredo — eram templates com `sync: false`/env vars
-   sem valor.
-3. **Autorização nova?** Nenhuma.
+   sem valor. O `SUPABASE_PROJECT_REF` gravado como secret é identificador **público** (já vai no
+   bundle do cliente); virou secret só porque é assim que o workflow o consome.
+3. **Autorização nova? SIM — é o achado da fase.** O job `db-sync` deixou de ser inerte. O CI agora
+   tem autoridade para **aplicar migrations no banco de produção** usando um PAT do Supabase guardado
+   como secret do repositório. Consequência: quem consegue dar push no `master` — ou alterar o
+   próprio workflow — altera o schema de produção. Hoje isso é só o dono, num repo sem branch
+   protection.
 4. **Jogador convidado hostil?** Sem mudança de superfície — nada nesta fase toca em `server.ts`,
-   `roomManager` ou qualquer caminho que um jogador alcança.
+   `roomManager` ou qualquer caminho que um jogador alcança. O `db-sync` não é acessível por jogador.
 5. **Estado novo sem limite?** Nenhum.
-6. **Custo por requisição a serviço externo?** **Quase — e é o achado da fase.** O item A.5 original
-   pedia ativar PITR no Supabase, recurso pago (Pro plan). Registrado como decisão 4 e **ADIAR**: o
-   dono confirmou que fica no free tier, sem cartão vinculado a nada. Nenhum custo novo foi
-   introduzido.
+6. **Custo por requisição a serviço externo?** **Quase.** O item A.5 original pedia ativar PITR no
+   Supabase, recurso pago (plano Pro). Registrado como decisão 4 e **ADIAR**: o dono confirmou que
+   fica no free tier, sem cartão vinculado a nada. Nenhum custo novo foi introduzido.
 
-**O que virou trabalho:** nada além do próprio ADIAR documentado. A pergunta 6 quase gerou uma
-violação do contrato de custo zero se o item tivesse sido executado sem checar — é exatamente o tipo
-de coisa que o portão existe para pegar antes do código (ou, aqui, antes do clique no painel).
+**O que virou trabalho:** o passo de verificação antes de ligar o `db-sync`. Confirmado por
+`supabase migration list --linked` que as 6 migrations constam local **e** remoto — se tivessem sido
+aplicadas à mão, ficariam fora da tabela de controle e o primeiro `db push` tentaria re-executá-las.
+
+**Levado para a Fase J, com gatilho:** o caminho `push no master → schema de produção` não tem
+aprovação humana no meio. **Gatilho:** quando um segundo colaborador ganhar permissão de push, ou
+quando a primeira migration destrutiva (`DROP`/`ALTER ... DROP COLUMN`) for escrita. A mitigação
+seria branch protection ou um GitHub Environment com aprovação — desproporcional para repo solo hoje.
+
+**Nota de precisão:** o DOC-03 dizia que os dois secrets estavam pendentes; na verificação, o
+`SUPABASE_ACCESS_TOKEN` já existia desde 25/08. O achado tinha sido redigido a partir do comentário
+no `ci.yml`, não de checagem real — mesmo padrão do PITR, que foi planejado sem verificar que exigia
+plano pago.
 
 ### Fase B — Fechar os buracos de autorização
 

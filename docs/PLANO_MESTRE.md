@@ -343,22 +343,23 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 - [x] **A.1** Conferir se o projeto Supabase pausou (ocioso desde 25/08; o plano gratuito pausa com
       7 dias de baixa atividade). Checar e-mail do dono e o dashboard. Restaurar se necessário.
       *(03/09/2026 — estava pausado, dono restaurou.)*
-- [ ] **A.2** Conferir que a chave de IA **não tem conta de faturamento vinculada**. *(passo a passo
-      dado ao dono em 03/09/2026 — aguardando confirmação; ver PR/sessão para o texto)*
+- [x] **A.2** Conferir que a chave de IA **não tem conta de faturamento vinculada**.
+      *(03/09/2026 — dono confirmou: todas as chaves em plano gratuito, sem cartão vinculado.)*
 - [x] **A.3** `git tag v0.4.0` no commit atual — ponto de retorno de todo o plano.
       *(03/09/2026 — tag local no commit `d2c742b`, ainda não enviada ao remoto.)*
 - [x] **A.4** Atualizar a seção 9 do `docs/PRD.md` e o roadmap do `README.md` para o estado real
       (Fases 0–10 fechadas). *(DOC-01, parte 1 — 03/09/2026)*
-- [ ] **A.5** **PITR adiado** (decisão 4 — exige plano pago, dono fica no free tier; backup diário
-      grátis continua ativo). O que resta: criar os secrets `SUPABASE_ACCESS_TOKEN` e
-      `SUPABASE_PROJECT_REF` no repositório para ativar o job `db-sync` do CI (grátis, sem relação com
-      PITR). **Ação do dono** — Claude não pode inserir tokens em formulário nenhum:
-      1. Gerar o token em Supabase → *Account → Access Tokens*.
-      2. Copiar o project ref em Supabase → *Project Settings → General* (subdomínio antes de
-         `.supabase.co`).
-      3. Rodar no terminal, na raiz do repo: `gh secret set SUPABASE_ACCESS_TOKEN` e
-         `gh secret set SUPABASE_PROJECT_REF` (cada um pede o valor via prompt) — ou colar em
-         *Settings → Secrets and variables → Actions* no GitHub.
+- [x] **A.5** **PITR adiado** (decisão 4 — exige plano pago, dono fica no free tier; backup diário
+      grátis continua ativo). **Secrets do `db-sync` resolvidos em 03/09/2026:**
+      - `SUPABASE_ACCESS_TOKEN` **já existia** desde 25/08 — o DOC-03 afirmava que os dois estavam
+        pendentes, mas foi redigido a partir do comentário no `ci.yml`, não de verificação real.
+      - `SUPABASE_PROJECT_REF` (`frsoqgtekrafdhfvlkqu`) criado nesta sessão. O ref é identificador
+        **público** — vai no bundle do cliente —, por isso não é credencial.
+      - Antes de ligar, conferido com `supabase migration list --linked`: as 6 migrations constam
+        **local e remoto**, logo o primeiro `db push` não re-executa nada. Era o risco real (migration
+        aplicada à mão fica fora da tabela de controle e o CI tentaria rodar de novo).
+      - **Efeito:** o job `db-sync` deixa de ser inerte. A partir do próximo push no `master`, migration
+        nova em `supabase/migrations/` é aplicada no banco de produção automaticamente.
       *(DOC-03)*
 - [x] **A.6** Fixar o **Render** como alvo único de backend; arquivar `fly.toml` e `railway.toml` em
       `docs/deploy-alternativas/`. Manter `vercel.json`/`netlify.toml` — o frontend estático neles é
@@ -372,9 +373,9 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
       em [`ARQUITETURA.md`](./ARQUITETURA.md) bate com a realidade. Ele foi desenhado a partir da
       leitura do código; validar é seu. *(03/09/2026 — estrutura bate; corrigida uma rotulagem que
       mostrava Groq como já implementado quando só o Gemini existe hoje.)*
-- [ ] **A.10** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
-- [ ] **A.11** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase A concluída em:** ____/____/______
+- [x] **A.10** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.** *(03/09/2026 — achado na pergunta 3: o `db-sync` dá ao CI autoridade de alterar o schema de produção; item levado à Fase J com gatilho escrito.)*
+- [x] **A.11** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+- [x] ✅ **Fase A concluída em:** __03__/__09__/__2026__
 
 ---
 
@@ -814,7 +815,7 @@ público mudar.
 
 | Fase | Tipo | Descrição | Status | Data |
 |---|---|---|---|---|
-| A | 🔨 | Reancorar o projeto | 🟡 em andamento (8/11 — A.2 aguarda o dono) | — |
+| A | 🔨 | Reancorar o projeto | ✅ | 03/09/2026 |
 | B | 🔨 | Fechar buracos de autorização | ⬜ | — |
 | C | 🔨 | Fonte única de regras | ⬜ | — |
 | D | 🔨 | Loop de combate | ⬜ | — |
