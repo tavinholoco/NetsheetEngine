@@ -547,13 +547,39 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
       - 13 testes, **metade deles sobre o que o coletor NÃO pode fazer**: sala nova, sala um minuto
         abaixo do limite, mesa em pausa de 6 h, e sessões de outras salas intactas.
 - [x] **B.10** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe. *(03/09/2026 — implementado contra o diagrama, e o diagrama atualizado no mesmo commit: a nota que dizia "HOJE ESTE ESTADO NAO EXISTE" saiu, e entrou a tabela dos dois limiares.)*
-- [ ] **B.6** `npm audit fix` + passo de audit no CI falhando em severidade alta. *(SEC-06)*
-- [ ] **B.7** **Instrumentar o fallback SSE** — uma linha de log estruturado quando um cliente cai
+- [x] **B.6** `npm audit fix` + passo de audit no CI falhando em severidade alta. *(SEC-06 — 03/09/2026)*
+      - **O achado era maior E menor que o descrito.** Maior: três pacotes independentes (`qs`,
+        `mathjs`, `nanoid`), não só a cadeia do `qs`. Menor: `npm audit fix` só resolve o `nanoid` —
+        **4.22.2 é a última 4.x do express publicada**, então a cadeia `express → body-parser → qs`
+        não tem patch, o "fix" seria migrar para Express 5 (major).
+      - **`mathjs` é cliente-only.** Chega via `@dice-roller/rpg-dice-roller`, importado só em
+        `src/utils/diceEngine.ts`; o servidor tem o próprio `rollDice` e não usa mathjs em caminho
+        nenhum. E `rollDamage()` só recebe fórmula da ficha local ou do que o usuário digita — não há
+        caminho em que a fórmula de outro jogador seja avaliada no navegador de alguém.
+      - O "fix" proposto pelo npm é **downgrade** do rolador para 5.5.0, marcado semver-major; a única
+        versão mais nova é `6.0.0-alpha`. Trocar o motor de dados do jogo por um alpha é risco maior
+        que a falha. **ADIAR com gatilho escrito** (na ALLOWLIST do script).
+      - **`scripts/audit-ci.mjs`** em vez de `npm audit --audit-level=high`: um portão
+        permanentemente vermelho não é portão — em uma semana ninguém olha, e a vulnerabilidade
+        **nova** se esconde no ruído das velhas. As exceções são **nomeadas, com motivo e gatilho**,
+        visíveis no repositório e revisáveis num PR. Qualquer alta fora da lista derruba a build.
+      - Avisa também sobre exceção **obsoleta** na lista — permissão esquecida vira buraco.
+      - **Verificados os dois caminhos:** com a lista atual sai 0 e sem stderr; com a lista vazia sai
+        1 e imprime as bloqueantes. *(Na primeira tentativa o script quebrou no Windows —
+        `execFileSync` não spawna `npm.cmd` sem shell — e o exit 1 vinha do crash, não do portão.
+        Corrigido e re-verificado.)*
+- [x] **B.7** **Instrumentar o fallback SSE** — uma linha de log estruturado quando um cliente cai
       do WebSocket para o `EventSource`. O suporte a WebSocket passa de 99% e o motivo real de
       manter fallback é proxy corporativo que quebra o handshake de Upgrade — algo que a sua mesa
       de convidados pode simplesmente nunca encontrar. Como esta fase já mexe no SSE por causa do
       SEC-02, o log sai de graça. **Decidir na Fase L, com dado**: se em meses de mesa ninguém caiu,
-      o fallback sai; se alguém caiu, você descobriu que era necessário.
+      o fallback sai; se alguém caiu, você descobriu que era necessário. *(03/09/2026 — evento
+      `sse_fallback` no handler do stream, com sala, peer e userAgent. Como o cliente só abre
+      EventSource quando o WS falha, toda conexão ali é, por definição, uma queda. **Tem teste**
+      porque o modo de falha é traiçoeiro: se o log nunca for emitido, a L.6 leria "ninguém caiu" e
+      removeria um caminho que talvez seja o único que funciona atrás de proxy corporativo — ausência
+      de evidência viraria evidência de ausência. Um segundo teste garante que recusa por falta de
+      sessão NÃO conta, para não inflar o número.)*
 - [ ] **B.8** Testes de integração para cada item — a suíte atual cobre bem quem *pode* agir e não
       cobre quem não deveria conseguir *ler*.
 - [ ] **B.9** `git tag v0.4.1`.

@@ -650,6 +650,25 @@ app.get("/api/rooms/:code/stream", (req, res) => {
     return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
   }
 
+  // Fase B (B.7) — INSTRUMENTAÇÃO DO FALLBACK, para a Fase L decidir com dado.
+  //
+  // O cliente sempre tenta WebSocket primeiro; só abre EventSource quando o WS
+  // falha. Então TODA conexão aqui é, por definição, uma queda de fallback.
+  //
+  // Por que medir antes de decidir: o suporte a WebSocket passa de 99%, e o
+  // motivo real de manter o fallback é proxy corporativo que quebra o
+  // handshake de Upgrade — algo que uma mesa de convidados pode simplesmente
+  // nunca encontrar. Se em meses de jogo esta linha nunca aparecer, a L.6
+  // remove o endpoint, o mapa sseClients, o caminho duplo do broadcast e o
+  // EventSource do cliente. Se aparecer, a dúvida acaba com evidência em vez
+  // de opinião. O userAgent entra porque identifica o padrão (navegador antigo
+  // × proxy corporativo); não é segredo e o logger nunca grava token.
+  logger.info("sse_fallback", {
+    room: code,
+    peerId,
+    userAgent: (req.get("user-agent") || "desconhecido").slice(0, 160)
+  });
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");

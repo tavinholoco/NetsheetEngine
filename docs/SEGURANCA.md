@@ -184,7 +184,7 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-03 | Sessões só em memória — restart derruba as mesas | B | ✅ fechado 03/09 (B.4) |
 | SEC-04 | Salas, sessões e buckets nunca expiram | B | ✅ fechado 03/09 (B.5) |
 | SEC-05 | Ficha gravada sem validação | B | ✅ fechado 03/09 (B.2) |
-| SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ⬜ aberto (B.6) |
+| SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ✅ fechado 03/09 (B.6) — `nanoid` corrigido; `qs`/`express` sem patch 4.x e `mathjs` cliente-only, ambos com exceção nomeada e gatilho em `scripts/audit-ci.mjs` |
 
 ---
 
