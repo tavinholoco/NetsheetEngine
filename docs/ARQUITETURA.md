@@ -72,16 +72,21 @@ flowchart TB
 
 1. **Nada que vem do navegador é confiável** — nem a ficha, nem o `peerId`, nem o `woundLevel`, nem o
    binário Yjs. Toda seta que cruza para a zona confiável passa por `VAL` antes de chegar em `RULES`.
-   *Hoje essa caixa não existe: é o SEC-05, e é a B.2 do plano.*
+   *A caixa `VAL` existe desde a Fase B (B.2): `src/rules/sheetSchema.ts`, aplicada dentro do
+   `roomManager` para cobrir todo caminho que escreve ficha, não só a rota HTTP.* **O binário Yjs
+   ainda não passa por ela** — continua com try/catch apenas, e é item da Fase J.
 2. **O autor de toda ação é derivado do `sessionToken`**, nunca de um campo do corpo.
 3. **`service_role` e chave de IA não cruzam a fronteira** — vivem só no processo do servidor, jamais
    em variável `VITE_`.
 
-### O que o desenho revela sobre a leitura
+### O que o desenho revelou sobre a leitura
 
-Repare que as setas de leitura (`GET /api/rooms/:code`, `/stream`) hoje **não passam por verificação
-de sessão** — é o SEC-02. O desenho deixa isso óbvio de um jeito que 1.000 linhas de `server.ts` não
-deixam.
+O desenho tornava óbvio, de um jeito que 1.000 linhas de `server.ts` não tornavam, que as setas de
+**leitura** (`GET /api/rooms/:code`, `/stream`) não passavam por verificação de sessão — o SEC-02.
+
+**Fechado na Fase B (B.3), em 03/09/2026.** A leitura de sala responde em três casos (sem token →
+recorte público; token válido → sala completa; token inválido → 401) e o stream exige sessão pela
+query, porque `EventSource` não permite header customizado.
 
 ---
 
@@ -106,12 +111,9 @@ stateDiagram-v2
     end note
 
     note right of Ociosa
-        HOJE ESTE ESTADO NAO EXISTE.
-        markStalePlayersOffline marca os
-        jogadores como offline, mas a sala
-        fica na memoria e no banco para
-        sempre, e as sessoes nunca sao
-        revogadas. Isso e o SEC-04.
+        ROOM_OFFLINE_TIMEOUT_MS (60 s)
+        markStalePlayersOffline marca
+        os jogadores como offline
     end note
 
     note right of Encerrada
@@ -121,9 +123,21 @@ stateDiagram-v2
     end note
 ```
 
-**O que falta hoje:** a transição `Ociosa --> Encerrada`. Sem ela, uma mesa que todo mundo fechou a
-aba nunca morre. O `ROOM_OFFLINE_TIMEOUT_MS` (60 s por padrão) governa `Ativa --> Ociosa`; o coletor
-precisa de um limiar próprio, em horas.
+**Implementado na Fase B (B.5 — SEC-04), em 03/09/2026.** A transição `Ociosa --> Encerrada` era o
+buraco: uma mesa que todo mundo fechou a aba nunca morria, e as sessões dela iam junto.
+
+Dois limiares, porque são perguntas diferentes:
+
+| Transição | Env | Padrão | Pergunta |
+|---|---|---|---|
+| `Ativa --> Ociosa` | `ROOM_OFFLINE_TIMEOUT_MS` | 60 s | o jogador ainda está aí? |
+| `Ociosa --> Encerrada` | `ROOM_ABANDONED_TIMEOUT_MS` | 24 h | a mesa foi abandonada? |
+
+O coletor (`collectAbandonedRooms`, varrido de 15 em 15 min) cumpre os **três** passos da nota de
+`Encerrada`. Fazer só o primeiro deixaria uma linha órfã que ressuscitaria a sala no próximo boot.
+
+As 24 h são conservadoras de propósito: o risco não é simétrico. Recolher tarde custa uma linha a
+mais no banco por mais um dia; recolher cedo apaga a mesa de alguém, e o delete é irreversível.
 
 ---
 

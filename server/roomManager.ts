@@ -2,6 +2,11 @@ import crypto from "crypto";
 import { GameRoom, RoomPlayer, ChatMessage, InitiativeEntry, TacticalGridState } from "../src/types/multiplayer.js";
 import { CharacterSheet, RollResult } from "../src/types/cyberpunk.js";
 import { generateRandomNpc } from "../src/utils/npcGenerator.js";
+// Fase B (B.2 — SEC-05) — a ficha é entrada não confiável. A validação mora
+// aqui, e não na rota HTTP, para cobrir TODO caminho que escreve ficha
+// (REST, WebSocket e o que vier), não só o endpoint que existe hoje.
+import { sanitizeCharacterSheet } from "../src/rules/sheetSchema.js";
+import { logger } from "./logger.js";
 
 // ============================================================
 // SESSÕES (T1.7) — token secreto por jogador, nunca na broadcast
@@ -15,7 +20,19 @@ interface Session {
   peerId: string;
 }
 
-const sessions: Record<string, Session> = {}; // token -> sessão
+// B.4 (SEC-03) — o mapa é keyed por SHA-256 do token, não pelo token.
+// O token em claro existe só no cliente e em trânsito: nem a memória do
+// processo nem o banco guardam segredo recuperável. Como as sessões passaram
+// a ser persistidas (senão um restart derrubava todas as mesas), gravar o
+// token em claro abriria um buraco novo enquanto se fecha outro — um dump do
+// banco entregaria sessões vivas.
+//
+// A busca continua O(1): hasheia o token recebido e olha o mapa.
+const sessions: Record<string, Session> = {}; // sha256(token) -> sessão
+
+function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 function createSessionToken(): string {
   return crypto.randomBytes(24).toString("hex");
@@ -23,13 +40,14 @@ function createSessionToken(): string {
 
 function bindSession(roomCode: string, peerId: string): string {
   const token = createSessionToken();
-  sessions[token] = { roomCode: roomCode.trim().toUpperCase(), peerId };
+  sessions[hashToken(token)] = { roomCode: roomCode.trim().toUpperCase(), peerId };
   return token;
 }
 
 /** Retorna o peerId autenticado pelo token na sala, ou null se inválido. */
 export function verifySession(roomCode: string, token: string): string | null {
-  const s = sessions[token];
+  if (typeof token !== "string" || !token) return null;
+  const s = sessions[hashToken(token)];
   if (!s) return null;
   if (s.roomCode !== roomCode.trim().toUpperCase()) return null;
   return s.peerId;
@@ -37,8 +55,8 @@ export function verifySession(roomCode: string, token: string): string | null {
 
 function revokeSessionsForPeer(roomCode: string, peerId: string): void {
   const rc = roomCode.trim().toUpperCase();
-  for (const [token, s] of Object.entries(sessions)) {
-    if (s.peerId === peerId && s.roomCode === rc) delete sessions[token];
+  for (const [hash, s] of Object.entries(sessions)) {
+    if (s.peerId === peerId && s.roomCode === rc) delete sessions[hash];
   }
 }
 
@@ -46,9 +64,49 @@ function revokeSessionsForPeer(roomCode: string, peerId: string): void {
 function deleteRoom(code: string): void {
   const rc = code.trim().toUpperCase();
   delete rooms[rc];
-  for (const [token, s] of Object.entries(sessions)) {
-    if (s.roomCode === rc) delete sessions[token];
+  for (const [hash, s] of Object.entries(sessions)) {
+    if (s.roomCode === rc) delete sessions[hash];
   }
+}
+
+// ============================================================
+// B.4 (SEC-03) — SESSÕES ATRAVESSAM O RESTART
+// ============================================================
+// Antes, `sessions` era só memória: deploy, crash ou o despertar da
+// hibernação do plano gratuito derrubavam todas as mesas. A sala voltava do
+// banco com os jogadores dentro, mas nenhum token valia — toda ação virava
+// 401 e o jogador tinha que entrar de novo no meio do combate.
+//
+// A revogação continua server-side de propósito. Trocar por JWT stateless
+// tornaria `revokeSessionsForPeer` e `deleteRoom` impossíveis de cumprir:
+// um JWT emitido vale até expirar, e "saiu da mesa" precisa valer AGORA.
+
+/** Mapa `{ sha256(token): peerId }` de uma sala, para gravar junto com ela. */
+export function exportRoomSessions(code: string): Record<string, string> {
+  const rc = code.trim().toUpperCase();
+  const out: Record<string, string> = {};
+  for (const [hash, s] of Object.entries(sessions)) {
+    if (s.roomCode === rc) out[hash] = s.peerId;
+  }
+  return out;
+}
+
+/**
+ * Repõe as sessões de uma sala no boot. Só aceita hash e peerId que sejam
+ * string — linha corrompida ou de schema antigo não pode derrubar o restore
+ * nem, pior, criar sessão inválida.
+ */
+export function restoreRoomSessions(code: string, data: unknown): number {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) return 0;
+  const rc = code.trim().toUpperCase();
+  let count = 0;
+  for (const [hash, peerId] of Object.entries(data as Record<string, unknown>)) {
+    if (typeof hash !== "string" || !hash) continue;
+    if (typeof peerId !== "string" || !peerId) continue;
+    sessions[hash] = { roomCode: rc, peerId };
+    count += 1;
+  }
+  return count;
 }
 
 // ============================================================
@@ -82,6 +140,62 @@ export function touchPlayer(code: string, peerId: string): boolean {
   player.isOnline = true;
   player.lastActiveAt = new Date().toISOString();
   return true;
+}
+
+// B.5 (SEC-04) — janela de abandono. Uma mesa sem NINGUÉM ativo por este
+// tempo é considerada encerrada e recolhida. Sobrescrevível por env.
+//
+// 24 h é deliberadamente conservador. O risco de recolher cedo demais não é
+// simétrico: recolher tarde custa uma linha a mais no banco por mais um dia;
+// recolher cedo apaga a mesa de alguém, e o `deleteRoomPersisted` é
+// irreversível. Uma sessão de jogo que "pausa" (todos desconectam no
+// intervalo) volta em minutos, nunca em um dia.
+export const ROOM_ABANDONED_TIMEOUT_MS =
+  Number(process.env.ROOM_ABANDONED_TIMEOUT_MS) || 24 * 60 * 60 * 1000;
+
+/** Timestamp em ms, ou `null` se a data for ausente/inválida. */
+function parseTime(value: unknown): number | null {
+  if (typeof value !== "string" || !value) return null;
+  const t = new Date(value).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+/**
+ * B.5 (SEC-04) — implementa a transição `Ociosa → Encerrada` do
+ * [ciclo de vida](../docs/ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que
+ * o diagrama especificava e o código não tinha: o `markStalePlayersOffline`
+ * marcava jogador como offline, mas a sala ficava na memória e no banco para
+ * sempre, e as sessões junto.
+ *
+ * Remove da memória e revoga as sessões (via `deleteRoom`). O chamador
+ * completa o encerramento apagando a linha no banco e destruindo o Y.Doc — os
+ * outros dois passos que a nota do diagrama lista.
+ *
+ * Retorna os códigos recolhidos.
+ */
+export function collectAbandonedRooms(maxIdleMs: number = ROOM_ABANDONED_TIMEOUT_MS): string[] {
+  const now = Date.now();
+  const doomed: string[] = [];
+
+  for (const room of Object.values(rooms)) {
+    const players = Object.values(room.players);
+    const times = players
+      .map((p) => parseTime(p.lastActiveAt))
+      .filter((t): t is number => t !== null);
+
+    // Sem jogador, ou sem nenhum timestamp legível: cai para a criação da
+    // sala. Se nem isso der, a linha é lixo e vai embora.
+    const lastActivity = times.length > 0 ? Math.max(...times) : parseTime(room.createdAt);
+
+    if (lastActivity === null || now - lastActivity > maxIdleMs) {
+      doomed.push(room.code);
+    }
+  }
+
+  // Deletar só depois de percorrer — mutar o mapa durante a iteração é
+  // exatamente o tipo de bug que aparece com a mesa cheia e não no teste.
+  for (const code of doomed) deleteRoom(code);
+  return doomed;
 }
 
 /** T3.4 — varre todas as salas e marca OFFLINE players sem heartbeat recente.
@@ -239,6 +353,15 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
   const safePeerId = sanitizeText(peerId, 64);
   if (!safePeerId) return null;
 
+  // B.2 (SEC-05) — a ficha do join é a primeira coisa que o servidor grava a
+  // partir do navegador. Sem isto, atributos e woundLevel entravam verbatim.
+  const validated = sanitizeCharacterSheet(sheet);
+  if (!validated) return null;
+  if (validated.changed.length > 0) {
+    logger.warn("sheet_sanitized", { at: "joinRoom", code, peerId: safePeerId, fields: validated.changed.slice(0, 20), count: validated.changed.length });
+  }
+  const safeSheet = validated.sheet;
+
   const safeHandle = sanitizeText(handle, 30);
 
   // Se gmPeerId ainda não está definido, quem reivindica o handle do GM assume
@@ -257,10 +380,10 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
     ? {
         ...existing,
         handle: safeHandle || existing.handle || "Edgerunner",
-        role: sheet?.role || existing.role || "Edgerunner",
+        role: safeSheet.role || existing.role || "Edgerunner",
         // T3.3 — ficha resolvida por last-write-wins (updatedAt): cliente com
         // ficha antiga/estale não sobrescreve a versão mais recente do banco.
-        sheet: pickSheet(sheet, existing.sheet),
+        sheet: pickSheet(safeSheet, existing.sheet),
         isOnline: true,
         // T3.4 — renova lastActiveAt na reconexão: sem isso, um player que
         // voltou de um restart (timestamp velho preservado) seria marcado
@@ -269,9 +392,9 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
       }
     : {
         peerId: safePeerId,
-        handle: safeHandle || sheet?.handle || "Edgerunner",
-        role: sheet?.role || "Edgerunner",
-        sheet,
+        handle: safeHandle || safeSheet.handle || "Edgerunner",
+        role: safeSheet.role || "Edgerunner",
+        sheet: safeSheet,
         isOnline: true,
         joinedAt: new Date().toISOString(),
         lastActiveAt: new Date().toISOString()
@@ -323,17 +446,28 @@ export function updatePlayerSheet(code: string, peerId: string, sheet: Character
   if (!room) return { room: null, error: "Sala não encontrada" };
   if (!room.players[peerId]) return { room: null, error: "Jogador não encontrado na mesa" };
 
-  room.players[peerId].sheet = sheet;
-  room.players[peerId].handle = sanitizeText(sheet.handle, 30) || room.players[peerId].handle;
-  room.players[peerId].role = sanitizeText(sheet.role, 30) || room.players[peerId].role;
+  // B.2 (SEC-05) — caminho quente do problema: a ficha era gravada verbatim a
+  // cada edição. O autor já vinha da sessão (T1.7); o que faltava era conferir
+  // o CONTEÚDO. Sem isto, `woundLevel: -999` ou `BODY: 9999` viravam estado da
+  // mesa, eram persistidos e transmitidos a todos.
+  const validated = sanitizeCharacterSheet(sheet);
+  if (!validated) return { room: null, error: "Ficha inválida" };
+  if (validated.changed.length > 0) {
+    logger.warn("sheet_sanitized", { at: "updatePlayerSheet", code, peerId, fields: validated.changed.slice(0, 20), count: validated.changed.length });
+  }
+  const safeSheet = validated.sheet;
+
+  room.players[peerId].sheet = safeSheet;
+  room.players[peerId].handle = sanitizeText(safeSheet.handle, 30) || room.players[peerId].handle;
+  room.players[peerId].role = sanitizeText(safeSheet.role, 30) || room.players[peerId].role;
   room.players[peerId].isOnline = true;
 
   // Also sync player's token name and HP in grid
   if (room.tacticalGrid) {
     const playerToken = room.tacticalGrid.tokens.find(t => t.peerId === peerId);
     if (playerToken) {
-      playerToken.name = sheet.handle || playerToken.name;
-      playerToken.hp = sheet.woundLevel;
+      playerToken.name = safeSheet.handle || playerToken.name;
+      playerToken.hp = safeSheet.woundLevel;
     }
   }
 
@@ -1025,11 +1159,32 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
   return { room };
 }
 
-export function getAllActiveRooms(): { code: string; name: string; gmHandle: string; playersCount: number }[] {
-  return Object.values(rooms).map(r => ({
+/**
+ * Recorte PÚBLICO de uma sala (B.3 — SEC-02).
+ * Só o que já é exposto no lobby por `getAllActiveRooms`: nada de fichas,
+ * chat, grid ou iniciativa. É o payload de quem ainda não entrou na mesa.
+ */
+export interface RoomPublicSummary {
+  code: string;
+  name: string;
+  gmHandle: string;
+  playersCount: number;
+}
+
+function toPublicSummary(r: GameRoom): RoomPublicSummary {
+  return {
     code: r.code,
     name: r.name,
     gmHandle: r.gmHandle,
     playersCount: Object.keys(r.players).length
-  }));
+  };
+}
+
+export function getRoomPublicSummary(code: string): RoomPublicSummary | null {
+  const room = getRoom(code);
+  return room ? toPublicSummary(room) : null;
+}
+
+export function getAllActiveRooms(): RoomPublicSummary[] {
+  return Object.values(rooms).map(toPublicSummary);
 }

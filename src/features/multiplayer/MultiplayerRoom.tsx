@@ -136,7 +136,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     // Fallback SSE (comportamento original — auto-reconecta via EventSource)
     const connectSse = () => {
       // T10.2 — frontend estático: base do backend vem de VITE_API_URL
-      const es = new EventSource(apiUrl(`/api/rooms/${roomCode}/stream`));
+      // Fase B (B.3 — SEC-02): o stream passou a exigir sessão. O token vai na
+      // query porque `EventSource` não aceita header customizado — mesma
+      // limitação que o WebSocket já contorna do mesmo jeito, logo abaixo.
+      const es = new EventSource(
+        apiUrl(`/api/rooms/${roomCode}/stream?token=${encodeURIComponent(sessionToken)}`)
+      );
       eventSourceRef.current = es;
       es.onmessage = (ev) => handlePayload(ev.data);
       es.onerror = () => {

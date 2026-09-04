@@ -27,7 +27,8 @@ Cliente (React) ──►  Express + WebSocket (dist/server.cjs)  ──►  Sup
 | `CORS_ORIGINS` | runtime | **Allowlist CORS (T10.6)** — origins do frontend estático, separadas por vírgula (ex.: `https://netsheet.app,https://www.netsheet.app`). Vazio = sem CORS; `*` = qualquer origin (legado) |
 | `PORT` | runtime | Injetada automaticamente pelas plataformas (default 3000) |
 | `HOST` | runtime | Obrigatório `0.0.0.0` em containers (default já é esse) |
-| `ROOM_OFFLINE_TIMEOUT_MS` | runtime | Opcional — timeout de `isOnline` da mesa (T3.4) |
+| `ROOM_OFFLINE_TIMEOUT_MS` | runtime | Opcional — timeout de `isOnline` da mesa (T3.4). Padrão 60 s |
+| `ROOM_ABANDONED_TIMEOUT_MS` | runtime | Opcional — janela de abandono: o coletor encerra a mesa após este tempo sem ninguém ativo (B.5). Padrão 24 h. **Diminuir com cuidado — o delete é irreversível** |
 
 > **NUNCA** commite valores reais: o CI roda **gitleaks** e bloqueia o push.
 
@@ -247,10 +248,12 @@ curl -s https://SEU-DOMINIO/api/nao-existe
 # 4. Fluxo multiplayer (cria sala → E2E WS roda contra o servidor remoto)
 BASE_URL=https://SEU-DOMINIO node scripts/test-ws-e2e.mjs
 
-# 5. Netrunner AI (se GEMINI_API_KEY configurada)
-curl -s -X POST https://SEU-DOMINIO/api/gemini \
+# 5. Netrunner AI — desde a Fase B (B.1) o endpoint EXIGE JWT do Supabase.
+#    Sem Authorization a resposta correta é 401: se vier 200, o SEC-01
+#    voltou e a chave do dono está exposta.
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://SEU-DOMINIO/api/gemini \
   -H "Content-Type: application/json" \
-  -d '{"prompt":"Diga oi"}' | head -c 200
+  -d '{"prompt":"Diga oi"}'          # esperado: 401
 ```
 
 ## Hardening (T10.6)

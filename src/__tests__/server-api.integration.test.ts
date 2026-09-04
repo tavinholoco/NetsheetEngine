@@ -116,12 +116,39 @@ describe("API de salas — criar/join/leave", () => {
     expect(res.body.error).toBe("Room not found");
   });
 
-  it("GET /api/rooms/:code retorna a sala; código desconhecido → 404", async () => {
+  // B.3 (SEC-02) — este teste assertava que QUALQUER UM lia a sala inteira,
+  // que era justamente o vazamento. Agora fixa o contrato novo, nos três casos.
+  it("GET /api/rooms/:code sem token devolve só o recorte público", async () => {
     const code = uniqueCode();
     await createRoom(code);
-    const ok = await request(app).get(`/api/rooms/${code}`);
-    expect(ok.status).toBe(200);
-    expect(ok.body.code).toBe(code);
+    const res = await request(app).get(`/api/rooms/${code}`);
+    expect(res.status).toBe(200);
+    expect(res.body.code).toBe(code);
+    // O que NÃO pode vazar para quem não está na mesa:
+    expect(res.body).not.toHaveProperty("players");
+    expect(res.body).not.toHaveProperty("chatMessages");
+    expect(res.body).not.toHaveProperty("tacticalGrid");
+    expect(res.body).not.toHaveProperty("initiativeList");
+  });
+
+  it("GET /api/rooms/:code com token válido devolve a sala completa", async () => {
+    const code = uniqueCode();
+    const { token } = await createRoom(code);
+    const res = await request(app).get(`/api/rooms/${code}`).set("X-Session-Token", token);
+    expect(res.status).toBe(200);
+    expect(res.body.code).toBe(code);
+    expect(res.body).toHaveProperty("players");
+    expect(res.body).toHaveProperty("chatMessages");
+  });
+
+  it("GET /api/rooms/:code com token inválido → 401 (não devolve meio payload)", async () => {
+    const code = uniqueCode();
+    await createRoom(code);
+    const res = await request(app).get(`/api/rooms/${code}`).set("X-Session-Token", "token-forjado");
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /api/rooms/:code com código desconhecido → 404", async () => {
     const miss = await request(app).get("/api/rooms/NAO-EXISTE");
     expect(miss.status).toBe(404);
   });
@@ -134,7 +161,10 @@ describe("API de salas — criar/join/leave", () => {
     expect(leave.status).toBe(200);
     expect(leave.body.success).toBe(true);
 
-    const room = await request(app).get(`/api/rooms/${code}`);
+    // B.3 — leitura completa agora exige sessão; usamos a do GM, que continua
+    // válida (só o token de quem saiu foi revogado).
+    const room = await request(app).get(`/api/rooms/${code}`).set("X-Session-Token", gmToken);
+    expect(room.status).toBe(200);
     expect(room.body.players).not.toHaveProperty("peer_leave");
 
     // Token revogado → a próxima ação autenticada falha com 401
