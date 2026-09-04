@@ -203,6 +203,18 @@ const chatLimiter = makeRateLimiter(30, 60_000);  // chat mais restrito (30 msg/
 // cada 6 s) e apertado para script. Somado ao JWT, o abuso exige conta válida.
 const aiLimiter = makeRateLimiter(10, 60_000);
 
+// Mensagens de 401. São DUAS porque as credenciais são duas, e a diferença
+// muda o que o usuário deve fazer: sessão de MESA se resolve reconectando à
+// sala; sessão de CONTA (JWT do Supabase, usado pelo /api/gemini) se resolve
+// entrando de novo no app.
+//
+// Constantes em vez das 17 literais que estavam espalhadas — e o passo mínimo
+// na direção dos códigos de erro estáveis que a Fase I vai propor. Hoje o
+// cliente decide por status HTTP e nunca por texto (`authedFetch` reconecta em
+// 401), então a redação pode mudar sem quebrar ninguém.
+const ERR_SESSAO_MESA = "Sessão inválida ou expirada. Reconecte-se à mesa.";
+const ERR_SESSAO_CONTA = "Sessão inválida ou expirada. Entre novamente.";
+
 // T1.7 — autor do request é derivado do token de sessão, nunca do peerId livre
 function getSessionPeerId(req: express.Request, code: string): string | null {
   const token = typeof req.body?.sessionToken === "string" ? req.body.sessionToken : null;
@@ -336,7 +348,7 @@ app.post("/api/gemini", aiLimiter, async (req, res) => {
 
   const user = await verifySupabaseJwt(token);
   if (!user) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Entre novamente." });
+    return res.status(401).json({ error: ERR_SESSAO_CONTA });
   }
 
   const { prompt } = req.body ?? {};
@@ -430,7 +442,7 @@ app.get("/api/rooms/:code", (req, res) => {
 
   const peerId = getSessionPeerIdFromHeader(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   res.json(room);
 });
@@ -439,7 +451,7 @@ app.get("/api/rooms/:code", (req, res) => {
 app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { sheet } = req.body ?? {};
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
@@ -457,7 +469,7 @@ app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/player-health", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { targetPeerId, woundLevel } = req.body ?? {};
   if (typeof targetPeerId !== "string" || woundLevel === undefined) {
@@ -471,7 +483,7 @@ app.post("/api/rooms/:code/player-health", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { gridState } = req.body ?? {};
   if (!gridState || typeof gridState !== "object") {
@@ -485,7 +497,7 @@ app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { archetypeId } = req.body ?? {};
   const result = generateRoomNpc(req.params.code, requesterPeerId, archetypeId);
@@ -496,7 +508,7 @@ app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/players/generate", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = generateRoomPlayerEdgerunner(req.params.code, requesterPeerId);
   return respondWithResult(res, result);
@@ -506,7 +518,7 @@ app.post("/api/rooms/:code/players/generate", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = deleteGeneratedPlayer(req.params.code, requesterPeerId, req.params.targetPeerId);
   return respondWithResult(res, result);
@@ -516,7 +528,7 @@ app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res
 app.post("/api/rooms/:code/npcs/:npcId/delete", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = deleteRoomNpc(req.params.code, requesterPeerId, req.params.npcId);
   return respondWithResult(res, result);
@@ -526,7 +538,7 @@ app.post("/api/rooms/:code/npcs/:npcId/delete", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { woundLevel } = req.body ?? {};
   if (woundLevel === undefined) {
@@ -543,7 +555,7 @@ app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { text } = req.body ?? {};
   const result = postChatMessage(req.params.code, requesterPeerId, text);
@@ -555,7 +567,7 @@ app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
 app.post("/api/rooms/:code/roll", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { kind, skillName } = req.body ?? {};
   const result = rollDiceForPlayer(req.params.code, requesterPeerId, { kind, skillName });
@@ -575,7 +587,7 @@ app.post("/api/rooms/:code/roll", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/heartbeat", roomLimiter, (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   if (!touchPlayer(req.params.code, peerId)) {
     return res.status(404).json({ error: "Jogador não está na mesa." });
@@ -587,7 +599,7 @@ app.post("/api/rooms/:code/heartbeat", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { locationName, combatModifier, modifierReason } = req.body ?? {};
   const result = updateRoomSettings(req.params.code, requesterPeerId, locationName, combatModifier, modifierReason);
@@ -598,7 +610,7 @@ app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = leaveRoom(req.params.code, peerId);
   // Fase 5 (T5.2) — fecha o socket WS do peer que saiu (evita fantasma)
@@ -619,7 +631,7 @@ app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
 app.post("/api/rooms/:code/initiative", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { action, initiativeList } = req.body ?? {};
   let result;
@@ -647,7 +659,7 @@ app.get("/api/rooms/:code/stream", (req, res) => {
   // Sem recorte público aqui — stream sem sessão não tem para que servir.
   const peerId = getSessionPeerIdFromQuery(req, code);
   if (!peerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
 
   // Fase B (B.7) — INSTRUMENTAÇÃO DO FALLBACK, para a Fase L decidir com dado.

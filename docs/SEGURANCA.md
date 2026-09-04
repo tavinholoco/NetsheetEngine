@@ -144,7 +144,60 @@ vermelho por motivo alheio ao commit.
 
 ### Fase B — Fechar os buracos de autorização
 
-*(a preencher — esta fase existe justamente para zerar SEC-01 a SEC-06)*
+**03/09/2026.** Os seis achados fechados. Esta fase é a que mais mexeu em superfície de segurança do
+projeto até aqui, então o portão vale mais que de costume.
+
+1. **Entrada nova?** Muita, e toda validada no limite:
+   - **A ficha** deixou de entrar verbatim — `src/rules/sheetSchema.ts` grampeia faixas, corta
+     arrays e strings, remove item estruturalmente inválido e **constrói a saída campo a campo**, de
+     modo que campo desconhecido não sobrevive. Aplicado no `roomManager`, não na rota, para cobrir
+     todo caminho de escrita.
+   - **O `prompt` da IA** ganhou tipo, obrigatoriedade e teto de 4.000 caracteres; o
+     `systemInstruction` **saiu do contrato** e é descartado.
+   - **Token por header e por query** (`X-Session-Token`, `?token=`) — ambos passam pelo mesmo
+     `verifySession`.
+   - **A coluna `sessions` lida no boot** é entrada não confiável como qualquer outra:
+     `restoreRoomSessions` valida forma e ignora lixo em vez de criar sessão inválida.
+2. **Dado novo sai?** No saldo, sai **menos**: leitura de sala e stream agora exigem sessão. O que
+   entrou de novo:
+   - *recorte público* para leitura sem token — mas é exatamente o que o lobby (`GET /api/rooms`) já
+     expunha, então não abre nada novo;
+   - *hashes de sessão no banco* — SHA-256, nunca o token, justamente para o dado em repouso não ser
+     utilizável;
+   - *três eventos de log*: `ai_request` (id do usuário — UUID pseudônimo), `sse_fallback` (peer +
+     userAgent) e `sheet_sanitized` (caminhos de campo). Nenhum carrega segredo, ficha ou prompt.
+3. **Autorização nova? SIM, e de um tipo que não existia.** O servidor não sabia verificar identidade
+   de **conta** — só conhecia o `sessionToken` de mesa. Agora convivem duas credenciais de escopos
+   diferentes: sessão de mesa (o que você pode fazer *nesta sala*) e JWT do Supabase (*quem você é*).
+   A regra 2 da fronteira continua de pé: o autor vem sempre da credencial, nunca do corpo. A
+   distinção está documentada no `PROTOCOLO_MULTIPLAYER.md` §2, inclusive por que o header é
+   `X-Session-Token` e não `Authorization`.
+4. **Jogador convidado hostil?** É onde a fase mais mudou o jogo. Antes ele podia ler qualquer sala
+   sabendo o código, assinar o stream de qualquer mesa, forjar atributos e `woundLevel` na própria
+   ficha, e usar o proxy de IA à vontade. Agora precisa de sessão **daquela** sala (testado com token
+   válido de outra sala → 401), a ficha é grampeada, e a IA exige conta.
+   **O que ele ainda consegue:** mandar uma ficha *plausível porém trapaceira* dentro dos limites
+   (BODY 15, todas as perícias em 10). Isso é regra de jogo, não autorização — cabe às Fases C/K
+   (orçamento de criação), e está registrado como tal, não como buraco de segurança.
+5. **Estado novo sem limite?** O SEC-04 fechou os três que existiam. O estado **novo** que esta fase
+   criou — a coluna `sessions` — cresce junto com a sala e é recolhido junto com ela pelo coletor,
+   então nasce limitado por construção.
+6. **Custo por requisição a serviço externo? SIM — e é o achado do portão.** A B.1 introduziu uma
+   chamada ao Supabase Auth **por requisição de IA** (`auth.getUser`). É gratuita, mas é uma
+   dependência nova no caminho quente: **se o Supabase estiver fora ou pausado, o Netrunner IA para**
+   — por desenho, já que a alternativa seria degradar para "deixa passar" num endpoint que gasta a
+   chave do dono. O custo do Gemini em si ficou *mais* contido: exige conta, 10 req/min por IP e
+   prompt de no máximo 4.000 caracteres.
+
+**Levado para a Fase J, com gatilho:**
+- **Duas altas de `mathjs` aceitas conscientemente** (`scripts/audit-ci.mjs`). Cliente-only, fórmula
+  do próprio usuário. **Gatilho:** rolador publicar 6.x estável, mathjs corrigir em versão aceita
+  pela 5.5.x, ou alguma fórmula vinda da rede passar a ser avaliada no cliente.
+- **A cadeia `express → body-parser → qs`** (3 moderadas) não tem patch na linha 4.x — 4.22.2 é a
+  última publicada. **Gatilho:** sair um patch 4.x, ou a migração para Express 5 entrar em pauta por
+  outro motivo.
+- **O binário Yjs continua sem validação** — a caixa `VAL` do diagrama cobre a ficha, não o CRDT.
+  Segue como item da Fase J, agora explícito no `ARQUITETURA.md`.
 
 ### Fase C — Fonte única de regras
 

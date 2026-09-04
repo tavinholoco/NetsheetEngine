@@ -38,23 +38,39 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/**
+ * Espera até a condição valer, checando a cada 10 ms.
+ *
+ * A primeira versão deste teste esperava 300 ms fixos e conferia depois — o que
+ * passa quase sempre e falha quando a máquina está ocupada. Teste que depende
+ * de "tempo suficiente" é intermitente por construção: não mede o evento, mede
+ * a carga do CI. Aqui esperamos pelo EVENTO, com teto para não travar a suíte.
+ */
+async function esperarPor(cond: () => boolean, tetoMs = 3000): Promise<boolean> {
+  const limite = Date.now() + tetoMs;
+  while (Date.now() < limite) {
+    if (cond()) return true;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  return cond();
+}
+
 describe("log de fallback SSE", () => {
   it("emite `sse_fallback` quando um cliente autenticado abre o stream", async () => {
     const { code: c, token } = await makeRoom();
     const spy = vi.spyOn(logger, "info").mockImplementation(() => {});
 
-    // O supertest não fecha o stream sozinho; abortamos após os headers.
-    await new Promise<void>((resolve) => {
-      const req = request(app).get(`/api/rooms/${c}/stream?token=${token}`);
-      req.end(() => resolve());
-      setTimeout(() => {
-        req.abort();
-        resolve();
-      }, 300);
-    });
+    // O stream não termina sozinho: disparamos e observamos o efeito.
+    const req = request(app).get(`/api/rooms/${c}/stream?token=${token}`);
+    req.end(() => {});
 
+    const emitiu = await esperarPor(() =>
+      spy.mock.calls.some(([evento]) => evento === "sse_fallback")
+    );
+    req.abort();
+
+    expect(emitiu, "o evento sse_fallback não foi emitido").toBe(true);
     const chamada = spy.mock.calls.find(([evento]) => evento === "sse_fallback");
-    expect(chamada, "o evento sse_fallback não foi emitido").toBeTruthy();
 
     const campos = chamada![1] as Record<string, unknown>;
     expect(campos.room).toBe(c);

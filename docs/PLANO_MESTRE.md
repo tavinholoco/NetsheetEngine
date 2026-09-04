@@ -580,13 +580,22 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
       removeria um caminho que talvez seja o único que funciona atrás de proxy corporativo — ausência
       de evidência viraria evidência de ausência. Um segundo teste garante que recusa por falta de
       sessão NÃO conta, para não inflar o número.)*
-- [ ] **B.8** Testes de integração para cada item — a suíte atual cobre bem quem *pode* agir e não
-      cobre quem não deveria conseguir *ler*.
-- [ ] **B.9** `git tag v0.4.1`.
+- [x] **B.8** Testes de integração para cada item — a suíte atual cobre bem quem *pode* agir e não
+      cobre quem não deveria conseguir *ler*. *(03/09/2026 — escritos junto com cada item, não no fim.)*
+      **141 → 197 testes (+56).** Por arquivo: `ai-endpoint` 8 · `sheet-schema` 14 · `room-read-auth` 6
+      · `session-persistence` 10 · `room-collector` 13 · `sse-fallback-log` 2 · `server-api` +3 líquidos.
+      - **A lacuna que o item nomeava está coberta:** os testes de *quem não deveria conseguir ler*
+        são os 6 do `room-read-auth` mais os 4 que substituíram o antigo caso do `GET /api/rooms/:code`
+        — inclusive **token válido de outra sala**, que é o convidado hostil da decisão 3.
+      - **Uma intermitência encontrada e corrigida:** o teste do B.7 esperava 300 ms fixos e conferia
+        depois. Passava quase sempre e falhou uma vez. Teste que depende de "tempo suficiente" não
+        mede o evento, mede a carga da máquina — trocado por espera pelo próprio evento, com teto.
+        Seis execuções seguidas limpas depois da correção.
+- [x] **B.9** `git tag v0.4.1`. *(03/09/2026)*
 - [ ] **B.10** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe.
-- [ ] **B.11** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
-- [ ] **B.12** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase B concluída em:** ____/____/______
+- [x] **B.11** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [x] **B.12** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+- [x] ✅ **Fase B concluída em:** __03__/__09__/__2026__
 
 ---
 
@@ -994,7 +1003,7 @@ público mudar.
 | Fase | Tipo | Descrição | Status | Data |
 |---|---|---|---|---|
 | A | 🔨 | Reancorar o projeto | ✅ | 03/09/2026 |
-| B | 🔨 | Fechar buracos de autorização | ⬜ | — |
+| B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ⬜ | — |
 | D | 🔨 | Loop de combate | ⬜ | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
