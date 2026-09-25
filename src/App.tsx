@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { CyberpunkMenu, TabType } from './components/CyberpunkMenu';
 import { AuthModal } from './features/social/AuthModal';
-import { RollResult, StatName, WeaponItem } from './types/cyberpunk';
+import { RollResult, SkillItem, WeaponItem } from './types/cyberpunk';
 import { useCharacterSheet } from './hooks/useCharacterSheet';
 import { useUserActivity } from './hooks/useUserActivity';
 import { useSheetStore, syncSheetStore } from './stores/useSheetStore';
@@ -10,9 +10,14 @@ import { useRollStore } from './stores/useRollStore';
 import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
 // Motor de dados FNFF — casca do cliente sobre src/rules/ (Fase C, C.1)
-import { rollCheck, rollSkill, rollDamage, rollDeathSave, rollStunSave } from './utils/diceEngine';
-import { deriveCurrentStats } from './rules/character';
-import { attackModifiers } from './rules/combat';
+import {
+  rollCheck,
+  rollSheetAttack,
+  rollSheetDamage,
+  rollSheetDeathSave,
+  rollSheetSkill,
+  rollSheetStunSave
+} from './utils/diceEngine';
 import type { Modifier } from './rules/dice';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';
@@ -154,13 +159,11 @@ export default function App() {
     addRoll(roll);
   };
 
-  // Roll Skill directly from Skill section (Fase 6 T6.3 — motor diceEngine)
-  const handleRollSkill = (skillName: string, statName: StatName, statVal: number, skillRank: number) => {
-    handleAddRollResult(rollSkill(statVal, skillRank, {
-      characterName: sheet.handle || 'Edgerunner',
-      label: `Rolagem: ${skillName}`,
-      statName
-    }));
+  // Rolagens da ficha (Fase C). As parcelas saem de src/rules/rolls.ts — as
+  // MESMAS funções que a mesa usa no servidor; o teste de paridade (C.10)
+  // confere o resultado inteiro com a mesma fila de dados.
+  const handleRollSkill = (skill: SkillItem) => {
+    handleAddRollResult(rollSheetSkill(sheet, skill));
   };
 
   // Teste com parcelas prontas — a habilidade especial usa este (C.8).
@@ -168,39 +171,25 @@ export default function App() {
     handleAddRollResult(rollCheck(modifiers, { characterName: sheet.handle || 'Edgerunner', label }));
   };
 
-  // Ataque (C.3): 1d10 + REF corrente + perícia da arma + WA — as mesmas
-  // parcelas da mesa. Antes o WA entrava NO LUGAR da perícia.
   const handleRollWeaponAttack = (weapon: WeaponItem) => {
-    handleAddRollResult(rollCheck(
-      attackModifiers({ ref: deriveCurrentStats(sheet).REF, weapon, skills: sheet.skills }),
-      { characterName: sheet.handle || 'Edgerunner', label: `Ataque com ${weapon.name}` }
-    ));
+    handleAddRollResult(rollSheetAttack(sheet, weapon));
   };
 
-  // Roll Damage Only (Fase 6 T6.3 — motor diceEngine; fórmula inválida é
-  // ignorada silenciosamente, mesmo comportamento de antes)
+  // Fórmula de dano inválida é ignorada em silêncio, como antes.
   const handleRollDamageOnly = (weaponName: string, damageFormula: string) => {
     try {
-      handleAddRollResult(rollDamage(damageFormula, {
-        characterName: sheet.handle || 'Edgerunner',
-        label: `Dano da Arma: ${weaponName}`
-      }));
+      handleAddRollResult(rollSheetDamage(sheet, { name: weaponName, damage: damageFormula }));
     } catch {
       /* fórmula de dano inválida */
     }
   };
 
-  // Saves do livro (C.7): o alvo depende do nível do ferimento.
   const handleRollDeathSave = () => {
-    handleAddRollResult(rollDeathSave(deriveCurrentStats(sheet).BODY, sheet.woundLevel, {
-      characterName: sheet.handle || 'Edgerunner'
-    }));
+    handleAddRollResult(rollSheetDeathSave(sheet));
   };
 
   const handleRollStunSave = () => {
-    handleAddRollResult(rollStunSave(deriveCurrentStats(sheet).BODY, sheet.woundLevel, {
-      characterName: sheet.handle || 'Edgerunner'
-    }));
+    handleAddRollResult(rollSheetStunSave(sheet));
   };
 
   return (

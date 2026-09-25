@@ -821,7 +821,19 @@ cliente e servidor para ela.
 - [ ] **C.9** **Conferência sistemática contra o livro** (decisão 2): atributos, perícias, combate,
       dano, armadura, humanidade e movimento. Registrar cada divergência encontrada, inclusive as não
       listadas nesta auditoria.
-- [ ] **C.10** Testes de paridade cliente↔servidor com a mesma entrada nos dois RNGs. *(ARQ-08, parte 1)*
+- [x] **C.10** Testes de paridade cliente↔servidor com a mesma entrada nos dois RNGs. *(ARQ-08, parte 1 —
+      25/09/2026)*
+      - **A paridade achou divergência mesmo com o motor único:** a ficha escrevia `Perícia (4)` e
+        `Ataque com X`, a mesa `Handgun (4)` e `Ataque (X)`. O número batia, o texto não. A montagem
+        "ficha → rolagem" subiu para `src/rules/rolls.ts` (`sheetSkillRoll`, `sheetAttackRoll`,
+        `sheetDamageRoll`, `sheetDeathSaveRoll`, `sheetStunSaveRoll`), que o servidor e as casquinhas
+        `rollSheet*` do cliente chamam. O `App.tsx` perdeu a lógica de regra que ainda tinha.
+      - `parity.integration.test.ts`: **52 casos** — 3 fichas (ilesa, Crítica com cromo, Mortal 3) ×
+        perícia, ataque, dano, stun e death save × filas com explosão, fumble e 1 depois de explodir.
+        Compara o `RollResult` inteiro, menos id, horário e nome.
+      - **Provado:** com as funções da ficha montando a rolagem como o `App` fazia antes, 30 dos 52
+        falham; com as compartilhadas, 52 passam.
+      - Fecha o **ARQ-02** (regras implementadas duas vezes, sem teste de paridade).
 - [ ] **C.11** Atualizar `docs/PRD.md` §5 no mesmo commit de cada correção. *(DOC-01, parte 2)*
 - [ ] **C.12** `git tag v0.4.2`.
 - [ ] **C.13** 📐 **Desenho** — a C.9 confere o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) e a [máquina de ferimento](./ARQUITETURA.md#máquina-de-estados-do-ferimento) contra o livro, e **corrige os diagramas** com o que a conferência determinar. Eles são hipótese de trabalho, não autoridade.

@@ -8,9 +8,15 @@ import { generateRandomNpc } from "../src/utils/npcGenerator.js";
 import { sanitizeCharacterSheet } from "../src/rules/sheetSchema.js";
 // Fase C (C.1) — as regras de rolagem são as mesmas do cliente, em src/rules/.
 import type { Rng } from "../src/rules/dice.js";
-import { checkRoll, damageRoll, deathSaveRoll, stunSaveRoll, type RollCore } from "../src/rules/rolls.js";
-import { deriveCurrentStats } from "../src/rules/character.js";
-import { attackModifiers, gmModifier } from "../src/rules/combat.js";
+import {
+  sheetAttackRoll,
+  sheetDamageRoll,
+  sheetDeathSaveRoll,
+  sheetSkillRoll,
+  sheetStunSaveRoll,
+  type RollCore
+} from "../src/rules/rolls.js";
+import { gmModifier } from "../src/rules/combat.js";
 import { logger } from "./logger.js";
 
 // ============================================================
@@ -880,11 +886,10 @@ export function rollDiceForPlayer(
   const player = room.players[requesterPeerId];
   if (!player) return { room: null, error: "Jogador não está na mesa." };
 
+  // As parcelas saem de src/rules/rolls.ts — as mesmas funções que a ficha do
+  // cliente chama (C.10). Atributos CORRENTES (C.6): o `currentStats` que o
+  // cliente manda nunca é lido.
   const sheet: CharacterSheet = player.sheet || ({} as CharacterSheet);
-  // C.6 — toda rolagem usa os atributos CORRENTES (humanidade e ferimento
-  // aplicados), derivados aqui da ficha. O `currentStats` que o cliente manda
-  // nunca é lido.
-  const stats = deriveCurrentStats(sheet);
   const kind = sanitizeText(request?.kind, 12).toLowerCase();
   const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const rollId = "roll_" + Date.now() + "_" + crypto.randomBytes(3).toString("hex");
@@ -896,33 +901,25 @@ export function rollDiceForPlayer(
   let roll: RollResult;
 
   if (kind === "attack") {
-    const weapon = firstWeapon(sheet);
     // C.3 — 1d10 + REF + perícia da arma + WA (+ GM).
-    roll = stamp(checkRoll(rng, `Ataque (${weapon?.name || "desarmado"})`,
-      attackModifiers({ ref: stats.REF, weapon, skills: sheet.skills, gm })));
+    roll = stamp(sheetAttackRoll(rng, sheet, firstWeapon(sheet), gm));
   } else if (kind === "damage") {
-    const weapon = firstWeapon(sheet);
-    const formula = weapon?.damage || "1d6";
-    const core = damageRoll(rng, `Dano da Arma: ${weapon?.name || "—"}`, formula);
+    const { core, formula } = sheetDamageRoll(rng, firstWeapon(sheet));
     if (!core) return { room: null, error: `Fórmula de dano inválida: ${formula}` };
     roll = stamp(core);
   } else if (kind === "save") {
     // C.7 — death save: BODY − nível Mortal.
-    roll = stamp(deathSaveRoll(rng, stats.BODY, Number(sheet.woundLevel) || 0));
+    roll = stamp(sheetDeathSaveRoll(rng, sheet));
   } else if (kind === "stun") {
     // C.7 — stun save: BODY − 0 a 9 pelo nível do ferimento. Não existia.
-    roll = stamp(stunSaveRoll(rng, stats.BODY, Number(sheet.woundLevel) || 0));
+    roll = stamp(sheetStunSaveRoll(rng, sheet));
   } else if (kind === "skill") {
     const skillName = sanitizeText(request?.skillName, 60);
     const skill = Array.isArray(sheet.skills)
       ? sheet.skills.find((s) => s.name.toLowerCase() === skillName.toLowerCase())
       : undefined;
     if (!skill) return { room: null, error: "Perícia não encontrada na sua ficha." };
-    roll = stamp(checkRoll(rng, `Rolagem: ${skill.name}`, [
-      { label: skill.stat, value: Number(stats[skill.stat]) || 0 },
-      { label: skill.name, value: Number(skill.level) || 0 },
-      ...(gm ? [gm] : [])
-    ]));
+    roll = stamp(sheetSkillRoll(rng, sheet, skill, gm));
   } else {
     return { room: null, error: "Tipo de rolagem inválido. Use: attack, damage, save, stun ou skill." };
   }

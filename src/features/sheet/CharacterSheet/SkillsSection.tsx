@@ -9,7 +9,7 @@ import { Swords, Plus, Trash2, Dice5, Star } from 'lucide-react';
 interface SkillsSectionProps {
   sheet: CharacterSheet;
   onChange: (updated: Partial<CharacterSheet>) => void;
-  onRollSkill: (skillName: string, statName: StatName, statVal: number, skillRank: number) => void;
+  onRollSkill: (skill: SkillItem) => void;
   onRollCheck: (label: string, modifiers: Modifier[]) => void;
 }
 
@@ -57,7 +57,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
   };
 
   const rollSkill = (skill: SkillItem) => {
-    onRollSkill(skill.name, skill.stat, current[skill.stat], skill.level);
+    onRollSkill(skill);
   };
 
   return (

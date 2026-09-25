@@ -1,6 +1,16 @@
-import type { RollResult } from '../types/cyberpunk';
+import type { CharacterSheet, RollResult, SkillItem, WeaponItem } from '../types/cyberpunk';
 import { rollHitLocation, type Modifier, type Rng } from '../rules/dice';
-import { checkRoll, damageRoll, deathSaveRoll, stunSaveRoll, type RollCore } from '../rules/rolls';
+import {
+  checkRoll,
+  damageRoll,
+  sheetAttackRoll,
+  sheetDamageRoll,
+  sheetDeathSaveRoll,
+  sheetSkillRoll,
+  sheetStunSaveRoll,
+  type RollCore,
+  type RollingSheet
+} from '../rules/rolls';
 
 /**
  * ROLADOR DO CLIENTE (ficha, página de dados)
@@ -89,14 +99,40 @@ export function rollDamage(formula: string, ctx: DiceRollContext = {}, rng: Rng 
   return stamp(core, ctx.characterName);
 }
 
+// ------------------------------------------------------------
+// Rolagens da FICHA — as mesmas funções que a mesa chama (C.10)
+// ------------------------------------------------------------
+
+type SheetWithHandle = RollingSheet & Pick<CharacterSheet, 'handle'>;
+
+/** Perícia da ficha, com o atributo corrente. */
+export function rollSheetSkill(sheet: SheetWithHandle, skill: Pick<SkillItem, 'name' | 'stat' | 'level'>, rng: Rng = clientRng): RollResult {
+  return stamp(sheetSkillRoll(rng, sheet, skill), sheet.handle);
+}
+
+/** Ataque da ficha: REF corrente + perícia da arma + WA. */
+export function rollSheetAttack(sheet: SheetWithHandle, weapon: Pick<WeaponItem, 'name' | 'type' | 'wa'> | undefined, rng: Rng = clientRng): RollResult {
+  return stamp(sheetAttackRoll(rng, sheet, weapon), sheet.handle);
+}
+
+/**
+ * Dano da arma da ficha + local de impacto.
+ * @throws {Error} se a fórmula for inválida — o chamador trata.
+ */
+export function rollSheetDamage(sheet: SheetWithHandle, weapon: Pick<WeaponItem, 'name' | 'damage'> | undefined, rng: Rng = clientRng): RollResult {
+  const { core, formula } = sheetDamageRoll(rng, weapon);
+  if (!core) throw new Error(`Fórmula de dano inválida: ${formula}`);
+  return stamp(core, sheet.handle);
+}
+
 /** Death save: `1d10 ≤ BODY − nível Mortal` (C.7). */
-export function rollDeathSave(body: number, woundLevel: number, ctx: DiceRollContext = {}, rng: Rng = clientRng): RollResult {
-  return stamp(deathSaveRoll(rng, body, woundLevel), ctx.characterName);
+export function rollSheetDeathSave(sheet: SheetWithHandle, rng: Rng = clientRng): RollResult {
+  return stamp(sheetDeathSaveRoll(rng, sheet), sheet.handle);
 }
 
 /** Stun save: `1d10 ≤ BODY − 0 a 9` pelo nível do ferimento (C.7). */
-export function rollStunSave(body: number, woundLevel: number, ctx: DiceRollContext = {}, rng: Rng = clientRng): RollResult {
-  return stamp(stunSaveRoll(rng, body, woundLevel), ctx.characterName);
+export function rollSheetStunSave(sheet: SheetWithHandle, rng: Rng = clientRng): RollResult {
+  return stamp(sheetStunSaveRoll(rng, sheet), sheet.handle);
 }
 
 /** Local de impacto: 1 cabeça (×2), 2–4 tronco, 5/6 braços, 7–8 perna direita, 9–0 perna esquerda. */

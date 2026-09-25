@@ -10,7 +10,16 @@
  * os testes trocavam o gerador GLOBAL da biblioteca @dice-roller — que saiu.
  */
 import { describe, it, expect } from 'vitest';
-import { clientRng, rollCheck, rollDamage, rollDeathSave, rollLocation, rollSkill, rollStunSave } from '../utils/diceEngine';
+import { clientRng, rollCheck, rollDamage, rollLocation, rollSheetDeathSave, rollSheetStunSave, rollSkill } from '../utils/diceEngine';
+
+/** Ficha mínima para os saves: BODY 8, sem cromo. */
+const vex = (woundLevel: number) => ({
+  handle: 'Vex',
+  woundLevel,
+  stats: { INT: 5, REF: 5, TECH: 5, COOL: 5, ATTR: 5, LUCK: 5, MA: 5, BODY: 8, EMP: 5 },
+  cyberware: [],
+  skills: []
+});
 import { scriptedRng } from '../test/scriptedRng';
 
 describe('rollSkill — perícia/ataque', () => {
@@ -67,19 +76,19 @@ describe('rollDamage — fórmula + local de impacto', () => {
 
 describe('saves (C.7) — o alvo vem do ferimento', () => {
   it('death save em Mortal 3 (nível 7): 1d10 ≤ BODY 8 − 3; 5 passa, 6 falha', () => {
-    const ok = rollDeathSave(8, 7, { characterName: 'Vex' }, scriptedRng([5]));
+    const ok = rollSheetDeathSave(vex(7), scriptedRng([5]));
     expect(ok.isCriticalSuccess).toBe(true);
     expect(ok.label).toBe('Death Save (Mortal 3)');
     expect(ok.diceFormula).toBe('1d10 ≤ BODY 8 − 3');
-    expect(rollDeathSave(8, 7, {}, scriptedRng([6])).isCriticalFailure).toBe(true);
+    expect(rollSheetDeathSave(vex(7), scriptedRng([6])).isCriticalFailure).toBe(true);
   });
 
   it('death save fora do Mortal avisa que o livro não exige', () => {
-    expect(rollDeathSave(8, 2, {}, scriptedRng([4])).label).toBe('Death Save (fora do Mortal: não exigido)');
+    expect(rollSheetDeathSave(vex(2), scriptedRng([4])).label).toBe('Death Save (fora do Mortal: não exigido)');
   });
 
   it('stun save em Sério: 1d10 ≤ BODY 8 − 1', () => {
-    const r = rollStunSave(8, 2, {}, scriptedRng([8]));
+    const r = rollSheetStunSave(vex(2), scriptedRng([8]));
     expect(r.label).toBe('Stun Save (Sério)');
     expect(r.isCriticalFailure).toBe(true);
     expect(r.details).toBe('FALHOU! Resultado 8 > 7 (BODY 8 − 1)');

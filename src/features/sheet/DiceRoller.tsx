@@ -4,8 +4,8 @@ import { RollResult, StatName } from '../../types/cyberpunk';
 import {
   rollSkill as engineRollSkill,
   rollDamage as engineRollDamage,
-  rollDeathSave as engineRollDeathSave,
-  rollStunSave as engineRollStunSave
+  rollSheetDeathSave,
+  rollSheetStunSave
 } from '../../utils/diceEngine';
 import { Dice5, History, Trash2, Target, HeartPulse, Zap } from 'lucide-react';
 import { useSheetStore } from '../../stores/useSheetStore';
@@ -57,13 +57,8 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
   const body = deriveCurrentStats(sheet).BODY;
   const mortal = mortalLevel(sheet.woundLevel);
 
-  const rollDeathSave = () => {
-    onAddRoll(engineRollDeathSave(body, sheet.woundLevel, { characterName: sheet.handle || 'Edgerunner' }));
-  };
-
-  const rollStunSave = () => {
-    onAddRoll(engineRollStunSave(body, sheet.woundLevel, { characterName: sheet.handle || 'Edgerunner' }));
-  };
+  const rollDeathSave = () => onAddRoll(rollSheetDeathSave(sheet));
+  const rollStunSave = () => onAddRoll(rollSheetStunSave(sheet));
 
   return (
     <div className="space-y-5 font-mono animate-fadeIn">

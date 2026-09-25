@@ -8,7 +8,7 @@
 // fora daqui — é o que o teste de paridade (C.10) garante.
 // ============================================================
 
-import type { RollResult } from '../types/cyberpunk';
+import type { CharacterSheet, RollResult, SkillItem, WeaponItem } from '../types/cyberpunk';
 import {
   resolveCheck,
   resolveSave,
@@ -17,7 +17,8 @@ import {
   type Modifier,
   type Rng
 } from './dice';
-import { deathSaveTarget, mortalLevel, stunSaveTarget, woundRow } from './character';
+import { deathSaveTarget, deriveCurrentStats, mortalLevel, stunSaveTarget, woundRow } from './character';
+import { attackModifiers } from './combat';
 
 /** O RollResult sem o que é do chamador (identidade e horário). */
 export type RollCore = Omit<RollResult, 'id' | 'timestamp' | 'characterName'>;
@@ -104,4 +105,65 @@ export function deathSaveRoll(rng: Rng, body: number, woundLevel: number): RollC
   const mortal = mortalLevel(woundLevel);
   const label = mortal === null ? 'Death Save (fora do Mortal: não exigido)' : `Death Save (Mortal ${mortal})`;
   return saveRoll(rng, label, deathSaveTarget(body, woundLevel), `BODY ${body}${minus(mortal ?? 0)}`);
+}
+
+// ------------------------------------------------------------
+// Da ficha à rolagem — o que a ficha (cliente) e a mesa (servidor) chamam
+// ------------------------------------------------------------
+// Antes da C.10 cada lado montava as parcelas por conta própria, e divergiam
+// no texto: a ficha escrevia "Perícia (4)" e "Ataque com X", a mesa escrevia
+// "Handgun (4)" e "Ataque (X)". Agora os dois chamam estas funções, e o teste
+// de paridade confere o RollResult inteiro com a mesma fila de dados.
+
+/** O que as rolagens leem da ficha. */
+export type RollingSheet = Pick<CharacterSheet, 'stats' | 'woundLevel' | 'cyberware' | 'skills'>;
+
+/** Perícia: 1d10 + atributo CORRENTE + nível (+ GM, só na mesa). */
+export function sheetSkillRoll(
+  rng: Rng,
+  sheet: RollingSheet,
+  skill: Pick<SkillItem, 'name' | 'stat' | 'level'>,
+  gm?: Modifier | null
+): RollCore {
+  const current = deriveCurrentStats(sheet);
+  return checkRoll(rng, `Rolagem: ${skill.name}`, [
+    { label: skill.stat, value: current[skill.stat] ?? 0 },
+    { label: skill.name, value: Number(skill.level) || 0 },
+    ...(gm ? [gm] : [])
+  ]);
+}
+
+/** Ataque (C.3): 1d10 + REF corrente + perícia da arma + WA (+ GM, só na mesa). */
+export function sheetAttackRoll(
+  rng: Rng,
+  sheet: RollingSheet,
+  weapon: Pick<WeaponItem, 'name' | 'type' | 'wa'> | undefined,
+  gm?: Modifier | null
+): RollCore {
+  const current = deriveCurrentStats(sheet);
+  return checkRoll(
+    rng,
+    `Ataque (${weapon?.name || 'desarmado'})`,
+    attackModifiers({ ref: current.REF, weapon, skills: sheet.skills, gm })
+  );
+}
+
+/** Fórmula usada quando não há arma (ou a arma não diz). */
+export const FALLBACK_DAMAGE = '1d6';
+
+/** Dano da arma. `core` é `null` quando a fórmula é inválida. */
+export function sheetDamageRoll(
+  rng: Rng,
+  weapon: Pick<WeaponItem, 'name' | 'damage'> | undefined
+): { core: RollCore | null; formula: string } {
+  const formula = weapon?.damage || FALLBACK_DAMAGE;
+  return { core: damageRoll(rng, `Dano da Arma: ${weapon?.name || '—'}`, formula), formula };
+}
+
+export function sheetDeathSaveRoll(rng: Rng, sheet: RollingSheet): RollCore {
+  return deathSaveRoll(rng, deriveCurrentStats(sheet).BODY, Number(sheet.woundLevel) || 0);
+}
+
+export function sheetStunSaveRoll(rng: Rng, sheet: RollingSheet): RollCore {
+  return stunSaveRoll(rng, deriveCurrentStats(sheet).BODY, Number(sheet.woundLevel) || 0);
 }

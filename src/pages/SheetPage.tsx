@@ -1,5 +1,5 @@
 import React from 'react';
-import { CharacterSheet, StatName, WeaponItem } from '../types/cyberpunk';
+import { CharacterSheet, SkillItem, WeaponItem } from '../types/cyberpunk';
 import type { Modifier } from '../rules/dice';
 import { CharacterHeader } from '../features/sheet/CharacterSheet/CharacterHeader';
 import { HealthTracker } from '../features/sheet/CharacterSheet/HealthTracker';
@@ -22,7 +22,7 @@ export interface SheetPageProps {
   onRollStunSave: () => void;
   onRollWeaponAttack: (weapon: WeaponItem) => void;
   onRollDamageOnly: (weaponName: string, damageFormula: string) => void;
-  onRollSkill: (skillName: string, statName: StatName, statVal: number, skillRank: number) => void;
+  onRollSkill: (skill: SkillItem) => void;
   /** Teste com parcelas prontas (C.8 — a habilidade especial usa este). */
   onRollCheck: (label: string, modifiers: Modifier[]) => void;
   user: { uid: string; displayName?: string | null; email?: string | null } | null;
