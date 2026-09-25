@@ -87,6 +87,8 @@ itens da própria fase. Não são opcionais:
         código. Na Fase B, duas sobras escaparam de uma varredura que olhou só `*.md`/`*.yml`/`*.json`;
       - *refatoração* do código que a própria fase escreveu (duplicação, abstração faltando). **Não**
         é varredura do repositório — isso é das Fases E e G–J.
+- **4b.** Rodar **tudo**, E2E incluído (`npm run test:e2e`), antes do PR. *(Nasceu na Fase C: dois E2E
+      codificavam as regras antigas e só apareceram no fim.)*
 - **5.** Commit com mensagem que explique o *porquê*, e a tag da fase quando houver. Push do branch e
       **PR para o dono revisar e mergear** — nunca push direto no `master`.
       **Se a fase tiver migration** (decisão 5): a migration vai num **PR próprio**, que é mergeado
@@ -844,7 +846,7 @@ cliente e servidor para ela.
 - [x] **C.11** Atualizar `docs/PRD.md` §5 no mesmo commit de cada correção. *(DOC-01, parte 2 — feito em
       cada commit da fase, e também na cópia do PRD que o app exibe, `src/data/prdData.ts`, e no
       `PROTOCOLO_MULTIPLAYER.md`, cuja tabela de rolagens a fase tornou falsa)*
-- [ ] **C.12** `git tag v0.4.2`.
+- [x] **C.12** `git tag v0.4.2`. *(25/09/2026)*
 - [x] **C.13** 📐 **Desenho** — a C.9 confere o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) e a [máquina de ferimento](./ARQUITETURA.md#máquina-de-estados-do-ferimento) contra o livro, e **corrige os diagramas** com o que a conferência determinar. Eles são hipótese de trabalho, não autoridade.
       *(25/09/2026)* Os dois corrigidos: o pipeline ganhou o stun save, o efeito do livro, o BTM por
       BODY com mínimo 1, e perdeu o "death save com modificador cumulativo" (RED). A ordem ×2 × BTM
@@ -858,8 +860,8 @@ cliente e servidor para ela.
       validados. **Achado:** o jogador ainda baixa o próprio `woundLevel` pela sincronia — levado à
       D.1 com gatilho. Diagrama de contêineres: a caixa `RULES` ganhou nota (o navegador roda o mesmo
       código, mas na mesa só vale o do servidor).
-- [ ] **C.15** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase C concluída em:** ____/____/______
+- [x] **C.15** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+- [x] ✅ **Fase C concluída em:** __25__/__09__/__2026__ *(PR aberto para o dono; falta o merge e conferir o CI do `master`)*
 
 ---
 
@@ -1243,7 +1245,7 @@ público mudar.
 |---|---|---|---|---|
 | A | 🔨 | Reancorar o projeto | ✅ | 03/09/2026 |
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
-| C | 🔨 | Fonte única de regras | ⬜ | — |
+| C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ⬜ | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
@@ -1259,13 +1261,14 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a Fase B (24/09/2026) |
+| Verificação | Ao fechar a Fase C (25/09/2026) |
 |---|---|
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **197** testes, 13 arquivos |
-| `npm run test:e2e` | 6 testes (Playwright) |
-| `node scripts/test-rls.mjs` | 56/56 — exige Supabase local no Docker |
-| `npm run audit:ci` | passa, com 2 altas do `mathjs` aceitas por exceção nomeada |
+| `npx vitest run` | **395** testes, 19 arquivos |
+| `npm run test:e2e` | 6/6 (Playwright) |
+| `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C** (Supabase local desligado; a fase não mexeu em schema nem RLS) |
+| `npm run audit:ci` | passa, **ALLOWLIST vazia** (3 moderadas do `qs`, não bloqueiam) |
+| Chunk de entrada | 628 kB / 186 kB gzip |
 | Migrations em produção | `0001`–`0007` |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
