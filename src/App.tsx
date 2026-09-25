@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { CyberpunkMenu, TabType } from './components/CyberpunkMenu';
 import { AuthModal } from './features/social/AuthModal';
-import { RollResult, StatName } from './types/cyberpunk';
+import { RollResult, StatName, WeaponItem } from './types/cyberpunk';
 import { useCharacterSheet } from './hooks/useCharacterSheet';
 import { useUserActivity } from './hooks/useUserActivity';
 import { useSheetStore, syncSheetStore } from './stores/useSheetStore';
@@ -10,8 +10,9 @@ import { useRollStore } from './stores/useRollStore';
 import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
 // Motor de dados FNFF — casca do cliente sobre src/rules/ (Fase C, C.1)
-import { rollSkill, rollDamage, rollDeathSave } from './utils/diceEngine';
+import { rollCheck, rollSkill, rollDamage, rollDeathSave } from './utils/diceEngine';
 import { deriveCurrentStats } from './rules/character';
+import { attackModifiers } from './rules/combat';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';
 import { Dice5, CheckCircle2 } from 'lucide-react';
@@ -161,10 +162,13 @@ export default function App() {
     }));
   };
 
-  // Roll Weapon Attack directly
-  const handleRollWeaponAttack = (weaponName: string, wa: number, damageStr: string) => {
-    const refVal = deriveCurrentStats(sheet).REF;
-    handleRollSkill(`Ataque com ${weaponName}`, 'REF', refVal, wa);
+  // Ataque (C.3): 1d10 + REF corrente + perícia da arma + WA — as mesmas
+  // parcelas da mesa. Antes o WA entrava NO LUGAR da perícia.
+  const handleRollWeaponAttack = (weapon: WeaponItem) => {
+    handleAddRollResult(rollCheck(
+      attackModifiers({ ref: deriveCurrentStats(sheet).REF, weapon, skills: sheet.skills }),
+      { characterName: sheet.handle || 'Edgerunner', label: `Ataque com ${weapon.name}` }
+    ));
   };
 
   // Roll Damage Only (Fase 6 T6.3 — motor diceEngine; fórmula inválida é

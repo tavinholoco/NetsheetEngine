@@ -8,7 +8,7 @@
  */
 // @vitest-environment node
 import { describe, it, expect, afterEach } from 'vitest';
-import { createRoom, getAllActiveRooms, getRoom, joinRoom, leaveRoom, rollDiceForPlayer } from '../../server/roomManager';
+import { createRoom, getAllActiveRooms, getRoom, joinRoom, leaveRoom, rollDiceForPlayer, updateRoomSettings } from '../../server/roomManager';
 import { scriptedRng } from '../test/scriptedRng';
 import type { CharacterSheet } from '../types/cyberpunk';
 
@@ -52,6 +52,59 @@ describe('C.1 — o motor da mesa é o do livro', () => {
     const r = rollDiceForPlayer(mesa(), 'p1', { kind: 'damage' }, scriptedRng([3, 4, 2])).roll!;
     expect(r.total).toBe(9);
     expect(r.details).toBe('Dados: [3, 4] • Local de Impacto: Tronco (2-4)');
+  });
+});
+
+const attack = (code: string, faces: number[]) =>
+  rollDiceForPlayer(code, 'p1', { kind: 'attack' }, scriptedRng(faces)).roll!;
+
+describe('C.3 — o ataque soma a perícia da arma', () => {
+  it('5 + REF 8 + Handgun 4 + WA 1 = 18', () => {
+    const r = attack(mesa(), [5]);
+    expect(r.total).toBe(18);
+    expect(r.details).toBe('1d10: 5 + REF (8) + Handgun (4) + WA (1) = 18');
+  });
+
+  it('sem a perícia na ficha, ataca sem treino (nível 0), e o detalhe diz qual perícia faltou', () => {
+    const r = attack(mesa({ skills: [] }), [5]);
+    expect(r.total).toBe(14);
+    expect(r.details).toContain('Handgun (0)');
+  });
+
+  it('desarmado usa Brawling', () => {
+    const r = attack(mesa({ weapons: [], skills: [{ id: 'b', name: 'Brawling', stat: 'REF', level: 3 }] }), [5]);
+    expect(r.label).toBe('Ataque (desarmado)');
+    expect(r.total).toBe(16);
+  });
+});
+
+describe('C.4 — o modificador do GM entra em ataque e perícia', () => {
+  function comModificador(value: number, reason: string): string {
+    const code = mesa();
+    expect(updateRoomSettings(code, 'gm_1', undefined, value, reason).error).toBeUndefined();
+    return code;
+  }
+
+  it('ataque: 18 − 2 = 16, com o motivo no detalhe', () => {
+    const r = attack(comModificador(-2, 'escuridão'), [5]);
+    expect(r.total).toBe(16);
+    expect(r.details).toContain('Mod. do Mestre: escuridão (−2)');
+  });
+
+  it('perícia: 5 + 8 + 4 + 1 = 18', () => {
+    expect(skill(comModificador(1, 'mira laser'), [5]).total).toBe(18);
+  });
+
+  it('não entra no dano nem no save', () => {
+    const code = comModificador(-3, 'chuva');
+    const dano = rollDiceForPlayer(code, 'p1', { kind: 'damage' }, scriptedRng([3, 4, 2])).roll!;
+    expect(dano.total).toBe(9);
+    const save = rollDiceForPlayer(code, 'p1', { kind: 'save' }, scriptedRng([8])).roll!;
+    expect(save.isCriticalSuccess).toBe(true);
+  });
+
+  it('modificador zero não polui o detalhe', () => {
+    expect(attack(mesa(), [5]).details).not.toContain('Mestre');
   });
 });
 

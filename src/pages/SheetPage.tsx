@@ -1,5 +1,5 @@
 import React from 'react';
-import { CharacterSheet, StatName } from '../types/cyberpunk';
+import { CharacterSheet, StatName, WeaponItem } from '../types/cyberpunk';
 import { CharacterHeader } from '../features/sheet/CharacterSheet/CharacterHeader';
 import { HealthTracker } from '../features/sheet/CharacterSheet/HealthTracker';
 import { StatBlock } from '../features/sheet/CharacterSheet/StatBlock';
@@ -18,7 +18,7 @@ export interface SheetPageProps {
   sheet: CharacterSheet;
   onChange: (updated: Partial<CharacterSheet>) => void;
   onRollDeathSave: () => void;
-  onRollWeaponAttack: (weaponName: string, wa: number, damageStr: string) => void;
+  onRollWeaponAttack: (weapon: WeaponItem) => void;
   onRollDamageOnly: (weaponName: string, damageFormula: string) => void;
   onRollSkill: (skillName: string, statName: StatName, statVal: number, skillRank: number) => void;
   user: { uid: string; displayName?: string | null; email?: string | null } | null;

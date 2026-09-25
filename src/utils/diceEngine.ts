@@ -61,6 +61,11 @@ function stamp(core: RollCore, characterName?: string): RollResult {
   };
 }
 
+/** Teste genérico: 1d10 aberto + as parcelas dadas, com nome (o ataque usa este). */
+export function rollCheck(modifiers: Modifier[], ctx: DiceRollContext = {}, rng: Rng = clientRng): RollResult {
+  return stamp(checkRoll(rng, ctx.label || 'Rolagem', modifiers), ctx.characterName);
+}
+
 /**
  * Teste de perícia/ataque: 1d10 aberto + atributo + perícia (+ parcelas).
  * 10 explode encadeando; 1 é falha automática com dado para a tabela de fumble.

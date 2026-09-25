@@ -7,7 +7,7 @@ import { Shield, Target, Plus, Trash2, Dice5, Crosshair } from 'lucide-react';
 interface WeaponsArmorProps {
   sheet: CharacterSheet;
   onChange: (updated: Partial<CharacterSheet>) => void;
-  onRollWeaponAttack: (weaponName: string, wa: number, damage: string) => void;
+  onRollWeaponAttack: (weapon: WeaponItem) => void;
   onRollDamageOnly: (weaponName: string, damageFormula: string) => void;
 }
 
@@ -167,7 +167,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
 
                   <div className="flex items-center space-x-1">
                     <button
-                      onClick={() => onRollWeaponAttack(w.name, w.wa, w.damage)}
+                      onClick={() => onRollWeaponAttack(w)}
                       className="px-2 py-1 bg-pink-600 hover:bg-pink-500 text-white rounded font-bold text-[10px] flex items-center space-x-1 uppercase tracking-wider shadow-[0_0_8px_rgba(236,72,153,0.4)]"
                     >
                       <Dice5 className="w-3 h-3" />

@@ -764,9 +764,18 @@ cliente e servidor para ela.
       - Os 15 testes de BTM foram **reescritos a partir de `BODY_TYPE_TABLE`**, não do código novo —
         e a tabela antiga falhava em 31 de 36 casos do oráculo da C.0 (os 5 que passavam eram
         coincidência: o piso −2 e o 0 da soma 17).
-- [ ] **C.3** Ataque com perícia de arma: mapear `weapon.type` → nome de perícia e somar o nível da
-      ficha que o servidor já possui. *(RUL-02)*
-- [ ] **C.4** `combatModifier` entrando em `attack` e `skill`, visível no detalhe da rolagem. *(RUL-03)*
+- [x] **C.3** Ataque com perícia de arma: mapear `weapon.type` → nome de perícia e somar o nível da
+      ficha que o servidor já possui. *(RUL-02 — 25/09/2026)*
+      - `src/rules/combat.ts`: `WEAPON_SKILL_BY_TYPE` (tabela), `weaponSkillFor`, `skillLevelOf` (compara
+        sem caixa nem pontuação: "Awareness / Notice" casa com "Awareness/Notice") e `attackModifiers`.
+        **O mesmo código na mesa e na ficha** — o cliente passava o WA no lugar da perícia.
+      - Sem a perícia na ficha, ataca **sem treino (nível 0)** e o detalhe mostra `Handgun (0)`.
+        Desarmado usa **Brawling**. Tipo desconhecido aparece como `sem perícia para "X" (0)` em vez
+        de somar perícia errada.
+- [x] **C.4** `combatModifier` entrando em `attack` e `skill`, visível no detalhe da rolagem. *(RUL-03 —
+      25/09/2026)* Entra como `Mod. do Mestre: <motivo> (−2)`. **Não** entra em dano nem em save — o
+      livro aplica modificador de situação ao teste, não ao dano. Zero não aparece no detalhe.
+      - **Provado revertendo:** com o `roomManager` anterior, os 5 testes de C.3/C.4 falham.
 - [x] **C.5** Tabela de penalidade de ferimento igual à do livro: Sério REF −2; Crítico REF/INT/COOL
       ÷2; Mortal REF/INT/COOL ÷3 (arredondando para cima); sem penalidade de MA. *(RUL-06, parte 1 —
       texto corrigido na C.0: o original, "Crítico REF −4; Mortais REF −6", era regra de casa)*

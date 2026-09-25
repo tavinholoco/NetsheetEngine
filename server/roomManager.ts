@@ -10,6 +10,7 @@ import { sanitizeCharacterSheet } from "../src/rules/sheetSchema.js";
 import type { Rng } from "../src/rules/dice.js";
 import { checkRoll, damageRoll, saveRoll, type RollCore } from "../src/rules/rolls.js";
 import { deriveCurrentStats } from "../src/rules/character.js";
+import { attackModifiers, gmModifier } from "../src/rules/combat.js";
 import { logger } from "./logger.js";
 
 // ============================================================
@@ -859,10 +860,11 @@ function firstWeapon(sheet: CharacterSheet) {
 /**
  * Executa uma rolagem de mesa no SERVIDOR (T5.4), com as regras de
  * `src/rules/` — as mesmas do rolador do cliente (Fase C, C.1).
- * - `attack`: 1d10 aberto + REF + WA da arma
+ * - `attack`: 1d10 aberto + REF + perícia da arma + WA (+ modificador do GM)
  * - `damage`: fórmula de dano da arma + local de impacto (1d10)
  * - `save`  : death save 1d10 ≤ BODY
- * - `skill` : 1d10 aberto + atributo da perícia + nível (bônus da FICHA do servidor)
+ * - `skill` : 1d10 aberto + atributo da perícia + nível (+ modificador do GM)
+ * Atributos CORRENTES (C.6) e bônus sempre da FICHA do servidor.
  * O `rng` só é passado em teste; em produção é sempre `serverRng`.
  * Retorna a sala com a rolagem já publicada no chat (broadcast é do chamador).
  */
@@ -886,15 +888,17 @@ export function rollDiceForPlayer(
   const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const rollId = "roll_" + Date.now() + "_" + crypto.randomBytes(3).toString("hex");
   const stamp = (core: RollCore): RollResult => ({ id: rollId, timestamp: now, characterName: player.handle, ...core });
+  // C.4 — o modificador de situação do GM entra em ataque e perícia, com o
+  // motivo no detalhe. Não entra em dano nem em save: não é regra do livro.
+  const gm = gmModifier(room.combatModifier, room.modifierReason);
 
   let roll: RollResult;
 
   if (kind === "attack") {
     const weapon = firstWeapon(sheet);
-    roll = stamp(checkRoll(rng, `Ataque (${weapon?.name || "desarmado"})`, [
-      { label: "REF", value: Number(stats.REF) || 0 },
-      { label: "WA", value: Number(weapon?.wa) || 0 }
-    ]));
+    // C.3 — 1d10 + REF + perícia da arma + WA (+ GM).
+    roll = stamp(checkRoll(rng, `Ataque (${weapon?.name || "desarmado"})`,
+      attackModifiers({ ref: stats.REF, weapon, skills: sheet.skills, gm })));
   } else if (kind === "damage") {
     const weapon = firstWeapon(sheet);
     const formula = weapon?.damage || "1d6";
@@ -911,7 +915,8 @@ export function rollDiceForPlayer(
     if (!skill) return { room: null, error: "Perícia não encontrada na sua ficha." };
     roll = stamp(checkRoll(rng, `Rolagem: ${skill.name}`, [
       { label: skill.stat, value: Number(stats[skill.stat]) || 0 },
-      { label: skill.name, value: Number(skill.level) || 0 }
+      { label: skill.name, value: Number(skill.level) || 0 },
+      ...(gm ? [gm] : [])
     ]));
   } else {
     return { room: null, error: "Tipo de rolagem inválido. Use: attack, damage, save ou skill." };

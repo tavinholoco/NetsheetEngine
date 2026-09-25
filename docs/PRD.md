@@ -211,7 +211,14 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
   e COOL a um terço (arredondando para cima). Ferimento **não** afeta MA.
 
 ### Combate na mesa
-- Ataque: `1d10! + REF + WA` (Weapon Accuracy) — rolado **no servidor**.
+- Ataque: `1d10 + REF + perícia da arma + WA + modificador do GM` — rolado
+  **no servidor**. A perícia vem do tipo da arma (pistola → Handgun, SMG →
+  Submachinegun, rifle e escopeta → Rifle, pesada → Heavy Weapons, branca →
+  Melee; desarmado → Brawling); sem a perícia na ficha, o ataque é sem treino
+  (nível 0). *(Fase C, C.3 — antes faltava a perícia.)*
+- O **modificador de situação do GM** (`combatModifier`, ±10) entra em ataque e
+  perícia, com o motivo no detalhe da rolagem. Não entra em dano nem em save.
+  *(Fase C, C.4 — antes era exibido e nenhuma rolagem o somava.)*
 - Rolagens da mesa são **server-authoritative**: o cliente nunca envia o
   resultado; o bônus é derivado da ficha que o servidor possui.
 - Iniciativa ordenada por score (decrescente) com avanço de turno.
