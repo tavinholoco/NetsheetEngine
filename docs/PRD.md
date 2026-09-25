@@ -115,7 +115,7 @@ O produto cobre **sete módulos funcionais interligados**:
 - Iniciativa de combate (lista ordenada + avanço de turno) e chat da mesa com
   mensagens do sistema, dados rolados e notificações de conexão.
 - **RNG server-authoritative** (T5.4): o cliente pede só o tipo
-  (`attack`/`damage`/`save`/`skill`); o servidor rola com `crypto.randomInt`
+  (`attack`/`damage`/`save`/`stun`/`skill`); o servidor rola com `crypto.randomInt`
   usando a ficha que ELE possui — resultado forjado é ignorado.
 - Poderes de GM: gerar NPCs e fichas de edgerunner, ajustar ferimentos de
   jogadores/NPCs, remover jogadores/NPCs, definir condições de combate
@@ -136,7 +136,8 @@ O produto cobre **sete módulos funcionais interligados**:
   (encadeada) e **fumble em 1** (falha automática + dado da tabela de fumble).
 - Dano: fórmula `NdM±X` + **local de impacto** sorteado (1d10: cabeça ×2,
   tronco, braços, pernas).
-- Death save: `1d10 ≤ BODY` (sucesso/falha explícito).
+- Saves: **stun** `1d10 ≤ BODY − 0 a 9` e **death** `1d10 ≤ BODY − nível Mortal`,
+  com o alvo à vista no botão (sucesso/falha explícito).
 - Histórico de rolagens + banner de resultado; na mesa, os dados rolam no
   servidor e entram no chat.
 
@@ -204,7 +205,12 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
   Esquerda. Uma tabela só (`HIT_LOCATIONS`) para cliente e servidor.
 
 ### Morte e ferimentos
-- **Death Save**: `1d10 ≤ BODY` para resistir a atordoamento/morte.
+- **Stun save** *(Fase C, C.7)*: a cada dano sofrido, `1d10 ≤ BODY` + modificador do
+  nível — Leve 0, Sério −1, Crítico −2, Mortal 0 −3 … Mortal 6 −9. Falhou, está
+  fora de ação.
+- **Death save** *(Fase C, C.7)*: em nível Mortal, **a cada turno**, `1d10 ≤ BODY −
+  nível Mortal` (Mortal 0 = BODY, Mortal 6 = BODY −6), até morrer ou ser
+  estabilizado. Sem acúmulo por turno. Mortal 6 ainda está vivo.
 - Bio-monitor com **11 estados** (0 Saudável → 10 Mortal 6). Efeito do livro
   nos atributos, **sem acumular** entre níveis *(Fase C, C.5)*:
   **Sério** REF −2; **Crítico** REF, INT e COOL pela metade; **Mortal** REF, INT

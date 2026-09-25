@@ -4,6 +4,7 @@ import {
   RoomPlayer,
   ChatMessage,
   InitiativeEntry,
+  TableRollKind,
   TacticalGridState
 } from '../../types/multiplayer';
 import { TacticalGrid } from './TacticalGrid';
@@ -319,7 +320,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // rolagem; o servidor rola os dados (crypto.randomInt) usando a ficha que
   // ELE possui e o resultado volta no broadcast do chat. WS-first, fallback
   // POST /roll (clientes SSE).
-  const requestTableRoll = (kind: 'attack' | 'damage' | 'save' | 'skill', skillName?: string) => {
+  const requestTableRoll = (kind: TableRollKind, skillName?: string) => {
     if (wsSend({ type: 'roll', kind, skillName })) return;
     roomsApi.postRoll(roomCode, kind, skillName).catch(() => {});
   };
@@ -327,6 +328,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const rollAttack = () => requestTableRoll('attack');
   const rollTableDamage = () => requestTableRoll('damage');
   const rollTableSave = () => requestTableRoll('save');
+  const rollTableStun = () => requestTableRoll('stun');
 
   // Helper: ação autenticada fire-and-forget (T7.3 — camada api). A api lança
   // ApiError com a mensagem do servidor; o banner mostra o motivo.
@@ -668,7 +670,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               </button>
               <button
                 onClick={rollAttack}
-                title="🎯 Ataque — d10 + REF + WA (RNG no servidor)"
+                title="🎯 Ataque — d10 + REF + perícia da arma + WA (RNG no servidor)"
                 className="px-3 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black rounded font-black uppercase cursor-pointer transition-all"
               >
                 <Target className="w-4 h-4" />
@@ -681,8 +683,16 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 <Zap className="w-4 h-4" />
               </button>
               <button
+                onClick={rollTableStun}
+                title="💫 Stun Save — 1d10 ≤ BODY − 0 a 9 pelo ferimento (RNG no servidor)"
+                aria-label="Stun Save"
+                className="px-3 py-2.5 bg-amber-500 hover:bg-amber-400 text-black rounded font-black uppercase cursor-pointer transition-all"
+              >
+                <Zap className="w-4 h-4 rotate-180" />
+              </button>
+              <button
                 onClick={rollTableSave}
-                title="🩸 Death Save — 1d10 ≤ BODY (RNG no servidor)"
+                title="🩸 Death Save — 1d10 ≤ BODY − nível Mortal (RNG no servidor)"
                 className="px-3 py-2.5 bg-pink-600 hover:bg-pink-500 text-white rounded font-black uppercase cursor-pointer transition-all"
               >
                 <HeartPulse className="w-4 h-4" />

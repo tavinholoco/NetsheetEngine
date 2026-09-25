@@ -62,7 +62,7 @@ export interface TacticalGridState {
  * servidor rola os dados com `crypto.randomInt` e monta o RollResult usando a
  * ficha que ELE possui (bônus derivados do servidor, anti-forjamento).
  */
-export type TableRollKind = "attack" | "damage" | "save" | "skill";
+export type TableRollKind = "attack" | "damage" | "save" | "stun" | "skill";
 
 export interface TableRollRequest {
   kind: TableRollKind;

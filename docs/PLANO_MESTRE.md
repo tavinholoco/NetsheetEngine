@@ -792,9 +792,20 @@ cliente e servidor para ela.
         **"rola com N"** quando o valor corrente difere da base — em âmbar, porque vermelho é dano.
       - **Provado revertendo:** com as duas linhas antigas (servidor e esquema), os 3 testes de C.6
         em `table-rolls.integration` falham; com as novas, passam.
-- [ ] **C.7** Death save a cada turno com −1 por nível Mortal (Mortal 0 = BODY, Mortal 6 = BODY −6),
+- [x] **C.7** Death save a cada turno com −1 por nível Mortal (Mortal 0 = BODY, Mortal 6 = BODY −6),
       e o **stun save** que não existe (BODY −0 a −9 pelo nível do ferimento). *(RUL-08 — texto
-      corrigido na C.0: "cumulativo por turno" era regra do RED)*
+      corrigido na C.0: "cumulativo por turno" era regra do RED — 25/09/2026)*
+      - `stunSaveRoll` e `deathSaveRoll` em `src/rules/rolls.ts`, com o alvo explicado na fórmula
+        (`1d10 ≤ BODY 8 − 3`). **Tipo de rolagem novo na mesa: `stun`** (entrada nova no servidor —
+        vai para o portão). Botão âmbar ao lado do death save, na mesa, na ficha e no rolador.
+      - O Bio-Monitor mostra **os dois alvos** no botão e **desliga o death save fora do Mortal**. O
+        `isDead` virou `isLastWoundBox`: Mortal 6 ainda está vivo e **voltou a poder rolar** o death
+        save, que era desligado justo ali.
+      - Fora do Mortal, o death save da mesa **rola** contra o BODY e o rótulo avisa "não exigido" — em
+        vez de um erro novo no servidor, que o `respondWithResult` classificaria por substring (pista
+        da Fase E).
+      - **Provado revertendo:** com o `roomManager` anterior, 3 dos 4 testes de C.7 falham (o de Mortal
+        6 passava: o bloqueio era só no botão da ficha).
 - [ ] **C.8** Atributo da Special Ability dentro de `OFFICIAL_ROLES`. *(RUL-07)*
 - [ ] **C.9** **Conferência sistemática contra o livro** (decisão 2): atributos, perícias, combate,
       dano, armadura, humanidade e movimento. Registrar cada divergência encontrada, inclusive as não

@@ -18,6 +18,7 @@ export interface SheetPageProps {
   sheet: CharacterSheet;
   onChange: (updated: Partial<CharacterSheet>) => void;
   onRollDeathSave: () => void;
+  onRollStunSave: () => void;
   onRollWeaponAttack: (weapon: WeaponItem) => void;
   onRollDamageOnly: (weaponName: string, damageFormula: string) => void;
   onRollSkill: (skillName: string, statName: StatName, statVal: number, skillRank: number) => void;
@@ -31,6 +32,7 @@ export const SheetPage: React.FC<SheetPageProps> = ({
   sheet,
   onChange,
   onRollDeathSave,
+  onRollStunSave,
   onRollWeaponAttack,
   onRollDamageOnly,
   onRollSkill,
@@ -45,7 +47,7 @@ export const SheetPage: React.FC<SheetPageProps> = ({
       <CharacterHeader sheet={sheet} onChange={onChange} />
 
       {/* Health & Wound Tracker */}
-      <HealthTracker sheet={sheet} onChange={onChange} onRollDeathSave={onRollDeathSave} />
+      <HealthTracker sheet={sheet} onChange={onChange} onRollDeathSave={onRollDeathSave} onRollStunSave={onRollStunSave} />
 
       {/* Primary & Derived Stats */}
       <StatBlock sheet={sheet} onChange={onChange} />

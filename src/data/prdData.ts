@@ -64,7 +64,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         'Atributos: INT, REF, TECH, COOL, ATTR, LUCK, MA, BODY, EMP.',
         'Rolagem de perícia: 1d10 + Atributo + Nível da Perícia. 10 explode encadeando; 1 é falha automática com dado para a tabela de fumble.',
         'Dano: por fórmula (ex.: 2d6+2) com local de impacto sorteado (1d10).',
-        'Death Save: 1d10 ≤ BODY para resistir a atordoamento/morte.',
+        'Saves: stun a cada dano (1d10 ≤ BODY − 0 a 9 pelo ferimento) e death save a cada turno em Mortal (1d10 ≤ BODY − nível Mortal).',
         'Ferimentos: 11 estados (0 Saudável a 10 Mortal 6). Sério REF −2; Crítico REF/INT/COOL ÷2; Mortal ÷3 — e toda rolagem usa os atributos já com o ferimento.'
       ]
     },
@@ -128,7 +128,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       features: [
         'Rolagem de perícia com crítico explosivo (10!) e fumble (1!)',
         'Rolagem de dano com local de impacto sorteado',
-        'Death saves (1d10 ≤ BODY)',
+        'Stun e death saves com o alvo do livro (BODY menos o ferimento)',
         'Histórico de rolagens e broadcast para a mesa'
       ],
       status: 'em andamento'

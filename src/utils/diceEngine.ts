@@ -1,6 +1,6 @@
 import type { RollResult } from '../types/cyberpunk';
 import { rollHitLocation, type Modifier, type Rng } from '../rules/dice';
-import { checkRoll, damageRoll, saveRoll, type RollCore } from '../rules/rolls';
+import { checkRoll, damageRoll, deathSaveRoll, stunSaveRoll, type RollCore } from '../rules/rolls';
 
 /**
  * ROLADOR DO CLIENTE (ficha, página de dados)
@@ -89,12 +89,14 @@ export function rollDamage(formula: string, ctx: DiceRollContext = {}, rng: Rng 
   return stamp(core, ctx.characterName);
 }
 
-/** Death save: `1d10 ≤ BODY`. */
-export function rollDeathSave(body: number, ctx: DiceRollContext = {}, rng: Rng = clientRng): RollResult {
-  return stamp(
-    saveRoll(rng, ctx.label || 'Teste de Atordoamento/Morte (Death Save)', body, 'BODY'),
-    ctx.characterName
-  );
+/** Death save: `1d10 ≤ BODY − nível Mortal` (C.7). */
+export function rollDeathSave(body: number, woundLevel: number, ctx: DiceRollContext = {}, rng: Rng = clientRng): RollResult {
+  return stamp(deathSaveRoll(rng, body, woundLevel), ctx.characterName);
+}
+
+/** Stun save: `1d10 ≤ BODY − 0 a 9` pelo nível do ferimento (C.7). */
+export function rollStunSave(body: number, woundLevel: number, ctx: DiceRollContext = {}, rng: Rng = clientRng): RollResult {
+  return stamp(stunSaveRoll(rng, body, woundLevel), ctx.characterName);
 }
 
 /** Local de impacto: 1 cabeça (×2), 2–4 tronco, 5/6 braços, 7–8 perna direita, 9–0 perna esquerda. */

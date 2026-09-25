@@ -4,12 +4,13 @@ import { RollResult, StatName } from '../../types/cyberpunk';
 import {
   rollSkill as engineRollSkill,
   rollDamage as engineRollDamage,
-  rollDeathSave as engineRollDeathSave
+  rollDeathSave as engineRollDeathSave,
+  rollStunSave as engineRollStunSave
 } from '../../utils/diceEngine';
 import { Dice5, History, Trash2, Target, HeartPulse, Zap } from 'lucide-react';
 import { useSheetStore } from '../../stores/useSheetStore';
 import { useRollStore } from '../../stores/useRollStore';
-import { deriveCurrentStats } from '../../rules/character';
+import { deathSaveTarget, deriveCurrentStats, mortalLevel, stunSaveTarget, woundRow } from '../../rules/character';
 
 interface DiceRollerProps {
   onAddRoll: (roll: RollResult) => void;
@@ -52,10 +53,16 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
     }
   };
 
+  // C.7 — os dois saves do livro; o alvo depende do ferimento da ficha.
+  const body = deriveCurrentStats(sheet).BODY;
+  const mortal = mortalLevel(sheet.woundLevel);
+
   const rollDeathSave = () => {
-    onAddRoll(engineRollDeathSave(deriveCurrentStats(sheet).BODY, {
-      characterName: sheet.handle || 'Edgerunner'
-    }));
+    onAddRoll(engineRollDeathSave(body, sheet.woundLevel, { characterName: sheet.handle || 'Edgerunner' }));
+  };
+
+  const rollStunSave = () => {
+    onAddRoll(engineRollStunSave(body, sheet.woundLevel, { characterName: sheet.handle || 'Edgerunner' }));
   };
 
   return (
@@ -65,7 +72,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
         {([
           { id: 'skill' as DiceTab, label: '🎯 Perícia', icon: Target },
           { id: 'damage' as DiceTab, label: '💥 Dano', icon: Zap },
-          { id: 'save' as DiceTab, label: '🩸 Death Save', icon: HeartPulse }
+          { id: 'save' as DiceTab, label: '🩸 Saves', icon: HeartPulse }
         ]).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -176,17 +183,27 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
           <div className="space-y-4 relative z-10">
             <div className="flex items-center space-x-2 border-b border-slate-800 pb-3">
               <HeartPulse className="w-5 h-5 text-red-400" />
-              <h2 className="text-lg font-bold text-red-400 uppercase tracking-widest">Death Save</h2>
+              <h2 className="text-lg font-bold text-red-400 uppercase tracking-widest">Stun &amp; Death Save</h2>
             </div>
             <p className="text-xs text-slate-400">
-              Teste de resistência à morte: role 1d10. Sucesso se o resultado for menor ou igual ao seu atributo
-              <strong className="text-yellow-400"> BODY ({sheet.stats.BODY})</strong>. Falhar significa inconsciência ou morte.
+              Role 1d10: passa com resultado menor ou igual ao alvo. O alvo é o seu
+              <strong className="text-yellow-400"> BODY ({body})</strong> menos o que o ferimento atual
+              (<strong className="text-yellow-400">{woundRow(sheet.woundLevel).name}</strong>) tira.
+              Stun a cada dano sofrido; death save a cada turno em ferimento Mortal.
             </p>
             <button
-              onClick={rollDeathSave}
-              className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase rounded shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all cursor-pointer"
+              onClick={rollStunSave}
+              className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase rounded transition-all cursor-pointer"
             >
-              🩸 1d10 ≤ BODY ({sheet.stats.BODY})
+              💫 Stun · 1d10 ≤ {stunSaveTarget(body, sheet.woundLevel)}
+            </button>
+            <button
+              onClick={rollDeathSave}
+              disabled={mortal === null}
+              title={mortal === null ? 'O death save só é exigido em ferimento Mortal' : undefined}
+              className="w-full py-3 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-xs uppercase rounded shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all cursor-pointer"
+            >
+              🩸 Death · 1d10 ≤ {deathSaveTarget(body, sheet.woundLevel)}
             </button>
           </div>
         )}

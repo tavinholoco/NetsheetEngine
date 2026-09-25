@@ -177,18 +177,24 @@ Qualquer outro `type` ou JSON inválido é ignorado silenciosamente. Tipos de ro
 
 O cliente envia **apenas o tipo** — nunca o resultado. O servidor:
 
-1. Rola com `crypto.randomInt` (uniforme e não-preditível) — `secureD10()` = 1–10.
-2. Deriva os bônus da **ficha que ele possui** (`room.players[peerId].sheet`).
+1. Rola com `crypto.randomInt` (uniforme e não-preditível), injetado no motor único de `src/rules/`
+   — o mesmo do rolador do cliente (Fase C).
+2. Deriva os bônus da **ficha que ele possui** (`room.players[peerId].sheet`), com os atributos
+   **correntes** (`deriveCurrentStats`: humanidade e ferimento aplicados).
 3. Publica o `RollResult` no chat via `postChatMessage` (handle/role do servidor) e faz broadcast.
 
 Regras FNFF implementadas:
 
 | kind | Fórmula | Detalhes |
 |---|---|---|
-| `attack` | `1d10 + REF + WA` | 10 = explosão (+1d10); 1 = falha crítica (−1d10) |
+| `attack` | `1d10 + REF + perícia da arma + WA + mod. do GM` | perícia pelo tipo da arma; desarmado = Brawling |
 | `damage` | fórmula da arma (`NdM±X`, máx. 20 dados × 100 lados) | + local de impacto (1d10: 1 = cabeça ×2, 2–4 tronco, 5/6 braços, 7–0 pernas) |
-| `save` | `1d10 ≤ BODY` | Death save / atordoamento |
-| `skill` | `1d10 + <atributo> + <nível>` | `skillName` obrigatório e validado na ficha |
+| `save` | `1d10 ≤ BODY − nível Mortal` | Death save |
+| `stun` | `1d10 ≤ BODY − 0 a 9` pelo nível do ferimento | Stun save *(Fase C)* |
+| `skill` | `1d10 + <atributo> + <nível> + mod. do GM` | `skillName` obrigatório e validado na ficha |
+
+Em `attack` e `skill`, **10 explode encadeando** (teto de 10 dados extras) e **1 é falha
+automática**, com um segundo dado para a tabela de fumble do livro. O total **não** perde 1d10.
 
 ---
 
@@ -326,9 +332,9 @@ O heartbeat **não** faz broadcast (status já é `true`; só a virada para OFFL
   "id": "roll_...", "timestamp": "12:31",
   "characterName": "Mestre", "rollType": "SKILL",
   "label": "Ataque (desarmado)", "diceFormula": "1d10",
-  "baseRoll": 7, "bonus": 8, "total": 15,
+  "baseRoll": 7, "bonus": 10, "total": 17,
   "isCriticalSuccess": false, "isCriticalFailure": false,
-  "details": "1d10: 7 + REF (8) + WA (0)"
+  "details": "1d10: 7 + REF (8) + Brawling (2) = 17"
 }
 ```
 

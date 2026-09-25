@@ -8,7 +8,7 @@ import { generateRandomNpc } from "../src/utils/npcGenerator.js";
 import { sanitizeCharacterSheet } from "../src/rules/sheetSchema.js";
 // Fase C (C.1) — as regras de rolagem são as mesmas do cliente, em src/rules/.
 import type { Rng } from "../src/rules/dice.js";
-import { checkRoll, damageRoll, saveRoll, type RollCore } from "../src/rules/rolls.js";
+import { checkRoll, damageRoll, deathSaveRoll, stunSaveRoll, type RollCore } from "../src/rules/rolls.js";
 import { deriveCurrentStats } from "../src/rules/character.js";
 import { attackModifiers, gmModifier } from "../src/rules/combat.js";
 import { logger } from "./logger.js";
@@ -862,7 +862,8 @@ function firstWeapon(sheet: CharacterSheet) {
  * `src/rules/` — as mesmas do rolador do cliente (Fase C, C.1).
  * - `attack`: 1d10 aberto + REF + perícia da arma + WA (+ modificador do GM)
  * - `damage`: fórmula de dano da arma + local de impacto (1d10)
- * - `save`  : death save 1d10 ≤ BODY
+ * - `save`  : death save 1d10 ≤ BODY − nível Mortal
+ * - `stun`  : stun save 1d10 ≤ BODY − 0 a 9 pelo nível do ferimento
  * - `skill` : 1d10 aberto + atributo da perícia + nível (+ modificador do GM)
  * Atributos CORRENTES (C.6) e bônus sempre da FICHA do servidor.
  * O `rng` só é passado em teste; em produção é sempre `serverRng`.
@@ -906,7 +907,11 @@ export function rollDiceForPlayer(
     if (!core) return { room: null, error: `Fórmula de dano inválida: ${formula}` };
     roll = stamp(core);
   } else if (kind === "save") {
-    roll = stamp(saveRoll(rng, "Teste de Atordoamento/Morte (Death Save)", Number(stats.BODY) || 0, "BODY"));
+    // C.7 — death save: BODY − nível Mortal.
+    roll = stamp(deathSaveRoll(rng, stats.BODY, Number(sheet.woundLevel) || 0));
+  } else if (kind === "stun") {
+    // C.7 — stun save: BODY − 0 a 9 pelo nível do ferimento. Não existia.
+    roll = stamp(stunSaveRoll(rng, stats.BODY, Number(sheet.woundLevel) || 0));
   } else if (kind === "skill") {
     const skillName = sanitizeText(request?.skillName, 60);
     const skill = Array.isArray(sheet.skills)
@@ -919,7 +924,7 @@ export function rollDiceForPlayer(
       ...(gm ? [gm] : [])
     ]));
   } else {
-    return { room: null, error: "Tipo de rolagem inválido. Use: attack, damage, save ou skill." };
+    return { room: null, error: "Tipo de rolagem inválido. Use: attack, damage, save, stun ou skill." };
   }
 
   const result = postChatMessage(code, requesterPeerId, "", roll);

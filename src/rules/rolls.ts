@@ -17,6 +17,7 @@ import {
   type Modifier,
   type Rng
 } from './dice';
+import { deathSaveTarget, mortalLevel, stunSaveTarget, woundRow } from './character';
 
 /** O RollResult sem o que é do chamador (identidade e horário). */
 export type RollCore = Omit<RollResult, 'id' | 'timestamp' | 'characterName'>;
@@ -80,4 +81,27 @@ export function saveRoll(rng: Rng, label: string, target: number, targetLabel: s
       ? `PASSOU! Resultado ${save.roll} ≤ ${target} (${targetLabel})`
       : `FALHOU! Resultado ${save.roll} > ${target} (${targetLabel})`
   };
+}
+
+const minus = (n: number): string => (n === 0 ? '' : ` − ${Math.abs(n)}`);
+
+/**
+ * Stun save (C.7): a cada dano sofrido, 1d10 ≤ BODY + modificador do nível
+ * (Leve 0, Sério −1, Crítico −2, Mortal 0 −3 … Mortal 6 −9). Falhou, está
+ * fora de ação. Não existia antes da Fase C.
+ */
+export function stunSaveRoll(rng: Rng, body: number, woundLevel: number): RollCore {
+  const row = woundRow(woundLevel);
+  return saveRoll(rng, `Stun Save (${row.name})`, stunSaveTarget(body, woundLevel), `BODY ${body}${minus(row.stunModifier)}`);
+}
+
+/**
+ * Death save (C.7): em nível Mortal, a CADA TURNO, 1d10 ≤ BODY − nível Mortal.
+ * Sem acúmulo por turno — isso é do Cyberpunk RED. Fora do Mortal o livro não
+ * exige o teste; a rolagem sai contra o BODY e o rótulo avisa.
+ */
+export function deathSaveRoll(rng: Rng, body: number, woundLevel: number): RollCore {
+  const mortal = mortalLevel(woundLevel);
+  const label = mortal === null ? 'Death Save (fora do Mortal: não exigido)' : `Death Save (Mortal ${mortal})`;
+  return saveRoll(rng, label, deathSaveTarget(body, woundLevel), `BODY ${body}${minus(mortal ?? 0)}`);
 }

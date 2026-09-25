@@ -11,7 +11,7 @@ import {
   WOUND_MAX,
   WOUND_LEVEL_NAMES,
   clampWoundLevel,
-  isDead
+  isLastWoundBox
 } from '../utils/injuryRules';
 
 describe('WOUND_LEVEL_NAMES — 11 níveis (0..10)', () => {
@@ -49,14 +49,14 @@ describe('clampWoundLevel — intervalo válido 0..10', () => {
   });
 });
 
-describe('isDead — morte iminente no nível 10', () => {
-  it('níveis 0..9 não são morte', () => {
-    expect(isDead(0)).toBe(false);
-    expect(isDead(9)).toBe(false);
+describe('isLastWoundBox — a última caixa (Mortal 6), ainda vivo', () => {
+  it('níveis 0..9 não são a última caixa', () => {
+    expect(isLastWoundBox(0)).toBe(false);
+    expect(isLastWoundBox(9)).toBe(false);
   });
 
-  it('nível 10 (e acima) é morte', () => {
-    expect(isDead(10)).toBe(true);
-    expect(isDead(12)).toBe(true);
+  it('nível 10 (e acima) é a última caixa — morrer é falhar o death save, não estar nela', () => {
+    expect(isLastWoundBox(10)).toBe(true);
+    expect(isLastWoundBox(12)).toBe(true);
   });
 });

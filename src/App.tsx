@@ -10,7 +10,7 @@ import { useRollStore } from './stores/useRollStore';
 import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
 // Motor de dados FNFF — casca do cliente sobre src/rules/ (Fase C, C.1)
-import { rollCheck, rollSkill, rollDamage, rollDeathSave } from './utils/diceEngine';
+import { rollCheck, rollSkill, rollDamage, rollDeathSave, rollStunSave } from './utils/diceEngine';
 import { deriveCurrentStats } from './rules/character';
 import { attackModifiers } from './rules/combat';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
@@ -184,9 +184,15 @@ export default function App() {
     }
   };
 
-  // Roll Death Save (Fase 6 T6.3 — motor diceEngine)
+  // Saves do livro (C.7): o alvo depende do nível do ferimento.
   const handleRollDeathSave = () => {
-    handleAddRollResult(rollDeathSave(deriveCurrentStats(sheet).BODY, {
+    handleAddRollResult(rollDeathSave(deriveCurrentStats(sheet).BODY, sheet.woundLevel, {
+      characterName: sheet.handle || 'Edgerunner'
+    }));
+  };
+
+  const handleRollStunSave = () => {
+    handleAddRollResult(rollStunSave(deriveCurrentStats(sheet).BODY, sheet.woundLevel, {
       characterName: sheet.handle || 'Edgerunner'
     }));
   };
@@ -293,6 +299,7 @@ export default function App() {
                       sheet={sheet}
                       onChange={handleUpdateSheet}
                       onRollDeathSave={handleRollDeathSave}
+                      onRollStunSave={handleRollStunSave}
                       onRollWeaponAttack={handleRollWeaponAttack}
                       onRollDamageOnly={handleRollDamageOnly}
                       onRollSkill={handleRollSkill}

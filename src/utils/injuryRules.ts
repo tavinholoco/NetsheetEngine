@@ -43,7 +43,11 @@ export function clampWoundLevel(level: number): number {
   return Math.max(0, Math.min(WOUND_MAX, level));
 }
 
-/** true quando o personagem atingiu a morte iminente (nível 10). */
-export function isDead(level: number): boolean {
+/**
+ * true na última caixa da trilha (Mortal 6). O personagem ainda está VIVO:
+ * morre ao falhar um death save ou ao sofrer dano além dela. Até a Fase C
+ * isto se chamava `isDead` e desligava o death save justo neste nível.
+ */
+export function isLastWoundBox(level: number): boolean {
   return level >= WOUND_MAX;
 }

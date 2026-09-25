@@ -108,6 +108,32 @@ describe('C.4 — o modificador do GM entra em ataque e perícia', () => {
   });
 });
 
+describe('C.7 — death save e stun save do livro', () => {
+  const save = (code: string, kind: 'save' | 'stun', faces: number[]) =>
+    rollDiceForPlayer(code, 'p1', { kind }, scriptedRng(faces)).roll!;
+
+  it('death save em Mortal 3 é contra BODY − 3: 7 em BODY 8 FALHA (antes passava)', () => {
+    const r = save(mesa({ woundLevel: 7 }), 'save', [7]);
+    expect(r.isCriticalFailure).toBe(true);
+    expect(r.diceFormula).toBe('1d10 ≤ BODY 8 − 3');
+  });
+
+  it('Mortal 6 ainda rola death save (BODY − 6), não é "morto"', () => {
+    expect(save(mesa({ woundLevel: 10 }), 'save', [2]).isCriticalSuccess).toBe(true);
+  });
+
+  it('stun save existe na mesa: Crítico é BODY − 2', () => {
+    const r = save(mesa({ woundLevel: 3 }), 'stun', [6]);
+    expect(r.label).toBe('Stun Save (Crítico)');
+    expect(r.isCriticalSuccess).toBe(true);
+    expect(save(mesa({ woundLevel: 3 }), 'stun', [7]).isCriticalFailure).toBe(true);
+  });
+
+  it('tipo de rolagem desconhecido continua recusado', () => {
+    expect(rollDiceForPlayer(mesa(), 'p1', { kind: 'pray' }, scriptedRng([5])).error).toMatch(/stun/);
+  });
+});
+
 describe('C.6 — a mesa rola com os atributos correntes', () => {
   it('ferimento Crítico corta o REF pela metade: 5 + ceil(8/2) + 4 = 13', () => {
     const r = skill(mesa({ woundLevel: 3 }), [5]);

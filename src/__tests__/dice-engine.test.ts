@@ -10,7 +10,7 @@
  * os testes trocavam o gerador GLOBAL da biblioteca @dice-roller — que saiu.
  */
 import { describe, it, expect } from 'vitest';
-import { clientRng, rollDamage, rollDeathSave, rollLocation, rollSkill } from '../utils/diceEngine';
+import { clientRng, rollCheck, rollDamage, rollDeathSave, rollLocation, rollSkill, rollStunSave } from '../utils/diceEngine';
 import { scriptedRng } from '../test/scriptedRng';
 
 describe('rollSkill — perícia/ataque', () => {
@@ -65,18 +65,32 @@ describe('rollDamage — fórmula + local de impacto', () => {
   });
 });
 
-describe('rollDeathSave — 1d10 ≤ BODY', () => {
-  it('PASSOU: 4 ≤ 8', () => {
-    const r = rollDeathSave(8, { characterName: 'Vex' }, scriptedRng([4]));
-    expect(r.isCriticalSuccess).toBe(true);
-    expect(r.total).toBe(4);
-    expect(r.details).toContain('PASSOU! Resultado 4 ≤ 8');
+describe('saves (C.7) — o alvo vem do ferimento', () => {
+  it('death save em Mortal 3 (nível 7): 1d10 ≤ BODY 8 − 3; 5 passa, 6 falha', () => {
+    const ok = rollDeathSave(8, 7, { characterName: 'Vex' }, scriptedRng([5]));
+    expect(ok.isCriticalSuccess).toBe(true);
+    expect(ok.label).toBe('Death Save (Mortal 3)');
+    expect(ok.diceFormula).toBe('1d10 ≤ BODY 8 − 3');
+    expect(rollDeathSave(8, 7, {}, scriptedRng([6])).isCriticalFailure).toBe(true);
   });
 
-  it('FALHOU: 10 > 8', () => {
-    const r = rollDeathSave(8, {}, scriptedRng([10]));
+  it('death save fora do Mortal avisa que o livro não exige', () => {
+    expect(rollDeathSave(8, 2, {}, scriptedRng([4])).label).toBe('Death Save (fora do Mortal: não exigido)');
+  });
+
+  it('stun save em Sério: 1d10 ≤ BODY 8 − 1', () => {
+    const r = rollStunSave(8, 2, {}, scriptedRng([8]));
+    expect(r.label).toBe('Stun Save (Sério)');
     expect(r.isCriticalFailure).toBe(true);
-    expect(r.details).toContain('FALHOU! Resultado 10 > 8');
+    expect(r.details).toBe('FALHOU! Resultado 8 > 7 (BODY 8 − 1)');
+  });
+});
+
+describe('rollCheck — parcelas livres (o ataque da ficha usa este)', () => {
+  it('soma as parcelas com nome', () => {
+    const r = rollCheck([{ label: 'REF', value: 8 }, { label: 'Handgun', value: 4 }, { label: 'WA', value: 1 }], { label: 'Ataque' }, scriptedRng([5]));
+    expect(r.total).toBe(18);
+    expect(r.details).toBe('1d10: 5 + REF (8) + Handgun (4) + WA (1) = 18');
   });
 });
 
