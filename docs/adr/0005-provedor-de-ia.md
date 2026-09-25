@@ -1,9 +1,9 @@
 # ADR 0005 — Provedor de IA do Netrunner: Groq como primário, Gemini como fallback
 
-- **Status:** Proposto
+- **Status:** Aceito — **implementação pendente, sem fase dona** (ver [revisão de 03/09/2026](#revisão-de-03092026--a-fase-b-trancou-o-endpoint-mas-não-migrou))
 - **Data:** 02/09/2026
 - **Decisores:** Desenvolvimento (auditoria de retomada)
-- **Fase do plano:** Fase B — Fechar os buracos de autorização (`PLANO_MESTRE.md`)
+- **Fase do plano:** prevista para a Fase B; **não entrou nela** — ver revisão abaixo
 
 ## Contexto
 
@@ -76,3 +76,29 @@ e permite trocar de modelo sem mexer em integração.
 Limites levantados por pesquisa em setembro de 2026 e sujeitos a mudança. **Confirme no console do
 provedor antes de dimensionar qualquer coisa** — a divergência entre fontes públicas sobre a cota do
 Gemini é justamente uma das razões desta ADR.
+
+## Revisão de 03/09/2026 — a Fase B trancou o endpoint, mas não migrou
+
+A B.1 fechou o SEC-01 **mantendo o Gemini**. A pedido do dono, a troca de provedor ficou de fora para
+não misturar a correção crítica com uma migração no mesmo commit.
+
+O que a B.1 já entregou desta ADR:
+
+- **`systemInstruction` fixo no servidor** (`server/aiPrompt.ts`). O cliente não manda mais a
+  instrução, e o que ele enviar é descartado. Era a pré-condição que esta ADR apontava para a troca
+  de provedor ser segura.
+- **Endpoint isolado**: identidade (JWT do Supabase), limiter de 10/min e teto de prompt vivem antes
+  da chamada ao modelo, e o prompt vive em `server/aiPrompt.ts`. Trocar o provedor é mexer só no
+  bloco que chama o modelo.
+
+O que **não** foi feito:
+
+- A interface `askAi(prompt)` com duas implementações, a rota `/api/ai` e o alias temporário de
+  `/api/gemini`.
+- `GROQ_API_KEY` / `AI_MODEL` como variáveis de ambiente.
+
+**Nenhuma fase do plano é dona disso hoje.** Aplicando o filtro de necessidade: o sintoma que
+motivou a ADR (cota do Gemini incerta, dividida com o Newra News) **ainda não foi observado como
+falha** neste projeto. Até alguém decidir onde encaixar, o gatilho para fazer é: *a primeira resposta
+`429`/cota esgotada do Gemini no log `gemini_api_error`, ou o Newra News esgotar a cota
+compartilhada.*

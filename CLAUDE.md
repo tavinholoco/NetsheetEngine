@@ -9,7 +9,10 @@
 1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M).
 2. Ache o **primeiro item `[ ]` não marcado**. É de onde o trabalho continua.
 3. Rode `git log --oneline -15` e `git tag -l` — as tags marcam o fim de cada fase de construção.
-4. Confira o **[Protocolo de sessão](./docs/PLANO_MESTRE.md#-protocolo-de-sessão)** no plano: ele
+4. **Confira o CI do `master` e o keepalive** (`gh run list --branch master --limit 3` e
+   `gh run list --workflow keepalive.yml --limit 2`). Vermelho é o primeiro trabalho da sessão.
+   O job `db-sync` só roda no `master` — **PR verde não prova que a migration entrou em produção.**
+5. Confira o **[Protocolo de sessão](./docs/PLANO_MESTRE.md#-protocolo-de-sessão)** no plano: ele
    detalha o ritual de abertura e de encerramento de fase.
 
 **O repositório é a fonte da verdade do estado**, não a memória do Claude. Checkbox marcado, data
@@ -47,16 +50,19 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Regras | **Fidelidade estrita** ao Cyberpunk 2020 |
 | Público da alpha | **Jogadores convidados pelo dono** — é o modelo de ameaça real |
 | Identidade visual | **Cyberpunk 2020** (mesa de 1988) — *não* 2077 nem RED. Ver ADR 0006 |
-| Provedor de IA | **Groq primário, Gemini fallback.** Ver ADR 0005 |
+| Provedor de IA | **Groq primário, Gemini fallback — decidido, NÃO implementado.** A B.1 trancou o endpoint mantendo o Gemini; a migração ainda não tem fase dona. Ver ADR 0005 |
 | Yjs / CRDT do grid | **Mantido sob observação**, com gatilho para reabrir. Ver ADR 0002 |
+| PITR do Supabase | **Não** — exige plano pago. O backup diário gratuito basta (decisão 4 do plano) |
+| Vulnerabilidades sem correção | **Exceção nomeada, com motivo e gatilho** em `scripts/audit-ci.mjs` — nunca baixar o nível do portão |
 
 ## Comandos que importam
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 141 testes na abertura do plano
+npx vitest run            # 197 testes ao fechar a Fase B (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 6 testes, sobe o servidor de produção
+npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
 node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
 ```
 
@@ -70,3 +76,9 @@ node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
   novo, confira se o que existe já resolve.
 - O `PLANO_DE_ACAO.md` na raiz está **substituído, não concluído** — suas Fases 11 e 12 viraram as
   Fases K e M do plano novo, e ele só é removido na Fase M.
+- **Verifique a premissa antes de executar um item.** A auditoria de 03/09 mostrou que as afirmações
+  do plano sobre *código* se sustentam, e as sobre *estado de configuração* não (secrets, planos
+  pagos, tokens). Na Fase B, a verificação prévia (B.0) mudou o tamanho de quatro dos seis itens.
+  Toda fase de construção começa com um item `.0` de verificação.
+- **Migration e código que a usa não vão no mesmo merge** enquanto o P.5 do plano não for decidido: o
+  Render faz auto-deploy independente do `db-sync`, e em 24/09 o código subiu antes da migration.
