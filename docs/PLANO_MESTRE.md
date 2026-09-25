@@ -852,7 +852,12 @@ cliente e servidor para ela.
       do `woundLevel` — Mortal 6 é o último estado **vivo**.
       - **Gatilho de ADIAR que disparou, achado no passo 5 do ritual de abertura:** o ER do schema
         ("quando o schema mudar") — a `0007` da Fase B mudou o schema. Desenhado na mesma seção.
-- [ ] **C.14** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [x] **C.14** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+      *(25/09/2026)* Saldo de superfície **negativo**: o `currentStats` do cliente deixou de ser
+      confiado e o `mathjs` saiu. Entrada nova: o tipo `stun` e a leitura do `weapon.type`, ambos
+      validados. **Achado:** o jogador ainda baixa o próprio `woundLevel` pela sincronia — levado à
+      D.1 com gatilho. Diagrama de contêineres: a caixa `RULES` ganhou nota (o navegador roda o mesmo
+      código, mas na mesa só vale o do servidor).
 - [ ] **C.15** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase C concluída em:** ____/____/______
 
@@ -862,6 +867,12 @@ cliente e servidor para ela.
 
 - [ ] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → ×2 na cabeça → BTM →
       conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04)*
+      - **Antes de codar:** o dono decide a ordem ×2 × BTM na cabeça (o livro não é explícito — ver a
+        [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d)).
+      - **Achado do portão da C.14:** hoje o jogador escreve o próprio `woundLevel` pela sincronia da
+        ficha (`updatePlayerSheet`), e desde a C.6 isso **baixa a penalidade da rolagem**. Quando o dano
+        virar ferimento no servidor, a sincronia não pode mais baixá-lo. Se a D não resolver, vira item
+        da Fase J.
 - [ ] **D.2** Definir e implementar o caso do **token sem ficha**: o grid tem tokens `cover` e
       `hazard` sem `sheet` nem BTM, só `spCover`. Precisa estar decidido antes de codar.
 - [ ] **D.3** Fluxo de GM: rolar ataque → acertar token → aplicar dano, sem sair do grid.

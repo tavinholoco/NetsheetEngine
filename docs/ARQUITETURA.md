@@ -79,6 +79,11 @@ flowchart TB
 3. **`service_role` e chave de IA não cruzam a fronteira** — vivem só no processo do servidor, jamais
    em variável `VITE_`.
 
+*A caixa `RULES` existe de fato desde a Fase C:* `src/rules/` (tabelas do livro, motor de dados,
+atributos derivados, ataque). **O navegador roda o mesmo código** no rolador pessoal da ficha — mas
+isso não atravessa a fronteira: na mesa, só vale o que o servidor rola, com o RNG dele e a ficha que
+ele saneou. Compartilhar o código é o que garante a paridade (C.10), não confiança no cliente.
+
 ### O que o desenho revelou sobre a leitura
 
 O desenho tornava óbvio, de um jeito que 1.000 linhas de `server.ts` não tornavam, que as setas de
