@@ -734,8 +734,28 @@ cliente e servidor para ela.
         EMP, e Combat Sense não se rola sozinha — soma em Awareness/Notice e na iniciativa.
         `SPECIAL_ABILITIES` em `cyberpunkData.ts` é duplicata morta de `OFFICIAL_ROLES`.
       - **C.10:** o servidor não tem RNG injetável — a paridade exige isso.
-- [ ] **C.1** Extrair e unificar o motor FNFF em `src/rules/`. Explosão **encadeada** dos dois lados
-      (decisão 1), com teto de segurança contra sequência patológica. *(RUL-05, ARQ-02)*
+- [x] **C.1** Extrair e unificar o motor FNFF em `src/rules/`. Explosão **encadeada** dos dois lados
+      (decisão 1), com teto de segurança contra sequência patológica. *(RUL-05, ARQ-02 — 25/09/2026)*
+      - **`src/rules/dice.ts`** (motor: d10 aberto, teste, dano, local, save) e **`src/rules/rolls.ts`**
+        (monta o `RollResult`). Cliente e servidor só acrescentam `id`, horário e personagem — o
+        `diceEngine.ts` virou casca, e o `rollDiceForPlayer` perdeu `secureD10`, `rollDice` e
+        `impactLocationName`.
+      - **RNG injetado dos dois lados:** o servidor passa `crypto.randomInt`, o cliente passa Web
+        Crypto (com rejeição, sem viés), o teste passa `scriptedRng` (`src/test/`).
+      - **Fumble do 2020:** falha automática, total sem o −1d10, e o dado da tabela de fumble aparece
+        no detalhe. O **texto** das tabelas de fumble ficou **ADIADO** (gatilho na conferência).
+      - **Teto de 10 dados extras** na explosão — onze 10 seguidos têm probabilidade 10⁻¹¹; o teto só
+        existe para um RNG defeituoso não travar o servidor.
+      - **Fórmula de dano sem avaliar expressão:** `NdM±X`, até 20 dados de até 100 faces. A página de
+        dados perde a notação livre da biblioteca (gatilho na ADR 0004).
+      - **`@dice-roller` removido** ([ADR 0004 revisada](./adr/0004-dice-roller.md#revisão-de-25092026--motor-próprio-em-srcrules)).
+        O `mathjs` saiu da árvore e a **ALLOWLIST do audit ficou vazia**.
+      - **Efeito colateral medido, não previsto:** o chunk de entrada caiu de **1.336 kB / ~390 kB
+        gzip para 623 kB / 184,5 kB gzip** (−53%). A biblioteca puxava o `mathjs` inteiro para o
+        bundle principal. Metade do **ARQ-04** (Fase L) resolvida de graça — a L ainda decide se o
+        resto precisa de code-splitting.
+      - Suíte do rolador reescrita contra o RNG injetado (16) + 44 testes novos do motor (`rules-dice`).
+        Local de impacto testado nas **10 faces** — os antigos cobriam 1, 5 e 9.
 - [ ] **C.2** BTM canônico por BODY (2→0, 3–4→−1, 5–7→−2, 8–9→−3, 10→−4, 11+→−5), sinal negativo,
       rótulo do `StatBlock` e linha do PRD corrigidos. *(RUL-01)*
 - [ ] **C.3** Ataque com perícia de arma: mapear `weapon.type` → nome de perícia e somar o nível da

@@ -129,10 +129,11 @@ O produto cobre **sete módulos funcionais interligados**:
 
 ### 4.3 Rolador de Dados FNFF (`/dice`)
 
-- Motor `@dice-roller/rpg-dice-roller` (`src/utils/diceEngine.ts`) com
-  **audit trail** completo (notação, dados rolados, sub-resultados).
-- Rolagem de perícia: `1d10!` com **explosão em 10** (encadeada) e
-  **fumble em 1** (1d10 subtraído) + atributo + nível.
+- Motor próprio em `src/rules/` — **o mesmo** no rolador do cliente
+  (`src/utils/diceEngine.ts`) e nas rolagens da mesa, com RNG injetado e
+  **audit trail** (cada dado e cada parcela com nome). *(Fase C, C.1)*
+- Rolagem de perícia: `1d10` + atributo + nível, com **explosão em 10**
+  (encadeada) e **fumble em 1** (falha automática + dado da tabela de fumble).
 - Dano: fórmula `NdM±X` + **local de impacto** sorteado (1d10: cabeça ×2,
   tronco, braços, pernas).
 - Death save: `1d10 ≤ BODY` (sucesso/falha explícito).
@@ -183,15 +184,18 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 
 ### Rolagem de perícia (FNFF)
 - Fórmula: `1d10 + Atributo + Nível da Perícia`.
-- **Crítico explosivo**: rolar 10 explode (soma o novo dado; pode encadear).
-- **Fumble**: rolar 1 subtrai 1d10 do total (falha crítica).
+- **Crítico explosivo**: rolar 10 explode (soma o novo dado; cada 10 seguinte
+  continua encadeando). Teto de segurança de 10 dados extras.
+- **Fumble**: rolar 1 no primeiro dado é **falha automática**; rola-se 1d10 na
+  tabela de fumble da categoria, e o GM lê o efeito no livro. *(O total não
+  perde 1d10 — isso é regra do Cyberpunk RED, corrigida na Fase C.)*
 - Habilidade especial de Role (ex.: Combat Sense) soma ao total.
 
 ### Dano e local de impacto
 - Dano por fórmula (ex.: `2d6+2`), validada pelo motor.
 - Local de impacto (1d10): **1 = Cabeça (dano ×2)**, 2–4 = Tronco,
   5 = Braço Direito, 6 = Braço Esquerdo, 7–8 = Perna Direita, 9–0 = Perna
-  Esquerda.
+  Esquerda. Uma tabela só (`HIT_LOCATIONS`) para cliente e servidor.
 
 ### Morte e ferimentos
 - **Death Save**: `1d10 ≤ BODY` para resistir a atordoamento/morte.
@@ -257,7 +261,7 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 
 **Stack real (package.json):** React 19 · Vite 6 · TypeScript 5.8 · Tailwind
 CSS 4 · shadcn/ui (Radix) · Zustand 5 · react-router-dom 7 · Express 4 ·
-ws 8.21 · yjs 13.6 + y-protocols · @dice-roller/rpg-dice-roller 5 ·
+ws 8.21 · yjs 13.6 + y-protocols ·
 Supabase (supabase-js 2) · @google/genai · lucide-react · motion · esbuild
 (bundle do servidor) · tsx (dev).
 

@@ -9,7 +9,7 @@ import { useSheetStore, syncSheetStore } from './stores/useSheetStore';
 import { useRollStore } from './stores/useRollStore';
 import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
-// Fase 6 (T6.3) — motor de dados FNFF (audit trail via @dice-roller)
+// Motor de dados FNFF — casca do cliente sobre src/rules/ (Fase C, C.1)
 import { rollSkill, rollDamage, rollDeathSave } from './utils/diceEngine';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';

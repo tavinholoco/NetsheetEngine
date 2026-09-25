@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { RollResult, StatName } from '../../types/cyberpunk';
-// Fase 6 (T6.3) — motor de dados FNFF (audit trail via @dice-roller)
+// Motor de dados FNFF — casca do cliente sobre src/rules/ (Fase C, C.1)
 import {
   rollSkill as engineRollSkill,
   rollDamage as engineRollDamage,

@@ -7,8 +7,8 @@
  * produção. Vulnerabilidade moderada e baixa são reportadas, não bloqueiam.
  *
  * POR QUE UM SCRIPT, E NÃO `npm audit --audit-level=high`
- * Duas altas do `mathjs` não têm correção aplicável hoje (detalhe no
- * ALLOWLIST). Um portão que fica permanentemente vermelho não é um portão: em
+ * Na Fase B, duas altas do `mathjs` não tinham correção aplicável (saíram na
+ * Fase C, com o @dice-roller). Um portão que fica permanentemente vermelho não é um portão: em
  * uma semana ninguém olha, e a vulnerabilidade NOVA se esconde no meio do
  * ruído das velhas.
  *
@@ -28,32 +28,10 @@ import { execSync } from "node:child_process";
  * "é chato de arrumar" não é motivo.
  */
 const ALLOWLIST = [
-  {
-    id: 1117167,
-    pkg: "mathjs",
-    title: "Unsafe object property setter",
-    motivo:
-      "Chega via @dice-roller/rpg-dice-roller, que é CLIENTE-ONLY: importado só em " +
-      "src/utils/diceEngine.ts. O servidor tem o próprio rollDice (roomManager.ts) e não " +
-      "usa mathjs em caminho nenhum. No cliente, rollDamage() só recebe fórmula da ficha " +
-      "local do próprio usuário ou do que ele digita — não há caminho em que a fórmula de " +
-      "outro jogador seja avaliada no navegador de alguém. O 'fix' que o npm propõe é " +
-      "DOWNGRADE do rolador para 5.5.0, marcado semver-major; a única versão mais nova é " +
-      "6.0.0-alpha. Trocar o motor de dados do jogo por um alpha é risco maior que a falha.",
-    gatilho:
-      "quando o @dice-roller/rpg-dice-roller publicar uma 6.x ESTÁVEL, ou quando o mathjs " +
-      "corrigir numa versão que a 5.5.x aceite, ou se alguma fórmula vinda da rede passar " +
-      "a ser avaliada no cliente",
-    revisadoEm: "2026-09-03"
-  },
-  {
-    id: 1117889,
-    pkg: "mathjs",
-    title: "Improperly Controlled Modification of Dynamically-Determined Object Attributes",
-    motivo: "Mesma origem e mesma análise da 1117167 — cliente-only, fórmula do próprio usuário.",
-    gatilho: "o mesmo da 1117167",
-    revisadoEm: "2026-09-03"
-  }
+  // Vazia desde a Fase C (25/09/2026). As duas exceções do mathjs (#1117167 e
+  // #1117889) saíram junto com o @dice-roller, que era o único caminho até ele:
+  // o motor de dados passou a ser próprio, em src/rules/dice.ts (C.1, ADR 0004).
+  // Modelo de entrada: { id, pkg, title, motivo, gatilho, revisadoEm }.
 ];
 
 const BLOQUEIA = new Set(["high", "critical"]);
