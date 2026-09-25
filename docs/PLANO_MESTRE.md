@@ -806,7 +806,18 @@ cliente e servidor para ela.
         da Fase E).
       - **Provado revertendo:** com o `roomManager` anterior, 3 dos 4 testes de C.7 falham (o de Mortal
         6 passava: o bloqueio era só no botão da ficha).
-- [ ] **C.8** Atributo da Special Ability dentro de `OFFICIAL_ROLES`. *(RUL-07)*
+- [x] **C.8** Atributo da Special Ability dentro de `OFFICIAL_ROLES`. *(RUL-07 — 25/09/2026)*
+      - `specialAbilityStat` (e `specialAbilityAddsTo` para o Combat Sense) em cada role;
+        `specialAbilityRoll` em `src/rules/roles.ts`. O ternário do `SkillsSection` saiu, e a
+        ficha mostra "INT + nível" embaixo do nome da habilidade.
+      - **Combat Sense rola como Awareness/Notice + INT + o bônus** — o livro não a rola sozinha. A
+        soma na iniciativa é da D.4.
+      - Role livre é achado pelo nome da habilidade; fora do livro, rola só o nível e o rótulo avisa.
+      - `SPECIAL_ABILITIES` (duplicata morta de `OFFICIAL_ROLES`, zero leitores) removido.
+      - O teste guarda o ternário antigo como registro: **acertava só o Netrunner**.
+      - *Fora do escopo, anotado:* a habilidade especial não é rolável **na mesa** (o tipo `skill`
+        procura em `sheet.skills`, e ela mora em `specialAbilityName`). Nenhum item do plano pede
+        isso; entra como pista da Fase H.
 - [ ] **C.9** **Conferência sistemática contra o livro** (decisão 2): atributos, perícias, combate,
       dano, armadura, humanidade e movimento. Registrar cada divergência encontrada, inclusive as não
       listadas nesta auditoria.

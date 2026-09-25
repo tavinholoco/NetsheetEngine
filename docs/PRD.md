@@ -196,7 +196,10 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 - **Fumble**: rolar 1 no primeiro dado é **falha automática**; rola-se 1d10 na
   tabela de fumble da categoria, e o GM lê o efeito no livro. *(O total não
   perde 1d10 — isso é regra do Cyberpunk RED, corrigida na Fase C.)*
-- Habilidade especial de Role (ex.: Combat Sense) soma ao total.
+- **Habilidade especial** *(Fase C, C.8)*: `1d10 + atributo + nível`, com o atributo de cada
+  role em `OFFICIAL_ROLES` — INT (Interface, Credibility, Resources, Family), COOL
+  (Authority, Streetdeal, Charismatic Leadership), TECH (Medical Tech, Jury Rig).
+  **Combat Sense** não se rola sozinha: soma em Awareness/Notice (INT) e na iniciativa.
 
 ### Dano e local de impacto
 - Dano por fórmula (ex.: `2d6+2`), validada pelo motor.

@@ -1,5 +1,6 @@
 import React from 'react';
 import { CharacterSheet, StatName, WeaponItem } from '../types/cyberpunk';
+import type { Modifier } from '../rules/dice';
 import { CharacterHeader } from '../features/sheet/CharacterSheet/CharacterHeader';
 import { HealthTracker } from '../features/sheet/CharacterSheet/HealthTracker';
 import { StatBlock } from '../features/sheet/CharacterSheet/StatBlock';
@@ -22,6 +23,8 @@ export interface SheetPageProps {
   onRollWeaponAttack: (weapon: WeaponItem) => void;
   onRollDamageOnly: (weaponName: string, damageFormula: string) => void;
   onRollSkill: (skillName: string, statName: StatName, statVal: number, skillRank: number) => void;
+  /** Teste com parcelas prontas (C.8 — a habilidade especial usa este). */
+  onRollCheck: (label: string, modifiers: Modifier[]) => void;
   user: { uid: string; displayName?: string | null; email?: string | null } | null;
   isSavingSheet: boolean;
   onSave: () => void;
@@ -36,6 +39,7 @@ export const SheetPage: React.FC<SheetPageProps> = ({
   onRollWeaponAttack,
   onRollDamageOnly,
   onRollSkill,
+  onRollCheck,
   user,
   isSavingSheet,
   onSave,
@@ -64,7 +68,7 @@ export const SheetPage: React.FC<SheetPageProps> = ({
       />
 
       {/* Skills Tree */}
-      <SkillsSection sheet={sheet} onChange={onChange} onRollSkill={onRollSkill} />
+      <SkillsSection sheet={sheet} onChange={onChange} onRollSkill={onRollSkill} onRollCheck={onRollCheck} />
 
       {/* Lifepath Narrative */}
       <LifepathGenerator sheet={sheet} onChange={onChange} />

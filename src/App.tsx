@@ -13,6 +13,7 @@ import { firebaseSignOut, auth } from './lib/supabase';
 import { rollCheck, rollSkill, rollDamage, rollDeathSave, rollStunSave } from './utils/diceEngine';
 import { deriveCurrentStats } from './rules/character';
 import { attackModifiers } from './rules/combat';
+import type { Modifier } from './rules/dice';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';
 import { Dice5, CheckCircle2 } from 'lucide-react';
@@ -162,6 +163,11 @@ export default function App() {
     }));
   };
 
+  // Teste com parcelas prontas — a habilidade especial usa este (C.8).
+  const handleRollCheck = (label: string, modifiers: Modifier[]) => {
+    handleAddRollResult(rollCheck(modifiers, { characterName: sheet.handle || 'Edgerunner', label }));
+  };
+
   // Ataque (C.3): 1d10 + REF corrente + perícia da arma + WA — as mesmas
   // parcelas da mesa. Antes o WA entrava NO LUGAR da perícia.
   const handleRollWeaponAttack = (weapon: WeaponItem) => {
@@ -303,6 +309,7 @@ export default function App() {
                       onRollWeaponAttack={handleRollWeaponAttack}
                       onRollDamageOnly={handleRollDamageOnly}
                       onRollSkill={handleRollSkill}
+                      onRollCheck={handleRollCheck}
                       user={user}
                       isSavingSheet={isSavingSheet}
                       onSave={handleSaveCurrentSheet}
