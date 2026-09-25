@@ -56,10 +56,6 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
     });
   };
 
-  const rollSkill = (skill: SkillItem) => {
-    onRollSkill(skill);
-  };
-
   return (
     <div className="bg-slate-900/70 border-l-4 border-yellow-500 border-y border-r border-slate-800 rounded-lg p-5 shadow-[0_0_20px_rgba(234,179,8,0.1)] space-y-4 relative overflow-hidden">
       <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-yellow-500 select-none">
@@ -142,7 +138,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
                   </button>
                 </div>
                 <button
-                  onClick={() => rollSkill(skill)}
+                  onClick={() => onRollSkill(skill)}
                   title="Rolar perícia"
                   className="px-2 py-1.5 bg-yellow-500 hover:bg-yellow-400 text-black rounded font-bold text-[10px] uppercase flex items-center space-x-1 cursor-pointer transition-all"
                 >

@@ -44,7 +44,7 @@ import type {
   StatName,
   WeaponItem
 } from '../types/cyberpunk';
-import { deriveCurrentStats } from './character';
+import { STAT_NAMES, deriveCurrentStats } from './character';
 
 // --- Limites -----------------------------------------------------------------
 // Atributo: 2–10 na criação, até 15 com cromo (ver CharacterStats). O teto é
@@ -72,7 +72,6 @@ const MAX_NAME_CHARS = 120;
 const MAX_URL_CHARS = 2048;
 const MAX_NOTES_CHARS = 5000;
 
-const STAT_NAMES: readonly StatName[] = ['INT', 'REF', 'TECH', 'COOL', 'ATTR', 'LUCK', 'MA', 'BODY', 'EMP'];
 const ARMOR_LOCATIONS: readonly ArmorLocation[] = ['Head', 'Torso', 'Right Arm', 'Left Arm', 'Right Leg', 'Left Leg'];
 
 export interface SheetValidationResult {

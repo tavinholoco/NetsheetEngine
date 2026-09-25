@@ -349,14 +349,14 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 
 | ID | Sev. | Achado | Fase |
 |---|---|---|---|
-| RUL-01 | 🔴 Crítico | BTM derivado de `BODY+REF` com sinal invertido (livro: só BODY, −1 a −5) | C |
-| RUL-02 | 🔴 Crítico | Ataque na mesa é `1d10 + REF + WA` — falta a perícia de arma | C |
-| RUL-03 | 🔴 Crítico | `combatModifier` do GM nunca é somado a rolagem nenhuma | C |
+| RUL-01 | 🔴 Crítico | BTM derivado de `BODY+REF` com sinal invertido (livro: só BODY, 0 a −5) | ✅ C.2 |
+| RUL-02 | 🔴 Crítico | Ataque na mesa é `1d10 + REF + WA` — falta a perícia de arma | ✅ C.3 |
+| RUL-03 | 🔴 Crítico | `combatModifier` do GM nunca é somado a rolagem nenhuma | ✅ C.4 |
 | RUL-04 | 🔴 Crítico | Sem pipeline de dano: SP, ×2 na cabeça e BTM não se conectam ao `woundLevel` | D |
-| RUL-05 | 🟠 Alto | Dois motores de dados divergentes (cliente encadeia, servidor explode uma vez) | C |
-| RUL-06 | 🟠 Alto | Penalidade de ferimento não entra em rolagem; `currentStats` é campo morto | C |
-| RUL-07 | 🟠 Alto | Atributo da Special Ability escolhido por ternário — erra 7 dos 10 roles | C |
-| RUL-08 | 🟡 Médio | Death save sem modificador cumulativo | C |
+| RUL-05 | 🟠 Alto | Dois motores de dados divergentes (cliente encadeia, servidor explode uma vez) | ✅ C.1 |
+| RUL-06 | 🟠 Alto | Penalidade de ferimento não entra em rolagem; `currentStats` é campo morto | ✅ C.5, C.6 |
+| RUL-07 | 🟠 Alto | Atributo da Special Ability escolhido por ternário — erra 7 dos 10 roles *(eram 9: a C.0 mediu)* | ✅ C.8 |
+| RUL-08 | 🟡 Médio | Death save sem modificador cumulativo *(no 2020: −1 por nível Mortal; o "cumulativo por turno" é do RED)* | ✅ C.7 |
 | RUL-09 | 🟡 Médio | Iniciativa digitada à mão, sem `1d10 + REF` | D |
 | RUL-10 | 🟡 Médio | Criação de personagem sem orçamento (pontos, perícias, IP) | K |
 | RUL-11 | 🔵 Baixo | Faltam Leap/Carry/Lift e EV; "Walk" é invenção | K |
@@ -367,9 +367,9 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 | ID | Sev. | Achado | Fase |
 |---|---|---|---|
 | ARQ-01 | 🟠 Alto | Broadcast do estado completo da sala a cada mutação (100–300 KB) | L |
-| ARQ-02 | 🟠 Alto | Regras do jogo implementadas duas vezes, sem teste de paridade | C |
+| ARQ-02 | 🟠 Alto | Regras do jogo implementadas duas vezes, sem teste de paridade | ✅ C.1, C.10 |
 | ARQ-03 | 🟡 Médio | Instância única obrigatória combinada com plano que hiberna | B |
-| ARQ-04 | 🟡 Médio | 1,34 MB no chunk de entrada | L |
+| ARQ-04 | 🟡 Médio | 1,34 MB no chunk de entrada *(623 kB desde a C.1 — a biblioteca de dados puxava o `mathjs`)* | L |
 | ARQ-05 | 🟡 Médio | Quatro arquivos concentram ~4.000 das 14.282 linhas | E/G/L |
 | ARQ-06 | 🔵 Baixo | Camada Supabase ainda exporta nomes do Firebase | L |
 | ARQ-07 | 🔵 Baixo | Sem ESLint; 23 `any` e 16 `console.*` | L |
@@ -1063,11 +1063,13 @@ Fase F para não varrer código que acabou de ser reestilizado.
 
 **Pistas já levantadas:**
 - `syncSheetStore(sheetResult)` é chamado **no corpo do render** do `App.tsx` — efeito colateral fora
-  de efeito.
+  de efeito. **Agora com sintoma** *(visto na C, 25/09/2026)*: o React avisa no console, a cada carga,
+  "Cannot update a component while rendering a different component". Anterior à Fase C (`7fe4f47`).
 - Os dois `useEffect` que sincronizam URL ↔ aba com dois refs de guarda.
 - `createBlankCharacterSheet` gera seis IDs de armadura no mesmo tick com `Date.now()` + sufixo curto.
-- `StatBlock.handleSet` altera `stats` sem tocar em `currentStats`; `handleChange` aplica um
-  `Math.min` difícil de justificar.
+- ~~`StatBlock.handleSet` altera `stats` sem tocar em `currentStats`; `handleChange` aplica um
+  `Math.min` difícil de justificar.~~ *Resolvida na C.6: o `currentStats` virou derivado e o
+  `StatBlock` parou de escrevê-lo.*
 - 16 `console.*` sobrevivendo ao logger estruturado. *(ARQ-07, parte 1)*
 - Candidatos a refactor: `MultiplayerRoom` 944, `FriendsList` 723, `CyberpunkMenu` 608. *(ARQ-05)*
 
@@ -1096,6 +1098,9 @@ uso real.
 - Quando o cliente cai para SSE, quais ações deixam de funcionar? O usuário fica sabendo?
 - Broadcast completo e updates Yjs incrementais podem chegar fora de ordem.
 - Awareness sem limpeza de estados órfãos.
+- A habilidade especial **não é rolável na mesa**: o tipo `skill` procura em `sheet.skills`, e ela
+  mora em `specialAbilityName`. Na ficha funciona. *(visto na C.8, 25/09/2026 — sem sintoma de mesa
+  ainda: ninguém pediu)*
 
 **Como varrer:** sessão real com 3+ abas, rede estrangulada, refresh no meio do combate, servidor
 reiniciado com a mesa aberta. Não é teste automatizado — é meia hora quebrando de propósito com o log

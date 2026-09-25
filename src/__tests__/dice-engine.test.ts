@@ -10,7 +10,8 @@
  * os testes trocavam o gerador GLOBAL da biblioteca @dice-roller — que saiu.
  */
 import { describe, it, expect } from 'vitest';
-import { clientRng, rollCheck, rollDamage, rollLocation, rollSheetDeathSave, rollSheetStunSave, rollSkill } from '../utils/diceEngine';
+import { clientRng, rollCheck, rollDamage, rollSheetDeathSave, rollSheetStunSave, rollSkill } from '../utils/diceEngine';
+import { rollHitLocation } from '../rules/dice';
 
 /** Ficha mínima para os saves: BODY 8, sem cromo. */
 const vex = (woundLevel: number) => ({
@@ -148,7 +149,7 @@ describe('RNG real do cliente (Web Crypto), 3000 rolagens', () => {
 
   it('local de impacto: as 10 faces aparecem', () => {
     const faces = new Set<number>();
-    for (let i = 0; i < 3000; i++) faces.add(rollLocation().roll);
+    for (let i = 0; i < 3000; i++) faces.add(rollHitLocation(clientRng).face);
     expect(faces.size).toBe(10);
   });
 

@@ -29,6 +29,8 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | `docs/adr/` | Decisões arquiteturais com histórico de revisão. **Leia antes de reabrir uma decisão.** |
 | `docs/varreduras/` | Ledgers das varreduras (Fases E, G–J) com veredictos FAZER/ADIAR/DESCARTAR |
 | `docs/PRD.md` | Escopo de produto e regras CP2020 |
+| `docs/CONFERENCIA_CP2020.md` | Cada regra contra o livro, **com fonte**, e o que ficou para outra fase. **Leia antes de mexer em regra** |
+| `src/rules/` | As regras como código: `tables.ts` (o livro como dado), motor de dados, atributos derivados, ataque. Cliente **e** servidor usam |
 
 ## Invariantes — não viole sem o usuário pedir
 
@@ -69,12 +71,15 @@ node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
 
 ## Contexto que economiza tempo
 
-- O projeto **não está quebrado**: compila, testa e builda. O que falta é o *loop de jogo* — dano
-  não vira ferimento, o `combatModifier` do GM não entra em rolagem nenhuma, e a tabela de BTM não é
-  a do livro.
+- O projeto **não está quebrado**: compila, testa e builda. Desde a Fase C as rolagens seguem o
+  livro, na ficha e na mesa, com **um motor só** em `src/rules/`. O que falta é fechar o *loop de
+  jogo* (Fase D): o dano ainda não vira ferimento sozinho — o `woundLevel` é clicado à mão.
+- **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
+  O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
+  se passando por 2020 — três premissas do plano original vieram de lá.
 - Há um padrão recorrente aqui: **coisa construída de ponta a ponta e nunca ligada.** O
-  `combatModifier`, o `currentStats` e o `@theme` de cores são três casos. Antes de construir algo
-  novo, confira se o que existe já resolve.
+  `combatModifier` e o `currentStats` foram ligados na Fase C; o `@theme` de cores é da Fase F.
+  Antes de construir algo novo, confira se o que existe já resolve.
 - O `PLANO_DE_ACAO.md` na raiz está **substituído, não concluído** — suas Fases 11 e 12 viraram as
   Fases K e M do plano novo, e ele só é removido na Fase M.
 - **Verifique a premissa antes de executar um item.** A auditoria de 03/09 mostrou que as afirmações

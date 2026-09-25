@@ -1,5 +1,5 @@
 import type { CharacterSheet, RollResult, SkillItem, WeaponItem } from '../types/cyberpunk';
-import { rollHitLocation, type Modifier, type Rng } from '../rules/dice';
+import type { Modifier, Rng } from '../rules/dice';
 import {
   checkRoll,
   damageRoll,
@@ -51,12 +51,6 @@ export interface DiceRollContext {
   skillName?: string;
   /** Parcelas extras, com nome (WA, Awareness do Combat Sense...). */
   modifiers?: Modifier[];
-}
-
-/** Resultado do local de impacto (1d10). */
-export interface ImpactLocation {
-  roll: number;
-  name: string;
 }
 
 let rollSeq = 0;
@@ -133,10 +127,4 @@ export function rollSheetDeathSave(sheet: SheetWithHandle, rng: Rng = clientRng)
 /** Stun save: `1d10 ≤ BODY − 0 a 9` pelo nível do ferimento (C.7). */
 export function rollSheetStunSave(sheet: SheetWithHandle, rng: Rng = clientRng): RollResult {
   return stamp(sheetStunSaveRoll(rng, sheet), sheet.handle);
-}
-
-/** Local de impacto: 1 cabeça (×2), 2–4 tronco, 5/6 braços, 7–8 perna direita, 9–0 perna esquerda. */
-export function rollLocation(rng: Rng = clientRng): ImpactLocation {
-  const hit = rollHitLocation(rng);
-  return { roll: hit.face, name: hit.label };
 }
