@@ -44,34 +44,56 @@ sessão e manda ler o plano antes de propor trabalho.
 
 ### Ritual de ABERTURA — ao começar ou retomar uma fase
 
-- [ ] **1.** Ler o [`CLAUDE.md`](../CLAUDE.md) (carregado automaticamente) e **este plano**.
-- [ ] **2.** Achar o **primeiro item `[ ]` não marcado** — é de onde o trabalho continua. Se o item
-      anterior está marcado mas a fase não tem data, a fase está em andamento.
-- [ ] **3.** `git log --oneline -15` e `git tag -l` — as tags fecham as fases de construção
+- **1.** Ler o [`CLAUDE.md`](../CLAUDE.md) (carregado automaticamente) e **este plano**.
+- **2.** Achar o **primeiro item `[ ]` não marcado** — é de onde o trabalho continua. Se o item
+      anterior está marcado mas a fase não tem data, a fase está em andamento. *(Os passos destes
+      dois rituais não têm checkbox de propósito: são modelo, não estado. Todo `[ ]` do arquivo é
+      trabalho real.)*
+- **3.** `git log --oneline -15` e `git tag -l` — as tags fecham as fases de construção
       (`v0.4.0` na A, `v0.4.1` na B, `v0.4.2` na C, `v0.4.3` na D, `v0.4.4` na F, `v0.5.0` na M).
       Se o último commit não corresponde ao último checkbox marcado, **alguém parou no meio**:
       reconcilie antes de escrever código.
-- [ ] **4.** Ler o registro de [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase) das fases já
+- **3b.** **Conferir o CI do `master` e o keepalive** — `gh run list --repo tavinholoco/NetsheetEngine
+      --branch master --limit 3` e `gh run list --repo tavinholoco/NetsheetEngine --workflow
+      keepalive.yml --limit 2`. **Vermelho em qualquer um dos dois é o primeiro trabalho da sessão**,
+      antes de qualquer item de fase. *(Nasceu em 24/09/2026: o merge da Fase B ficou vermelho porque
+      o token do CI tinha expirado, e a migration 0007 não chegou em produção — o PR estava verde
+      porque o `db-sync` só roda no `master`.)*
+- **4.** Ler o registro de [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase) das fases já
       fechadas, e as decisões do [`CLAUDE.md`](../CLAUDE.md) — para não reabrir questão resolvida.
-- [ ] **5.** Varrer os **ADIAR em aberto** nos ledgers de [`varreduras/`](./varreduras/) e nas ADRs:
+- **5.** Varrer os **ADIAR em aberto** nos ledgers de [`varreduras/`](./varreduras/) e nas ADRs:
       algum gatilho disparou desde a última sessão? Um gatilho que disparou vira trabalho da fase
       corrente.
-- [ ] **6.** Rodar `npx tsc --noEmit` e `npx vitest run` **antes de mudar qualquer coisa**. É a linha
-      de base: sem ela, você não sabe se quebrou algo ou se já estava quebrado.
+- **6.** Rodar `npx tsc --noEmit` e `npx vitest run` **antes de mudar qualquer coisa**. É a linha
+      de base: sem ela, você não sabe se quebrou algo ou se já estava quebrado. Os números esperados
+      estão em [Linha de base atual](#linha-de-base-atual), no fim deste arquivo.
 
 ### Ritual de ENCERRAMENTO — ao fechar uma fase
 
-Cada fase de construção tem estes três últimos itens na própria lista. Não são opcionais:
+Cada fase de construção termina com estes passos — o portão e o estado durável já aparecem como
+itens da própria fase. Não são opcionais:
 
-- [ ] **1.** 🔒 **Portão de segurança** — as seis perguntas, registradas em
+- **1.** 🔒 **Portão de segurança** — as seis perguntas, registradas em
       [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase).
-- [ ] **2.** 🧠 **Atualizar o estado durável** — marcar os checkboxes da fase, preencher a data,
+- **2.** 🧠 **Atualizar o estado durável** — marcar os checkboxes da fase, preencher a data,
       atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema
       mudou, e a tabela de progresso no fim deste arquivo.
-- [ ] **3.** 🧠 **Atualizar a memória do Claude** — mas **só o que o repo não carrega**: uma decisão
+- **3.** 🧠 **Atualizar a memória do Claude** — mas **só o que o repo não carrega**: uma decisão
       nova que valha para as próximas sessões, uma preferência de trabalho que você expressou, uma
       correção de rumo. **Não** copie o estado da fase para lá.
-- [ ] **4.** Commit com mensagem que explique o *porquê*, e a tag da fase quando houver.
+- **4.** **Revisar o que a fase produziu** — antes do PR, não depois:
+      - *inconsistências*: documento que a fase tornou **falso** (diagrama, contrato de API, guia de
+        deploy). Procurar também **fora de `*.md`** — `.env.example`, `render.yaml`, comentários de
+        código. Na Fase B, duas sobras escaparam de uma varredura que olhou só `*.md`/`*.yml`/`*.json`;
+      - *refatoração* do código que a própria fase escreveu (duplicação, abstração faltando). **Não**
+        é varredura do repositório — isso é das Fases E e G–J.
+- **5.** Commit com mensagem que explique o *porquê*, e a tag da fase quando houver. Push do branch e
+      **PR para o dono revisar e mergear** — nunca push direto no `master`.
+      **Se a fase tiver migration** (decisão 5): a migration vai num **PR próprio**, que é mergeado
+      primeiro e conferido em produção com `npx supabase migration list --linked`. Só depois abre o PR
+      do código que a usa. O Render publica a cada push no `master` sem esperar o `db-sync`.
+- **6.** **Depois do merge, conferir o CI do `master`.** O job `db-sync` só roda lá: **PR verde não
+      prova que a migration entrou em produção.** A fase só termina de verdade com o `master` verde.
 
 ### Se a sessão anterior parou no meio de uma fase
 
@@ -152,6 +174,7 @@ Estas três respostas fecham ambiguidades que mudariam o trabalho. Não reabrir 
 | 2 | Fidelidade estrita ou regras de casa? | **Fidelidade estrita ao CP2020** | Nenhuma divergência vira "regra de casa". A Fase C ganha conferência sistemática contra o livro. |
 | 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase L (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. |
 | 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo. **Gatilho:** um incidente real de perda de dado que o backup diário não cobriria |
+| 5 | Como evitar que o Render publique código antes da migration que ele usa? (P.5) | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa | O Render faz auto-deploy a cada push no `master`, sem esperar o `db-sync`. Regra de processo, custo zero, nada novo para configurar. Ver o passo 5 do ritual de encerramento |
 
 ---
 
@@ -546,7 +569,6 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
         falharia em silêncio.
       - 13 testes, **metade deles sobre o que o coletor NÃO pode fazer**: sala nova, sala um minuto
         abaixo do limite, mesa em pausa de 6 h, e sessões de outras salas intactas.
-- [x] **B.10** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe. *(03/09/2026 — implementado contra o diagrama, e o diagrama atualizado no mesmo commit: a nota que dizia "HOJE ESTE ESTADO NAO EXISTE" saiu, e entrou a tabela dos dois limiares.)*
 - [x] **B.6** `npm audit fix` + passo de audit no CI falhando em severidade alta. *(SEC-06 — 03/09/2026)*
       - **O achado era maior E menor que o descrito.** Maior: três pacotes independentes (`qs`,
         `mathjs`, `nanoid`), não só a cadeia do `qs`. Menor: `npm audit fix` só resolve o `nanoid` —
@@ -592,10 +614,71 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
         mede o evento, mede a carga da máquina — trocado por espera pelo próprio evento, com teto.
         Seis execuções seguidas limpas depois da correção.
 - [x] **B.9** `git tag v0.4.1`. *(03/09/2026)*
-- [ ] **B.10** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe.
+- [x] **B.10** 📐 **Desenho** — implementar o coletor contra o [ciclo de vida de sala e sessão](./ARQUITETURA.md#ciclo-de-vida-de-sala-e-sessão), que já especifica a transição `Ociosa → Encerrada` que hoje não existe. *(03/09/2026 — implementado contra o diagrama, e o diagrama atualizado no mesmo commit: a nota que dizia "HOJE ESTE ESTADO NAO EXISTE" saiu, e entrou a tabela dos dois limiares.)*
 - [x] **B.11** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [x] **B.12** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [x] ✅ **Fase B concluída em:** __03__/__09__/__2026__
+- [x] ✅ **Fase B concluída em:** __03__/__09__/__2026__ *(mergeada em 24/09/2026 — PR #6)*
+
+---
+
+### ✅ PENDÊNCIAS OPERACIONAIS — resolvidas em 25/09/2026, antes da Fase C
+
+Descobertas em 24/09/2026 ao conferir o CI do `master` depois do merge da Fase B. **O merge ficou
+vermelho:** o job `db-sync` falhou com `Unexpected error retrieving remote project status:
+{"message":"Unauthorized"}`. O `SUPABASE_ACCESS_TOKEN` do repositório deixou de valer entre o
+keepalive de 22/09 (ok) e o merge de 25/09 01:38 UTC. O token tinha sido gravado em 25/08: tudo
+indica um token criado com **validade de 30 dias**.
+
+**Consequência:** a migration `0007` não chegou em produção, enquanto o Render fazia auto-deploy do
+código que grava e lê a coluna `sessions`. Pela leitura do código, a persistência de salas falha
+(PostgREST rejeita coluna inexistente) e fica re-tentando a cada 2 s, e o restore do boot não recupera
+sala nenhuma. **Não observado nos logs do Render** — derivado do código.
+
+- [x] **P.1** Aplicar a `0007` em produção. *(24/09/2026 — com autorização do dono, pelo CLI local,
+      depois de um `--dry-run` que mostrou a `0007` como **única** pendente. Verificado direto no schema
+      de produção (`supabase db dump`): tabela de controle `0001`–`0007`; coluna `sessions jsonb
+      DEFAULT '{}' NOT NULL`; RLS da `rooms` ativa com **zero policies**. Janela de quebra: ~15 min
+      entre o merge e a aplicação.)*
+- [x] **P.2** **Trocar o `SUPABASE_ACCESS_TOKEN`.** Gerar em
+      [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) e gravar
+      com `gh secret set SUPABASE_ACCESS_TOKEN --repo tavinholoco/NetsheetEngine` (o valor é pedido no
+      prompt — **Claude não insere token**). *(25/09/2026 02:01 UTC — trocado pelo dono.)*
+      **⏰ O token novo tem validade de 30 dias, por escolha do dono: vence por volta de 25/10/2026.**
+      **Gatilho: renovar até 22/10/2026**, com o mesmo passo a passo. Se passar, o sintoma é o de hoje:
+      `Unauthorized` no `db-sync` e keepalive vermelho. O passo 3b do ritual de abertura pega isso.
+- [x] **P.3** Re-rodar o job que falhou (`gh run rerun 36082927327 --failed --repo
+      tavinholoco/NetsheetEngine`) e confirmar o `master` verde. Como a `0007` já entrou, o esperado
+      no log é `Remote database is up to date`. *(25/09/2026 — run `36082927327` com conclusão
+      `success`; o log mostra `Connecting to remote database...` e `Remote database is up to date`.)*
+- [x] **P.4** Disparar o keepalive à mão e confirmar que ele **conecta** (`Connecting to remote
+      database...` no log). Verde sozinho não basta: o script também sai verde com secret ausente.
+      *(25/09/2026 — run `36084925724` verde; o log mostra a conexão e a `0007` local **e** remota.)*
+      - **Achado no caminho, uma corrida.** A primeira tentativa (run `36084634828`) falhou com
+        `FATAL: password authentication failed for user "cli_login_postgres"`. Ela tinha sido
+        disparada **no mesmo segundo** que o re-run do `db-sync`. O CLI cria um papel temporário com
+        nome fixo e define uma senha nova a cada execução, então um job trocou a senha do outro.
+        Rodando sozinho, passou. Mesmo token e mesmo projeto, então a corrida é a explicação que sobra.
+      - **Regra:** nunca disparar `db-sync` e keepalive juntos à mão.
+      - **ADIAR o conserto no workflow** (grupo de `concurrency` compartilhado ou retry em
+        `SQLSTATE 28P01` no `scripts/supabase-ci.sh`). No uso normal, a colisão exige um push no
+        `master` durante os ~20 s do keepalive agendado (06:00 UTC, a cada 3 dias). **Gatilho:** uma
+        falha `28P01` em run que **não** foi disparado à mão. Detalhe ao escolher: um grupo de
+        `concurrency` do GitHub mantém só **um** run pendente e cancela o anterior, e isso poderia
+        cancelar um `db-sync` pendente. O retry não tem esse risco.
+- [x] **P.5** **Decidir a ordem migration × deploy** — decisão rápida, com o dono, **antes da próxima
+      migration**. *(25/09/2026 — **decidido pelo dono: opção 1, migration em PR próprio.** Virou a
+      decisão 5 do plano e o passo 5 do ritual de encerramento.)* O incidente expôs um defeito de desenho: o Render faz auto-deploy no push para o
+      `master` **independente** do `db-sync` do GitHub Actions. Mesmo com token válido existe corrida
+      (o Render pode subir antes da migration), e com o `db-sync` falhando o código sobe assim mesmo.
+      Opções:
+      1. **Disciplina expand/contract** *(recomendada — versão 10× menor)*: migration aditiva em PR
+         **próprio**, mergeado e conferido em produção **antes** do PR do código que a usa. Custo zero,
+         nenhuma infraestrutura.
+      2. **Deploy do Render condicionado ao `db-sync`**: `autoDeploy: false` no `render.yaml` e deploy
+         hook chamado pelo CI depois de migration ok. Resolve na raiz, mas exige mais um secret
+         (`RENDER_DEPLOY_HOOK`).
+      3. **Código tolerante à coluna ausente** — rejeitada de antemão: esconde o problema em vez de
+         evitá-lo.
 
 ---
 
@@ -609,6 +692,18 @@ cliente e servidor para ela.
 > delicada do plano. Ordem correta: **escrever a tabela do livro como dado primeiro**, derivar os
 > testes desse dado, vê-los falhar contra a implementação atual, e só então mudar a implementação.
 
+- [ ] **C.0** 🔍 **Verificação de premissas** — a mesma disciplina da B.0, que na Fase B mudou o tamanho
+      de quatro dos seis itens. Antes de escrever código, conferir no código real a premissa de cada
+      item C.1–C.9 e registrar aqui o que mudou. Pontos de partida já conhecidos:
+      - **`src/rules/` já existe** — nasceu com o `sheetSchema.ts` da B.2, no contrato desta fase
+        (função pura, sem DOM nem rede). A C.1 cresce a partir dele, não cria o diretório.
+      - Já **medido** na auditoria de 03/09: `combatModifier` e `currentStats` têm **zero leitores**
+        (C.4 e C.6 partem de "construído e nunca ligado", não de "funciona errado").
+      - Conferir o que a C.1 afirma sobre os dois motores: cliente em `src/utils/diceEngine.ts` (usa
+        `@dice-roller/rpg-dice-roller`) e servidor em `rollDice` do `roomManager.ts` (`crypto.randomInt`,
+        sem a biblioteca). A unificação precisa de RNG injetado para os dois lados.
+      - A **disciplina obrigatória** acima vale desde o primeiro commit: tabela do livro como dado →
+        testes derivados → vê-los falhar → só então mudar a implementação.
 - [ ] **C.1** Extrair e unificar o motor FNFF em `src/rules/`. Explosão **encadeada** dos dois lados
       (decisão 1), com teto de segurança contra sequência patológica. *(RUL-05, ARQ-02)*
 - [ ] **C.2** BTM canônico por BODY (2→0, 3–4→−1, 5–7→−2, 8–9→−3, 10→−4, 11+→−5), sinal negativo,
@@ -1015,3 +1110,19 @@ público mudar.
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
+
+### Linha de base atual
+
+Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
+
+| Verificação | Ao fechar a Fase B (24/09/2026) |
+|---|---|
+| `npx tsc --noEmit` | 0 erros |
+| `npx vitest run` | **197** testes, 13 arquivos |
+| `npm run test:e2e` | 6 testes (Playwright) |
+| `node scripts/test-rls.mjs` | 56/56 — exige Supabase local no Docker |
+| `npm run audit:ci` | passa, com 2 altas do `mathjs` aceitas por exceção nomeada |
+| Migrations em produção | `0001`–`0007` |
+
+**Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
+Renovar até 22/10 — passo a passo no P.2.
