@@ -692,18 +692,48 @@ cliente e servidor para ela.
 > delicada do plano. Ordem correta: **escrever a tabela do livro como dado primeiro**, derivar os
 > testes desse dado, vê-los falhar contra a implementação atual, e só então mudar a implementação.
 
-- [ ] **C.0** 🔍 **Verificação de premissas** — a mesma disciplina da B.0, que na Fase B mudou o tamanho
-      de quatro dos seis itens. Antes de escrever código, conferir no código real a premissa de cada
-      item C.1–C.9 e registrar aqui o que mudou. Pontos de partida já conhecidos:
-      - **`src/rules/` já existe** — nasceu com o `sheetSchema.ts` da B.2, no contrato desta fase
-        (função pura, sem DOM nem rede). A C.1 cresce a partir dele, não cria o diretório.
-      - Já **medido** na auditoria de 03/09: `combatModifier` e `currentStats` têm **zero leitores**
-        (C.4 e C.6 partem de "construído e nunca ligado", não de "funciona errado").
-      - Conferir o que a C.1 afirma sobre os dois motores: cliente em `src/utils/diceEngine.ts` (usa
-        `@dice-roller/rpg-dice-roller`) e servidor em `rollDice` do `roomManager.ts` (`crypto.randomInt`,
-        sem a biblioteca). A unificação precisa de RNG injetado para os dois lados.
-      - A **disciplina obrigatória** acima vale desde o primeiro commit: tabela do livro como dado →
-        testes derivados → vê-los falhar → só então mudar a implementação.
+- [x] **C.0** 🔍 **Verificação de premissas** *(25/09/2026)*. Conferido no código **e contra fontes do
+      livro** — a pesquisa está em [`CONFERENCIA_CP2020.md`](./CONFERENCIA_CP2020.md), com a fonte de
+      cada regra. **Três premissas do plano estavam erradas, e as três vieram de fora do 2020:** duas
+      do Cyberpunk RED, uma de regra de casa publicada como se fosse do livro. O defeito é do plano,
+      não da execução — mesma classe da [auditoria de 03/09](#-auditoria-das-afirmações-deste-plano-03092026).
+      - **Linha de base: 196/197, não 197.** No checkout principal o `supabaseAuth` do B.1 ia à rede
+        (o `.env.local` aponta para o Supabase local) e o teste de falha fechada recebia 401 em vez de
+        503. Nos worktrees da Fase B não havia `.env.local`, por isso escapou. Corrigido com a mesma
+        guarda de `NODE_ENV=test` que o `roomPersistence` tem desde a T9.3 (`c7c25a3`).
+      - **C.1 — maior que o descrito.** Os **dois** motores implementam o fumble do **RED** (rolar 1
+        subtrai 1d10). No 2020, o 1 natural é **falha automática** e rola-se 1d10 na tabela de fumble.
+        A explosão única do servidor também é a regra do RED. E um bug que a auditoria não pegou: o
+        `rollLocation` do cliente manda acerto no **tronco (2–4) para "Perna Esquerda"** — o do
+        servidor está certo, e a divergência é o próprio sintoma do ARQ-02. Os testes só cobriam as
+        faces 1, 5 e 9.
+      - **C.1 — a biblioteca não pode ir para o servidor.** O `@dice-roller` tem gerador **global**
+        (não aceita RNG por chamada) e levaria o `mathjs` para o lado que avalia a fórmula de dano
+        vinda da rede — exatamente o gatilho da exceção de audit do B.6. Unificar = motor próprio em
+        `src/rules/`, e a biblioteca sai. Reabre a [ADR 0004](./adr/0004-dice-roller.md) com motivo
+        novo, e as duas exceções do `mathjs` saem da ALLOWLIST.
+      - **C.2 confirmado.** `btmFromStats(BODY, REF)` com sinal invertido (+5 a −2). **15 dos 32**
+        testes de `derived-stats` codificam a tabela errada.
+      - **C.3 confirmado, e o cliente é pior:** `handleRollWeaponAttack` passa o **WA no lugar do nível
+        de perícia**. Nenhum mapa `weapon.type → perícia` existe. Escopeta → Rifle é inferência
+        (não existe perícia de escopeta no 2020) e está marcada assim na conferência.
+      - **C.4 confirmado:** `combatModifier` com zero leitores.
+      - **C.5 — premissa errada.** "Crítico REF −4, Mortais REF −6" é **regra de casa** — as duas
+        fontes que a publicam se declaram house rules. O livro: **Sério REF −2; Crítico REF/INT/COOL
+        pela metade; Mortal REF/INT/COOL a um terço** (arredondando para cima). Ferimento **não
+        penaliza MA** — a tabela atual inventa MA e as notas "consciência 50%" e "morte provável".
+      - **C.6 confirmado, com um recorte:** o tipo `CyberwareItem` não tem modificador de atributo.
+        O único efeito de cromo que o modelo representa é o do livro: **−1 EMP a cada 10 de
+        Humanidade perdida**. E o servidor **deriva** o `currentStats` — nunca confia no do cliente.
+      - **C.7 — premissa meio errada.** Death save "cumulativo por turno" é do **RED** (cada save
+        bem-sucedido piora o próximo). No 2020 o death save é **a cada turno, com −1 por nível
+        Mortal**, sem acúmulo por turno. E falta o **stun save** (BODY −0 a −9 pelo nível do
+        ferimento): o único botão diz "Atordoamento/Morte" e rola `1d10 ≤ BODY` para os dois. Além
+        disso, `isDead(10)` trata Mortal 6 como morto e **desliga o death save** justo no último nível.
+      - **C.8 — maior que o descrito:** o ternário acerta **1 de 10**, não 3. Nenhuma habilidade usa
+        EMP, e Combat Sense não se rola sozinha — soma em Awareness/Notice e na iniciativa.
+        `SPECIAL_ABILITIES` em `cyberpunkData.ts` é duplicata morta de `OFFICIAL_ROLES`.
+      - **C.10:** o servidor não tem RNG injetável — a paridade exige isso.
 - [ ] **C.1** Extrair e unificar o motor FNFF em `src/rules/`. Explosão **encadeada** dos dois lados
       (decisão 1), com teto de segurança contra sequência patológica. *(RUL-05, ARQ-02)*
 - [ ] **C.2** BTM canônico por BODY (2→0, 3–4→−1, 5–7→−2, 8–9→−3, 10→−4, 11+→−5), sinal negativo,
@@ -711,11 +741,14 @@ cliente e servidor para ela.
 - [ ] **C.3** Ataque com perícia de arma: mapear `weapon.type` → nome de perícia e somar o nível da
       ficha que o servidor já possui. *(RUL-02)*
 - [ ] **C.4** `combatModifier` entrando em `attack` e `skill`, visível no detalhe da rolagem. *(RUL-03)*
-- [ ] **C.5** Tabela de penalidade de ferimento igual à do livro (Crítico REF −4; todos os Mortais
-      REF −6). *(RUL-06, parte 1)*
+- [ ] **C.5** Tabela de penalidade de ferimento igual à do livro: Sério REF −2; Crítico REF/INT/COOL
+      ÷2; Mortal REF/INT/COOL ÷3 (arredondando para cima); sem penalidade de MA. *(RUL-06, parte 1 —
+      texto corrigido na C.0: o original, "Crítico REF −4; Mortais REF −6", era regra de casa)*
 - [ ] **C.6** `currentStats` derivado (base + cyberware + penalidade de ferimento) num único seletor,
       lido por **todas** as rolagens. *(RUL-06, parte 2)*
-- [ ] **C.7** Death save com modificador cumulativo por nível mortal e por turno. *(RUL-08)*
+- [ ] **C.7** Death save a cada turno com −1 por nível Mortal (Mortal 0 = BODY, Mortal 6 = BODY −6),
+      e o **stun save** que não existe (BODY −0 a −9 pelo nível do ferimento). *(RUL-08 — texto
+      corrigido na C.0: "cumulativo por turno" era regra do RED)*
 - [ ] **C.8** Atributo da Special Ability dentro de `OFFICIAL_ROLES`. *(RUL-07)*
 - [ ] **C.9** **Conferência sistemática contra o livro** (decisão 2): atributos, perícias, combate,
       dano, armadura, humanidade e movimento. Registrar cada divergência encontrada, inclusive as não
