@@ -27,6 +27,11 @@ let resolved = false;
 function getAuthClient(): SupabaseClient | null {
   if (resolved) return client;
   resolved = true;
+  // Mesma regra da T9.3 no roomPersistence: teste nunca toca o Supabase, mesmo
+  // que o .env.local do checkout tenha credenciais. Sem isto a suíte dependia
+  // da máquina — no checkout principal ela ia à rede e o teste de falha fechada
+  // recebia 401 em vez de 503.
+  if (process.env.NODE_ENV === "test") return null;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
