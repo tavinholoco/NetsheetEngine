@@ -818,9 +818,16 @@ cliente e servidor para ela.
       - *Fora do escopo, anotado:* a habilidade especial não é rolável **na mesa** (o tipo `skill`
         procura em `sheet.skills`, e ela mora em `specialAbilityName`). Nenhum item do plano pede
         isso; entra como pista da Fase H.
-- [ ] **C.9** **Conferência sistemática contra o livro** (decisão 2): atributos, perícias, combate,
+- [x] **C.9** **Conferência sistemática contra o livro** (decisão 2): atributos, perícias, combate,
       dano, armadura, humanidade e movimento. Registrar cada divergência encontrada, inclusive as não
-      listadas nesta auditoria.
+      listadas nesta auditoria. *(25/09/2026 — [`CONFERENCIA_CP2020.md`](./CONFERENCIA_CP2020.md))*
+      - **13 divergências encontradas e corrigidas, 5 delas fora do índice de achados** (fumble do
+        RED, tronco→perna, "Reputação" inventada, stun save inexistente, Mortal 6 tratado como
+        morto). O resto — o que o modelo ainda não representa — está na conferência com fase dona.
+      - **Método:** fonte secundária só vale com **duas concordando**; o que é inferência está marcado
+        (Jury Rig/TECH, escopeta→Rifle). Três fontes descartadas por serem regra de casa — era delas
+        que vinham a tabela "−4/−6" e o "sem ×2 na cabeça".
+      - **Pendente do dono, com o livro na mão:** as duas inferências e a ordem ×2 × BTM (decide a D.1).
 - [x] **C.10** Testes de paridade cliente↔servidor com a mesma entrada nos dois RNGs. *(ARQ-08, parte 1 —
       25/09/2026)*
       - **A paridade achou divergência mesmo com o motor único:** a ficha escrevia `Perícia (4)` e
@@ -834,9 +841,17 @@ cliente e servidor para ela.
       - **Provado:** com as funções da ficha montando a rolagem como o `App` fazia antes, 30 dos 52
         falham; com as compartilhadas, 52 passam.
       - Fecha o **ARQ-02** (regras implementadas duas vezes, sem teste de paridade).
-- [ ] **C.11** Atualizar `docs/PRD.md` §5 no mesmo commit de cada correção. *(DOC-01, parte 2)*
+- [x] **C.11** Atualizar `docs/PRD.md` §5 no mesmo commit de cada correção. *(DOC-01, parte 2 — feito em
+      cada commit da fase, e também na cópia do PRD que o app exibe, `src/data/prdData.ts`, e no
+      `PROTOCOLO_MULTIPLAYER.md`, cuja tabela de rolagens a fase tornou falsa)*
 - [ ] **C.12** `git tag v0.4.2`.
-- [ ] **C.13** 📐 **Desenho** — a C.9 confere o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) e a [máquina de ferimento](./ARQUITETURA.md#máquina-de-estados-do-ferimento) contra o livro, e **corrige os diagramas** com o que a conferência determinar. Eles são hipótese de trabalho, não autoridade.
+- [x] **C.13** 📐 **Desenho** — a C.9 confere o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) e a [máquina de ferimento](./ARQUITETURA.md#máquina-de-estados-do-ferimento) contra o livro, e **corrige os diagramas** com o que a conferência determinar. Eles são hipótese de trabalho, não autoridade.
+      *(25/09/2026)* Os dois corrigidos: o pipeline ganhou o stun save, o efeito do livro, o BTM por
+      BODY com mínimo 1, e perdeu o "death save com modificador cumulativo" (RED). A ordem ×2 × BTM
+      ficou marcada como **decisão do dono antes da D.1**. A máquina ganhou o estado **Morto**, fora
+      do `woundLevel` — Mortal 6 é o último estado **vivo**.
+      - **Gatilho de ADIAR que disparou, achado no passo 5 do ritual de abertura:** o ER do schema
+        ("quando o schema mudar") — a `0007` da Fase B mudou o schema. Desenhado na mesma seção.
 - [ ] **C.14** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] **C.15** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase C concluída em:** ____/____/______

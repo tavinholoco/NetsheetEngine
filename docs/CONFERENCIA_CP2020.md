@@ -8,6 +8,43 @@ A versão executável destas tabelas é [`src/rules/tables.ts`](../src/rules/tab
 regra são **derivados dela**, não da implementação — é a disciplina da Fase C: tabela do livro como
 dado → testes → vê-los falhar → só então mudar o código.
 
+**Concluída em 25/09/2026.** Resultado em uma tabela, detalhe nas seções abaixo.
+
+## Resumo
+
+**13 divergências do livro encontradas e corrigidas na Fase C** — 8 estavam no índice de achados do
+plano, 5 não estavam (marcadas com ★):
+
+| # | Divergência | Onde estava | Corrigida em |
+|---|---|---|---|
+| 1 | Servidor explodia o 10 uma vez só | `roomManager` | C.1 |
+| 2 ★ | Fumble subtraía 1d10 (regra do RED), nos dois lados | `diceEngine`, `roomManager` | C.1 |
+| 3 ★ | Acerto no tronco (2–4) virava "Perna Esquerda" | `diceEngine` | C.1 |
+| 4 | BTM por BODY + REF, com sinal invertido | `derivedStats` | C.2 |
+| 5 ★ | Ficha dizia "Reputação derivada de COOL + LUCK" | `StatBlock` | C.2 |
+| 6 | Ataque sem a perícia da arma; na ficha, o WA **no lugar** dela | `roomManager`, `App` | C.3 |
+| 7 | Modificador do GM não entrava em rolagem nenhuma | `roomManager` | C.4 |
+| 8 | Efeito de ferimento de regra de casa, com MA e notas inventadas | `injuryRules` | C.5 |
+| 9 | Rolagem ignorava ferimento e humanidade (`currentStats` sem leitor) | todas | C.6 |
+| 10 | Death save sem o nível Mortal | `diceEngine`, `roomManager` | C.7 |
+| 11 ★ | Stun save não existia (um botão só para os dois saves) | ficha, mesa | C.7 |
+| 12 ★ | Mortal 6 tratado como morto, com o death save desligado | `HealthTracker` | C.7 |
+| 13 | Atributo da habilidade especial por ternário (1 de 10 certo) | `SkillsSection` | C.8 |
+
+**Ficou para outra fase, com dono e gatilho** — nada disso é "funciona errado hoje"; é o que o
+modelo ainda não representa:
+
+| Regra | Vai para | Por quê não agora |
+|---|---|---|
+| Ordem ×2 × BTM na cabeça | **Dono**, antes da D.1 | O livro não é explícito |
+| Dano → ferimento, penetração escalonada, perda de membro, dificuldade por alcance | Fase D | É o loop de combate |
+| Combat Sense na iniciativa | D.4 | A iniciativa automática nasce lá |
+| Texto das tabelas de fumble | ADIAR | O dado já sai rolado; o GM lê no livro |
+| Cromo que soma atributo; EV da armadura no REF | Fase K | O modelo de dados não tem o campo |
+| Humanidade de implante "desinstalado" | ADIAR | O modelo não distingue nunca-instalado de removido |
+| Walk (não existe), Leap, Carry, Lift; perícias faltando; criação com orçamento | Fase K | RUL-10, 11, 12 |
+| Habilidade especial rolável **na mesa** | Pista da Fase H | O tipo `skill` procura em `sheet.skills` |
+
 ---
 
 ## Fontes, e o quanto confiar nelas

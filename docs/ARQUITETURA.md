@@ -143,9 +143,13 @@ mais no banco por mais um dia; recolher cedo apaga a mesa de alguém, e o delete
 
 ## Pipeline de dano FNFF
 
-**Este diagrama é a especificação da Fase D**, e o motivo de ele existir antes é o RUL-04: hoje as
-peças estão todas implementadas (`armorSpAt`, `btmFromBody`, `clampWoundLevel`) e **nenhuma se
-conecta** — `rollDamage` imprime o local como texto e o `woundLevel` é clicado à mão.
+**Este diagrama é a especificação da Fase D** (RUL-04). Depois da Fase C, as peças existem e seguem o
+livro — local de impacto por tabela (`HIT_LOCATIONS`), `btmFromBody`, efeito de ferimento
+(`applyWoundEffect`), stun e death save — mas **ainda não se conectam**: o dano sai como texto no
+chat e o `woundLevel` é clicado à mão. Ligar é a D.1.
+
+*Conferido contra o livro na C.9 (25/09/2026) — fontes em
+[`CONFERENCIA_CP2020.md`](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d).*
 
 ```mermaid
 flowchart TB
@@ -156,38 +160,48 @@ flowchart TB
     B -->|"5 ou 6 - Bracos"| E["Subtrai SP do braco"]
     B -->|"7-0 - Pernas"| F["Subtrai SP da perna"]
 
-    C --> G["Dobra o dano<br/>x2 na cabeca"]
-    G --> H["Subtrai BTM<br/>tabela por BODY"]
+    C --> G["Dobra o dano que passou<br/>x2 na cabeca"]
+    G --> H["Subtrai BTM<br/>so BODY, 0 a -5<br/>nunca abaixo de 1"]
     D --> H
     E --> H
     F --> H
 
-    H --> I{"Dano final maior que zero?"}
+    H --> I{"Passou da armadura?"}
     I -->|"nao"| J["Sem ferimento<br/>a armadura segurou"]
     I -->|"sim"| K["Acumula no track<br/>4 pontos = 1 nivel"]
 
+    K --> S["Stun save a cada dano<br/>1d10 menor ou igual a BODY<br/>menos 0 a 9 pelo nivel"]
     K --> L["Novo woundLevel"]
+    L --> N["Efeito nos atributos<br/>Serio REF -2<br/>Critico REF INT COOL /2<br/>Mortal REF INT COOL /3"]
     L --> M{"Nivel Mortal?"}
-    M -->|"nao"| N["Aplica penalidade de REF<br/>ao currentStats"]
-    M -->|"sim"| O["Death save a cada turno<br/>1d10 menor ou igual a BODY<br/>com modificador cumulativo"]
+    M -->|"sim"| O["Death save a cada turno<br/>1d10 menor ou igual a<br/>BODY menos nivel Mortal"]
 ```
 
-> **A ordem importa e precisa ser confirmada no livro.** A sequência desenhada é
-> **SP → multiplicador de localização → BTM**. Trocar a ordem muda o resultado: aplicar o BTM antes de
-> dobrar a cabeça produz números diferentes. A decisão 2 do plano é **fidelidade estrita**, então a
-> C.9 confere isso contra o texto original antes de a Fase D codificar — este desenho é a hipótese de
-> trabalho, não a autoridade.
+O que a conferência fixou, e o que ficou para o dono:
+
+- **SP antes do ×2** — a cabeça dobra o dano **que passou** da armadura. Confirmado.
+- **BTM nunca leva o dano a zero** — mínimo 1 ponto, se a armadura foi vencida. Confirmado.
+- **×2 antes ou depois do BTM?** O livro **não é explícito**. O desenho segue a leitura mais comum
+  (dobra, depois BTM). **Decisão do dono antes da D.1**, com o livro na mão.
+- **Não há modificador cumulativo por turno no death save** — o nó antigo dizia "com modificador
+  cumulativo", que é do Cyberpunk RED. É BODY menos o nível Mortal, a cada turno.
+- Também da Fase D, e fora do desenho de propósito: **penetração escalonada** (cada acerto que passa
+  tira 1 do SP daquele ponto) e **perda de membro** (mais de 8 pontos num membro de uma vez; na
+  cabeça, morte).
 
 ---
 
 ## Máquina de estados do ferimento
 
-Especificação para a **Fase C** (RUL-06, RUL-08). Onze estados, quatro pontos de dano cada.
+**Implementada na Fase C** (C.5 e C.7) — a trilha está em `WOUND_TRACK`
+([`src/rules/tables.ts`](../src/rules/tables.ts)), com o nome, o modificador de stun, o nível
+Mortal e o efeito de cada caixa. Onze estados: `woundLevel` 0 é ileso e 1–10 são as dez caixas de
+quatro pontos.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Saudavel
-    Saudavel --> Leve: 4 pontos
+    [*] --> Ileso
+    Ileso --> Leve: 1 a 4 pontos
     Leve --> Serio: 8 pontos
     Serio --> Critico: 12 pontos
     Critico --> Mortal0: 16 pontos
@@ -197,29 +211,98 @@ stateDiagram-v2
     Mortal3 --> Mortal4: 32 pontos
     Mortal4 --> Mortal5: 36 pontos
     Mortal5 --> Mortal6: 40 pontos
-    Mortal6 --> [*]: morte
+    Mortal6 --> Morto: dano alem de 40
+    Mortal0 --> Morto: falhou death save
+    Mortal6 --> Morto: falhou death save
+    Morto --> [*]
 
     note left of Serio
-        Penalidade de REF por nivel.
-        A tabela atual do projeto diverge
-        do livro: Critico esta em -2 e
-        deveria ser -4, e os niveis Mortais
-        sobem em degraus em vez de todos
-        serem -6. Isso e o RUL-06.
+        Efeito nos atributos, sem acumular:
+        Leve nenhum. Serio REF -2.
+        Critico REF INT COOL pela metade.
+        Mortal REF INT COOL a um terco.
+        Arredonda para cima. MA nunca muda.
     end note
 
     note right of Mortal0
-        A partir daqui, death save por turno.
-        Hoje o teste e 1d10 <= BODY fixo,
-        sem modificador cumulativo por nivel
-        nem por turno sem estabilizacao.
-        Isso e o RUL-08.
+        Stun save a cada dano: BODY menos
+        0 (Leve) ate 9 (Mortal 6).
+        Death save a cada turno em Mortal:
+        BODY menos o nivel Mortal, sem
+        acumulo por turno.
     end note
 ```
+
+> **Morto não é um `woundLevel`.** O modelo tem 0–10, e o 10 é Mortal 6 — **ainda vivo**. Até a
+> Fase C o app tratava o 10 como morte e desligava o death save justo ali (`isDead`, hoje
+> `isLastWoundBox`). Representar a morte como estado é da Fase D, junto com o dano que a causa.
+
+---
+
+## Schema do Supabase
+
+Desenhado na Fase C porque o **gatilho escrito disparou**: "quando o schema mudar" — a migration
+`0007` (Fase B) acrescentou `rooms.sessions`. Só as colunas que carregam relação ou decisão; o
+resto está nas migrations.
+
+```mermaid
+erDiagram
+    AUTH_USERS ||--|| PROFILES : "id"
+    AUTH_USERS ||--o{ CHARACTER_SHEETS : "user_id"
+    PROFILES ||--o{ FRIENDSHIPS : "sender_id e receiver_id"
+    PROFILES ||--o{ FRIEND_REQUESTS : "sender_uid e receiver_uid"
+    PROFILES ||--o{ DIRECT_MESSAGES : "sender_uid"
+
+    PROFILES {
+        uuid id PK
+        text cyberpunk_id UK
+        text display_name
+        text status
+    }
+    CHARACTER_SHEETS {
+        uuid id PK
+        uuid user_id FK
+        text sheet_id "UK com user_id"
+        jsonb data "CharacterSheet inteiro"
+    }
+    FRIENDSHIPS {
+        uuid id PK
+        uuid sender_id FK
+        uuid receiver_id FK
+        text status
+    }
+    FRIEND_REQUESTS {
+        uuid id PK
+        uuid sender_uid FK
+        uuid receiver_uid FK
+    }
+    DIRECT_MESSAGES {
+        uuid id PK
+        text chat_room_id
+        uuid sender_uid FK
+    }
+    ROOMS {
+        text code PK
+        jsonb room_state "GameRoom transmitido"
+        jsonb sessions "SHA-256 dos tokens"
+    }
+```
+
+- **`rooms` não tem dono nem chave estrangeira** — é estado do servidor, não do usuário. RLS
+  ligada com **zero policies**: só a service role do servidor lê e escreve (`0006`).
+- **`sessions` é coluna própria, fora do `room_state`** (`0007`, B.4): o `room_state` é o objeto
+  transmitido a toda a mesa, e o token de sessão ali dentro vazaria para todos.
+- As outras cinco tabelas têm RLS com policies por usuário (`0001`–`0003`), cobertas pelos 56 testes
+  de `scripts/test-rls.mjs`. `profiles.email` saiu na `0004`.
+- **A Fase C não mexeu no schema.** A `CharacterSheet` mudou de regra, não de forma: o
+  `currentStats` continua no `data` por compatibilidade, e o servidor o recalcula.
 
 ---
 
 ## Diagramas adiados
+
+> **Saiu desta lista na Fase C:** o ER do schema — o gatilho ("quando o schema mudar") disparou
+> com a `0007` da Fase B, e o desenho está em [Schema do Supabase](#schema-do-supabase).
 
 Aplicando o [filtro de necessidade](./PLANO_MESTRE.md#-filtro-de-necessidade) aos próprios diagramas
 — porque desenho sem sintoma também é overengineering.
@@ -227,6 +310,5 @@ Aplicando o [filtro de necessidade](./PLANO_MESTRE.md#-filtro-de-necessidade) ao
 | Diagrama | Veredito | Gatilho |
 |---|---|---|
 | Sequência do handshake (join → token → upgrade → rolagem) | **ADIAR** | Quando a Fase H precisar depurar reconexão. O [`PROTOCOLO_MULTIPLAYER.md`](./PROTOCOLO_MULTIPLAYER.md) já descreve o fluxo em prosa, e ninguém se perdeu nele ainda |
-| ER do schema Supabase | **ADIAR** | Quando o schema mudar. Hoje as migrations 0001–0006 e a suíte de RLS documentam melhor que um desenho |
 | Reconexão e last-write-wins por `updatedAt` | **ADIAR** | Quando a Fase H achar um bug de convergência de ficha |
 | Camadas de token visual | **ADIAR** | Se a Fase F.2 se mostrar confusa na prática. A tabela de tokens na ADR 0006 provavelmente basta |
