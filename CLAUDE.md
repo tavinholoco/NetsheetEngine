@@ -54,6 +54,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Yjs / CRDT do grid | **Mantido sob observação**, com gatilho para reabrir. Ver ADR 0002 |
 | PITR do Supabase | **Não** — exige plano pago. O backup diário gratuito basta (decisão 4 do plano) |
 | Vulnerabilidades sem correção | **Exceção nomeada, com motivo e gatilho** em `scripts/audit-ci.mjs` — nunca baixar o nível do portão |
+| Migration × deploy | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa. O Render publica sem esperar o `db-sync` |
 
 ## Comandos que importam
 
@@ -80,5 +81,9 @@ node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
   do plano sobre *código* se sustentam, e as sobre *estado de configuração* não (secrets, planos
   pagos, tokens). Na Fase B, a verificação prévia (B.0) mudou o tamanho de quatro dos seis itens.
   Toda fase de construção começa com um item `.0` de verificação.
-- **Migration e código que a usa não vão no mesmo merge** enquanto o P.5 do plano não for decidido: o
-  Render faz auto-deploy independente do `db-sync`, e em 24/09 o código subiu antes da migration.
+- **Migration e código que a usa nunca vão no mesmo merge** (decisão 5): o Render faz auto-deploy
+  independente do `db-sync`, e em 24/09 o código subiu antes da migration.
+- **O token do CI expira.** Ele tem validade de 30 dias e vence por volta de **25/10/2026**; renovar
+  até 22/10. Se vencer, o `db-sync` dá `Unauthorized` e o keepalive fica vermelho.
+- **Nunca dispare `db-sync` e keepalive juntos à mão.** Os dois usam o mesmo papel temporário do CLI
+  e um derruba a senha do outro (`28P01`).

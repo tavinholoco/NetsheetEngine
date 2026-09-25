@@ -89,6 +89,9 @@ itens da própria fase. Não são opcionais:
         é varredura do repositório — isso é das Fases E e G–J.
 - **5.** Commit com mensagem que explique o *porquê*, e a tag da fase quando houver. Push do branch e
       **PR para o dono revisar e mergear** — nunca push direto no `master`.
+      **Se a fase tiver migration** (decisão 5): a migration vai num **PR próprio**, que é mergeado
+      primeiro e conferido em produção com `npx supabase migration list --linked`. Só depois abre o PR
+      do código que a usa. O Render publica a cada push no `master` sem esperar o `db-sync`.
 - **6.** **Depois do merge, conferir o CI do `master`.** O job `db-sync` só roda lá: **PR verde não
       prova que a migration entrou em produção.** A fase só termina de verdade com o `master` verde.
 
@@ -171,6 +174,7 @@ Estas três respostas fecham ambiguidades que mudariam o trabalho. Não reabrir 
 | 2 | Fidelidade estrita ou regras de casa? | **Fidelidade estrita ao CP2020** | Nenhuma divergência vira "regra de casa". A Fase C ganha conferência sistemática contra o livro. |
 | 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase L (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. |
 | 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo. **Gatilho:** um incidente real de perda de dado que o backup diário não cobriria |
+| 5 | Como evitar que o Render publique código antes da migration que ele usa? (P.5) | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa | O Render faz auto-deploy a cada push no `master`, sem esperar o `db-sync`. Regra de processo, custo zero, nada novo para configurar. Ver o passo 5 do ritual de encerramento |
 
 ---
 
@@ -617,7 +621,7 @@ Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório
 
 ---
 
-### ⚠️ PENDÊNCIAS OPERACIONAIS — resolver antes da Fase C
+### ✅ PENDÊNCIAS OPERACIONAIS — resolvidas em 25/09/2026, antes da Fase C
 
 Descobertas em 24/09/2026 ao conferir o CI do `master` depois do merge da Fase B. **O merge ficou
 vermelho:** o job `db-sync` falhou com `Unexpected error retrieving remote project status:
@@ -635,20 +639,35 @@ sala nenhuma. **Não observado nos logs do Render** — derivado do código.
       de produção (`supabase db dump`): tabela de controle `0001`–`0007`; coluna `sessions jsonb
       DEFAULT '{}' NOT NULL`; RLS da `rooms` ativa com **zero policies**. Janela de quebra: ~15 min
       entre o merge e a aplicação.)*
-- [ ] **P.2** **Trocar o `SUPABASE_ACCESS_TOKEN`.** Gerar em
+- [x] **P.2** **Trocar o `SUPABASE_ACCESS_TOKEN`.** Gerar em
       [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) e gravar
       com `gh secret set SUPABASE_ACCESS_TOKEN --repo tavinholoco/NetsheetEngine` (o valor é pedido no
-      prompt — **Claude não insere token**). Preferir **sem expiração**: token que expira em silêncio
-      foi o que causou o incidente. Se o dono preferir validade, **anotar a data aqui**.
-- [ ] **P.3** Re-rodar o job que falhou (`gh run rerun 36082927327 --failed --repo
+      prompt — **Claude não insere token**). *(25/09/2026 02:01 UTC — trocado pelo dono.)*
+      **⏰ O token novo tem validade de 30 dias, por escolha do dono: vence por volta de 25/10/2026.**
+      **Gatilho: renovar até 22/10/2026**, com o mesmo passo a passo. Se passar, o sintoma é o de hoje:
+      `Unauthorized` no `db-sync` e keepalive vermelho. O passo 3b do ritual de abertura pega isso.
+- [x] **P.3** Re-rodar o job que falhou (`gh run rerun 36082927327 --failed --repo
       tavinholoco/NetsheetEngine`) e confirmar o `master` verde. Como a `0007` já entrou, o esperado
-      no log é `Remote database is up to date`.
-- [ ] **P.4** Disparar o keepalive à mão e confirmar que ele **conecta** (`Connecting to remote
+      no log é `Remote database is up to date`. *(25/09/2026 — run `36082927327` com conclusão
+      `success`; o log mostra `Connecting to remote database...` e `Remote database is up to date`.)*
+- [x] **P.4** Disparar o keepalive à mão e confirmar que ele **conecta** (`Connecting to remote
       database...` no log). Verde sozinho não basta: o script também sai verde com secret ausente.
-      **Até o P.2, o keepalive falha a cada 3 dias** — `Unauthorized` não é tolerado, e sem ele o
-      banco pausa em ~7 dias.
-- [ ] **P.5** **Decidir a ordem migration × deploy** — decisão rápida, com o dono, **antes da próxima
-      migration**. O incidente expôs um defeito de desenho: o Render faz auto-deploy no push para o
+      *(25/09/2026 — run `36084925724` verde; o log mostra a conexão e a `0007` local **e** remota.)*
+      - **Achado no caminho, uma corrida.** A primeira tentativa (run `36084634828`) falhou com
+        `FATAL: password authentication failed for user "cli_login_postgres"`. Ela tinha sido
+        disparada **no mesmo segundo** que o re-run do `db-sync`. O CLI cria um papel temporário com
+        nome fixo e define uma senha nova a cada execução, então um job trocou a senha do outro.
+        Rodando sozinho, passou. Mesmo token e mesmo projeto, então a corrida é a explicação que sobra.
+      - **Regra:** nunca disparar `db-sync` e keepalive juntos à mão.
+      - **ADIAR o conserto no workflow** (grupo de `concurrency` compartilhado ou retry em
+        `SQLSTATE 28P01` no `scripts/supabase-ci.sh`). No uso normal, a colisão exige um push no
+        `master` durante os ~20 s do keepalive agendado (06:00 UTC, a cada 3 dias). **Gatilho:** uma
+        falha `28P01` em run que **não** foi disparado à mão. Detalhe ao escolher: um grupo de
+        `concurrency` do GitHub mantém só **um** run pendente e cancela o anterior, e isso poderia
+        cancelar um `db-sync` pendente. O retry não tem esse risco.
+- [x] **P.5** **Decidir a ordem migration × deploy** — decisão rápida, com o dono, **antes da próxima
+      migration**. *(25/09/2026 — **decidido pelo dono: opção 1, migration em PR próprio.** Virou a
+      decisão 5 do plano e o passo 5 do ritual de encerramento.)* O incidente expôs um defeito de desenho: o Render faz auto-deploy no push para o
       `master` **independente** do `db-sync` do GitHub Actions. Mesmo com token válido existe corrida
       (o Render pode subir antes da migration), e com o `db-sync` falhando o código sobe assim mesmo.
       Opções:
@@ -1104,3 +1123,6 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | `node scripts/test-rls.mjs` | 56/56 — exige Supabase local no Docker |
 | `npm run audit:ci` | passa, com 2 altas do `mathjs` aceitas por exceção nomeada |
 | Migrations em produção | `0001`–`0007` |
+
+**Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
+Renovar até 22/10 — passo a passo no P.2.
