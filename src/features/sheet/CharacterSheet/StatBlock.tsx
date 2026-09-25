@@ -1,6 +1,7 @@
 import React from 'react';
 import { CharacterSheet, StatName } from '../../../types/cyberpunk';
-import { btmFromStats, humanityFromEmp, runFromMa, walkFromMa } from '../../../utils/derivedStats';
+import { humanityFromEmp, runFromMa, walkFromMa } from '../../../utils/derivedStats';
+import { bodyTypeFor, deriveCurrentStats } from '../../../rules/character';
 import { Heart, Shield, Brain, Wind, Flame } from 'lucide-react';
 
 interface StatBlockProps {
@@ -27,10 +28,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
 
   const handleChange = (stat: StatName, delta: number) => {
     const next = Math.min(15, Math.max(2, (stats[stat] || 0) + delta));
-    onChange({
-      stats: { ...stats, [stat]: next },
-      currentStats: { ...sheet.currentStats, [stat]: Math.min(sheet.currentStats[stat] ?? next, next) }
-    });
+    onChange({ stats: { ...stats, [stat]: next } });
   };
 
   const handleSet = (stat: StatName, raw: number) => {
@@ -38,8 +36,12 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
     onChange({ stats: { ...stats, [stat]: next } });
   };
 
-  // BTM (Body Type Modifier): tabela CP2020 baseada em BODY + REF (src/utils/derivedStats.ts)
-  const btm = btmFromStats(stats.BODY, stats.REF);
+  // BTM (Body Type Modifier): só BODY, de 0 a −5 (src/rules/character.ts — Fase C, C.2)
+  const bodyType = bodyTypeFor(stats.BODY);
+  const btm = bodyType.btm;
+
+  // C.6 — o valor com que o personagem ROLA agora (humanidade e ferimento).
+  const current = deriveCurrentStats(sheet);
 
   const humanity = humanityFromEmp(stats.EMP);
   const runMove = runFromMa(stats.MA);
@@ -58,7 +60,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
           </h2>
         </div>
         <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">
-          BTM: {btm >= 0 ? `+${btm}` : btm} • Run: {runMove}m
+          BTM: {btm} • Run: {runMove}m
         </span>
       </div>
 
@@ -107,6 +109,14 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
                   />
                 ))}
               </div>
+              {current[stat] !== val && (
+                <p
+                  className="mt-1 text-center text-[9px] font-mono font-bold text-amber-300 uppercase tracking-wider"
+                  title="Valor usado nas rolagens: humanidade perdida e ferimento já aplicados"
+                >
+                  rola com {current[stat]}
+                </p>
+              )}
             </div>
           );
         })}
@@ -119,7 +129,8 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
           <div className="grid grid-cols-2 gap-2 text-xs font-mono">
             <div className="bg-slate-900 p-2 rounded border border-slate-800">
               <span className="text-[9px] text-slate-400 block uppercase">BTM</span>
-              <span className="text-yellow-400 font-black text-lg">{btm >= 0 ? `+${btm}` : btm}</span>
+              <span className="text-yellow-400 font-black text-lg">{btm}</span>
+              <span className="text-[9px] text-slate-500 block">{bodyType.bodyType}</span>
             </div>
             <div className="bg-slate-900 p-2 rounded border border-slate-800">
               <span className="text-[9px] text-slate-400 block uppercase">Humanidade</span>
@@ -135,7 +146,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
             </div>
           </div>
           <p className="text-[9px] text-slate-500 leading-relaxed">
-            BTM = (BODY + REF) ajustado pela tabela CP2020. Humanidade = EMP × 10. Reputação derivada de COOL + LUCK.
+            BTM = tipo corporal pelo BODY (0 a −5), reduz o dano que passa da armadura. Humanidade = EMP × 10.
           </p>
         </div>
       </div>

@@ -120,7 +120,7 @@ ferimento. É o que **toda** rolagem lê. **C.6.**
 
 | Fonte de modificação | Status |
 |---|---|
-| Humanidade → EMP | **C.6** |
+| Humanidade → EMP | **C.6** — soma o `actualHL` de **todo** implante da ficha, instalado ou não, igual ao painel de cromo. O livro cobra a humanidade na instalação; o modelo não distingue "nunca instalado" de "removido". **ADIAR** — gatilho: um jogador usar o botão de desinstalar para planejar compra, e o EMP cair por cromo que ele não tem |
 | Ferimento → REF/INT/COOL | **C.6** |
 | Cromo que soma atributo (ex.: lace muscular) | **ADIAR** — `CyberwareItem` não tem campo de atributo. **Gatilho:** Fase K modelar o efeito de implante (K.2) |
 | EV da armadura → REF | **ADIAR para a K** (RUL-11). A armadura padrão é modelada **uma peça por localização**; somar o EV por peça contaria a mesma jaqueta várias vezes. Precisa de modelo de peça antes |

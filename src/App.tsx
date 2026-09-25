@@ -11,6 +11,7 @@ import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
 // Motor de dados FNFF — casca do cliente sobre src/rules/ (Fase C, C.1)
 import { rollSkill, rollDamage, rollDeathSave } from './utils/diceEngine';
+import { deriveCurrentStats } from './rules/character';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';
 import { Dice5, CheckCircle2 } from 'lucide-react';
@@ -162,7 +163,7 @@ export default function App() {
 
   // Roll Weapon Attack directly
   const handleRollWeaponAttack = (weaponName: string, wa: number, damageStr: string) => {
-    const refVal = sheet.stats.REF;
+    const refVal = deriveCurrentStats(sheet).REF;
     handleRollSkill(`Ataque com ${weaponName}`, 'REF', refVal, wa);
   };
 
@@ -181,7 +182,7 @@ export default function App() {
 
   // Roll Death Save (Fase 6 T6.3 — motor diceEngine)
   const handleRollDeathSave = () => {
-    handleAddRollResult(rollDeathSave(sheet.stats.BODY, {
+    handleAddRollResult(rollDeathSave(deriveCurrentStats(sheet).BODY, {
       characterName: sheet.handle || 'Edgerunner'
     }));
   };

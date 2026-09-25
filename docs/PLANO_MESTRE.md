@@ -756,16 +756,33 @@ cliente e servidor para ela.
         resto precisa de code-splitting.
       - Suíte do rolador reescrita contra o RNG injetado (16) + 44 testes novos do motor (`rules-dice`).
         Local de impacto testado nas **10 faces** — os antigos cobriam 1, 5 e 9.
-- [ ] **C.2** BTM canônico por BODY (2→0, 3–4→−1, 5–7→−2, 8–9→−3, 10→−4, 11+→−5), sinal negativo,
-      rótulo do `StatBlock` e linha do PRD corrigidos. *(RUL-01)*
+- [x] **C.2** BTM canônico por BODY (2→0, 3–4→−1, 5–7→−2, 8–9→−3, 10→−4, 11+→−5), sinal negativo,
+      rótulo do `StatBlock` e linha do PRD corrigidos. *(RUL-01 — 25/09/2026)*
+      - `btmFromBody`/`bodyTypeFor` em `src/rules/character.ts`; `btmFromStats` saiu. O `StatBlock`
+        mostra o BTM **e o tipo corporal**, e perdeu a frase "Reputação derivada de COOL + LUCK", que
+        o livro não tem e a tela não calculava.
+      - Os 15 testes de BTM foram **reescritos a partir de `BODY_TYPE_TABLE`**, não do código novo —
+        e a tabela antiga falhava em 31 de 36 casos do oráculo da C.0 (os 5 que passavam eram
+        coincidência: o piso −2 e o 0 da soma 17).
 - [ ] **C.3** Ataque com perícia de arma: mapear `weapon.type` → nome de perícia e somar o nível da
       ficha que o servidor já possui. *(RUL-02)*
 - [ ] **C.4** `combatModifier` entrando em `attack` e `skill`, visível no detalhe da rolagem. *(RUL-03)*
-- [ ] **C.5** Tabela de penalidade de ferimento igual à do livro: Sério REF −2; Crítico REF/INT/COOL
+- [x] **C.5** Tabela de penalidade de ferimento igual à do livro: Sério REF −2; Crítico REF/INT/COOL
       ÷2; Mortal REF/INT/COOL ÷3 (arredondando para cima); sem penalidade de MA. *(RUL-06, parte 1 —
       texto corrigido na C.0: o original, "Crítico REF −4; Mortais REF −6", era regra de casa)*
-- [ ] **C.6** `currentStats` derivado (base + cyberware + penalidade de ferimento) num único seletor,
-      lido por **todas** as rolagens. *(RUL-06, parte 2)*
+      *(25/09/2026)* `WOUND_TRACK` + `applyWoundEffect`. Saíram `WOUND_PENALTY_DATA`,
+      `woundPenalties` e `woundPenaltyText` (com as notas inventadas). O Bio-Monitor mostra o efeito
+      do livro ("REF, INT, COOL ÷2"). A tabela antiga falhava em **9 dos 11 níveis** contra o livro.
+- [x] **C.6** `currentStats` derivado (base + cyberware + penalidade de ferimento) num único seletor,
+      lido por **todas** as rolagens. *(RUL-06, parte 2 — 25/09/2026)*
+      - `deriveCurrentStats(sheet)`: base → **−1 EMP a cada 10 de humanidade** → ferimento. Lido pelo
+        `rollDiceForPlayer`, pela árvore de perícias, pelo ataque e death save da ficha e pelo rolador.
+      - **O servidor recalcula no `sanitizeCharacterSheet`** e descarta o `currentStats` do cliente —
+        antes era saneado e guardado como veio. Não entra no `changed`, para não encher o log.
+      - O `StatBlock` parou de **escrever** o campo (era a única escrita com efeito) e mostra
+        **"rola com N"** quando o valor corrente difere da base — em âmbar, porque vermelho é dano.
+      - **Provado revertendo:** com as duas linhas antigas (servidor e esquema), os 3 testes de C.6
+        em `table-rolls.integration` falham; com as novas, passam.
 - [ ] **C.7** Death save a cada turno com −1 por nível Mortal (Mortal 0 = BODY, Mortal 6 = BODY −6),
       e o **stun save** que não existe (BODY −0 a −9 pelo nível do ferimento). *(RUL-08 — texto
       corrigido na C.0: "cumulativo por turno" era regra do RED)*

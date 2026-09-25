@@ -3,12 +3,13 @@
  * (src/utils/derivedStats.ts)
  * =====================================================
  * Regras puras extraídas do StatBlock, CyberwareManager e WeaponsArmor:
- * BTM (BODY + REF), Humanidade (EMP × 10), perda de humanidade (Σ actualHL),
+ * Humanidade (EMP × 10), perda de humanidade (Σ actualHL),
  * Run/Walk (MA × 3) e SP de armadura por localização.
  */
 import { describe, it, expect } from 'vitest';
+import { BODY_TYPE_TABLE } from '../rules/tables';
+import { bodyTypeFor, btmFromBody } from '../rules/character';
 import {
-  btmFromStats,
   humanityFromEmp,
   humanityLossTotal,
   humanityRemaining,
@@ -29,34 +30,33 @@ const armorPiece = (location: ArmorPiece['location'], sp: number, equipped = tru
   equipped
 });
 
-describe('btmFromStats — tabela CP2020 sobre BODY + REF', () => {
-  const cases: Array<[number, number, number]> = [
-    // [body, ref, BTM esperado] — limites exatos da tabela
-    [10, 2, -2], // 12 → −2 (abaixo de 14)
-    [8, 6, -1], //  14 → −1
-    [10, 5, -1], // 15 → −1
-    [8, 8, 0], //   16 → 0
-    [10, 7, 0], //  17 → 0
-    [10, 8, 1], //  18 → +1
-    [10, 9, 1], //  19 → +1
-    [10, 10, 2], // 20 → +2
-    [11, 10, 2], // 21 → +2
-    [12, 10, 3], // 22 → +3
-    [14, 10, 4], // 24 → +4
-    [15, 11, 5], // 26 → +5
-    [15, 15, 5] //  30 → +5 (teto)
-  ];
-  it.each(cases)('BODY %i + REF %i → BTM %i', (body, ref, expected) => {
-    expect(btmFromStats(body, ref)).toBe(expected);
+describe('BTM — tabela do livro (BODY_TYPE_TABLE), só BODY', () => {
+  // Derivado da tabela, não da implementação. Os 15 casos antigos codificavam
+  // a tabela errada (BODY + REF, de +5 a −2) e passavam contra ela.
+  const cases = BODY_TYPE_TABLE.flatMap((row) =>
+    [row.minBody, Math.min(row.maxBody, 15)].map((body) => [body, row.bodyType, row.btm] as const)
+  );
+  it.each(cases)('BODY %i (%s) → BTM %i', (body, _tipo, btm) => {
+    expect(btmFromBody(body)).toBe(btm);
+    expect(bodyTypeFor(body).btm).toBe(btm);
   });
 
-  it('é simétrico em BODY/REF (soma é o que importa)', () => {
-    expect(btmFromStats(6, 10)).toBe(btmFromStats(10, 6)); // 16 → 0
-    expect(btmFromStats(2, 12)).toBe(btmFromStats(12, 2)); // 14 → −1
+  it('as faixas cobrem 2..15 sem buraco nem sobreposição', () => {
+    for (let body = 2; body <= 15; body++) {
+      expect(BODY_TYPE_TABLE.filter((r) => body >= r.minBody && body <= r.maxBody)).toHaveLength(1);
+    }
   });
 
-  it('valores mínimos (2+2=4) ficam no piso −2', () => {
-    expect(btmFromStats(2, 2)).toBe(-2);
+  it('o BTM nunca é positivo e nunca passa de −5', () => {
+    for (let body = 0; body <= 20; body++) {
+      expect(btmFromBody(body)).toBeLessThanOrEqual(0);
+      expect(btmFromBody(body)).toBeGreaterThanOrEqual(-5);
+    }
+  });
+
+  it('BODY abaixo de 2 ou inválido cai na primeira linha', () => {
+    expect(btmFromBody(1)).toBe(0);
+    expect(btmFromBody(Number.NaN)).toBe(0);
   });
 });
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { CharacterSheet } from '../../../types/cyberpunk';
-import { WOUND_LEVEL_NAMES, clampWoundLevel, isDead, woundPenaltyText } from '../../../utils/injuryRules';
+import { WOUND_LEVEL_NAMES, clampWoundLevel, isDead } from '../../../utils/injuryRules';
+import { woundEffectText } from '../../../rules/character';
 import { HeartPulse, Skull, Activity, Zap } from 'lucide-react';
 
 interface HealthTrackerProps {
@@ -73,10 +74,10 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
         <div className="bg-slate-950/80 p-3 rounded-lg border border-slate-800">
           <div className="flex items-center space-x-1.5 mb-1">
             <Skull className="w-3.5 h-3.5 text-red-400" />
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Penalidades (REF/MA)</span>
+            <span className="text-[10px] font-mono text-slate-400 uppercase">Efeito nos atributos</span>
           </div>
           <span className="font-mono font-black text-sm text-red-300">
-            {woundPenaltyText(woundLevel)}
+            {woundEffectText(woundLevel)}
           </span>
         </div>
 

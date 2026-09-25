@@ -179,8 +179,14 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 ### Atributos
 - Nove atributos primários: **INT, REF, TECH, COOL, ATTR, LUCK, MA, BODY, EMP**.
 - Faixa na criação: **2–10**; até **15** com ciberware (cromo).
-- Derivados: **BTM** (tabela BODY+REF), **Humanidade = EMP × 10**,
-  RUN/WALK derivados de MA.
+- Derivados: **BTM** pelo tipo corporal, **só BODY**: 2 → 0, 3–4 → −1, 5–7 → −2,
+  8–9 → −3, 10 → −4, 11+ → −5. **Humanidade = EMP × 10**; RUN = MA × 3.
+  *(Fase C, C.2 — antes era BODY + REF com sinal invertido.)*
+- **Atributos correntes** (`deriveCurrentStats`, Fase C, C.6): base → **−1 EMP a
+  cada 10 de Humanidade perdida** → efeito do ferimento. **Toda rolagem**, da
+  ficha ou da mesa, usa esses valores; a ficha mostra "rola com N" quando o
+  valor corrente difere da base. O servidor recalcula e nunca confia no
+  `currentStats` enviado pelo cliente.
 
 ### Rolagem de perícia (FNFF)
 - Fórmula: `1d10 + Atributo + Nível da Perícia`.
@@ -199,8 +205,10 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 
 ### Morte e ferimentos
 - **Death Save**: `1d10 ≤ BODY` para resistir a atordoamento/morte.
-- Bio-monitor com **11 estados** (0 Saudável → 10 Mortal 6); cada nível de
-  ferimento aplica penalidades de REF/MA.
+- Bio-monitor com **11 estados** (0 Saudável → 10 Mortal 6). Efeito do livro
+  nos atributos, **sem acumular** entre níveis *(Fase C, C.5)*:
+  **Sério** REF −2; **Crítico** REF, INT e COOL pela metade; **Mortal** REF, INT
+  e COOL a um terço (arredondando para cima). Ferimento **não** afeta MA.
 
 ### Combate na mesa
 - Ataque: `1d10! + REF + WA` (Weapon Accuracy) — rolado **no servidor**.

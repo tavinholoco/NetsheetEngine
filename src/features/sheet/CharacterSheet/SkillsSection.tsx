@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CharacterSheet, SkillItem, StatName } from '../../../types/cyberpunk';
 import { SKILL_TABLES } from '../../../data/cyberpunkData';
+import { deriveCurrentStats } from '../../../rules/character';
 import { Swords, Plus, Trash2, Dice5, Star } from 'lucide-react';
 
 interface SkillsSectionProps {
@@ -19,6 +20,8 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
   const [suggestions, setSuggestions] = useState<string[]>(SKILL_TABLES.REF.slice(0, 8));
 
   const skills = sheet.skills || [];
+  // C.6 — rola com o atributo CORRENTE (humanidade e ferimento aplicados).
+  const current = deriveCurrentStats(sheet);
 
   const changeStatForSuggestions = (stat: StatName) => {
     setSkillStat(stat);
@@ -49,7 +52,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
   };
 
   const rollSkill = (skill: SkillItem) => {
-    onRollSkill(skill.name, skill.stat, sheet.stats[skill.stat] || 0, skill.level);
+    onRollSkill(skill.name, skill.stat, current[skill.stat], skill.level);
   };
 
   return (
@@ -85,7 +88,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
               +{sheet.specialAbilityRank}
             </span>
             <button
-              onClick={() => onRollSkill(sheet.specialAbilityName, sheet.role === 'Netrunner' ? 'INT' : sheet.role === 'Solo' ? 'REF' : 'EMP', sheet.stats[sheet.role === 'Netrunner' ? 'INT' : sheet.role === 'Solo' ? 'REF' : 'EMP'], sheet.specialAbilityRank)}
+              onClick={() => onRollSkill(sheet.specialAbilityName, sheet.role === 'Netrunner' ? 'INT' : sheet.role === 'Solo' ? 'REF' : 'EMP', current[sheet.role === 'Netrunner' ? 'INT' : sheet.role === 'Solo' ? 'REF' : 'EMP'], sheet.specialAbilityRank)}
               className="px-2 py-1.5 bg-yellow-500 hover:bg-yellow-400 text-black rounded font-bold text-[10px] uppercase flex items-center space-x-1 cursor-pointer transition-all"
             >
               <Dice5 className="w-3 h-3" />

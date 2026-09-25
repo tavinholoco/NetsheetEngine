@@ -9,6 +9,7 @@ import {
 import { Dice5, History, Trash2, Target, HeartPulse, Zap } from 'lucide-react';
 import { useSheetStore } from '../../stores/useSheetStore';
 import { useRollStore } from '../../stores/useRollStore';
+import { deriveCurrentStats } from '../../rules/character';
 
 interface DiceRollerProps {
   onAddRoll: (roll: RollResult) => void;
@@ -32,7 +33,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
   const [weaponName, setWeaponName] = useState('Militech Arms 9mm');
 
   const rollSkill = () => {
-    const statVal = sheet.stats[skillStat] || 0;
+    const statVal = deriveCurrentStats(sheet)[skillStat];
     onAddRoll(engineRollSkill(statVal, skillRank, {
       characterName: sheet.handle || 'Edgerunner',
       label: `Rolagem: ${skillName}`,
@@ -52,7 +53,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
   };
 
   const rollDeathSave = () => {
-    onAddRoll(engineRollDeathSave(sheet.stats.BODY, {
+    onAddRoll(engineRollDeathSave(deriveCurrentStats(sheet).BODY, {
       characterName: sheet.handle || 'Edgerunner'
     }));
   };

@@ -9,6 +9,7 @@ import { sanitizeCharacterSheet } from "../src/rules/sheetSchema.js";
 // Fase C (C.1) — as regras de rolagem são as mesmas do cliente, em src/rules/.
 import type { Rng } from "../src/rules/dice.js";
 import { checkRoll, damageRoll, saveRoll, type RollCore } from "../src/rules/rolls.js";
+import { deriveCurrentStats } from "../src/rules/character.js";
 import { logger } from "./logger.js";
 
 // ============================================================
@@ -877,7 +878,10 @@ export function rollDiceForPlayer(
   if (!player) return { room: null, error: "Jogador não está na mesa." };
 
   const sheet: CharacterSheet = player.sheet || ({} as CharacterSheet);
-  const stats = sheet.stats || ({} as CharacterSheet["stats"]);
+  // C.6 — toda rolagem usa os atributos CORRENTES (humanidade e ferimento
+  // aplicados), derivados aqui da ficha. O `currentStats` que o cliente manda
+  // nunca é lido.
+  const stats = deriveCurrentStats(sheet);
   const kind = sanitizeText(request?.kind, 12).toLowerCase();
   const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const rollId = "roll_" + Date.now() + "_" + crypto.randomBytes(3).toString("hex");

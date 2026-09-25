@@ -59,13 +59,13 @@ export const PRD_DOCUMENT: PrdDocument = {
       id: 'regras',
       title: 'Regras de Negócio CP2020',
       content:
-        'As regras de negócio seguem o sistema Cyberpunk 2020 (2ª edição): atributos de 2 a 10 na criação, rolagem 1d10 com explosão em 10 e fumble em 1, BTM derivado de BODY/REF, SP de armadura por localização e níveis de ferimento de 0 a 10.',
+        'As regras de negócio seguem o sistema Cyberpunk 2020 (2ª edição): atributos de 2 a 10 na criação, rolagem 1d10 com explosão em 10 e fumble em 1, BTM pelo tipo corporal (só BODY, 0 a −5), SP de armadura por localização e níveis de ferimento de 0 a 10.',
       items: [
         'Atributos: INT, REF, TECH, COOL, ATTR, LUCK, MA, BODY, EMP.',
-        'Rolagem de perícia: 1d10 + Atributo + Nível da Perícia (explosão/fumble).',
+        'Rolagem de perícia: 1d10 + Atributo + Nível da Perícia. 10 explode encadeando; 1 é falha automática com dado para a tabela de fumble.',
         'Dano: por fórmula (ex.: 2d6+2) com local de impacto sorteado (1d10).',
         'Death Save: 1d10 ≤ BODY para resistir a atordoamento/morte.',
-        'Ferimentos: 11 estados (0 Saudável a 10 Mortal 6) controlados pelo bio-monitor.'
+        'Ferimentos: 11 estados (0 Saudável a 10 Mortal 6). Sério REF −2; Crítico REF/INT/COOL ÷2; Mortal ÷3 — e toda rolagem usa os atributos já com o ferimento.'
       ]
     },
     {
