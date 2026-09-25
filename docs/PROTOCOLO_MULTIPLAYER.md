@@ -43,8 +43,17 @@ enviado no corpo (anti-impersonificação).
 
 | Canal | Como o token é enviado |
 |---|---|
-| **REST** | Campo `sessionToken` no **corpo JSON** de todo POST autenticado |
+| **REST (POST)** | Campo `sessionToken` no **corpo JSON** |
+| **REST (GET)** | Header **`X-Session-Token`** — um GET não tem corpo *(Fase B, B.3)* |
 | **WebSocket** | Query param `?token=` no handshake de upgrade |
+| **SSE** | Query param `?token=` — `EventSource` **não permite header customizado** *(Fase B, B.3)* |
+
+> **Por que só o SSE e o WS usam query.** Token em URL aparece em log de proxy e no histórico do
+> navegador, então é a opção pior. Ela fica restrita aos dois canais onde a API do navegador não
+> oferece alternativa. **Nenhuma outra rota aceita `?token=`.**
+>
+> Cabeçalho próprio (`X-Session-Token`) em vez de `Authorization`, porque `Authorization` carrega o
+> **JWT do Supabase** exigido pelo `/api/gemini`: são credenciais de escopos diferentes — mesa × conta.
 
 **Regras:**
 
@@ -70,12 +79,17 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `GET` | `/api/rooms` | — | Lista `{ code, name, gmHandle, playersCount }[]` das salas ativas |
 | `POST` | `/api/rooms/create` | `{ code, name, gmHandle, gmPeerId }` | `{ room, sessionToken }` |
 | `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` | `{ room, sessionToken }` |
-| `GET` | `/api/rooms/:code` | — | `GameRoom` completo (404 se não existe) |
-| `GET` | `/api/rooms/:code/stream` | — | **SSE** — stream de updates (ver §7) |
-| `POST` | `/api/gemini` | `{ prompt, systemInstruction? }` | `{ text }` (IA Netrunner) |
+| `GET` | `/api/rooms/:code` | — | **Sem token:** recorte público `{ code, name, gmHandle, playersCount }`. **Com `X-Session-Token` válido:** `GameRoom` completo. **Token inválido:** 401. (404 se não existe) |
 
 > Validações do `code`: 2–12 caracteres alfanuméricos ou hífen, normalizado para maiúsculas
 > (`NC-2020`). Código inválido → **400**.
+
+**Saíram desta seção na Fase B** — não são mais rotas públicas:
+
+| Método | Rota | O que mudou |
+|---|---|---|
+| `GET` | `/api/rooms/:code/stream` | Exige `?token=` de sessão da sala (**B.3 — SEC-02**). Antes despejava a mesa inteira, continuamente, para quem soubesse o código |
+| `POST` | `/api/gemini` | Exige `Authorization: Bearer <JWT do Supabase>` (**B.1 — SEC-01**). O campo `systemInstruction` **foi removido do contrato**: a instrução é fixa no servidor e o que o cliente enviar é descartado. Limiter dedicado de 10/min e teto de 4.000 caracteres no `prompt`. Respostas: 401 sem/ com token inválido, 413 prompt longo demais, 503 IA indisponível, 502 falha do provedor |
 
 ### 3.2 Autenticadas por `sessionToken` (no corpo)
 
@@ -181,9 +195,14 @@ Regras FNFF implementadas:
 ## 7. Fallback SSE
 
 ```
-GET /api/rooms/:code/stream   (EventSource)
+GET /api/rooms/:code/stream?token=<sessionToken>   (EventSource)
 ```
 
+- **Exige sessão da sala** desde a Fase B (B.3 — SEC-02); sem token válido, **401**. O token vai na
+  query porque `EventSource` não permite header customizado — ver §2.
+- **Instrumentado (B.7):** cada conexão emite o log `sse_fallback`. Como o cliente só abre
+  `EventSource` quando o WebSocket falha, toda conexão aqui é uma queda de fallback — e é esse número
+  que a Fase L (L.6) usa para decidir se o fallback fica ou sai.
 - Headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache, no-transform`.
 - Envia o **estado inicial** imediatamente e depois cada broadcast como `data: <room JSON>\n\n`.
 - Keep-alive: `: ping\n\n` a cada **15s** (atravessa proxies).
@@ -247,8 +266,15 @@ O heartbeat **não** faz broadcast (status já é `true`; só a virada para OFFL
 
 - Toda mutação passa por `broadcastRoomUpdate` → `queueRoomPersist(code)` com **debounce de 2s**
   (rajadas = 1 write) na tabela `rooms` (`room_state jsonb`) via service-role.
-- **Boot**: `restoreRoomsFromDb()` restaura as salas persistidas (todos os jogadores `isOnline: false`).
+- **Sessões (B.4 — SEC-03, migration 0007):** gravadas na coluna **`sessions jsonb`**, separada do
+  `room_state`. Separada porque o `room_state` guarda o `GameRoom`, que é o objeto transmitido a
+  todos os clientes — sessão ali dentro vazaria o token de cada jogador para a mesa inteira. O que
+  é gravado é o **SHA-256 do token**, nunca o token: um dump do banco não entrega sessão viva.
+- **Boot**: `restoreRoomsFromDb()` restaura as salas persistidas (todos os jogadores `isOnline: false`)
+  **e as sessões delas** — antes da B.4, um restart derrubava todas as mesas.
 - **Mesa encerrada** (último jogador sai): linha removida do banco + doc Yjs destruído.
+- **Mesa abandonada (B.5 — SEC-04):** sem ninguém ativo por `ROOM_ABANDONED_TIMEOUT_MS` (24 h), o
+  coletor recolhe — revoga sessões, apaga a linha e destrói o Y.Doc. Varre de 15 em 15 min.
 - **Shutdown** (SIGINT/SIGTERM): `flushAllPending()` grava pendências antes de sair.
 
 ---

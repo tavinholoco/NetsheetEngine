@@ -18,6 +18,10 @@ import * as decoding from "lib0/decoding";
 import * as syncProtocol from "y-protocols/sync";
 import * as awarenessProtocol from "y-protocols/awareness";
 import { deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
+// Fase B (B.1 — SEC-01) — o Netrunner IA passa a exigir identidade verificada,
+// e a instrução do modelo passa a ser código do servidor, não entrada do cliente.
+import { bearerFromHeader, isAuthVerificationConfigured, verifySupabaseJwt } from "./server/supabaseAuth.js";
+import { MAX_PROMPT_CHARS, NETRUNNER_SYSTEM_PROMPT } from "./server/aiPrompt.js";
 import {
   createRoom,
   getRoom,
@@ -29,6 +33,7 @@ import {
   nextTurn,
   leaveRoom,
   getAllActiveRooms,
+  getRoomPublicSummary,
   updatePlayerWoundLevel,
   updateTacticalGrid,
   generateRoomNpc,
@@ -42,6 +47,7 @@ import {
   isValidRoomCode,
   touchPlayer,
   markStalePlayersOffline,
+  collectAbandonedRooms,
   ROOM_OFFLINE_TIMEOUT_MS
 } from "./server/roomManager.js";
 import {
@@ -139,11 +145,44 @@ if (process.env.NODE_ENV === "production") {
 // e chatLimiter compartilhavam um único mapa keyed por IP, então o limite do
 // chat (30/min) contava TODAS as requisições da sala e derrubava o chat com
 // 429 em mesas ativas após 30 req/min em qualquer endpoint.
+// B.5 (SEC-04) — a cada N requisições o limiter varre e descarta buckets
+// vencidos. Sem isso, o mapa ganhava uma entrada por IP distinto e NUNCA
+// perdia nenhuma: um bucket vencido só era sobrescrito se aquele mesmo IP
+// voltasse. Três limiters = três mapas crescendo para sempre.
+//
+// Varredura amortizada em vez de timer: custo O(n) diluído a cada N
+// requisições, e nenhum intervalo novo para gerenciar no shutdown ou no HMR.
+const LIMITER_SWEEP_EVERY = 500;
+
+/** Descarta buckets vencidos. Exportada para ser testável — o mapa vive num
+ *  closure, e uma poda que nunca roda falharia em silêncio. */
+export function pruneExpiredBuckets(
+  buckets: Map<string, { count: number; resetAt: number }>,
+  now: number
+): number {
+  let removed = 0;
+  for (const [key, b] of buckets) {
+    if (b.resetAt <= now) {
+      buckets.delete(key);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
 function makeRateLimiter(maxRequests: number, windowMs: number) {
   const buckets = new Map<string, { count: number; resetAt: number }>();
+  let sinceSweep = 0;
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     const now = Date.now();
+
+    sinceSweep += 1;
+    if (sinceSweep >= LIMITER_SWEEP_EVERY) {
+      sinceSweep = 0;
+      pruneExpiredBuckets(buckets, now);
+    }
+
     const bucket = buckets.get(ip);
     if (!bucket || bucket.resetAt <= now) {
       buckets.set(ip, { count: 1, resetAt: now + windowMs });
@@ -159,10 +198,51 @@ function makeRateLimiter(maxRequests: number, windowMs: number) {
 
 const roomLimiter = makeRateLimiter(120, 60_000); // 120 req/min por IP
 const chatLimiter = makeRateLimiter(30, 60_000);  // chat mais restrito (30 msg/min)
+// B.1 (SEC-01) — a IA é o único endpoint que gasta cota de serviço externo na
+// chave do dono. 10/min por IP é folgado para conversa humana (uma pergunta a
+// cada 6 s) e apertado para script. Somado ao JWT, o abuso exige conta válida.
+const aiLimiter = makeRateLimiter(10, 60_000);
+
+// Mensagens de 401. São DUAS porque as credenciais são duas, e a diferença
+// muda o que o usuário deve fazer: sessão de MESA se resolve reconectando à
+// sala; sessão de CONTA (JWT do Supabase, usado pelo /api/gemini) se resolve
+// entrando de novo no app.
+//
+// Constantes em vez das 17 literais que estavam espalhadas — e o passo mínimo
+// na direção dos códigos de erro estáveis que a Fase I vai propor. Hoje o
+// cliente decide por status HTTP e nunca por texto (`authedFetch` reconecta em
+// 401), então a redação pode mudar sem quebrar ninguém.
+const ERR_SESSAO_MESA = "Sessão inválida ou expirada. Reconecte-se à mesa.";
+const ERR_SESSAO_CONTA = "Sessão inválida ou expirada. Entre novamente.";
 
 // T1.7 — autor do request é derivado do token de sessão, nunca do peerId livre
 function getSessionPeerId(req: express.Request, code: string): string | null {
   const token = typeof req.body?.sessionToken === "string" ? req.body.sessionToken : null;
+  if (!token) return null;
+  return verifySession(code, token);
+}
+
+// B.3 (SEC-02) — leitura autenticada. Um GET não tem corpo, então o token vem
+// por header. Cabeçalho próprio em vez de `Authorization` para não confundir
+// com o JWT do Supabase que o /api/gemini passou a exigir: são credenciais
+// diferentes, de escopos diferentes (mesa × conta).
+function getSessionPeerIdFromHeader(req: express.Request, code: string): string | null {
+  const raw = req.get("X-Session-Token");
+  const token = typeof raw === "string" ? raw.trim() : "";
+  if (!token) return null;
+  return verifySession(code, token);
+}
+
+// B.3 (SEC-02) — SÓ para o stream SSE. O `EventSource` do navegador não
+// permite header customizado; é limitação da API, não escolha. Por isso o
+// token vai na query, exatamente como o WebSocket já fazia desde a T5.2.
+//
+// Token em URL é pior que em header (aparece em log de proxy e no histórico
+// do navegador), então este caminho fica confinado ao endpoint que não tem
+// alternativa. Nenhuma outra rota aceita `?token=`.
+function getSessionPeerIdFromQuery(req: express.Request, code: string): string | null {
+  const raw = req.query?.token;
+  const token = typeof raw === "string" ? raw.trim() : "";
   if (!token) return null;
   return verifySession(code, token);
 }
@@ -238,26 +318,68 @@ function broadcastRoomUpdate(code: string) {
   }
 }
 
-// Server-side Gemini API route for Cyberpunk Netrunner assistant
-app.post("/api/gemini", async (req, res) => {
+// ==========================================
+// NETRUNNER IA (Fase B, B.1 — SEC-01)
+// ==========================================
+// Este endpoint gasta a chave do dono a cada chamada. Antes da Fase B ele
+// aceitava qualquer requisição da internet e ainda deixava o cliente escolher
+// o `systemInstruction` — um proxy de LLM genérico aberto, pago por quem
+// hospeda. Quatro travas agora, todas necessárias:
+//   1. Limiter dedicado, muito mais apertado que o de sala.
+//   2. Identidade verificada por JWT do Supabase (o autor vem do token).
+//   3. `systemInstruction` do cliente IGNORADO — a instrução é código.
+//   4. Teto de tamanho no prompt.
+app.post("/api/gemini", aiLimiter, async (req, res) => {
+  // Ordem deliberada: rejeição mais barata primeiro. Sem token não há nada a
+  // decidir — 401 sem tocar em rede nem em configuração.
+  const token = bearerFromHeader(req.headers.authorization);
+  if (!token) {
+    return res.status(401).json({ error: "Faça login para usar o Netrunner IA." });
+  }
+
+  // Falha fechada: com token, mas sem verificação configurada, o servidor não
+  // consegue saber se ele vale. Preferimos o assistente indisponível a ele
+  // aberto — e 503 diz a verdade (problema do servidor), enquanto 401 mentiria
+  // culpando a sessão do usuário.
+  if (!isAuthVerificationConfigured()) {
+    logger.warn("ai_unavailable", { reason: "verificação de identidade não configurada" });
+    return res.status(503).json({ error: "Netrunner IA indisponível: verificação de identidade não configurada no servidor." });
+  }
+
+  const user = await verifySupabaseJwt(token);
+  if (!user) {
+    return res.status(401).json({ error: ERR_SESSAO_CONTA });
+  }
+
+  const { prompt } = req.body ?? {};
+  if (typeof prompt !== "string" || !prompt.trim()) {
+    return res.status(400).json({ error: "Prompt é obrigatório." });
+  }
+  if (prompt.length > MAX_PROMPT_CHARS) {
+    return res.status(413).json({ error: `Prompt longo demais (máx. ${MAX_PROMPT_CHARS} caracteres).` });
+  }
+
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(400).json({ error: "GEMINI_API_KEY environment variable is not configured." });
+      return res.status(503).json({ error: "Netrunner IA indisponível: GEMINI_API_KEY não configurada." });
     }
     const ai = new GoogleGenAI({ apiKey });
-    const { prompt, systemInstruction } = req.body;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
-      config: systemInstruction ? { systemInstruction } : undefined,
+      // A instrução do sistema vem do servidor, SEMPRE. O que o cliente mandar
+      // em `systemInstruction` é descartado sem aviso — é entrada hostil.
+      config: { systemInstruction: NETRUNNER_SYSTEM_PROMPT },
     });
 
+    logger.info("ai_request", { userId: user.id, promptChars: prompt.length });
     res.json({ text: response.text });
   } catch (error: any) {
     logger.error("gemini_api_error", { message: error?.message || String(error) });
-    res.status(500).json({ error: error?.message || "Failed to contact Gemini Netrunner AI" });
+    // Mensagem do provedor pode conter detalhe interno — não repassa ao cliente.
+    res.status(502).json({ error: "Falha ao contatar o Netrunner IA. Tente de novo em instantes." });
   }
 });
 
@@ -301,11 +423,26 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   res.json({ room: result.room, sessionToken: result.sessionToken });
 });
 
-// Get current room state
+// Get current room state (B.3 — SEC-02)
+// Antes devolvia a sala INTEIRA — fichas, chat e grid — para quem soubesse o
+// código. Agora o payload depende de haver sessão na mesa:
+//   sem token          → recorte público (o mesmo que o lobby já expõe)
+//   token válido       → sala completa
+//   token inválido     → 401, para não mascarar bug de cliente com meio payload
 app.get("/api/rooms/:code", (req, res) => {
   const room = getRoom(req.params.code);
   if (!room) {
     return res.status(404).json({ error: "Room not found" });
+  }
+
+  const rawToken = req.get("X-Session-Token");
+  if (!rawToken || !rawToken.trim()) {
+    return res.json(getRoomPublicSummary(req.params.code));
+  }
+
+  const peerId = getSessionPeerIdFromHeader(req, req.params.code);
+  if (!peerId) {
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   res.json(room);
 });
@@ -314,7 +451,7 @@ app.get("/api/rooms/:code", (req, res) => {
 app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { sheet } = req.body ?? {};
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
@@ -332,7 +469,7 @@ app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/player-health", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { targetPeerId, woundLevel } = req.body ?? {};
   if (typeof targetPeerId !== "string" || woundLevel === undefined) {
@@ -346,7 +483,7 @@ app.post("/api/rooms/:code/player-health", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { gridState } = req.body ?? {};
   if (!gridState || typeof gridState !== "object") {
@@ -360,7 +497,7 @@ app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { archetypeId } = req.body ?? {};
   const result = generateRoomNpc(req.params.code, requesterPeerId, archetypeId);
@@ -371,7 +508,7 @@ app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/players/generate", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = generateRoomPlayerEdgerunner(req.params.code, requesterPeerId);
   return respondWithResult(res, result);
@@ -381,7 +518,7 @@ app.post("/api/rooms/:code/players/generate", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = deleteGeneratedPlayer(req.params.code, requesterPeerId, req.params.targetPeerId);
   return respondWithResult(res, result);
@@ -391,7 +528,7 @@ app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res
 app.post("/api/rooms/:code/npcs/:npcId/delete", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = deleteRoomNpc(req.params.code, requesterPeerId, req.params.npcId);
   return respondWithResult(res, result);
@@ -401,7 +538,7 @@ app.post("/api/rooms/:code/npcs/:npcId/delete", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { woundLevel } = req.body ?? {};
   if (woundLevel === undefined) {
@@ -418,7 +555,7 @@ app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { text } = req.body ?? {};
   const result = postChatMessage(req.params.code, requesterPeerId, text);
@@ -430,7 +567,7 @@ app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
 app.post("/api/rooms/:code/roll", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { kind, skillName } = req.body ?? {};
   const result = rollDiceForPlayer(req.params.code, requesterPeerId, { kind, skillName });
@@ -450,7 +587,7 @@ app.post("/api/rooms/:code/roll", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/heartbeat", roomLimiter, (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   if (!touchPlayer(req.params.code, peerId)) {
     return res.status(404).json({ error: "Jogador não está na mesa." });
@@ -462,7 +599,7 @@ app.post("/api/rooms/:code/heartbeat", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { locationName, combatModifier, modifierReason } = req.body ?? {};
   const result = updateRoomSettings(req.params.code, requesterPeerId, locationName, combatModifier, modifierReason);
@@ -473,7 +610,7 @@ app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = leaveRoom(req.params.code, peerId);
   // Fase 5 (T5.2) — fecha o socket WS do peer que saiu (evita fantasma)
@@ -494,7 +631,7 @@ app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
 app.post("/api/rooms/:code/initiative", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: "Sessão inválida ou expirada. Reconecte-se à mesa." });
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { action, initiativeList } = req.body ?? {};
   let result;
@@ -515,6 +652,34 @@ app.get("/api/rooms/:code/stream", (req, res) => {
   if (!room) {
     return res.status(404).json({ error: "Room not found" });
   }
+
+  // B.3 (SEC-02) — o stream despejava a sala inteira, a cada mutação, para
+  // qualquer um que soubesse o código. Era o vazamento mais grave dos dois:
+  // não é uma leitura pontual, é assinatura contínua do estado da mesa.
+  // Sem recorte público aqui — stream sem sessão não tem para que servir.
+  const peerId = getSessionPeerIdFromQuery(req, code);
+  if (!peerId) {
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
+  }
+
+  // Fase B (B.7) — INSTRUMENTAÇÃO DO FALLBACK, para a Fase L decidir com dado.
+  //
+  // O cliente sempre tenta WebSocket primeiro; só abre EventSource quando o WS
+  // falha. Então TODA conexão aqui é, por definição, uma queda de fallback.
+  //
+  // Por que medir antes de decidir: o suporte a WebSocket passa de 99%, e o
+  // motivo real de manter o fallback é proxy corporativo que quebra o
+  // handshake de Upgrade — algo que uma mesa de convidados pode simplesmente
+  // nunca encontrar. Se em meses de jogo esta linha nunca aparecer, a L.6
+  // remove o endpoint, o mapa sseClients, o caminho duplo do broadcast e o
+  // EventSource do cliente. Se aparecer, a dúvida acaba com evidência em vez
+  // de opinião. O userAgent entra porque identifica o padrão (navegador antigo
+  // × proxy corporativo); não é segredo e o logger nunca grava token.
+  logger.info("sse_fallback", {
+    room: code,
+    peerId,
+    userAgent: (req.get("user-agent") || "desconhecido").slice(0, 160)
+  });
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -948,12 +1113,45 @@ function startPresenceWatcher(): void {
   }, Math.min(15_000, Math.max(2_000, ROOM_OFFLINE_TIMEOUT_MS / 2)));
 }
 
+// Fase B (B.5 — SEC-04) — coletor de salas abandonadas. Implementa a
+// transição `Ociosa → Encerrada` do ciclo de vida em docs/ARQUITETURA.md,
+// que o diagrama especificava e o código não tinha.
+//
+// Encerrar uma mesa são TRÊS passos, e a nota do diagrama lista os três:
+// revogar as sessões (dentro de collectAbandonedRooms), apagar a linha no
+// Supabase e destruir o Y.Doc + awareness. Fazer só o primeiro deixaria uma
+// linha órfã que ressuscitaria a sala no próximo boot.
+//
+// Intervalo separado do presenceWatcher de propósito: presença é questão de
+// segundos, abandono é de horas. Varrer de 15 em 15 s por algo que muda uma
+// vez por dia seria desperdício.
+const ROOM_COLLECT_INTERVAL_MS = 15 * 60 * 1000;
+let roomCollector: NodeJS.Timeout | null = null;
+function startRoomCollector(): void {
+  roomCollector = setInterval(() => {
+    void (async () => {
+      const collected = collectAbandonedRooms();
+      if (collected.length === 0) return;
+      logger.info("rooms_collected", { count: collected.length, codes: collected.slice(0, 10) });
+      for (const code of collected) {
+        destroyRoomYjs(code);
+        await deleteRoomPersisted(code);
+      }
+    })();
+  }, ROOM_COLLECT_INTERVAL_MS);
+}
+
 async function startServer() {
   // Fase 3 (T3.2) — restaurar salas persistidas antes de aceitar conexões
   await restoreRoomsFromDb();
 
   // Fase 3 (T3.4) — watcher de presença (timeout de isOnline)
   startPresenceWatcher();
+
+  // Fase B (B.5 — SEC-04) — coletor de salas abandonadas. Inicia junto com o
+  // watcher de presença, depois do restore: recolher antes das salas voltarem
+  // do banco não recolheria nada.
+  startRoomCollector();
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -1021,6 +1219,7 @@ async function startServer() {
 function shutdown(signal: string) {
   logger.info("server_shutdown", { signal });
   if (presenceWatcher) clearInterval(presenceWatcher);
+  if (roomCollector) clearInterval(roomCollector);
   void flushAllPending().finally(() => {
     process.exit(0);
   });

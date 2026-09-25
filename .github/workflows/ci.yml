@@ -94,6 +94,12 @@ jobs:
       - name: Testes (unit + integração — Vitest, T9.1+)
         run: npm run test
 
+      # Fase B (B.6 — SEC-06): falha em vulnerabilidade ALTA/CRÍTICA de
+      # produção. Exceções são nomeadas, com motivo e gatilho, em
+      # scripts/audit-ci.mjs — um portão permanentemente vermelho não é portão.
+      - name: Audit de dependências de produção
+        run: npm run audit:ci
+
       - name: Smoke test do servidor de produção
         run: |
           NODE_ENV=production PORT=3000 node dist/server.cjs > /tmp/server.log 2>&1 &

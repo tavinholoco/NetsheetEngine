@@ -16,7 +16,7 @@
 // ============================================================
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { getRoom, restoreRoom } from "./roomManager.js";
+import { exportRoomSessions, getRoom, restoreRoom, restoreRoomSessions } from "./roomManager.js";
 import type { GameRoom } from "../src/types/multiplayer.js";
 import { logger } from "./logger.js";
 
@@ -66,7 +66,15 @@ export async function persistRoomNow(code: string): Promise<void> {
   const { error } = await client
     .from(ROOMS_TABLE)
     .upsert(
-      { code: room.code, room_state: room as unknown as Record<string, unknown>, updated_at: new Date().toISOString() },
+      {
+        code: room.code,
+        room_state: room as unknown as Record<string, unknown>,
+        // B.4 (SEC-03) — sessões em coluna PRÓPRIA, jamais dentro de
+        // room_state: aquele objeto é o que vai no broadcast para a mesa
+        // inteira. Só o hash do token é gravado (ver roomManager).
+        sessions: exportRoomSessions(room.code),
+        updated_at: new Date().toISOString()
+      },
       { onConflict: "code" }
     );
   if (error) {
@@ -104,21 +112,27 @@ export async function restoreRoomsFromDb(): Promise<number> {
   if (!client) return 0;
   const { data, error } = await client
     .from(ROOMS_TABLE)
-    .select("code, room_state")
+    .select("code, room_state, sessions")
     .order("updated_at", { ascending: false });
   if (error) {
     logger.warn("persistence_restore_failed", { message: error.message });
     return 0;
   }
   let restored = 0;
+  let sessionsRestored = 0;
   for (const row of data ?? []) {
     const state = row.room_state as unknown;
     if (typeof state === "object" && state !== null) {
       restoreRoom(state as GameRoom);
       restored += 1;
+      // B.4 (SEC-03) — repõe as sessões DEPOIS da sala existir. Linha gravada
+      // antes da migration 0007 vem sem a coluna: `undefined` é tratado como
+      // "nenhuma sessão", e a mesa volta ao comportamento antigo (todos
+      // reconectam) em vez de quebrar o boot.
+      sessionsRestored += restoreRoomSessions((state as GameRoom).code, row.sessions);
     }
   }
-  logger.info("persistence_restored", { count: restored });
+  logger.info("persistence_restored", { count: restored, sessions: sessionsRestored });
   return restored;
 }
 
