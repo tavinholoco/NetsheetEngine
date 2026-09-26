@@ -1,6 +1,6 @@
 # ADR 0004 — Motor de dados com @dice-roller/rpg-dice-roller
 
-- **Status:** Aceito
+- **Status:** Substituída em 25/09/2026 — ver a [revisão da Fase C](#revisão-de-25092026--motor-próprio-em-srcrules) no fim
 - **Data:** 08/08/2026
 - **Decisores:** Desenvolvimento (Fase 6, T6.1–T6.4)
 - **Fase do plano:** Fase 6 — Motor de Dados (Dice Engine)
@@ -69,3 +69,44 @@ dos testes determinísticos.
 - `src/utils/diceEngine.ts` — motor FNFF.
 - `src/__tests__/dice-engine.test.ts` — suíte determinística (18 testes, Vitest).
 - Fase 6 do `PLANO_DE_ACAO.md` (T6.1–T6.4).
+
+---
+
+## Revisão de 25/09/2026 — motor próprio em `src/rules/`
+
+**A biblioteca saiu.** O motor de dados passou a ser próprio, em
+[`src/rules/dice.ts`](../../src/rules/dice.ts), usado **pelo cliente e pelo servidor**. A decisão
+original não estava errada para o problema que tinha — um rolador só do cliente. O que mudou foi o
+problema: a Fase C (C.1, ARQ-02) exige **uma** implementação das regras para os dois lados, e a
+biblioteca não pode ir para o servidor.
+
+### Por que ela não serve para os dois lados
+
+- **Gerador global.** O RNG da biblioteca é um singleton (`NumberGenerator.generator.engine`). Não
+  dá para injetar um RNG por chamada — e o teste de paridade (C.10) precisa passar **a mesma fila**
+  de dados para o cliente e para o servidor, na mesma execução.
+- **O `mathjs` iria junto.** A biblioteca avalia a notação com o `mathjs`, que tem duas altas sem
+  correção aplicável (B.6). No cliente isso era aceitável porque a fórmula era do próprio usuário. No
+  servidor, a fórmula de dano vem **da ficha, que vem da rede** — exatamente o gatilho escrito na
+  exceção de audit. Levar a biblioteca ao servidor transformaria uma exceção aceita num buraco.
+- **Ela codificava a regra errada em dois pontos**, e a Fase C ia ter de contorná-la: o fumble
+  "subtrai 1d10" (regra do Cyberpunk RED) estava no nosso invólucro, e a notação `1d10!` não
+  distingue o fumble do primeiro dado de um 1 depois da explosão.
+
+### O que o motor próprio precisa — e é pouco
+
+d10 aberto (explosão encadeada com teto de segurança), fumble só no primeiro dado, fórmula de dano
+`NdM±X` **sem avaliar expressão**, tabela de local de impacto e save. Tudo o que a biblioteca dava e
+a decisão original listou como vantagem continua: a trilha auditável vira o `details` com cada dado
+e cada parcela nomeada; o determinismo em teste vem do RNG injetado (`scriptedRng`).
+
+### Consequências
+
+- **Duas exceções a menos no portão de audit.** O `mathjs` saiu da árvore de dependências e a
+  ALLOWLIST de `scripts/audit-ci.mjs` ficou vazia.
+- **A página de dados perde notação livre.** Quem digitar `3d6+1d4` ou `1d6/2` recebe fórmula
+  inválida, como a mesa já respondia desde a T5.4. Nenhuma arma do arsenal padrão usa outra forma.
+  **Gatilho para ampliar o parser:** uma arma do livro com fórmula de divisão (`1D6/2`, `1D6/3`)
+  entrar numa ficha de verdade.
+- A suíte do rolador foi reescrita contra o RNG injetado; os testes que trocavam o gerador global
+  da biblioteca saíram com ela.

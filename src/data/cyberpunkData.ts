@@ -14,6 +14,17 @@ import type { ArmorPiece, StatName, WeaponItem } from '../types/cyberpunk';
 export interface OfficialRole {
   name: string;
   specialAbility: string;
+  /**
+   * Atributo somado ao rolar a Special Ability (C.8). Fonte de cada um em
+   * docs/CONFERENCIA_CP2020.md — Jury Rig/TECH é inferência.
+   */
+  specialAbilityStat: StatName;
+  /**
+   * Perícia em que a habilidade SOMA, em vez de ser rolada sozinha. Só o
+   * Combat Sense: rolar "Combat Sense" é rolar Awareness/Notice com o bônus
+   * (e ele soma também na iniciativa — Fase D).
+   */
+  specialAbilityAddsTo?: string;
   description: string;
 }
 
@@ -22,51 +33,62 @@ export const OFFICIAL_ROLES: OfficialRole[] = [
   {
     name: 'Solo',
     specialAbility: 'Combat Sense',
+    specialAbilityStat: 'INT',
+    specialAbilityAddsTo: 'Awareness/Notice',
     description: 'Mestre do combate e da sobrevivência. Especialista em armas, táticas de guerrilha e reflexos letais — o mercenário definitivo de Night City.'
   },
   {
     name: 'Netrunner',
     specialAbility: 'Interface',
+    specialAbilityStat: 'INT',
     description: 'Hacker de elite que invade a Net para roubar dados e controlar sistemas. Conecta seu deck neural diretamente ao ciberespaço.'
   },
   {
     name: 'Tech',
     specialAbility: 'Jury Rig',
+    specialAbilityStat: 'TECH',
     description: 'Gênio da engenharia capaz de consertar e improvisar qualquer máquina. Mestre da manutenção de veículos, eletrônicos e cromos.'
   },
   {
     name: 'Medtechie',
     specialAbility: 'Medical Tech',
+    specialAbilityStat: 'TECH',
     description: 'Médico de combate treinado em socorro de emergência e cirurgia de cromo. Pode estabilizar ferimentos graves e instalar implantes.'
   },
   {
     name: 'Media',
     specialAbility: 'Credibility',
+    specialAbilityStat: 'INT',
     description: 'Jornalista investigativo com poder de expor a verdade e derrubar corporações. Sua palavra tem peso — e seus contatos valem ouro.'
   },
   {
     name: 'Cop',
     specialAbility: 'Authority',
+    specialAbilityStat: 'COOL',
     description: 'Policial ou vigilante com autoridade legal. Usa seu distintivo, a rede policial e métodos próprios para impor a lei nas ruas.'
   },
   {
     name: 'Corp',
     specialAbility: 'Resources',
+    specialAbilityStat: 'INT',
     description: 'Executivo corporativo com acesso a recursos ilimitados da megacorporação. Especialista em negócios, espionagem industrial e poder.'
   },
   {
     name: 'Fixer',
     specialAbility: 'Streetdeal',
+    specialAbilityStat: 'COOL',
     description: 'Intermediário do mercado negro que conhece todos os contatos e fornecedores. Arma negócios, consegue qualquer mercadoria e move Night City.'
   },
   {
     name: 'Rockerboy',
     specialAbility: 'Charismatic Leadership',
+    specialAbilityStat: 'COOL',
     description: 'Estrela do rock e agitador cultural. Seu carisma inflama multidões e sua música pode derrubar corporações ou iniciar revoluções.'
   },
   {
     name: 'Nomad',
     specialAbility: 'Family',
+    specialAbilityStat: 'INT',
     description: 'Membro de uma família nômade das estradas. Mestre de veículos e da logística de comboios, leal acima de tudo aos seus.'
   }
 ];
@@ -216,20 +238,6 @@ export const SKILL_TABLES: Record<StatName, string[]> = {
   MA: [],
   BODY: ['Endurance', 'Strength Feat', 'Swimming'],
   EMP: ['Human Perception', 'Interview', 'Leadership', 'Perform', 'Persuasion & Fast Talk', 'Seduction', 'Social']
-};
-
-/** Habilidades especiais (Special Abilities) de cada role oficial. */
-export const SPECIAL_ABILITIES: Record<string, string> = {
-  Solo: 'Combat Sense',
-  Netrunner: 'Interface',
-  Tech: 'Jury Rig',
-  Medtechie: 'Medical Tech',
-  Media: 'Credibility',
-  Cop: 'Authority',
-  Corp: 'Resources',
-  Fixer: 'Streetdeal',
-  Rockerboy: 'Charismatic Leadership',
-  Nomad: 'Family'
 };
 
 /** Tabelas de Lifepath CP2020 para geração narrativa rápida. */

@@ -44,6 +44,7 @@ import type {
   StatName,
   WeaponItem
 } from '../types/cyberpunk';
+import { STAT_NAMES, deriveCurrentStats } from './character';
 
 // --- Limites -----------------------------------------------------------------
 // Atributo: 2–10 na criação, até 15 com cromo (ver CharacterStats). O teto é
@@ -71,7 +72,6 @@ const MAX_NAME_CHARS = 120;
 const MAX_URL_CHARS = 2048;
 const MAX_NOTES_CHARS = 5000;
 
-const STAT_NAMES: readonly StatName[] = ['INT', 'REF', 'TECH', 'COOL', 'ATTR', 'LUCK', 'MA', 'BODY', 'EMP'];
 const ARMOR_LOCATIONS: readonly ArmorLocation[] = ['Head', 'Torso', 'Right Arm', 'Left Arm', 'Right Leg', 'Left Leg'];
 
 export interface SheetValidationResult {
@@ -277,6 +277,8 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
 
   const changed: string[] = [];
   const stats = sanitizeStats(input.stats, 'stats', changed);
+  const woundLevel = clampInt(input.woundLevel, WOUND_LEVEL_MIN, WOUND_LEVEL_MAX, 0, 'woundLevel', changed);
+  const cyberware = sanitizeCyberware(input.cyberware, changed);
 
   const sheet: CharacterSheet = {
     id: safeString(input.id, MAX_NAME_CHARS, 'id', changed),
@@ -290,13 +292,14 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     sex: safeString(input.sex, MAX_NAME_CHARS, 'sex', changed),
     eurodollars: clampInt(input.eurodollars, 0, 100_000_000, 0, 'eurodollars', changed),
     stats,
-    // `currentStats` é derivado (base + cyberware + penalidade de ferimento) e
-    // hoje não tem leitor — a C.6 vai transformá-lo em seletor. Até lá ele é
-    // saneado como os demais, e o padrão é espelhar `stats`.
-    currentStats: input.currentStats === undefined ? { ...stats } : sanitizeStats(input.currentStats, 'currentStats', changed),
-    woundLevel: clampInt(input.woundLevel, WOUND_LEVEL_MIN, WOUND_LEVEL_MAX, 0, 'woundLevel', changed),
+    // C.6 — `currentStats` é DERIVADO (base → humanidade → ferimento) e o
+    // servidor o recalcula, descartando o que o cliente mandou. Não entra em
+    // `changed`: o cliente não tem obrigação de mandá-lo certo, e marcar
+    // divergência aqui encheria o log a cada sync.
+    currentStats: deriveCurrentStats({ stats, woundLevel, cyberware }),
+    woundLevel,
     skills: sanitizeSkills(input.skills, changed),
-    cyberware: sanitizeCyberware(input.cyberware, changed),
+    cyberware,
     weapons: sanitizeWeapons(input.weapons, changed),
     armor: sanitizeArmor(input.armor, changed),
     lifepath: sanitizeLifepath(input.lifepath, changed),

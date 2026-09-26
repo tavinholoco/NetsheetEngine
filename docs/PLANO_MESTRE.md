@@ -87,6 +87,8 @@ itens da própria fase. Não são opcionais:
         código. Na Fase B, duas sobras escaparam de uma varredura que olhou só `*.md`/`*.yml`/`*.json`;
       - *refatoração* do código que a própria fase escreveu (duplicação, abstração faltando). **Não**
         é varredura do repositório — isso é das Fases E e G–J.
+- **4b.** Rodar **tudo**, E2E incluído (`npm run test:e2e`), antes do PR. *(Nasceu na Fase C: dois E2E
+      codificavam as regras antigas e só apareceram no fim.)*
 - **5.** Commit com mensagem que explique o *porquê*, e a tag da fase quando houver. Push do branch e
       **PR para o dono revisar e mergear** — nunca push direto no `master`.
       **Se a fase tiver migration** (decisão 5): a migration vai num **PR próprio**, que é mergeado
@@ -349,14 +351,14 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 
 | ID | Sev. | Achado | Fase |
 |---|---|---|---|
-| RUL-01 | 🔴 Crítico | BTM derivado de `BODY+REF` com sinal invertido (livro: só BODY, −1 a −5) | C |
-| RUL-02 | 🔴 Crítico | Ataque na mesa é `1d10 + REF + WA` — falta a perícia de arma | C |
-| RUL-03 | 🔴 Crítico | `combatModifier` do GM nunca é somado a rolagem nenhuma | C |
+| RUL-01 | 🔴 Crítico | BTM derivado de `BODY+REF` com sinal invertido (livro: só BODY, 0 a −5) | ✅ C.2 |
+| RUL-02 | 🔴 Crítico | Ataque na mesa é `1d10 + REF + WA` — falta a perícia de arma | ✅ C.3 |
+| RUL-03 | 🔴 Crítico | `combatModifier` do GM nunca é somado a rolagem nenhuma | ✅ C.4 |
 | RUL-04 | 🔴 Crítico | Sem pipeline de dano: SP, ×2 na cabeça e BTM não se conectam ao `woundLevel` | D |
-| RUL-05 | 🟠 Alto | Dois motores de dados divergentes (cliente encadeia, servidor explode uma vez) | C |
-| RUL-06 | 🟠 Alto | Penalidade de ferimento não entra em rolagem; `currentStats` é campo morto | C |
-| RUL-07 | 🟠 Alto | Atributo da Special Ability escolhido por ternário — erra 7 dos 10 roles | C |
-| RUL-08 | 🟡 Médio | Death save sem modificador cumulativo | C |
+| RUL-05 | 🟠 Alto | Dois motores de dados divergentes (cliente encadeia, servidor explode uma vez) | ✅ C.1 |
+| RUL-06 | 🟠 Alto | Penalidade de ferimento não entra em rolagem; `currentStats` é campo morto | ✅ C.5, C.6 |
+| RUL-07 | 🟠 Alto | Atributo da Special Ability escolhido por ternário — erra 7 dos 10 roles *(eram 9: a C.0 mediu)* | ✅ C.8 |
+| RUL-08 | 🟡 Médio | Death save sem modificador cumulativo *(no 2020: −1 por nível Mortal; o "cumulativo por turno" é do RED)* | ✅ C.7 |
 | RUL-09 | 🟡 Médio | Iniciativa digitada à mão, sem `1d10 + REF` | D |
 | RUL-10 | 🟡 Médio | Criação de personagem sem orçamento (pontos, perícias, IP) | K |
 | RUL-11 | 🔵 Baixo | Faltam Leap/Carry/Lift e EV; "Walk" é invenção | K |
@@ -367,9 +369,9 @@ Folga confortável — **desde que a regra 3 seja respeitada.**
 | ID | Sev. | Achado | Fase |
 |---|---|---|---|
 | ARQ-01 | 🟠 Alto | Broadcast do estado completo da sala a cada mutação (100–300 KB) | L |
-| ARQ-02 | 🟠 Alto | Regras do jogo implementadas duas vezes, sem teste de paridade | C |
+| ARQ-02 | 🟠 Alto | Regras do jogo implementadas duas vezes, sem teste de paridade | ✅ C.1, C.10 |
 | ARQ-03 | 🟡 Médio | Instância única obrigatória combinada com plano que hiberna | B |
-| ARQ-04 | 🟡 Médio | 1,34 MB no chunk de entrada | L |
+| ARQ-04 | 🟡 Médio | 1,34 MB no chunk de entrada *(623 kB desde a C.1 — a biblioteca de dados puxava o `mathjs`)* | L |
 | ARQ-05 | 🟡 Médio | Quatro arquivos concentram ~4.000 das 14.282 linhas | E/G/L |
 | ARQ-06 | 🔵 Baixo | Camada Supabase ainda exporta nomes do Firebase | L |
 | ARQ-07 | 🔵 Baixo | Sem ESLint; 23 `any` e 16 `console.*` | L |
@@ -692,41 +694,174 @@ cliente e servidor para ela.
 > delicada do plano. Ordem correta: **escrever a tabela do livro como dado primeiro**, derivar os
 > testes desse dado, vê-los falhar contra a implementação atual, e só então mudar a implementação.
 
-- [ ] **C.0** 🔍 **Verificação de premissas** — a mesma disciplina da B.0, que na Fase B mudou o tamanho
-      de quatro dos seis itens. Antes de escrever código, conferir no código real a premissa de cada
-      item C.1–C.9 e registrar aqui o que mudou. Pontos de partida já conhecidos:
-      - **`src/rules/` já existe** — nasceu com o `sheetSchema.ts` da B.2, no contrato desta fase
-        (função pura, sem DOM nem rede). A C.1 cresce a partir dele, não cria o diretório.
-      - Já **medido** na auditoria de 03/09: `combatModifier` e `currentStats` têm **zero leitores**
-        (C.4 e C.6 partem de "construído e nunca ligado", não de "funciona errado").
-      - Conferir o que a C.1 afirma sobre os dois motores: cliente em `src/utils/diceEngine.ts` (usa
-        `@dice-roller/rpg-dice-roller`) e servidor em `rollDice` do `roomManager.ts` (`crypto.randomInt`,
-        sem a biblioteca). A unificação precisa de RNG injetado para os dois lados.
-      - A **disciplina obrigatória** acima vale desde o primeiro commit: tabela do livro como dado →
-        testes derivados → vê-los falhar → só então mudar a implementação.
-- [ ] **C.1** Extrair e unificar o motor FNFF em `src/rules/`. Explosão **encadeada** dos dois lados
-      (decisão 1), com teto de segurança contra sequência patológica. *(RUL-05, ARQ-02)*
-- [ ] **C.2** BTM canônico por BODY (2→0, 3–4→−1, 5–7→−2, 8–9→−3, 10→−4, 11+→−5), sinal negativo,
-      rótulo do `StatBlock` e linha do PRD corrigidos. *(RUL-01)*
-- [ ] **C.3** Ataque com perícia de arma: mapear `weapon.type` → nome de perícia e somar o nível da
-      ficha que o servidor já possui. *(RUL-02)*
-- [ ] **C.4** `combatModifier` entrando em `attack` e `skill`, visível no detalhe da rolagem. *(RUL-03)*
-- [ ] **C.5** Tabela de penalidade de ferimento igual à do livro (Crítico REF −4; todos os Mortais
-      REF −6). *(RUL-06, parte 1)*
-- [ ] **C.6** `currentStats` derivado (base + cyberware + penalidade de ferimento) num único seletor,
-      lido por **todas** as rolagens. *(RUL-06, parte 2)*
-- [ ] **C.7** Death save com modificador cumulativo por nível mortal e por turno. *(RUL-08)*
-- [ ] **C.8** Atributo da Special Ability dentro de `OFFICIAL_ROLES`. *(RUL-07)*
-- [ ] **C.9** **Conferência sistemática contra o livro** (decisão 2): atributos, perícias, combate,
+- [x] **C.0** 🔍 **Verificação de premissas** *(25/09/2026)*. Conferido no código **e contra fontes do
+      livro** — a pesquisa está em [`CONFERENCIA_CP2020.md`](./CONFERENCIA_CP2020.md), com a fonte de
+      cada regra. **Três premissas do plano estavam erradas, e as três vieram de fora do 2020:** duas
+      do Cyberpunk RED, uma de regra de casa publicada como se fosse do livro. O defeito é do plano,
+      não da execução — mesma classe da [auditoria de 03/09](#-auditoria-das-afirmações-deste-plano-03092026).
+      - **Linha de base: 196/197, não 197.** No checkout principal o `supabaseAuth` do B.1 ia à rede
+        (o `.env.local` aponta para o Supabase local) e o teste de falha fechada recebia 401 em vez de
+        503. Nos worktrees da Fase B não havia `.env.local`, por isso escapou. Corrigido com a mesma
+        guarda de `NODE_ENV=test` que o `roomPersistence` tem desde a T9.3 (`c7c25a3`).
+      - **C.1 — maior que o descrito.** Os **dois** motores implementam o fumble do **RED** (rolar 1
+        subtrai 1d10). No 2020, o 1 natural é **falha automática** e rola-se 1d10 na tabela de fumble.
+        A explosão única do servidor também é a regra do RED. E um bug que a auditoria não pegou: o
+        `rollLocation` do cliente manda acerto no **tronco (2–4) para "Perna Esquerda"** — o do
+        servidor está certo, e a divergência é o próprio sintoma do ARQ-02. Os testes só cobriam as
+        faces 1, 5 e 9.
+      - **C.1 — a biblioteca não pode ir para o servidor.** O `@dice-roller` tem gerador **global**
+        (não aceita RNG por chamada) e levaria o `mathjs` para o lado que avalia a fórmula de dano
+        vinda da rede — exatamente o gatilho da exceção de audit do B.6. Unificar = motor próprio em
+        `src/rules/`, e a biblioteca sai. Reabre a [ADR 0004](./adr/0004-dice-roller.md) com motivo
+        novo, e as duas exceções do `mathjs` saem da ALLOWLIST.
+      - **C.2 confirmado.** `btmFromStats(BODY, REF)` com sinal invertido (+5 a −2). **15 dos 32**
+        testes de `derived-stats` codificam a tabela errada.
+      - **C.3 confirmado, e o cliente é pior:** `handleRollWeaponAttack` passa o **WA no lugar do nível
+        de perícia**. Nenhum mapa `weapon.type → perícia` existe. Escopeta → Rifle é inferência
+        (não existe perícia de escopeta no 2020) e está marcada assim na conferência.
+      - **C.4 confirmado:** `combatModifier` com zero leitores.
+      - **C.5 — premissa errada.** "Crítico REF −4, Mortais REF −6" é **regra de casa** — as duas
+        fontes que a publicam se declaram house rules. O livro: **Sério REF −2; Crítico REF/INT/COOL
+        pela metade; Mortal REF/INT/COOL a um terço** (arredondando para cima). Ferimento **não
+        penaliza MA** — a tabela atual inventa MA e as notas "consciência 50%" e "morte provável".
+      - **C.6 confirmado, com um recorte:** o tipo `CyberwareItem` não tem modificador de atributo.
+        O único efeito de cromo que o modelo representa é o do livro: **−1 EMP a cada 10 de
+        Humanidade perdida**. E o servidor **deriva** o `currentStats` — nunca confia no do cliente.
+      - **C.7 — premissa meio errada.** Death save "cumulativo por turno" é do **RED** (cada save
+        bem-sucedido piora o próximo). No 2020 o death save é **a cada turno, com −1 por nível
+        Mortal**, sem acúmulo por turno. E falta o **stun save** (BODY −0 a −9 pelo nível do
+        ferimento): o único botão diz "Atordoamento/Morte" e rola `1d10 ≤ BODY` para os dois. Além
+        disso, `isDead(10)` trata Mortal 6 como morto e **desliga o death save** justo no último nível.
+      - **C.8 — maior que o descrito:** o ternário acerta **1 de 10**, não 3. Nenhuma habilidade usa
+        EMP, e Combat Sense não se rola sozinha — soma em Awareness/Notice e na iniciativa.
+        `SPECIAL_ABILITIES` em `cyberpunkData.ts` é duplicata morta de `OFFICIAL_ROLES`.
+      - **C.10:** o servidor não tem RNG injetável — a paridade exige isso.
+- [x] **C.1** Extrair e unificar o motor FNFF em `src/rules/`. Explosão **encadeada** dos dois lados
+      (decisão 1), com teto de segurança contra sequência patológica. *(RUL-05, ARQ-02 — 25/09/2026)*
+      - **`src/rules/dice.ts`** (motor: d10 aberto, teste, dano, local, save) e **`src/rules/rolls.ts`**
+        (monta o `RollResult`). Cliente e servidor só acrescentam `id`, horário e personagem — o
+        `diceEngine.ts` virou casca, e o `rollDiceForPlayer` perdeu `secureD10`, `rollDice` e
+        `impactLocationName`.
+      - **RNG injetado dos dois lados:** o servidor passa `crypto.randomInt`, o cliente passa Web
+        Crypto (com rejeição, sem viés), o teste passa `scriptedRng` (`src/test/`).
+      - **Fumble do 2020:** falha automática, total sem o −1d10, e o dado da tabela de fumble aparece
+        no detalhe. O **texto** das tabelas de fumble ficou **ADIADO** (gatilho na conferência).
+      - **Teto de 10 dados extras** na explosão — onze 10 seguidos têm probabilidade 10⁻¹¹; o teto só
+        existe para um RNG defeituoso não travar o servidor.
+      - **Fórmula de dano sem avaliar expressão:** `NdM±X`, até 20 dados de até 100 faces. A página de
+        dados perde a notação livre da biblioteca (gatilho na ADR 0004).
+      - **`@dice-roller` removido** ([ADR 0004 revisada](./adr/0004-dice-roller.md#revisão-de-25092026--motor-próprio-em-srcrules)).
+        O `mathjs` saiu da árvore e a **ALLOWLIST do audit ficou vazia**.
+      - **Efeito colateral medido, não previsto:** o chunk de entrada caiu de **1.336 kB / ~390 kB
+        gzip para 623 kB / 184,5 kB gzip** (−53%). A biblioteca puxava o `mathjs` inteiro para o
+        bundle principal. Metade do **ARQ-04** (Fase L) resolvida de graça — a L ainda decide se o
+        resto precisa de code-splitting.
+      - Suíte do rolador reescrita contra o RNG injetado (16) + 44 testes novos do motor (`rules-dice`).
+        Local de impacto testado nas **10 faces** — os antigos cobriam 1, 5 e 9.
+- [x] **C.2** BTM canônico por BODY (2→0, 3–4→−1, 5–7→−2, 8–9→−3, 10→−4, 11+→−5), sinal negativo,
+      rótulo do `StatBlock` e linha do PRD corrigidos. *(RUL-01 — 25/09/2026)*
+      - `btmFromBody`/`bodyTypeFor` em `src/rules/character.ts`; `btmFromStats` saiu. O `StatBlock`
+        mostra o BTM **e o tipo corporal**, e perdeu a frase "Reputação derivada de COOL + LUCK", que
+        o livro não tem e a tela não calculava.
+      - Os 15 testes de BTM foram **reescritos a partir de `BODY_TYPE_TABLE`**, não do código novo —
+        e a tabela antiga falhava em 31 de 36 casos do oráculo da C.0 (os 5 que passavam eram
+        coincidência: o piso −2 e o 0 da soma 17).
+- [x] **C.3** Ataque com perícia de arma: mapear `weapon.type` → nome de perícia e somar o nível da
+      ficha que o servidor já possui. *(RUL-02 — 25/09/2026)*
+      - `src/rules/combat.ts`: `WEAPON_SKILL_BY_TYPE` (tabela), `weaponSkillFor`, `skillLevelOf` (compara
+        sem caixa nem pontuação: "Awareness / Notice" casa com "Awareness/Notice") e `attackModifiers`.
+        **O mesmo código na mesa e na ficha** — o cliente passava o WA no lugar da perícia.
+      - Sem a perícia na ficha, ataca **sem treino (nível 0)** e o detalhe mostra `Handgun (0)`.
+        Desarmado usa **Brawling**. Tipo desconhecido aparece como `sem perícia para "X" (0)` em vez
+        de somar perícia errada.
+- [x] **C.4** `combatModifier` entrando em `attack` e `skill`, visível no detalhe da rolagem. *(RUL-03 —
+      25/09/2026)* Entra como `Mod. do Mestre: <motivo> (−2)`. **Não** entra em dano nem em save — o
+      livro aplica modificador de situação ao teste, não ao dano. Zero não aparece no detalhe.
+      - **Provado revertendo:** com o `roomManager` anterior, os 5 testes de C.3/C.4 falham.
+- [x] **C.5** Tabela de penalidade de ferimento igual à do livro: Sério REF −2; Crítico REF/INT/COOL
+      ÷2; Mortal REF/INT/COOL ÷3 (arredondando para cima); sem penalidade de MA. *(RUL-06, parte 1 —
+      texto corrigido na C.0: o original, "Crítico REF −4; Mortais REF −6", era regra de casa)*
+      *(25/09/2026)* `WOUND_TRACK` + `applyWoundEffect`. Saíram `WOUND_PENALTY_DATA`,
+      `woundPenalties` e `woundPenaltyText` (com as notas inventadas). O Bio-Monitor mostra o efeito
+      do livro ("REF, INT, COOL ÷2"). A tabela antiga falhava em **9 dos 11 níveis** contra o livro.
+- [x] **C.6** `currentStats` derivado (base + cyberware + penalidade de ferimento) num único seletor,
+      lido por **todas** as rolagens. *(RUL-06, parte 2 — 25/09/2026)*
+      - `deriveCurrentStats(sheet)`: base → **−1 EMP a cada 10 de humanidade** → ferimento. Lido pelo
+        `rollDiceForPlayer`, pela árvore de perícias, pelo ataque e death save da ficha e pelo rolador.
+      - **O servidor recalcula no `sanitizeCharacterSheet`** e descarta o `currentStats` do cliente —
+        antes era saneado e guardado como veio. Não entra no `changed`, para não encher o log.
+      - O `StatBlock` parou de **escrever** o campo (era a única escrita com efeito) e mostra
+        **"rola com N"** quando o valor corrente difere da base — em âmbar, porque vermelho é dano.
+      - **Provado revertendo:** com as duas linhas antigas (servidor e esquema), os 3 testes de C.6
+        em `table-rolls.integration` falham; com as novas, passam.
+- [x] **C.7** Death save a cada turno com −1 por nível Mortal (Mortal 0 = BODY, Mortal 6 = BODY −6),
+      e o **stun save** que não existe (BODY −0 a −9 pelo nível do ferimento). *(RUL-08 — texto
+      corrigido na C.0: "cumulativo por turno" era regra do RED — 25/09/2026)*
+      - `stunSaveRoll` e `deathSaveRoll` em `src/rules/rolls.ts`, com o alvo explicado na fórmula
+        (`1d10 ≤ BODY 8 − 3`). **Tipo de rolagem novo na mesa: `stun`** (entrada nova no servidor —
+        vai para o portão). Botão âmbar ao lado do death save, na mesa, na ficha e no rolador.
+      - O Bio-Monitor mostra **os dois alvos** no botão e **desliga o death save fora do Mortal**. O
+        `isDead` virou `isLastWoundBox`: Mortal 6 ainda está vivo e **voltou a poder rolar** o death
+        save, que era desligado justo ali.
+      - Fora do Mortal, o death save da mesa **rola** contra o BODY e o rótulo avisa "não exigido" — em
+        vez de um erro novo no servidor, que o `respondWithResult` classificaria por substring (pista
+        da Fase E).
+      - **Provado revertendo:** com o `roomManager` anterior, 3 dos 4 testes de C.7 falham (o de Mortal
+        6 passava: o bloqueio era só no botão da ficha).
+- [x] **C.8** Atributo da Special Ability dentro de `OFFICIAL_ROLES`. *(RUL-07 — 25/09/2026)*
+      - `specialAbilityStat` (e `specialAbilityAddsTo` para o Combat Sense) em cada role;
+        `specialAbilityRoll` em `src/rules/roles.ts`. O ternário do `SkillsSection` saiu, e a
+        ficha mostra "INT + nível" embaixo do nome da habilidade.
+      - **Combat Sense rola como Awareness/Notice + INT + o bônus** — o livro não a rola sozinha. A
+        soma na iniciativa é da D.4.
+      - Role livre é achado pelo nome da habilidade; fora do livro, rola só o nível e o rótulo avisa.
+      - `SPECIAL_ABILITIES` (duplicata morta de `OFFICIAL_ROLES`, zero leitores) removido.
+      - O teste guarda o ternário antigo como registro: **acertava só o Netrunner**.
+      - *Fora do escopo, anotado:* a habilidade especial não é rolável **na mesa** (o tipo `skill`
+        procura em `sheet.skills`, e ela mora em `specialAbilityName`). Nenhum item do plano pede
+        isso; entra como pista da Fase H.
+- [x] **C.9** **Conferência sistemática contra o livro** (decisão 2): atributos, perícias, combate,
       dano, armadura, humanidade e movimento. Registrar cada divergência encontrada, inclusive as não
-      listadas nesta auditoria.
-- [ ] **C.10** Testes de paridade cliente↔servidor com a mesma entrada nos dois RNGs. *(ARQ-08, parte 1)*
-- [ ] **C.11** Atualizar `docs/PRD.md` §5 no mesmo commit de cada correção. *(DOC-01, parte 2)*
-- [ ] **C.12** `git tag v0.4.2`.
-- [ ] **C.13** 📐 **Desenho** — a C.9 confere o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) e a [máquina de ferimento](./ARQUITETURA.md#máquina-de-estados-do-ferimento) contra o livro, e **corrige os diagramas** com o que a conferência determinar. Eles são hipótese de trabalho, não autoridade.
-- [ ] **C.14** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
-- [ ] **C.15** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase C concluída em:** ____/____/______
+      listadas nesta auditoria. *(25/09/2026 — [`CONFERENCIA_CP2020.md`](./CONFERENCIA_CP2020.md))*
+      - **13 divergências encontradas e corrigidas, 5 delas fora do índice de achados** (fumble do
+        RED, tronco→perna, "Reputação" inventada, stun save inexistente, Mortal 6 tratado como
+        morto). O resto — o que o modelo ainda não representa — está na conferência com fase dona.
+      - **Método:** fonte secundária só vale com **duas concordando**; o que é inferência está marcado
+        (Jury Rig/TECH, escopeta→Rifle). Três fontes descartadas por serem regra de casa — era delas
+        que vinham a tabela "−4/−6" e o "sem ×2 na cabeça".
+      - **Pendente do dono, com o livro na mão:** as duas inferências e a ordem ×2 × BTM (decide a D.1).
+- [x] **C.10** Testes de paridade cliente↔servidor com a mesma entrada nos dois RNGs. *(ARQ-08, parte 1 —
+      25/09/2026)*
+      - **A paridade achou divergência mesmo com o motor único:** a ficha escrevia `Perícia (4)` e
+        `Ataque com X`, a mesa `Handgun (4)` e `Ataque (X)`. O número batia, o texto não. A montagem
+        "ficha → rolagem" subiu para `src/rules/rolls.ts` (`sheetSkillRoll`, `sheetAttackRoll`,
+        `sheetDamageRoll`, `sheetDeathSaveRoll`, `sheetStunSaveRoll`), que o servidor e as casquinhas
+        `rollSheet*` do cliente chamam. O `App.tsx` perdeu a lógica de regra que ainda tinha.
+      - `parity.integration.test.ts`: **52 casos** — 3 fichas (ilesa, Crítica com cromo, Mortal 3) ×
+        perícia, ataque, dano, stun e death save × filas com explosão, fumble e 1 depois de explodir.
+        Compara o `RollResult` inteiro, menos id, horário e nome.
+      - **Provado:** com as funções da ficha montando a rolagem como o `App` fazia antes, 30 dos 52
+        falham; com as compartilhadas, 52 passam.
+      - Fecha o **ARQ-02** (regras implementadas duas vezes, sem teste de paridade).
+- [x] **C.11** Atualizar `docs/PRD.md` §5 no mesmo commit de cada correção. *(DOC-01, parte 2 — feito em
+      cada commit da fase, e também na cópia do PRD que o app exibe, `src/data/prdData.ts`, e no
+      `PROTOCOLO_MULTIPLAYER.md`, cuja tabela de rolagens a fase tornou falsa)*
+- [x] **C.12** `git tag v0.4.2`. *(25/09/2026)*
+- [x] **C.13** 📐 **Desenho** — a C.9 confere o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) e a [máquina de ferimento](./ARQUITETURA.md#máquina-de-estados-do-ferimento) contra o livro, e **corrige os diagramas** com o que a conferência determinar. Eles são hipótese de trabalho, não autoridade.
+      *(25/09/2026)* Os dois corrigidos: o pipeline ganhou o stun save, o efeito do livro, o BTM por
+      BODY com mínimo 1, e perdeu o "death save com modificador cumulativo" (RED). A ordem ×2 × BTM
+      ficou marcada como **decisão do dono antes da D.1**. A máquina ganhou o estado **Morto**, fora
+      do `woundLevel` — Mortal 6 é o último estado **vivo**.
+      - **Gatilho de ADIAR que disparou, achado no passo 5 do ritual de abertura:** o ER do schema
+        ("quando o schema mudar") — a `0007` da Fase B mudou o schema. Desenhado na mesma seção.
+- [x] **C.14** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+      *(25/09/2026)* Saldo de superfície **negativo**: o `currentStats` do cliente deixou de ser
+      confiado e o `mathjs` saiu. Entrada nova: o tipo `stun` e a leitura do `weapon.type`, ambos
+      validados. **Achado:** o jogador ainda baixa o próprio `woundLevel` pela sincronia — levado à
+      D.1 com gatilho. Diagrama de contêineres: a caixa `RULES` ganhou nota (o navegador roda o mesmo
+      código, mas na mesa só vale o do servidor).
+- [x] **C.15** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+- [x] ✅ **Fase C concluída em:** __25__/__09__/__2026__ *(PR aberto para o dono; falta o merge e conferir o CI do `master`)*
 
 ---
 
@@ -734,6 +869,12 @@ cliente e servidor para ela.
 
 - [ ] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → ×2 na cabeça → BTM →
       conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04)*
+      - **Antes de codar:** o dono decide a ordem ×2 × BTM na cabeça (o livro não é explícito — ver a
+        [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d)).
+      - **Achado do portão da C.14:** hoje o jogador escreve o próprio `woundLevel` pela sincronia da
+        ficha (`updatePlayerSheet`), e desde a C.6 isso **baixa a penalidade da rolagem**. Quando o dano
+        virar ferimento no servidor, a sincronia não pode mais baixá-lo. Se a D não resolver, vira item
+        da Fase J.
 - [ ] **D.2** Definir e implementar o caso do **token sem ficha**: o grid tem tokens `cover` e
       `hazard` sem `sheet` nem BTM, só `spCover`. Precisa estar decidido antes de codar.
 - [ ] **D.3** Fluxo de GM: rolar ataque → acertar token → aplicar dano, sem sair do grid.
@@ -935,11 +1076,13 @@ Fase F para não varrer código que acabou de ser reestilizado.
 
 **Pistas já levantadas:**
 - `syncSheetStore(sheetResult)` é chamado **no corpo do render** do `App.tsx` — efeito colateral fora
-  de efeito.
+  de efeito. **Agora com sintoma** *(visto na C, 25/09/2026)*: o React avisa no console, a cada carga,
+  "Cannot update a component while rendering a different component". Anterior à Fase C (`7fe4f47`).
 - Os dois `useEffect` que sincronizam URL ↔ aba com dois refs de guarda.
 - `createBlankCharacterSheet` gera seis IDs de armadura no mesmo tick com `Date.now()` + sufixo curto.
-- `StatBlock.handleSet` altera `stats` sem tocar em `currentStats`; `handleChange` aplica um
-  `Math.min` difícil de justificar.
+- ~~`StatBlock.handleSet` altera `stats` sem tocar em `currentStats`; `handleChange` aplica um
+  `Math.min` difícil de justificar.~~ *Resolvida na C.6: o `currentStats` virou derivado e o
+  `StatBlock` parou de escrevê-lo.*
 - 16 `console.*` sobrevivendo ao logger estruturado. *(ARQ-07, parte 1)*
 - Candidatos a refactor: `MultiplayerRoom` 944, `FriendsList` 723, `CyberpunkMenu` 608. *(ARQ-05)*
 
@@ -968,6 +1111,9 @@ uso real.
 - Quando o cliente cai para SSE, quais ações deixam de funcionar? O usuário fica sabendo?
 - Broadcast completo e updates Yjs incrementais podem chegar fora de ordem.
 - Awareness sem limpeza de estados órfãos.
+- A habilidade especial **não é rolável na mesa**: o tipo `skill` procura em `sheet.skills`, e ela
+  mora em `specialAbilityName`. Na ficha funciona. *(visto na C.8, 25/09/2026 — sem sintoma de mesa
+  ainda: ninguém pediu)*
 
 **Como varrer:** sessão real com 3+ abas, rede estrangulada, refresh no meio do combate, servidor
 reiniciado com a mesa aberta. Não é teste automatizado — é meia hora quebrando de propósito com o log
@@ -1099,7 +1245,7 @@ público mudar.
 |---|---|---|---|---|
 | A | 🔨 | Reancorar o projeto | ✅ | 03/09/2026 |
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
-| C | 🔨 | Fonte única de regras | ⬜ | — |
+| C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ⬜ | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
@@ -1115,13 +1261,14 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a Fase B (24/09/2026) |
+| Verificação | Ao fechar a Fase C (25/09/2026) |
 |---|---|
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **197** testes, 13 arquivos |
-| `npm run test:e2e` | 6 testes (Playwright) |
-| `node scripts/test-rls.mjs` | 56/56 — exige Supabase local no Docker |
-| `npm run audit:ci` | passa, com 2 altas do `mathjs` aceitas por exceção nomeada |
+| `npx vitest run` | **395** testes, 19 arquivos |
+| `npm run test:e2e` | 6/6 (Playwright) |
+| `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C** (Supabase local desligado; a fase não mexeu em schema nem RLS) |
+| `npm run audit:ci` | passa, **ALLOWLIST vazia** (3 moderadas do `qs`, não bloqueiam) |
+| Chunk de entrada | 628 kB / 186 kB gzip |
 | Migrations em produção | `0001`–`0007` |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).

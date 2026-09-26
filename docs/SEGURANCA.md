@@ -201,7 +201,48 @@ projeto até aqui, então o portão vale mais que de costume.
 
 ### Fase C — Fonte única de regras
 
-*(a preencher)*
+**25/09/2026.** Fase de regra, não de autorização — mas mexeu no caminho que o servidor usa para
+decidir números, então o portão não é formalidade. O saldo de superfície é **negativo**: a fase
+tirou mais confiança do cliente do que deu.
+
+1. **Entrada nova?** Duas, as duas validadas no limite:
+   - **O tipo de rolagem `stun`** (C.7). Passa pelo mesmo `sanitizeText(kind, 12)` e pela mesma
+     cadeia fechada de `if`s — tipo desconhecido continua recusado (testado).
+   - **O `weapon.type` passou a ser lido** (C.3), para achar a perícia. Casa por palavra contra uma
+     lista fixa; tipo desconhecido vira `sem perícia para "X" (0)` no detalhe, com o texto cortado
+     em 30 caracteres (além do teto que o `sheetSchema` já aplica). O detalhe é texto renderizado
+     pelo React, sem HTML.
+   - **E uma entrada deixou de ser confiada:** o `currentStats` do cliente. Até a Fase C era
+     saneado e **guardado como veio**; agora o servidor o recalcula da ficha e descarta o do cliente.
+   - **A fórmula de dano** continua vindo da ficha, e agora é lida por um parser estrito (`NdM±X`,
+     até 20 dados de até 100 faces), **sem avaliar expressão** — o `mathjs` saiu do projeto.
+2. **Dado novo sai?** Nada que a mesa já não visse. O detalhe da rolagem passou a mostrar o nome da
+   perícia, o motivo do modificador do GM e o dado de fumble — os dois primeiros já estavam na ficha
+   e no estado da sala transmitidos a todos. Nenhum segredo, nenhum dado de outra sala.
+3. **Autorização nova?** Nenhuma. As rolagens seguem derivando o autor da sessão; o modificador do GM
+   é lido da sala, onde só o GM escreve (`checkIsGm`, T1.1). O `stun` rola a ficha do próprio
+   jogador, como o `save`.
+4. **Jogador convidado hostil?**
+   - **Fechado nesta fase:** forjar `currentStats` para rolar com REF 15 — o servidor ignora
+     (testado: `table-rolls.integration`, "REF 15 forjado não entra").
+   - **Continua podendo:** baixar o próprio `woundLevel` pela sincronia da ficha e rolar sem a
+     penalidade de ferimento. Isso já existia (o jogador sempre editou o próprio Bio-Monitor), e só
+     passou a *importar* agora que o ferimento entra na rolagem. É regra de jogo, não autorização —
+     a Fase D decide quem escreve o `woundLevel` quando o dano virar ferimento sozinho.
+   - **Não consegue:** travar o servidor com um RNG patológico (o RNG é do servidor; a explosão tem
+     teto de 10 dados) nem com fórmula gigante (teto de 20d100).
+5. **Estado novo sem limite?** Nenhum. A fase não criou estado persistente nem em memória. O detalhe
+   de uma rolagem é limitado por construção: no máximo 11 dados e 5 parcelas.
+6. **Custo por requisição a serviço externo?** Nenhum. A fase **removeu** uma dependência de produção
+   (`@dice-roller`, e com ela o `mathjs`) e não adicionou chamada externa.
+
+**O que o portão achou:** o item 4 acima — o `woundLevel` escrito pelo próprio jogador. **Levado à
+Fase D com gatilho:** quando o `applyDamage` (D.1) existir, o `woundLevel` do jogador passa a ser
+escrito pelo servidor a partir do dano, e a sincronia da ficha não pode mais baixá-lo. Se a D não
+fizer isso, vira item da Fase J.
+
+**Saiu da lista da Fase J:** as duas altas do `mathjs` (#1117167, #1117889). A ALLOWLIST do
+`scripts/audit-ci.mjs` está vazia.
 
 ### Fase D — Loop de combate
 
@@ -237,7 +278,7 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-03 | Sessões só em memória — restart derruba as mesas | B | ✅ fechado 03/09 (B.4) |
 | SEC-04 | Salas, sessões e buckets nunca expiram | B | ✅ fechado 03/09 (B.5) |
 | SEC-05 | Ficha gravada sem validação | B | ✅ fechado 03/09 (B.2) |
-| SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ✅ fechado 03/09 (B.6) — `nanoid` corrigido; `qs`/`express` sem patch 4.x e `mathjs` cliente-only, ambos com exceção nomeada e gatilho em `scripts/audit-ci.mjs` |
+| SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ✅ fechado 03/09 (B.6) — `nanoid` corrigido; `qs`/`express` sem patch 4.x (3 moderadas, não bloqueiam). **`mathjs` saiu da árvore em 25/09 (C.1)**, com o `@dice-roller`; a ALLOWLIST ficou vazia |
 
 ---
 
@@ -248,11 +289,14 @@ Registrado para não ser refeito, e para o portão não repetir pergunta já res
 - **Sessão por token** (T1.7) — o autor de toda mutação vem do `sessionToken`, e o WebSocket valida
   no upgrade (close 4401 se inválido).
 - **Autorização de GM sem fallback permissivo** (T1.1) — `checkIsGm` não termina mais em `return true`.
-- **RLS no Supabase** — migrations 0001–0006, com suíte de 56 testes (`scripts/test-rls.mjs`).
+- **RLS no Supabase** — migrations 0001–0007, com suíte de 56 testes (`scripts/test-rls.mjs`). A
+  `rooms` tem RLS ligada e zero policies: só a service role.
 - **Rate limit** — global (600/min), de sala (120/min) e de chat (30/min), com buckets separados por
   limiter.
 - **helmet + CSP** em produção, CORS por allowlist via `CORS_ORIGINS`.
 - **gitleaks** no CI, com SARIF na aba Security, e hook de pre-commit opcional.
 - **Rolagens server-authoritative** (T5.4) — o cliente pede, o servidor rola com `crypto.randomInt`.
-  *Vale lembrar que o SEC-05 contorna essa garantia por outro caminho.*
+  O SEC-05 (ficha verbatim) foi fechado na B.2, e o `currentStats` forjado na C.6: os números da
+  rolagem saem da ficha saneada, recalculados pelo servidor, com as mesmas regras do cliente
+  (`src/rules/`, paridade testada na C.10).
 - **Logs estruturados** que nunca registram segredos (`server/logger.ts`).

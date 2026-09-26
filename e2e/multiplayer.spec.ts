@@ -64,9 +64,13 @@ test("chat realtime bidirecional + rolagem server-authoritative entre 2 navegado
     await pageB.keyboard.press("Enter");
     await expect(pageA.getByText("oi da sala B")).toBeVisible();
 
-    // ---- Rolagem server-authoritative: A rola death save → B vê o resultado ----
+    // ---- Rolagem server-authoritative: A rola os saves → B vê o resultado ----
+    // Fase C (C.7): o death save e o stun save são dois tipos de rolagem; o
+    // rótulo diz o nível (ficha ilesa: death save "fora do Mortal").
     await pageA.locator('button[title*="Death Save"]').click();
-    await expect(pageB.getByText(/🎲 Teste de Atordoamento\/Morte \(Death Save\):/)).toBeVisible();
+    await expect(pageB.getByText(/🎲 Death Save \(fora do Mortal: não exigido\):/)).toBeVisible();
+    await pageA.locator('button[title*="Stun Save"]').click();
+    await expect(pageB.getByText(/🎲 Stun Save \(Ileso\):/)).toBeVisible();
   } finally {
     // Cleanup: todos saem via REST → sala encerrada (e linha removida do banco)
     const tokenA = await sessionToken(pageA);

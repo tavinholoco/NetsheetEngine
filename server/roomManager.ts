@@ -6,6 +6,17 @@ import { generateRandomNpc } from "../src/utils/npcGenerator.js";
 // aqui, e não na rota HTTP, para cobrir TODO caminho que escreve ficha
 // (REST, WebSocket e o que vier), não só o endpoint que existe hoje.
 import { sanitizeCharacterSheet } from "../src/rules/sheetSchema.js";
+// Fase C (C.1) — as regras de rolagem são as mesmas do cliente, em src/rules/.
+import type { Rng } from "../src/rules/dice.js";
+import {
+  sheetAttackRoll,
+  sheetDamageRoll,
+  sheetDeathSaveRoll,
+  sheetSkillRoll,
+  sheetStunSaveRoll,
+  type RollCore
+} from "../src/rules/rolls.js";
+import { gmModifier } from "../src/rules/combat.js";
 import { logger } from "./logger.js";
 
 // ============================================================
@@ -843,36 +854,8 @@ export function postChatMessage(
 // forjar o dado nem os bônus. O resultado entra no chat via postChatMessage
 // (handle/role derivados do servidor, anti-spoofing) e é broadcastado.
 
-const ROLLABLE_STATS = ["INT", "REF", "TECH", "COOL", "ATTR", "LUCK", "MA", "BODY", "EMP"] as const;
-
-function secureD10(): number {
-  return crypto.randomInt(1, 11); // 1–10 uniforme e criptograficamente seguro
-}
-
-function rollDice(formula: string): { total: number; rolls: number[]; error?: string } {
-  const m = formula.trim().toLowerCase().match(/^(\d+)d(\d+)([+-]\d+)?$/);
-  if (!m) return { total: 0, rolls: [], error: `Fórmula de dano inválida: ${formula}` };
-  const numDice = Math.min(20, Math.max(1, parseInt(m[1]) || 1));
-  const dieSides = Math.min(100, Math.max(2, parseInt(m[2]) || 6));
-  const modifier = m[3] ? parseInt(m[3]) || 0 : 0;
-  const rolls: number[] = [];
-  let total = modifier;
-  for (let i = 0; i < numDice; i++) {
-    const r = crypto.randomInt(1, dieSides + 1);
-    rolls.push(r);
-    total += r;
-  }
-  return { total, rolls };
-}
-
-function impactLocationName(d10: number): string {
-  if (d10 === 1) return "Cabeça (1) [DANO DOBRADO X2!]";
-  if (d10 >= 2 && d10 <= 4) return "Tronco (2-4)";
-  if (d10 === 5) return "Braço Direito (5)";
-  if (d10 === 6) return "Braço Esquerdo (6)";
-  if (d10 >= 7 && d10 <= 8) return "Perna Direita (7-8)";
-  return "Perna Esquerda (9-0)";
-}
+/** RNG da mesa: `crypto.randomInt`, uniforme e não-preditível. Injetável em teste. */
+export const serverRng: Rng = (sides) => crypto.randomInt(1, sides + 1);
 
 /** Primeira arma equipada (ou a primeira da lista) da ficha. */
 function firstWeapon(sheet: CharacterSheet) {
@@ -881,136 +864,64 @@ function firstWeapon(sheet: CharacterSheet) {
 }
 
 /**
- * Executa uma rolagem de mesa no SERVIDOR (T5.4).
- * - `attack`: d10 + REF + WA da arma (explosão em 10, fumble em 1)
+ * Executa uma rolagem de mesa no SERVIDOR (T5.4), com as regras de
+ * `src/rules/` — as mesmas do rolador do cliente (Fase C, C.1).
+ * - `attack`: 1d10 aberto + REF + perícia da arma + WA (+ modificador do GM)
  * - `damage`: fórmula de dano da arma + local de impacto (1d10)
- * - `save`  : death save 1d10 ≤ BODY
- * - `skill` : 1d10 + atributo da perícia + nível (bônus da FICHA do servidor)
+ * - `save`  : death save 1d10 ≤ BODY − nível Mortal
+ * - `stun`  : stun save 1d10 ≤ BODY − 0 a 9 pelo nível do ferimento
+ * - `skill` : 1d10 aberto + atributo da perícia + nível (+ modificador do GM)
+ * Atributos CORRENTES (C.6) e bônus sempre da FICHA do servidor.
+ * O `rng` só é passado em teste; em produção é sempre `serverRng`.
  * Retorna a sala com a rolagem já publicada no chat (broadcast é do chamador).
  */
 export function rollDiceForPlayer(
   code: string,
   requesterPeerId: string,
-  request: { kind: string; skillName?: string }
+  request: { kind: string; skillName?: string },
+  rng: Rng = serverRng
 ): { room: GameRoom | null; roll?: RollResult; error?: string } {
   const room = getRoom(code);
   if (!room) return { room: null, error: "Sala não encontrada" };
   const player = room.players[requesterPeerId];
   if (!player) return { room: null, error: "Jogador não está na mesa." };
 
+  // As parcelas saem de src/rules/rolls.ts — as mesmas funções que a ficha do
+  // cliente chama (C.10). Atributos CORRENTES (C.6): o `currentStats` que o
+  // cliente manda nunca é lido.
   const sheet: CharacterSheet = player.sheet || ({} as CharacterSheet);
-  const stats = sheet.stats || ({} as CharacterSheet["stats"]);
   const kind = sanitizeText(request?.kind, 12).toLowerCase();
   const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const rollId = "roll_" + Date.now() + "_" + crypto.randomBytes(3).toString("hex");
+  const stamp = (core: RollCore): RollResult => ({ id: rollId, timestamp: now, characterName: player.handle, ...core });
+  // C.4 — o modificador de situação do GM entra em ataque e perícia, com o
+  // motivo no detalhe. Não entra em dano nem em save: não é regra do livro.
+  const gm = gmModifier(room.combatModifier, room.modifierReason);
 
   let roll: RollResult;
 
   if (kind === "attack") {
-    const weapon = firstWeapon(sheet);
-    const ref = Number(stats.REF) || 0;
-    const wa = Number(weapon?.wa) || 0;
-    const d10 = secureD10();
-    let isExploding = false;
-    let isFumble = false;
-    let extra = 0;
-    if (d10 === 10) { isExploding = true; extra = secureD10(); }
-    else if (d10 === 1) { isFumble = true; extra = secureD10(); }
-    const total = d10 + (isExploding ? extra : 0) - (isFumble ? extra : 0) + ref + wa;
-    let details = `1d10: ${d10}`;
-    if (isExploding) details += ` + 🔥 Explosão (10!): +${extra}`;
-    if (isFumble) details += ` - 💀 Falha Crítica (1!): -${extra}`;
-    details += ` + REF (${ref}) + WA (${wa})`;
-    roll = {
-      id: rollId,
-      timestamp: now,
-      characterName: player.handle,
-      rollType: "SKILL",
-      label: `Ataque (${weapon?.name || "desarmado"})`,
-      diceFormula: "1d10",
-      baseRoll: d10,
-      bonus: ref + wa,
-      total,
-      isCriticalSuccess: isExploding,
-      isCriticalFailure: isFumble,
-      details
-    };
+    // C.3 — 1d10 + REF + perícia da arma + WA (+ GM).
+    roll = stamp(sheetAttackRoll(rng, sheet, firstWeapon(sheet), gm));
   } else if (kind === "damage") {
-    const weapon = firstWeapon(sheet);
-    const formula = weapon?.damage || "1d6";
-    const { total, rolls, error } = rollDice(formula);
-    if (error) return { room: null, error };
-    const loc = secureD10();
-    roll = {
-      id: rollId,
-      timestamp: now,
-      characterName: player.handle,
-      rollType: "DAMAGE",
-      label: `Dano da Arma: ${weapon?.name || "—"}`,
-      diceFormula: formula,
-      baseRoll: total,
-      bonus: 0,
-      total,
-      isCriticalSuccess: false,
-      isCriticalFailure: false,
-      details: `Dados (servidor): [${rolls.join(", ")}] • Local de Impacto: ${impactLocationName(loc)}`
-    };
+    const { core, formula } = sheetDamageRoll(rng, firstWeapon(sheet));
+    if (!core) return { room: null, error: `Fórmula de dano inválida: ${formula}` };
+    roll = stamp(core);
   } else if (kind === "save") {
-    const body = Number(stats.BODY) || 0;
-    const d10 = secureD10();
-    const isSuccess = d10 <= body;
-    roll = {
-      id: rollId,
-      timestamp: now,
-      characterName: player.handle,
-      rollType: "SAVE",
-      label: "Teste de Atordoamento/Morte (Death Save)",
-      diceFormula: "1d10 ≤ BODY",
-      baseRoll: d10,
-      bonus: body,
-      total: d10,
-      isCriticalSuccess: isSuccess,
-      isCriticalFailure: !isSuccess,
-      details: isSuccess
-        ? `PASSOU! Resultado ${d10} ≤ Corpo ${body}`
-        : `FALHOU! Resultado ${d10} > Corpo ${body} (Inconsciente ou Morto!)`
-    };
+    // C.7 — death save: BODY − nível Mortal.
+    roll = stamp(sheetDeathSaveRoll(rng, sheet));
+  } else if (kind === "stun") {
+    // C.7 — stun save: BODY − 0 a 9 pelo nível do ferimento. Não existia.
+    roll = stamp(sheetStunSaveRoll(rng, sheet));
   } else if (kind === "skill") {
     const skillName = sanitizeText(request?.skillName, 60);
     const skill = Array.isArray(sheet.skills)
       ? sheet.skills.find((s) => s.name.toLowerCase() === skillName.toLowerCase())
       : undefined;
     if (!skill) return { room: null, error: "Perícia não encontrada na sua ficha." };
-    const statName = skill.stat;
-    const statVal = Number(stats[statName]) || 0;
-    const rank = Number(skill.level) || 0;
-    const d10 = secureD10();
-    let isExploding = false;
-    let isFumble = false;
-    let extra = 0;
-    if (d10 === 10) { isExploding = true; extra = secureD10(); }
-    else if (d10 === 1) { isFumble = true; extra = secureD10(); }
-    const total = d10 + (isExploding ? extra : 0) - (isFumble ? extra : 0) + statVal + rank;
-    let details = `1d10: ${d10}`;
-    if (isExploding) details += ` + 🔥 Explosão (10!): +${extra}`;
-    if (isFumble) details += ` - 💀 Falha Crítica (1!): -${extra}`;
-    details += ` + ${statName} (${statVal}) + Perícia (${rank})`;
-    roll = {
-      id: rollId,
-      timestamp: now,
-      characterName: player.handle,
-      rollType: "SKILL",
-      label: `Rolagem: ${skill.name}`,
-      diceFormula: "1d10",
-      baseRoll: d10,
-      bonus: statVal + rank,
-      total,
-      isCriticalSuccess: isExploding,
-      isCriticalFailure: isFumble,
-      details
-    };
+    roll = stamp(sheetSkillRoll(rng, sheet, skill, gm));
   } else {
-    return { room: null, error: "Tipo de rolagem inválido. Use: attack, damage, save ou skill." };
+    return { room: null, error: "Tipo de rolagem inválido. Use: attack, damage, save, stun ou skill." };
   }
 
   const result = postChatMessage(code, requesterPeerId, "", roll);

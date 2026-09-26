@@ -1,269 +1,170 @@
 /**
- * Fase 9 (T9.2) — UNIT TESTS DO MOTOR DE DADOS (src/utils/diceEngine.ts) VIA VITEST
- * ==============================================================================
- * Portado de `scripts/test-dice-engine.ts` (T6.4) para o runner Vitest.
+ * ROLADOR DO CLIENTE (src/utils/diceEngine.ts)
+ * ============================================
+ * Desde a Fase C (C.1) o rolador é uma casca sobre o motor único de
+ * src/rules/ — as regras em si estão em rules-dice.test.ts. Aqui fica o
+ * contrato do RollResult que a ficha e o histórico consomem, e a checagem
+ * estatística do RNG real do cliente (Web Crypto).
  *
- * RNG DETERMINÍSTICO: o engine global da lib (@dice-roller/rpg-dice-roller)
- * é substituído por uma FILA de valores controlada, o que permite asserts
- * EXATOS de explosão, fumble, faixas de dano e death save.
- *
- * Mapeamento comprovado empiricamente (downscale do lib):
- *   d10 = (engineValue % 10) + 1   (valor 0 → 1, valor 9 → 10)
- *   d6  = (engineValue % 6) + 1
- * Valores ≥ 4294967290 são rejeitados pelo lib (loop de downscale) — não usar.
- *
- * Rodar: `npm run test` (vitest run — faz parte da suíte Fase 9).
+ * RNG determinístico: `scriptedRng`, injetado por parâmetro. Antes da Fase C
+ * os testes trocavam o gerador GLOBAL da biblioteca @dice-roller — que saiu.
  */
 import { describe, it, expect } from 'vitest';
-import { DiceRoll, NumberGenerator } from '@dice-roller/rpg-dice-roller';
-import { rollSkill, rollDamage, rollDeathSave, rollLocation } from '../utils/diceEngine';
+import { clientRng, rollCheck, rollDamage, rollSheetDeathSave, rollSheetStunSave, rollSkill } from '../utils/diceEngine';
+import { rollHitLocation } from '../rules/dice';
 
-/** Substitui o RNG global por uma fila de valores; restaura nativeMath ao final. */
-function withEngine(values: number[], fn: () => void): void {
-  const queue = [...values];
-  NumberGenerator.generator.engine = {
-    next: () => (queue.length > 0 ? (queue.shift() as number) : 0x80000000)
-  };
-  try {
-    fn();
-  } finally {
-    NumberGenerator.generator.engine = NumberGenerator.engines.nativeMath;
-  }
-}
+/** Ficha mínima para os saves: BODY 8, sem cromo. */
+const vex = (woundLevel: number) => ({
+  handle: 'Vex',
+  woundLevel,
+  stats: { INT: 5, REF: 5, TECH: 5, COOL: 5, ATTR: 5, LUCK: 5, MA: 5, BODY: 8, EMP: 5 },
+  cyberware: [],
+  skills: []
+});
+import { scriptedRng } from '../test/scriptedRng';
 
-/** Conveniência: engine de um só valor (dado único). */
-function withEngineOne(value: number, fn: () => void): void {
-  withEngine([value], fn);
-}
-
-/**
- * Semeia o engine MersenneTwister (factory `seed` é privada no tipo — cast
- * necessário; comportamento idêntico ao script legado da T6.4).
- */
-function seedEngine(seed: number): { next(): number } {
-  const mt = NumberGenerator.engines.MersenneTwister19937 as unknown as {
-    seed(s: number): { next(): number };
-  };
-  return mt.seed(seed);
-}
-
-/** Engine seedado (MersenneTwister) para testes estatísticos em massa. */
-function withSeededEngine(seed: number, fn: () => void): void {
-  NumberGenerator.generator.engine = seedEngine(seed);
-  try {
-    fn();
-  } finally {
-    NumberGenerator.generator.engine = NumberGenerator.engines.nativeMath;
-  }
-}
-
-describe('diceEngine — perícia (1d10!): explosão', () => {
-  it('10 explode e soma os dados extras (15 + 8 + 3 = 26)', () => {
-    withEngine([9, 4], () => {
-      // valores 9→10 e 4→5 → 1d10!: [10!, 5] = 15
-      const r = rollSkill(8, 3, { characterName: 'Vex', label: 'Rolagem: Handgun', statName: 'REF' });
-      expect(r.isCriticalSuccess).toBe(true);
-      expect(r.total).toBe(26); // 15 + 8 + 3
-      expect(r.baseRoll).toBe(10);
-      expect(r.bonus).toBe(11); // stat 8 + skill 3
-      expect(r.diceFormula).toBe('1d10! (Explodiu!)');
-      expect(r.details).toContain('[10!, 5]'); // audit trail
-      expect(r.isCriticalFailure).toBe(false);
-    });
+describe('rollSkill — perícia/ataque', () => {
+  it('10 explode e encadeia: [10, 5] + REF 8 + perícia 3 = 26', () => {
+    const r = rollSkill(8, 3, { characterName: 'Vex', label: 'Rolagem: Handgun', statName: 'REF', skillName: 'Handgun' }, scriptedRng([10, 5]));
+    expect(r.isCriticalSuccess).toBe(true);
+    expect(r.isCriticalFailure).toBe(false);
+    expect(r.total).toBe(26);
+    expect(r.baseRoll).toBe(10);
+    expect(r.bonus).toBe(11);
+    expect(r.diceFormula).toBe('1d10! (Explodiu!)');
+    expect(r.details).toBe('1d10: 10 → 5 = 15 🔥 explodiu + REF (8) + Handgun (3) = 26');
   });
 
-  it('explosão encadeada: 10 → 10 → 5 (25 + 11 = 36)', () => {
-    withEngine([9, 9, 4], () => {
-      const r = rollSkill(8, 3);
-      expect(r.total).toBe(36);
-      expect(r.details.match(/10!/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
-    });
+  it('fumble: 1 é falha automática, o total NÃO perde 1d10 (1 + 8 + 3 = 12)', () => {
+    const r = rollSkill(8, 3, {}, scriptedRng([1, 4]));
+    expect(r.isCriticalFailure).toBe(true);
+    expect(r.total).toBe(12);
+    expect(r.diceFormula).toBe('1d10! (Fumble!)');
+    expect(r.details).toContain('tabela de fumble: 4');
+  });
+
+  it('sem crítico: total = dado + atributo + perícia, com os nomes no detalhe', () => {
+    const r = rollSkill(8, 3, { statName: 'TECH' }, scriptedRng([5]));
+    expect(r.total).toBe(16);
+    expect(r.diceFormula).toBe('1d10');
+    expect(r.details).toBe('1d10: 5 + TECH (8) + Perícia (3) = 16');
+  });
+
+  it('parcelas extras entram com nome (é por aqui que o Combat Sense soma Awareness)', () => {
+    const r = rollSkill(7, 5, { statName: 'INT', skillName: 'Combat Sense', modifiers: [{ label: 'Awareness/Notice', value: 3 }] }, scriptedRng([2]));
+    expect(r.total).toBe(17);
+    expect(r.details).toContain('Awareness/Notice (3)');
   });
 });
 
-describe('diceEngine — perícia: fumble', () => {
-  it('1 rola 1d10 e SUBTRAI do total (1 − 4 + 8 + 3 = 8)', () => {
-    withEngine([0, 3], () => {
-      // valores 0→1 (dado) e 3→4 (penalidade)
-      const r = rollSkill(8, 3, { characterName: 'Vex', label: 'Rolagem: Handgun', statName: 'REF' });
-      expect(r.isCriticalFailure).toBe(true);
-      expect(r.total).toBe(8);
-      expect(r.baseRoll).toBe(1);
-      expect(r.diceFormula).toBe('1d10! (Fumble!)');
-      expect(r.details).toContain('Falha Crítica (1!): -4');
-      expect(r.isCriticalSuccess).toBe(false);
-    });
+describe('rollDamage — fórmula + local de impacto', () => {
+  it('2d6+2: [4, 5] + 2 = 11, na cabeça', () => {
+    const r = rollDamage('2d6+2', { characterName: 'Vex', label: 'Dano da Arma: 9mm' }, scriptedRng([4, 5, 1]));
+    expect(r.total).toBe(11);
+    expect(r.baseRoll).toBe(11);
+    expect(r.rollType).toBe('DAMAGE');
+    expect(r.details).toBe('Dados: [4, 5] • Local de Impacto: Cabeça (1) [DANO DOBRADO X2!]');
+  });
+
+  it('acerto no tronco aparece como tronco', () => {
+    expect(rollDamage('1d6', {}, scriptedRng([6, 3])).details).toContain('Tronco (2-4)');
+  });
+
+  it('fórmula inválida lança erro (contrato do rolador)', () => {
+    expect(() => rollDamage('abc')).toThrow(/inválida/);
   });
 });
 
-describe('diceEngine — perícia: rolagem normal', () => {
-  it('sem crítico: total = dado + atributo + perícia', () => {
-    withEngine([4], () => {
-      // valor 4→5 → total = 5 + 8 + 3 = 16
-      const r = rollSkill(8, 3, { statName: 'TECH' });
-      expect(r.total).toBe(16);
-      expect(r.isCriticalSuccess).toBe(false);
-      expect(r.isCriticalFailure).toBe(false);
-      expect(r.diceFormula).toBe('1d10');
-      expect(r.details).toContain('TECH (8)');
-    });
+describe('saves (C.7) — o alvo vem do ferimento', () => {
+  it('death save em Mortal 3 (nível 7): 1d10 ≤ BODY 8 − 3; 5 passa, 6 falha', () => {
+    const ok = rollSheetDeathSave(vex(7), scriptedRng([5]));
+    expect(ok.isCriticalSuccess).toBe(true);
+    expect(ok.label).toBe('Death Save (Mortal 3)');
+    expect(ok.diceFormula).toBe('1d10 ≤ BODY 8 − 3');
+    expect(rollSheetDeathSave(vex(7), scriptedRng([6])).isCriticalFailure).toBe(true);
+  });
+
+  it('death save fora do Mortal avisa que o livro não exige', () => {
+    expect(rollSheetDeathSave(vex(2), scriptedRng([4])).label).toBe('Death Save (fora do Mortal: não exigido)');
+  });
+
+  it('stun save em Sério: 1d10 ≤ BODY 8 − 1', () => {
+    const r = rollSheetStunSave(vex(2), scriptedRng([8]));
+    expect(r.label).toBe('Stun Save (Sério)');
+    expect(r.isCriticalFailure).toBe(true);
+    expect(r.details).toBe('FALHOU! Resultado 8 > 7 (BODY 8 − 1)');
   });
 });
 
-describe('diceEngine — dano (fórmula NdM±X + local de impacto)', () => {
-  it('2d6+2: [4,5]+2 = 11 com local Cabeça (1) ×2', () => {
-    withEngine([3, 4, 0], () => {
-      // 3→4, 4→5 (2d6) +2 = 11; local 0→1 = Cabeça
-      const r = rollDamage('2d6+2', { characterName: 'Vex', label: 'Dano da Arma: 9mm' });
-      expect(r.total).toBe(11);
-      expect(r.baseRoll).toBe(11);
-      expect(r.rollType).toBe('DAMAGE');
-      expect(r.details).toContain('2d6+2: [4, 5]+2 = 11');
-      expect(r.details).toContain('Cabeça (1) [DANO DOBRADO X2!]');
-      expect(r.isCriticalSuccess).toBe(false);
-      expect(r.isCriticalFailure).toBe(false);
-    });
-  });
-
-  it('1d6: total 6 com local Braço Direito (5)', () => {
-    withEngine([5, 4], () => {
-      const r = rollDamage('1d6', { label: 'Dano' });
-      expect(r.total).toBe(6);
-      expect(r.details).toContain('Braço Direito (5)');
-    });
-  });
-
-  it('fórmula inválida lança erro (contrato do motor)', () => {
-    expect(() => rollDamage('abc')).toThrow();
+describe('rollCheck — parcelas livres (o ataque da ficha usa este)', () => {
+  it('soma as parcelas com nome', () => {
+    const r = rollCheck([{ label: 'REF', value: 8 }, { label: 'Handgun', value: 4 }, { label: 'WA', value: 1 }], { label: 'Ataque' }, scriptedRng([5]));
+    expect(r.total).toBe(18);
+    expect(r.details).toBe('1d10: 5 + REF (8) + Handgun (4) + WA (1) = 18');
   });
 });
 
-describe('diceEngine — death save (1d10 ≤ BODY)', () => {
-  it('PASSOU: 4 ≤ 8', () => {
-    withEngineOne(3, () => {
-      // valor 3→4 ≤ 8
-      const r = rollDeathSave(8, { characterName: 'Vex' });
-      expect(r.isCriticalSuccess).toBe(true);
-      expect(r.isCriticalFailure).toBe(false);
-      expect(r.total).toBe(4);
-      expect(r.details).toContain('PASSOU! Resultado 4 ≤ Corpo 8');
-    });
-  });
-
-  it('FALHOU: 10 > 8', () => {
-    withEngineOne(9, () => {
-      // valor 9→10 > 8
-      const r = rollDeathSave(8);
-      expect(r.isCriticalSuccess).toBe(false);
-      expect(r.isCriticalFailure).toBe(true);
-      expect(r.details).toContain('FALHOU! Resultado 10 > Corpo 8');
-    });
-  });
-});
-
-describe('diceEngine — local de impacto (mapeamento exato)', () => {
-  it('1 = Cabeça (dano ×2)', () => {
-    withEngineOne(0, () => {
-      const loc = rollLocation();
-      expect(loc.roll).toBe(1);
-      expect(loc.name).toBe('Cabeça (1) [DANO DOBRADO X2!]');
-    });
-  });
-
-  it('5 = Braço Direito', () => {
-    withEngineOne(4, () => {
-      const loc = rollLocation();
-      expect(loc.roll).toBe(5);
-      expect(loc.name).toBe('Braço Direito (5)');
-    });
-  });
-
-  it('9 = Perna Esquerda (9-0)', () => {
-    withEngineOne(8, () => {
-      const loc = rollLocation();
-      expect(loc.roll).toBe(9);
-      expect(loc.name).toBe('Perna Esquerda (9-0)');
-    });
-  });
-});
-
-describe('diceEngine — contrato do RollResult', () => {
+describe('contrato do RollResult', () => {
   it('campos obrigatórios presentes e coerentes', () => {
-    withEngineOne(4, () => {
-      const r = rollSkill(5, 2, { characterName: 'Choom' });
-      expect(r.id.startsWith('roll_')).toBe(true);
-      expect(r.timestamp.length).toBeGreaterThan(0);
-      expect(r.characterName).toBe('Choom');
-      expect(r.label).toBeTruthy();
-      expect(r.diceFormula).toBeTruthy();
-      expect(r.details).toBeTruthy();
-      expect(typeof r.total).toBe('number');
-    });
+    const r = rollSkill(5, 2, { characterName: 'Choom' }, scriptedRng([5]));
+    expect(r.id.startsWith('roll_')).toBe(true);
+    expect(r.timestamp.length).toBeGreaterThan(0);
+    expect(r.characterName).toBe('Choom');
+    expect(r.label).toBeTruthy();
   });
 
   it('characterName default = Edgerunner', () => {
-    withEngineOne(4, () => {
-      expect(rollSkill(1, 1).characterName).toBe('Edgerunner');
-    });
+    expect(rollSkill(1, 1, {}, scriptedRng([5])).characterName).toBe('Edgerunner');
+  });
+
+  it('ids não se repetem na mesma sessão', () => {
+    const a = rollSkill(1, 1, {}, scriptedRng([5]));
+    const b = rollSkill(1, 1, {}, scriptedRng([5]));
+    expect(a.id).not.toBe(b.id);
   });
 });
 
-describe('diceEngine — distribuição (RNG seedado, 2000 rolagens)', () => {
-  it('dano 2d6+2 fica na faixa 4..14 (min/max observados)', () => {
-    withSeededEngine(1234, () => {
-      let minDmg = Infinity;
-      let maxDmg = -Infinity;
-      for (let i = 0; i < 2000; i++) {
-        const r = rollDamage('2d6+2');
-        minDmg = Math.min(minDmg, r.total);
-        maxDmg = Math.max(maxDmg, r.total);
-        expect(r.total).toBeGreaterThanOrEqual(4);
-        expect(r.total).toBeLessThanOrEqual(14);
-      }
-      expect(minDmg).toBe(4);
-      expect(maxDmg).toBe(14);
-    });
+describe('RNG real do cliente (Web Crypto), 3000 rolagens', () => {
+  it('d10 cobre 1..10 e nada fora disso', () => {
+    const seen = new Set<number>();
+    for (let i = 0; i < 3000; i++) {
+      const v = clientRng(10);
+      expect(v).toBeGreaterThanOrEqual(1);
+      expect(v).toBeLessThanOrEqual(10);
+      seen.add(v);
+    }
+    expect(seen.size).toBe(10);
   });
 
-  it('local de impacto: todas as 10 faces aparecem', () => {
-    withSeededEngine(1234, () => {
-      const facesSeen = new Set<number>();
-      for (let i = 0; i < 2000; i++) {
-        const loc = rollLocation();
-        expect(loc.roll).toBeGreaterThanOrEqual(1);
-        expect(loc.roll).toBeLessThanOrEqual(10);
-        expect(loc.name.length).toBeGreaterThan(0);
-        facesSeen.add(loc.roll);
-      }
-      expect(facesSeen.size).toBe(10);
-    });
+  it('dano 2d6+2 fica em 4..14 e atinge os dois extremos', () => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < 3000; i++) {
+      const t = rollDamage('2d6+2').total;
+      min = Math.min(min, t);
+      max = Math.max(max, t);
+    }
+    expect([min, max]).toEqual([4, 14]);
   });
 
-  it('perícia: 10 faces, fumble < 0 e explosão > 10 observados', () => {
-    withSeededEngine(1234, () => {
-      const facesSeen = new Set<number>();
-      let skillMin = Infinity;
-      let skillMax = -Infinity;
-      for (let i = 0; i < 2000; i++) {
-        const r = rollSkill(0, 0); // só o dado
-        facesSeen.add(r.baseRoll);
-        skillMin = Math.min(skillMin, r.total);
-        skillMax = Math.max(skillMax, r.total);
-      }
-      expect(facesSeen.size).toBe(10);
-      expect(skillMin).toBeLessThan(0); // fumble reduz abaixo do mínimo normal
-      expect(skillMax).toBeGreaterThan(10); // explosão ultrapassa 10
-    });
+  it('local de impacto: as 10 faces aparecem', () => {
+    const faces = new Set<number>();
+    for (let i = 0; i < 3000; i++) faces.add(rollHitLocation(clientRng).face);
+    expect(faces.size).toBe(10);
   });
-});
 
-describe('diceEngine — determinismo (mesma seed → mesma sequência)', () => {
-  it('repete exatamente a mesma sequência de dados', () => {
-    withSeededEngine(77, () => {
-      const seqA = [new DiceRoll('1d10').total, new DiceRoll('1d10').total, new DiceRoll('1d10').total];
-      NumberGenerator.generator.engine = seedEngine(77);
-      const seqB = [new DiceRoll('1d10').total, new DiceRoll('1d10').total, new DiceRoll('1d10').total];
-      expect(seqA).toEqual(seqB);
-    });
+  it('perícia: explosão (> 10) e fumble aparecem, e fumble nunca deixa o total abaixo do dado', () => {
+    let exploded = false;
+    let fumbled = false;
+    for (let i = 0; i < 3000; i++) {
+      const r = rollSkill(0, 0);
+      if (r.total > 10) exploded = true;
+      if (r.isCriticalFailure) {
+        fumbled = true;
+        expect(r.total).toBe(1);
+      }
+    }
+    expect(exploded).toBe(true);
+    expect(fumbled).toBe(true);
   });
 });

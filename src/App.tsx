@@ -2,15 +2,23 @@ import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { CyberpunkMenu, TabType } from './components/CyberpunkMenu';
 import { AuthModal } from './features/social/AuthModal';
-import { RollResult, StatName } from './types/cyberpunk';
+import { RollResult, SkillItem, WeaponItem } from './types/cyberpunk';
 import { useCharacterSheet } from './hooks/useCharacterSheet';
 import { useUserActivity } from './hooks/useUserActivity';
 import { useSheetStore, syncSheetStore } from './stores/useSheetStore';
 import { useRollStore } from './stores/useRollStore';
 import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
-// Fase 6 (T6.3) — motor de dados FNFF (audit trail via @dice-roller)
-import { rollSkill, rollDamage, rollDeathSave } from './utils/diceEngine';
+// Motor de dados FNFF — casca do cliente sobre src/rules/ (Fase C, C.1)
+import {
+  rollCheck,
+  rollSheetAttack,
+  rollSheetDamage,
+  rollSheetDeathSave,
+  rollSheetSkill,
+  rollSheetStunSave
+} from './utils/diceEngine';
+import type { Modifier } from './rules/dice';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';
 import { Dice5, CheckCircle2 } from 'lucide-react';
@@ -151,39 +159,37 @@ export default function App() {
     addRoll(roll);
   };
 
-  // Roll Skill directly from Skill section (Fase 6 T6.3 — motor diceEngine)
-  const handleRollSkill = (skillName: string, statName: StatName, statVal: number, skillRank: number) => {
-    handleAddRollResult(rollSkill(statVal, skillRank, {
-      characterName: sheet.handle || 'Edgerunner',
-      label: `Rolagem: ${skillName}`,
-      statName
-    }));
+  // Rolagens da ficha (Fase C). As parcelas saem de src/rules/rolls.ts — as
+  // MESMAS funções que a mesa usa no servidor; o teste de paridade (C.10)
+  // confere o resultado inteiro com a mesma fila de dados.
+  const handleRollSkill = (skill: SkillItem) => {
+    handleAddRollResult(rollSheetSkill(sheet, skill));
   };
 
-  // Roll Weapon Attack directly
-  const handleRollWeaponAttack = (weaponName: string, wa: number, damageStr: string) => {
-    const refVal = sheet.stats.REF;
-    handleRollSkill(`Ataque com ${weaponName}`, 'REF', refVal, wa);
+  // Teste com parcelas prontas — a habilidade especial usa este (C.8).
+  const handleRollCheck = (label: string, modifiers: Modifier[]) => {
+    handleAddRollResult(rollCheck(modifiers, { characterName: sheet.handle || 'Edgerunner', label }));
   };
 
-  // Roll Damage Only (Fase 6 T6.3 — motor diceEngine; fórmula inválida é
-  // ignorada silenciosamente, mesmo comportamento de antes)
+  const handleRollWeaponAttack = (weapon: WeaponItem) => {
+    handleAddRollResult(rollSheetAttack(sheet, weapon));
+  };
+
+  // Fórmula de dano inválida é ignorada em silêncio, como antes.
   const handleRollDamageOnly = (weaponName: string, damageFormula: string) => {
     try {
-      handleAddRollResult(rollDamage(damageFormula, {
-        characterName: sheet.handle || 'Edgerunner',
-        label: `Dano da Arma: ${weaponName}`
-      }));
+      handleAddRollResult(rollSheetDamage(sheet, { name: weaponName, damage: damageFormula }));
     } catch {
       /* fórmula de dano inválida */
     }
   };
 
-  // Roll Death Save (Fase 6 T6.3 — motor diceEngine)
   const handleRollDeathSave = () => {
-    handleAddRollResult(rollDeathSave(sheet.stats.BODY, {
-      characterName: sheet.handle || 'Edgerunner'
-    }));
+    handleAddRollResult(rollSheetDeathSave(sheet));
+  };
+
+  const handleRollStunSave = () => {
+    handleAddRollResult(rollSheetStunSave(sheet));
   };
 
   return (
@@ -288,9 +294,11 @@ export default function App() {
                       sheet={sheet}
                       onChange={handleUpdateSheet}
                       onRollDeathSave={handleRollDeathSave}
+                      onRollStunSave={handleRollStunSave}
                       onRollWeaponAttack={handleRollWeaponAttack}
                       onRollDamageOnly={handleRollDamageOnly}
                       onRollSkill={handleRollSkill}
+                      onRollCheck={handleRollCheck}
                       user={user}
                       isSavingSheet={isSavingSheet}
                       onSave={handleSaveCurrentSheet}

@@ -4,57 +4,23 @@
  * Regras puras (sem DOM/estado) extraídas dos componentes StatBlock,
  * CyberwareManager e WeaponsArmor, para serem testáveis em unit (Vitest).
  *
- * Regras implementadas (Cyberpunk 2020 2ª ed.):
- * - BTM (Body Type Modifier): tabela sobre BODY + REF — o dano é reduzido
- *   pelo BTM no combate FNFF.
- * - Humanidade: EMP × 10 (máximo 100 na criação, EMP 10).
+ * Desde a Fase C, o BTM, a humanidade e os atributos correntes moram em
+ * src/rules/character.ts (fonte única, lida também pelo servidor). Aqui
+ * ficam o que ainda não passou pela conferência contra o livro:
  * - Run/Walk: MA × 3 metros por turno; Walk = metade do Run (piso).
- * - Perda de humanidade: soma do `actualHL` dos ciberimplantes instalados;
- *   a humanidade restante nunca é negativa (cyberpsychose em 0).
- * - SP (Stopping Power): SP da peça de armadura EQUIPADA que cobre a
- *   localização corporal (0 se não houver proteção).
+ *   (Walk não existe no livro — RUL-11, Fase K.)
+ * - Humanidade restante, para o painel de cromo.
+ * - SP (Stopping Power) da peça EQUIPADA que cobre a localização.
  */
 
 import type { ArmorLocation, ArmorPiece, CyberwareItem } from '../types/cyberpunk';
+import { humanityFromEmp, humanityLossTotal } from '../rules/character';
 
-// ---------------------------------------------------------------------------
-// BTM (Body Type Modifier) — tabela CP2020 sobre BODY + REF
-// ---------------------------------------------------------------------------
-
-/**
- * BTM derivado de BODY + REF (tabela CP2020, implementação atual do StatBlock):
- *
- *   BODY+REF  ≥26  ≥24  ≥22  ≥20  ≥18  ≥16  ≥14   <14
- *   BTM        5    4    3    2    1    0   −1    −2
- *
- * @param body Atributo BODY (2–15 com cromo).
- * @param ref Atributo REF (2–15 com cromo).
- */
-export function btmFromStats(body: number, ref: number): number {
-  const bodyRef = body + ref;
-  if (bodyRef >= 26) return 5;
-  if (bodyRef >= 24) return 4;
-  if (bodyRef >= 22) return 3;
-  if (bodyRef >= 20) return 2;
-  if (bodyRef >= 18) return 1;
-  if (bodyRef >= 16) return 0;
-  if (bodyRef >= 14) return -1;
-  return -2;
-}
+export { humanityFromEmp, humanityLossTotal };
 
 // ---------------------------------------------------------------------------
 // Humanidade
 // ---------------------------------------------------------------------------
-
-/** Humanidade máxima derivada de EMP (EMP × 10). */
-export function humanityFromEmp(emp: number): number {
-  return emp * 10;
-}
-
-/** Soma da perda real de humanidade (`actualHL`) dos ciberimplantes. */
-export function humanityLossTotal(cyberware: Pick<CyberwareItem, 'actualHL'>[]): number {
-  return cyberware.reduce((acc, cw) => acc + (cw.actualHL || 0), 0);
-}
 
 /**
  * Humanidade restante: EMP × 10 − Σ actualHL, nunca negativa

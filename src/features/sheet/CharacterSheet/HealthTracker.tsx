@@ -1,18 +1,25 @@
 import React from 'react';
 import { CharacterSheet } from '../../../types/cyberpunk';
-import { WOUND_LEVEL_NAMES, clampWoundLevel, isDead, woundPenaltyText } from '../../../utils/injuryRules';
+import { WOUND_LEVEL_NAMES, clampWoundLevel, isLastWoundBox } from '../../../utils/injuryRules';
+import { deathSaveTarget, deriveCurrentStats, mortalLevel, stunSaveTarget, woundEffectText } from '../../../rules/character';
 import { HeartPulse, Skull, Activity, Zap } from 'lucide-react';
 
 interface HealthTrackerProps {
   sheet: CharacterSheet;
   onChange: (updated: Partial<CharacterSheet>) => void;
   onRollDeathSave: () => void;
+  onRollStunSave: () => void;
 }
 
-export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, onRollDeathSave }) => {
+export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, onRollDeathSave, onRollStunSave }) => {
   const woundLevel = clampWoundLevel(sheet.woundLevel);
   const current = WOUND_LEVEL_NAMES[woundLevel] || WOUND_LEVEL_NAMES[0];
-  const dead = isDead(woundLevel);
+  const lastBox = isLastWoundBox(woundLevel);
+  // C.7 — os alvos dos dois saves do livro, com o BODY corrente.
+  const body = deriveCurrentStats(sheet).BODY;
+  const mortal = mortalLevel(woundLevel);
+  const stunTarget = stunSaveTarget(body, woundLevel);
+  const deathTarget = deathSaveTarget(body, woundLevel);
 
   const setWound = (level: number) => {
     onChange({ woundLevel: clampWoundLevel(level) });
@@ -31,7 +38,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
             Bio-Monitor // Ferimentos
           </h2>
         </div>
-        <span className={`text-xs font-mono font-black px-2.5 py-1 rounded border ${dead ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-slate-950 border-slate-700 text-slate-200'}`}>
+        <span className={`text-xs font-mono font-black px-2.5 py-1 rounded border ${lastBox ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-slate-950 border-slate-700 text-slate-200'}`}>
           {current.name}
         </span>
       </div>
@@ -73,25 +80,35 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
         <div className="bg-slate-950/80 p-3 rounded-lg border border-slate-800">
           <div className="flex items-center space-x-1.5 mb-1">
             <Skull className="w-3.5 h-3.5 text-red-400" />
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Penalidades (REF/MA)</span>
+            <span className="text-[10px] font-mono text-slate-400 uppercase">Efeito nos atributos</span>
           </div>
           <span className="font-mono font-black text-sm text-red-300">
-            {woundPenaltyText(woundLevel)}
+            {woundEffectText(woundLevel)}
           </span>
         </div>
 
         <div className="bg-slate-950/80 p-3 rounded-lg border border-red-500/40 flex flex-col justify-between">
           <div className="flex items-center space-x-1.5 mb-1">
             <Zap className="w-3.5 h-3.5 text-yellow-400" />
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Teste de Morte</span>
+            <span className="text-[10px] font-mono text-slate-400 uppercase">Saves</span>
           </div>
-          <button
-            onClick={onRollDeathSave}
-            disabled={dead}
-            className="px-3 py-2 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-[11px] uppercase rounded transition-all font-mono shadow-[0_0_12px_rgba(250,204,21,0.4)] cursor-pointer"
-          >
-            1d10 ≤ BODY
-          </button>
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={onRollStunSave}
+              title="A cada dano sofrido: falhou, está fora de ação"
+              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-[11px] uppercase rounded transition-all font-mono cursor-pointer"
+            >
+              Stun · 1d10 ≤ {stunTarget}
+            </button>
+            <button
+              onClick={onRollDeathSave}
+              disabled={mortal === null}
+              title={mortal === null ? 'O death save só é exigido em ferimento Mortal' : `Mortal ${mortal}: a cada turno, até ser estabilizado`}
+              className="px-3 py-1.5 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-[11px] uppercase rounded transition-all font-mono shadow-[0_0_12px_rgba(250,204,21,0.4)] cursor-pointer"
+            >
+              Death · 1d10 ≤ {deathTarget}
+            </button>
+          </div>
         </div>
       </div>
     </div>

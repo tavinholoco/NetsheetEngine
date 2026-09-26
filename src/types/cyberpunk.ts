@@ -101,6 +101,11 @@ export interface CharacterSheet {
   sex: string;
   eurodollars: number;
   stats: CharacterStats;
+  /**
+   * Derivado — não leia este campo: chame `deriveCurrentStats(sheet)`
+   * (src/rules/character.ts). Continua no tipo porque fichas salvas o têm; o
+   * servidor o recalcula a cada sync e descarta o que o cliente mandou.
+   */
   currentStats: CharacterStats;
   woundLevel: number;
   skills: SkillItem[];

@@ -115,7 +115,7 @@ O produto cobre **sete módulos funcionais interligados**:
 - Iniciativa de combate (lista ordenada + avanço de turno) e chat da mesa com
   mensagens do sistema, dados rolados e notificações de conexão.
 - **RNG server-authoritative** (T5.4): o cliente pede só o tipo
-  (`attack`/`damage`/`save`/`skill`); o servidor rola com `crypto.randomInt`
+  (`attack`/`damage`/`save`/`stun`/`skill`); o servidor rola com `crypto.randomInt`
   usando a ficha que ELE possui — resultado forjado é ignorado.
 - Poderes de GM: gerar NPCs e fichas de edgerunner, ajustar ferimentos de
   jogadores/NPCs, remover jogadores/NPCs, definir condições de combate
@@ -129,13 +129,15 @@ O produto cobre **sete módulos funcionais interligados**:
 
 ### 4.3 Rolador de Dados FNFF (`/dice`)
 
-- Motor `@dice-roller/rpg-dice-roller` (`src/utils/diceEngine.ts`) com
-  **audit trail** completo (notação, dados rolados, sub-resultados).
-- Rolagem de perícia: `1d10!` com **explosão em 10** (encadeada) e
-  **fumble em 1** (1d10 subtraído) + atributo + nível.
+- Motor próprio em `src/rules/` — **o mesmo** no rolador do cliente
+  (`src/utils/diceEngine.ts`) e nas rolagens da mesa, com RNG injetado e
+  **audit trail** (cada dado e cada parcela com nome). *(Fase C, C.1)*
+- Rolagem de perícia: `1d10` + atributo + nível, com **explosão em 10**
+  (encadeada) e **fumble em 1** (falha automática + dado da tabela de fumble).
 - Dano: fórmula `NdM±X` + **local de impacto** sorteado (1d10: cabeça ×2,
   tronco, braços, pernas).
-- Death save: `1d10 ≤ BODY` (sucesso/falha explícito).
+- Saves: **stun** `1d10 ≤ BODY − 0 a 9` e **death** `1d10 ≤ BODY − nível Mortal`,
+  com o alvo à vista no botão (sucesso/falha explícito).
 - Histórico de rolagens + banner de resultado; na mesa, os dados rolam no
   servidor e entram no chat.
 
@@ -178,28 +180,54 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 ### Atributos
 - Nove atributos primários: **INT, REF, TECH, COOL, ATTR, LUCK, MA, BODY, EMP**.
 - Faixa na criação: **2–10**; até **15** com ciberware (cromo).
-- Derivados: **BTM** (tabela BODY+REF), **Humanidade = EMP × 10**,
-  RUN/WALK derivados de MA.
+- Derivados: **BTM** pelo tipo corporal, **só BODY**: 2 → 0, 3–4 → −1, 5–7 → −2,
+  8–9 → −3, 10 → −4, 11+ → −5. **Humanidade = EMP × 10**; RUN = MA × 3.
+  *(Fase C, C.2 — antes era BODY + REF com sinal invertido.)*
+- **Atributos correntes** (`deriveCurrentStats`, Fase C, C.6): base → **−1 EMP a
+  cada 10 de Humanidade perdida** → efeito do ferimento. **Toda rolagem**, da
+  ficha ou da mesa, usa esses valores; a ficha mostra "rola com N" quando o
+  valor corrente difere da base. O servidor recalcula e nunca confia no
+  `currentStats` enviado pelo cliente.
 
 ### Rolagem de perícia (FNFF)
 - Fórmula: `1d10 + Atributo + Nível da Perícia`.
-- **Crítico explosivo**: rolar 10 explode (soma o novo dado; pode encadear).
-- **Fumble**: rolar 1 subtrai 1d10 do total (falha crítica).
-- Habilidade especial de Role (ex.: Combat Sense) soma ao total.
+- **Crítico explosivo**: rolar 10 explode (soma o novo dado; cada 10 seguinte
+  continua encadeando). Teto de segurança de 10 dados extras.
+- **Fumble**: rolar 1 no primeiro dado é **falha automática**; rola-se 1d10 na
+  tabela de fumble da categoria, e o GM lê o efeito no livro. *(O total não
+  perde 1d10 — isso é regra do Cyberpunk RED, corrigida na Fase C.)*
+- **Habilidade especial** *(Fase C, C.8)*: `1d10 + atributo + nível`, com o atributo de cada
+  role em `OFFICIAL_ROLES` — INT (Interface, Credibility, Resources, Family), COOL
+  (Authority, Streetdeal, Charismatic Leadership), TECH (Medical Tech, Jury Rig).
+  **Combat Sense** não se rola sozinha: soma em Awareness/Notice (INT) e na iniciativa.
 
 ### Dano e local de impacto
 - Dano por fórmula (ex.: `2d6+2`), validada pelo motor.
 - Local de impacto (1d10): **1 = Cabeça (dano ×2)**, 2–4 = Tronco,
   5 = Braço Direito, 6 = Braço Esquerdo, 7–8 = Perna Direita, 9–0 = Perna
-  Esquerda.
+  Esquerda. Uma tabela só (`HIT_LOCATIONS`) para cliente e servidor.
 
 ### Morte e ferimentos
-- **Death Save**: `1d10 ≤ BODY` para resistir a atordoamento/morte.
-- Bio-monitor com **11 estados** (0 Saudável → 10 Mortal 6); cada nível de
-  ferimento aplica penalidades de REF/MA.
+- **Stun save** *(Fase C, C.7)*: a cada dano sofrido, `1d10 ≤ BODY` + modificador do
+  nível — Leve 0, Sério −1, Crítico −2, Mortal 0 −3 … Mortal 6 −9. Falhou, está
+  fora de ação.
+- **Death save** *(Fase C, C.7)*: em nível Mortal, **a cada turno**, `1d10 ≤ BODY −
+  nível Mortal` (Mortal 0 = BODY, Mortal 6 = BODY −6), até morrer ou ser
+  estabilizado. Sem acúmulo por turno. Mortal 6 ainda está vivo.
+- Bio-monitor com **11 estados** (0 Saudável → 10 Mortal 6). Efeito do livro
+  nos atributos, **sem acumular** entre níveis *(Fase C, C.5)*:
+  **Sério** REF −2; **Crítico** REF, INT e COOL pela metade; **Mortal** REF, INT
+  e COOL a um terço (arredondando para cima). Ferimento **não** afeta MA.
 
 ### Combate na mesa
-- Ataque: `1d10! + REF + WA` (Weapon Accuracy) — rolado **no servidor**.
+- Ataque: `1d10 + REF + perícia da arma + WA + modificador do GM` — rolado
+  **no servidor**. A perícia vem do tipo da arma (pistola → Handgun, SMG →
+  Submachinegun, rifle e escopeta → Rifle, pesada → Heavy Weapons, branca →
+  Melee; desarmado → Brawling); sem a perícia na ficha, o ataque é sem treino
+  (nível 0). *(Fase C, C.3 — antes faltava a perícia.)*
+- O **modificador de situação do GM** (`combatModifier`, ±10) entra em ataque e
+  perícia, com o motivo no detalhe da rolagem. Não entra em dano nem em save.
+  *(Fase C, C.4 — antes era exibido e nenhuma rolagem o somava.)*
 - Rolagens da mesa são **server-authoritative**: o cliente nunca envia o
   resultado; o bônus é derivado da ficha que o servidor possui.
 - Iniciativa ordenada por score (decrescente) com avanço de turno.
@@ -257,7 +285,7 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 
 **Stack real (package.json):** React 19 · Vite 6 · TypeScript 5.8 · Tailwind
 CSS 4 · shadcn/ui (Radix) · Zustand 5 · react-router-dom 7 · Express 4 ·
-ws 8.21 · yjs 13.6 + y-protocols · @dice-roller/rpg-dice-roller 5 ·
+ws 8.21 · yjs 13.6 + y-protocols ·
 Supabase (supabase-js 2) · @google/genai · lucide-react · motion · esbuild
 (bundle do servidor) · tsx (dev).
 

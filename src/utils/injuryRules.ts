@@ -8,8 +8,10 @@
  *   1–3 Leve → Sério → Crítico
  *   4–9 Mortal (0..5) — cada nível mortal exige death save (1d10 ≤ BODY)
  *   10  Morte iminente
- * Penalidades de REF/MA acumuladas por nível de ferimento (tabela atual do
- * HealthTracker: −2 a −6, com notas de consciência/morte provável).
+ * O EFEITO de cada nível nos atributos saiu daqui na Fase C (C.5): a tabela
+ * antiga (−2 a −6 em REF e MA, com notas inventadas) era regra de casa. O
+ * efeito do livro mora em src/rules/tables.ts (WOUND_TRACK) e é aplicado por
+ * src/rules/character.ts — o mesmo código que o servidor usa nas rolagens.
  */
 
 // ---------------------------------------------------------------------------
@@ -41,59 +43,11 @@ export function clampWoundLevel(level: number): number {
   return Math.max(0, Math.min(WOUND_MAX, level));
 }
 
-/** true quando o personagem atingiu a morte iminente (nível 10). */
-export function isDead(level: number): boolean {
+/**
+ * true na última caixa da trilha (Mortal 6). O personagem ainda está VIVO:
+ * morre ao falhar um death save ou ao sofrer dano além dela. Até a Fase C
+ * isto se chamava `isDead` e desligava o death save justo neste nível.
+ */
+export function isLastWoundBox(level: number): boolean {
   return level >= WOUND_MAX;
-}
-
-// ---------------------------------------------------------------------------
-// Penalidades de REF/MA por nível de ferimento
-// ---------------------------------------------------------------------------
-
-/** Penalidade estruturada (numérica) de um nível de ferimento. */
-export interface WoundPenalty {
-  /** Penalidade de REF (negativa; 0 = sem penalidade). */
-  ref: number;
-  /** Penalidade de MA (negativa; 0 = sem penalidade). */
-  ma: number;
-  /** Nota narrativa extra (ex.: "consciência 50%"). */
-  note?: string;
-}
-
-/**
- * Tabela estruturada das penalidades (fonte da verdade das regras).
- * A string exibida no UI é derivada por `woundPenaltyText`.
- */
-export const WOUND_PENALTY_DATA: Record<number, WoundPenalty> = {
-  0: { ref: 0, ma: 0 },
-  1: { ref: 0, ma: 0 },
-  2: { ref: -2, ma: -2 },
-  3: { ref: -2, ma: -2 },
-  4: { ref: -4, ma: -4, note: 'consciência 50%' },
-  5: { ref: -4, ma: -4 },
-  6: { ref: -5, ma: -5 },
-  7: { ref: -5, ma: -5 },
-  8: { ref: -6, ma: -6, note: 'morte provável' },
-  9: { ref: -6, ma: -6 },
-  10: { ref: -6, ma: -6, note: 'Morte iminente' }
-};
-
-/** Penalidade estruturada de um nível (fora do intervalo → sem penalidade). */
-export function woundPenalties(level: number): WoundPenalty {
-  return WOUND_PENALTY_DATA[clampWoundLevel(level)] ?? { ref: 0, ma: 0 };
-}
-
-/**
- * Texto de penalidade exibido no Bio-Monitor (mesma saída da tabela legada
- * do HealthTracker): "REF −2, MA −2" (+ nota quando existir); "—" para os
- * níveis sem penalidade; "Morte iminente" no nível 10.
- */
-export function woundPenaltyText(level: number): string {
-  if (level >= WOUND_MAX) return 'Morte iminente';
-  const p = woundPenalties(level);
-  if (p.ref === 0 && p.ma === 0) return '—';
-  const fmt = (n: number): string => (n < 0 ? `−${Math.abs(n)}` : String(n));
-  const parts = [`REF ${fmt(p.ref)}`, `MA ${fmt(p.ma)}`];
-  if (p.note) parts.push(p.note);
-  return parts.join(', ');
 }
