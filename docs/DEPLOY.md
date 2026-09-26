@@ -109,6 +109,14 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
 
 ## Render — alvo único de backend
 
+> **Serviço em produção: `https://netsheetengine.onrender.com`** — sem hífen; o nome do
+> `render.yaml` (`netsheet-engine`) **não** é o endereço. Registrado em 26/09/2026, quando a
+> ausência da URL no repositório impediu conferir o deploy da Fase C. Naquela data o serviço estava
+> **suspenso** no Render (`503 Service Suspended`, o que é diferente de hibernado: hibernado acorda
+> em 30–50 s; suspenso não sobe com requisição nenhuma): o workspace **estourou as 750 h de setembro**,
+> por instâncias do Newra News criadas sem querer (erro operacional do dono, já corrigido lá). **Volta em 01/10/2026** — o que conferir nesse dia está na seção de
+> operação do [plano](./PLANO_MESTRE.md#linha-de-base-atual). O produto ainda não foi publicado.
+
 1. Em [render.com](https://render.com): **New → Blueprint** e selecione o repo
    (detecta `render.yaml`).
 2. Defina os valores das variáveis com `sync: false` no painel do serviço
@@ -131,7 +139,7 @@ REST, SSE e WebSocket derivam:
 
 ```
 Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Render)
-        VITE_API_URL=https://netsheet-api.onrender.com
+        VITE_API_URL=https://netsheetengine.onrender.com
 ```
 
 ### Configuração
@@ -183,7 +191,7 @@ netsheet.app ──► Render (SPA + /api + wss://netsheet.app)
 3. **No painel do registrar**, crie o registro:
    - Apex (`netsheet.app`): **A record** → IP fornecido pelo Render.
    - Subdomínio (`www.netsheet.app`): **CNAME** → domínio canônico do serviço
-     (`netsheet-engine.onrender.com`).
+     (`netsheetengine.onrender.com`).
 4. **Aguarde a propagação** (minutos a ~24h) e verifique:
    `dig netsheet.app +short` / `nslookup netsheet.app`.
 5. O HTTPS é emitido sozinho; confira com `curl -I https://netsheet.app/api/health`.
