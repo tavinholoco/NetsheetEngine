@@ -319,20 +319,63 @@ A recomendação foi corrigida no `docs/DEPLOY.md` nesta mesma entrega.
 
 ### Consumo estimado do workspace Render
 
-| Serviço | Regime | Estimativa |
-|---|---|---|
-| `netsheet-engine` | Acorda só em sessão de jogo; heartbeat de 20 s impede hibernar durante a mesa | ~20–30 h/mês |
-| `newra-news-api` | Acorda por visita ao portal; sem keep-alive e sem workflow agendado que o desperte | ~75–150 h/mês |
-| **Total** | | **~100–180 h de 750** |
+*Refeito em 26/09/2026, com medição. A estimativa de 02/09 olhava só as horas e supunha que só a
+mesa acordava o servidor.* Duas cotas do plano gratuito importam. As duas são **por workspace**
+(divididas com o Newra News), e as duas **desligam os serviços até o mês seguinte** se estourarem
+sem cartão cadastrado ([docs do Render](https://render.com/docs/free),
+[banda](https://render.com/docs/outbound-bandwidth)):
 
-Folga confortável — **desde que a regra 3 seja respeitada.**
+| Cota | Limite | NetSheet, uso esperado | Fatia |
+|---|---|---|---|
+| Horas de instância | 750 h/mês | **~15–40 h** | 2–5% |
+| Banda de saída | **5 GB/mês** (era 100 GB até abril de 2026) | **~0,5–1,5 GB** | 10–30% |
+| Minutos de build | 500 min/mês | ~20–75 min (um build de ~2–5 min por merge no `master`; setembro teve 9) | 4–15% |
 
-> **⚠️ Incidente de setembro de 2026 — o limite estourou.** Em 26/09 o serviço respondia
-> `503 Service Suspended`: o workspace passou das 750 h do mês, **por erro operacional do dono**
-> (registrado a pedido dele). O Render suspende os serviços gratuitos até a virada do mês, e as horas
-> são **por workspace** — o `newra-news-api` cai pelo mesmo motivo. **Volta em 01/10/2026.**
-> A estimativa acima continua sendo a do uso normal, mas **folga não é garantia**: enquanto o serviço
-> está suspenso, nada que for mergeado no `master` chega ao ar.
+**De onde vêm as horas.** O serviço dorme após 15 min sem tráfego, e dormindo não gasta hora. Ele
+acorda com:
+- **sessão de jogo** — mensagens de WebSocket contam como tráfego, e o heartbeat de 20 s mantém o
+  servidor acordado a sessão inteira, mais 15 min no fim. 2–4 sessões de ~4 h, mais a preparação do
+  GM: **~10–20 h**;
+- **qualquer visita ao site**, mesmo só para mexer na ficha: hoje o Render serve o site **e** a API.
+  Cada visita custa pelo menos 15 min: **~3–15 h**;
+- testes do dono em produção: **~2–5 h**.
+
+**De onde vem a banda.** Cada ação na mesa (mensagem, rolagem, token movido, ferimento, ficha
+editada) **reenvia a sala inteira a cada conexão** e ainda a grava no Supabase — o ARQ-01. Medido em
+26/09 com o código do servidor: sala com 4 jogadores, 4 NPCs e o chat cheio = **~48 KB** (fichas do
+gerador, ~2,7 KB cada); com fichas de jogador de verdade, ~50–100 KB. Com 5 conexões e ~150 ações por
+hora de mesa: **~45–90 MB por hora**, ~0,2–0,4 GB por sessão. O site inteiro pesa 0,95 MB
+(0,27 MB com gzip) na primeira carga de cada aparelho — pouco.
+
+**A regra 4 (site fora do Render) economiza pouco, pelos números:** só as horas de visita e a banda do
+site. Continua valendo, mas não é urgente — fazer quando o produto for publicado.
+
+**Os dois riscos reais — nenhum com sintoma ainda:**
+
+1. **Aba esquecida.** O lobby consulta a lista de salas a cada **8 s**, e a mesa manda heartbeat a
+   cada 20 s — **inclusive com a aba em segundo plano** (o navegador desacelera os timers, mas não para
+   intervalos acima de 15 min). Uma aba de mesa esquecida mantém o serviço acordado enquanto o
+   computador estiver ligado: uma noite ≈ +10 h; um PC que nunca desliga ≈ +720 h — o mesmo efeito do
+   uptime bot da regra 3. **ADIAR — gatilho:** a página de uso do Render mostrar o NetSheet acima de
+   100 h num mês, ou uma aba esquecida observada. Versão 10× menor, quando disparar: pausar o polling e
+   o heartbeat com a aba oculta (`document.hidden`) e fechar o socket depois de ~30 min oculta.
+2. **Mesa grande.** A banda cresce com o **quadrado** dos jogadores (sala maior × mais conexões). Com
+   6 ou mais jogadores e fichas cheias, uma sessão passa de 0,5 GB. **É o ARQ-01, já na Fase L**
+   (broadcast por diferença). **Gatilho para antecipar:** a banda do workspace passar de 2,5 GB num
+   mês. Mitigação intermediária de uma linha: compressão por mensagem no WebSocket
+   (`perMessageDeflate`) — JSON comprime bem, mas custa CPU e memória no servidor gratuito.
+
+**Medir em vez de estimar:** a partir de 01/10, a página de uso do workspace no painel do Render mostra
+horas e banda por serviço. Conferir depois da primeira sessão de jogo e trocar esta estimativa pelo
+número real.
+
+> **⚠️ Incidente de setembro de 2026 — o limite de horas estourou.** Em 26/09 o serviço respondia
+> `503 Service Suspended`: o workspace passou das 750 h do mês. **Causa, segundo o dono:** durante o
+> desenvolvimento do Newra News, instâncias novas foram criadas sem querer e ficaram rodando, somando
+> horas — a regra 2 vista pelo avesso. O dono já corrigiu no outro projeto. O Render suspende os
+> serviços gratuitos até a virada do mês, e as horas são **por workspace**: o NetSheet caiu junto,
+> sem ter causado. **Volta em 01/10/2026.** Enquanto o serviço está suspenso, nada que for mergeado
+> no `master` chega ao ar.
 
 > **Nota sobre o Newra News:** o `CRON_SCHEDULE: "0 8 * * *"` é um cron **em processo**. No plano
 > gratuito do Render, se ninguém acessar o portal nos 15 minutos anteriores às 08:00, o processo está

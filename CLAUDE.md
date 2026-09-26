@@ -35,7 +35,8 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 ## Invariantes — não viole sem o usuário pedir
 
 - **Custo zero é requisito duro.** Nunca vincular conta de faturamento à chave do provedor de IA;
-  um serviço no Render (750 h/mês são por *workspace*, compartilhadas com outro projeto do usuário);
+  um serviço no Render (750 h **e 5 GB de banda** por mês, por *workspace*, divididas com outro
+  projeto do usuário — estourar qualquer uma desliga os dois até o mês seguinte);
   **nunca** apontar uptime bot para `/api/health`. Detalhes no contrato de custo zero do plano.
 - **Filtro de necessidade: ADIAR é o veredito padrão.** Mudança sem sintoma observado não entra.
   Se mais de 1/3 de uma varredura virar FAZER, o critério está frouxo.
