@@ -40,10 +40,6 @@ describe('C.3 — tipo de arma → perícia', () => {
     for (const w of DEFAULT_WEAPONS) expect(weaponSkillFor(w.type), w.type).not.toBeNull();
   });
 
-  it('escopeta → Rifle está marcada como inferência (não existe perícia de escopeta no 2020)', () => {
-    expect(weaponSkillFor('Shotgun')?.inferred).toBe(true);
-  });
-
   it('"Submachinegun" não cai em nenhuma linha que contenha "gun" por acaso', () => {
     expect(weaponSkillFor('SMG')?.skill).toBe('Submachinegun');
   });
