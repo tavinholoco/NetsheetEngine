@@ -861,7 +861,8 @@ cliente e servidor para ela.
       D.1 com gatilho. Diagrama de contêineres: a caixa `RULES` ganhou nota (o navegador roda o mesmo
       código, mas na mesa só vale o do servidor).
 - [x] **C.15** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [x] ✅ **Fase C concluída em:** __25__/__09__/__2026__ *(PR aberto para o dono; falta o merge e conferir o CI do `master`)*
+- [x] ✅ **Fase C concluída em:** __25__/__09__/__2026__ *(mergeada em 26/09/2026 — PR #8. CI do `master` verde nos 5 jobs, e o
+      `db-sync` conectou: "Remote database is up to date", como esperado numa fase sem migration)*
 
 ---
 
@@ -1273,3 +1274,13 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
 Renovar até 22/10 — passo a passo no P.2.
+
+**Avisos de descontinuação no log do CI** (vistos no merge da Fase C, 26/09/2026). Hoje são só aviso —
+o run está verde. **ADIAR**, cada um com gatilho datado; o passo 3b do ritual de abertura pega o
+vermelho se algum virar erro antes:
+
+| Aviso | Onde | Gatilho |
+|---|---|---|
+| `ubuntu-latest` passa a ser Ubuntu 26 | os 4 jobs do `ci.yml` e o `keepalive.yml` | **A partir de 19/10/2026** — conferir o primeiro run depois dessa data |
+| CodeQL Action v3 descontinuada | `github/codeql-action/upload-sarif@v3` (gitleaks) | **Dezembro de 2026** — trocar por `@v4` antes |
+| Actions em Node 20 forçadas a rodar em Node 24 | `actions/checkout@v4`, `supabase/setup-cli@v1` | Um run falhar por isso, ou sair versão nova das duas |
