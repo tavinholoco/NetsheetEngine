@@ -868,6 +868,22 @@ cliente e servidor para ela.
 
 ### FASE D — FECHAR O LOOP DE COMBATE 🔨 *(3–4 dias)*
 
+- [ ] **D.0** 🔍 **Verificação de premissas** — a mesma disciplina da B.0 e da C.0 (que achou três
+      premissas vindas do RED e de regra de casa). *(Item acrescentado em 26/09/2026, no pós-merge da
+      C: o `CLAUDE.md` manda toda fase de construção abrir com um `.0`, e a D não tinha.)* Pontos de
+      partida já conhecidos:
+      - **Três respostas do dono, com o livro na mão, antes de codar:** a ordem ×2 × BTM na cabeça
+        (decide a D.1), Jury Rig usa TECH, escopeta usa Rifle. Ver a
+        [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d).
+      - **As peças do pipeline já existem e seguem o livro** (Fase C): `HIT_LOCATIONS`,
+        `btmFromBody`, `DAMAGE_POINTS_PER_WOUND_LEVEL`, `stunSaveRoll`, `deathSaveRoll`,
+        `armorSpAt`. A D **liga** o que existe — não reescreve.
+      - **Achado do portão C.14:** o jogador escreve o próprio `woundLevel` pela sincronia da ficha,
+        e isso baixa a penalidade da rolagem. A D.1 decide quem escreve o `woundLevel`.
+      - **"Morto" não é um `woundLevel`** (0–10, e o 10 é Mortal 6, vivo). Ver a máquina de ferimento
+        no `ARQUITETURA.md`. Conferir se a D precisa desse estado ou se ele fica para depois.
+      - Conferir contra o livro o que a C deixou para a D: penetração escalonada, perda de membro,
+        dificuldade por alcance e o Combat Sense na iniciativa (D.4).
 - [ ] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → ×2 na cabeça → BTM →
       conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04)*
       - **Antes de codar:** o dono decide a ordem ×2 × BTM na cabeça (o livro não é explícito — ver a
