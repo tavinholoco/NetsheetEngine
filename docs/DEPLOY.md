@@ -113,7 +113,9 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
 > `render.yaml` (`netsheet-engine`) **não** é o endereço. Registrado em 26/09/2026, quando a
 > ausência da URL no repositório impediu conferir o deploy da Fase C. Naquela data o serviço estava
 > **suspenso** no Render (`503 Service Suspended`, o que é diferente de hibernado: hibernado acorda
-> em 30–50 s; suspenso não sobe com requisição nenhuma). O produto ainda não foi publicado.
+> em 30–50 s; suspenso não sobe com requisição nenhuma): o workspace **estourou as 750 h de setembro**,
+> por erro operacional do dono. **Volta em 01/10/2026** — o que conferir nesse dia está na seção de
+> operação do [plano](./PLANO_MESTRE.md#linha-de-base-atual). O produto ainda não foi publicado.
 
 1. Em [render.com](https://render.com): **New → Blueprint** e selecione o repo
    (detecta `render.yaml`).

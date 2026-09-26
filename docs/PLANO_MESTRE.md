@@ -327,6 +327,13 @@ A recomendação foi corrigida no `docs/DEPLOY.md` nesta mesma entrega.
 
 Folga confortável — **desde que a regra 3 seja respeitada.**
 
+> **⚠️ Incidente de setembro de 2026 — o limite estourou.** Em 26/09 o serviço respondia
+> `503 Service Suspended`: o workspace passou das 750 h do mês, **por erro operacional do dono**
+> (registrado a pedido dele). O Render suspende os serviços gratuitos até a virada do mês, e as horas
+> são **por workspace** — o `newra-news-api` cai pelo mesmo motivo. **Volta em 01/10/2026.**
+> A estimativa acima continua sendo a do uso normal, mas **folga não é garantia**: enquanto o serviço
+> está suspenso, nada que for mergeado no `master` chega ao ar.
+
 > **Nota sobre o Newra News:** o `CRON_SCHEDULE: "0 8 * * *"` é um cron **em processo**. No plano
 > gratuito do Render, se ninguém acessar o portal nos 15 minutos anteriores às 08:00, o processo está
 > hibernado e o artigo diário **não é gerado**. Isso é problema do outro repositório, mas foi
@@ -1296,6 +1303,12 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
 Renovar até 22/10 — passo a passo no P.2.
+
+**⏰ 01/10/2026 — o Render volta** depois da suspensão de setembro (ver o incidente no
+[contrato de custo zero](#-contrato-de-custo-zero)). Conferir na aba *Events* que o deploy que subiu é
+o do commit mais recente do `master` — se não for, *Manual Deploy → Deploy latest commit* — e rodar a
+[verificação pós-deploy](./DEPLOY.md#verificação-pós-deploy) contra
+`https://netsheetengine.onrender.com`. Uma requisição por passo; **nada de monitor** (regra 3).
 
 **Avisos de descontinuação no log do CI** (vistos no merge da Fase C, 26/09/2026). Hoje são só aviso —
 o run está verde. **ADIAR**, cada um com gatilho datado; o passo 3b do ritual de abertura pega o
