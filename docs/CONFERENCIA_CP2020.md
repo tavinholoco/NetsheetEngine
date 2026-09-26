@@ -36,7 +36,7 @@ modelo ainda não representa:
 
 | Regra | Vai para | Por quê não agora |
 |---|---|---|
-| Ordem ×2 × BTM na cabeça | **Dono**, antes da D.1 — recomendação: **SP → BTM → ×2** | O livro dá a regra e não diz quando ([pesquisa de 26/09](#dano--a-ordem-do-pipeline-para-a-fase-d)) |
+| Ordem ×2 × BTM na cabeça | **Decidido em 26/09: SP → BTM → ×2** (decisão 6). Implementa na D.1 | O livro dá a regra e não diz quando ([pesquisa de 26/09](#dano--a-ordem-do-pipeline-para-a-fase-d)) |
 | Dano → ferimento, penetração escalonada, perda de membro, dificuldade por alcance | Fase D | É o loop de combate |
 | Combat Sense na iniciativa | D.4 | A iniciativa automática nasce lá |
 | Texto das tabelas de fumble | ADIAR | O dado já sai rolado; o GM lê no livro |
@@ -76,7 +76,8 @@ uma regra só foi aceita quando **duas ou mais concordam**. Onde só há inferê
 
 > **Pesquisa de 26/09/2026, sobre as três inferências que a Fase C deixou:** a escopeta foi
 > **confirmada** (S6 e S8). Jury Rig e a ordem da cabeça **o livro não resolve** — nas duas, a linha
-> diz qual é a escolha do projeto e por quê. O **RPG.net**, onde estava o principal debate sobre a
+> diz qual é a escolha do projeto e por quê. A ordem da cabeça foi decidida pelo dono no mesmo dia:
+> **opção A**. O **RPG.net**, onde estava o principal debate sobre a
 > cabeça, exige verificação anti-robô e não foi lido direto; o que se sabe dele veio de resumos de
 > busca.
 
@@ -225,8 +226,10 @@ delas citando as páginas; (3) o BTM representa a resistência do corpo a *qualq
 passou da armadura, e a cabeça dobra o **ferimento** — o que de fato chegou ao corpo. **Por que
 alguém escolheria B:** combate mais letal, e o texto não proíbe.
 
-**Decisão pendente do dono antes da D.1.** Se for A, o [diagrama](./ARQUITETURA.md#pipeline-de-dano-fnff)
-muda junto (hoje desenha B).
+**Decidido pelo dono em 26/09/2026: opção A** (decisão 6 do plano). O
+[diagrama](./ARQUITETURA.md#pipeline-de-dano-fnff) foi redesenhado com ela, e a D.1 implementa assim.
+**Gatilho para rever:** o dono achar no livro físico uma ordem explícita, ou um exemplo resolvido
+que só feche com B.
 
 Também da Fase D: **penetração escalonada** (cada acerto que passa reduz o SP daquele ponto em 1) e
 **perda de membro** (mais de 8 pontos num membro de uma vez; na cabeça, morte).

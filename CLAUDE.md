@@ -56,6 +56,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Yjs / CRDT do grid | **Mantido sob observação**, com gatilho para reabrir. Ver ADR 0002 |
 | PITR do Supabase | **Não** — exige plano pago. O backup diário gratuito basta (decisão 4 do plano) |
 | Vulnerabilidades sem correção | **Exceção nomeada, com motivo e gatilho** em `scripts/audit-ci.mjs` — nunca baixar o nível do portão |
+| Dano na cabeça | **Armadura → BTM (mín. 1) → ×2** — o livro não diz quando dobrar; decisão 6 do plano (26/09/2026) |
 | Migration × deploy | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa. O Render publica sem esperar o `db-sync` |
 
 ## Comandos que importam

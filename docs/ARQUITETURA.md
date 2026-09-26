@@ -154,7 +154,8 @@ livro — local de impacto por tabela (`HIT_LOCATIONS`), `btmFromBody`, efeito d
 chat e o `woundLevel` é clicado à mão. Ligar é a D.1.
 
 *Conferido contra o livro na C.9 (25/09/2026) — fontes em
-[`CONFERENCIA_CP2020.md`](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d).*
+[`CONFERENCIA_CP2020.md`](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d). Ordem na
+cabeça decidida pelo dono em 26/09/2026 (decisão 6): **armadura → BTM → ×2**.*
 
 ```mermaid
 flowchart TB
@@ -165,15 +166,17 @@ flowchart TB
     B -->|"5 ou 6 - Bracos"| E["Subtrai SP do braco"]
     B -->|"7-0 - Pernas"| F["Subtrai SP da perna"]
 
-    C --> G["Dobra o dano que passou<br/>x2 na cabeca"]
-    G --> H["Subtrai BTM<br/>so BODY, 0 a -5<br/>nunca abaixo de 1"]
-    D --> H
-    E --> H
-    F --> H
+    C --> I{"Passou da armadura?"}
+    D --> I
+    E --> I
+    F --> I
 
-    H --> I{"Passou da armadura?"}
     I -->|"nao"| J["Sem ferimento<br/>a armadura segurou"]
-    I -->|"sim"| K["Acumula no track<br/>4 pontos = 1 nivel"]
+    I -->|"sim"| H["Subtrai BTM<br/>so BODY, 0 a -5<br/>nunca abaixo de 1"]
+    H --> Q{"Foi na cabeca?"}
+    Q -->|"sim"| G["Dobra o ferimento<br/>x2 depois do BTM"]
+    Q -->|"nao"| K["Acumula no track<br/>4 pontos = 1 nivel"]
+    G --> K
 
     K --> S["Stun save a cada dano<br/>1d10 menor ou igual a BODY<br/>menos 0 a 9 pelo nivel"]
     K --> L["Novo woundLevel"]
@@ -184,12 +187,15 @@ flowchart TB
 
 O que a conferência fixou, e o que ficou para o dono:
 
-- **SP antes do ×2** — a cabeça dobra o dano **que passou** da armadura. Confirmado.
+- **SP antes de tudo** — a cabeça dobra o dano **que passou** da armadura. Confirmado.
+- **O teste "passou da armadura?" vem antes do BTM**, porque é ele que decide se o BTM (com mínimo
+  de 1) se aplica: armadura que segurou tudo não gera ferimento. *(O desenho anterior fazia a
+  pergunta depois do BTM.)*
 - **BTM nunca leva o dano a zero** — mínimo 1 ponto, se a armadura foi vencida. Confirmado.
-- **×2 antes ou depois do BTM?** O livro **não diz**. O desenho mostra a opção B (dobra, depois
-  BTM), a do plano original. A pesquisa de 26/09 **recomenda a A (BTM, depois dobra)** — é a das
-  implementações de fãs e a da ordem do texto; B é mais letal por exatamente o valor do BTM.
-  **Decisão do dono antes da D.1** — ver a [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d).
+- **×2 depois do BTM — decisão 6, do dono, em 26/09/2026 (opção A).** O livro dá a regra e não diz
+  quando; A é a ordem do texto e a das implementações de fãs. Mínimo de um acerto na cabeça que
+  passou da armadura: 2 pontos. A opção B (dobra antes do BTM) seria mais letal por exatamente o
+  valor do BTM. Detalhe na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d).
 - **Não há modificador cumulativo por turno no death save** — o nó antigo dizia "com modificador
   cumulativo", que é do Cyberpunk RED. É BODY menos o nível Mortal, a cada turno.
 - Também da Fase D, e fora do desenho de propósito: **penetração escalonada** (cada acerto que passa

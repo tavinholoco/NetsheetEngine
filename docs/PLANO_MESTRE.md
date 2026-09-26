@@ -168,7 +168,8 @@ descrição — e é ali que uma premissa velha vira trabalho errado.
 
 ## ⚖️ Decisões tomadas (02/09/2026)
 
-Estas três respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo.
+Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo. *(1 a 3 em
+02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09/2026.)*
 
 | # | Pergunta | Decisão | Consequência |
 |---|---|---|---|
@@ -177,6 +178,7 @@ Estas três respostas fecham ambiguidades que mudariam o trabalho. Não reabrir 
 | 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase L (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. |
 | 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo. **Gatilho:** um incidente real de perda de dado que o backup diário não cobriria |
 | 5 | Como evitar que o Render publique código antes da migration que ele usa? (P.5) | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa | O Render faz auto-deploy a cada push no `master`, sem esperar o `db-sync`. Regra de processo, custo zero, nada novo para configurar. Ver o passo 5 do ritual de encerramento |
+| 6 | Na cabeça, o dano dobra antes ou depois do BTM? | **Depois — opção A: armadura → BTM (mín. 1) → ×2** | O livro dá a regra e não diz quando; A é a ordem do texto e a das implementações de fãs. B seria mais letal pelo valor do BTM. Pesquisa e números na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d) |
 
 ---
 
@@ -853,7 +855,7 @@ cliente e servidor para ela.
 - [x] **C.13** 📐 **Desenho** — a C.9 confere o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) e a [máquina de ferimento](./ARQUITETURA.md#máquina-de-estados-do-ferimento) contra o livro, e **corrige os diagramas** com o que a conferência determinar. Eles são hipótese de trabalho, não autoridade.
       *(25/09/2026)* Os dois corrigidos: o pipeline ganhou o stun save, o efeito do livro, o BTM por
       BODY com mínimo 1, e perdeu o "death save com modificador cumulativo" (RED). A ordem ×2 × BTM
-      ficou marcada como **decisão do dono antes da D.1**. A máquina ganhou o estado **Morto**, fora
+      ficou marcada como **decisão do dono antes da D.1** *(decidida em 26/09: opção A, armadura → BTM → ×2 — decisão 6)*. A máquina ganhou o estado **Morto**, fora
       do `woundLevel` — Mortal 6 é o último estado **vivo**.
       - **Gatilho de ADIAR que disparou, achado no passo 5 do ritual de abertura:** o ER do schema
         ("quando o schema mudar") — a `0007` da Fase B mudou o schema. Desenhado na mesma seção.
@@ -875,11 +877,10 @@ cliente e servidor para ela.
       premissas vindas do RED e de regra de casa). *(Item acrescentado em 26/09/2026, no pós-merge da
       C: o `CLAUDE.md` manda toda fase de construção abrir com um `.0`, e a D não tinha.)* Pontos de
       partida já conhecidos:
-      - **Uma decisão do dono antes de codar a D.1:** a ordem ×2 × BTM na cabeça. O livro não diz; a
-        pesquisa de 26/09 recomenda **SP → BTM → ×2** (opções e números na
-        [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d)). As outras duas
-        dúvidas da C se resolveram na mesma pesquisa: escopeta usa Rifle (confirmado, duas fontes);
-        Jury Rig fica em TECH (o livro não diz; escolha registrada, com gatilho).
+      - **As três dúvidas de regra da C estão resolvidas** (26/09/2026): a ordem na cabeça é
+        **armadura → BTM → ×2** (decisão 6, do dono); escopeta usa Rifle (confirmado, duas fontes);
+        Jury Rig fica em TECH (o livro não diz; escolha registrada, com gatilho). Detalhe na
+        [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d).
       - **As peças do pipeline já existem e seguem o livro** (Fase C): `HIT_LOCATIONS`,
         `btmFromBody`, `DAMAGE_POINTS_PER_WOUND_LEVEL`, `stunSaveRoll`, `deathSaveRoll`,
         `armorSpAt`. A D **liga** o que existe — não reescreve.
@@ -889,10 +890,10 @@ cliente e servidor para ela.
         no `ARQUITETURA.md`. Conferir se a D precisa desse estado ou se ele fica para depois.
       - Conferir contra o livro o que a C deixou para a D: penetração escalonada, perda de membro,
         dificuldade por alcance e o Combat Sense na iniciativa (D.4).
-- [ ] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → ×2 na cabeça → BTM →
+- [ ] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → BTM → ×2 na cabeça →
       conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04)*
-      - **Antes de codar:** o dono decide a ordem ×2 × BTM na cabeça (o livro não é explícito — ver a
-        [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d)).
+      - **Ordem decidida (decisão 6):** armadura → BTM (mínimo 1) → ×2 na cabeça. O
+        [diagrama](./ARQUITETURA.md#pipeline-de-dano-fnff) já está nessa ordem.
       - **Achado do portão da C.14:** hoje o jogador escreve o próprio `woundLevel` pela sincronia da
         ficha (`updatePlayerSheet`), e desde a C.6 isso **baixa a penalidade da rolagem**. Quando o dano
         virar ferimento no servidor, a sincronia não pode mais baixá-lo. Se a D não resolver, vira item
