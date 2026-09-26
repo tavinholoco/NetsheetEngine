@@ -16,7 +16,7 @@ export interface OfficialRole {
   specialAbility: string;
   /**
    * Atributo somado ao rolar a Special Ability (C.8). Fonte de cada um em
-   * docs/CONFERENCIA_CP2020.md — Jury Rig/TECH é inferência.
+   * docs/CONFERENCIA_CP2020.md — Jury Rig/TECH é escolha do projeto: o livro não diz.
    */
   specialAbilityStat: StatName;
   /**

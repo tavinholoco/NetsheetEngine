@@ -186,8 +186,10 @@ O que a conferência fixou, e o que ficou para o dono:
 
 - **SP antes do ×2** — a cabeça dobra o dano **que passou** da armadura. Confirmado.
 - **BTM nunca leva o dano a zero** — mínimo 1 ponto, se a armadura foi vencida. Confirmado.
-- **×2 antes ou depois do BTM?** O livro **não é explícito**. O desenho segue a leitura mais comum
-  (dobra, depois BTM). **Decisão do dono antes da D.1**, com o livro na mão.
+- **×2 antes ou depois do BTM?** O livro **não diz**. O desenho mostra a opção B (dobra, depois
+  BTM), a do plano original. A pesquisa de 26/09 **recomenda a A (BTM, depois dobra)** — é a das
+  implementações de fãs e a da ordem do texto; B é mais letal por exatamente o valor do BTM.
+  **Decisão do dono antes da D.1** — ver a [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d).
 - **Não há modificador cumulativo por turno no death save** — o nó antigo dizia "com modificador
   cumulativo", que é do Cyberpunk RED. É BODY menos o nível Mortal, a cada turno.
 - Também da Fase D, e fora do desenho de propósito: **penetração escalonada** (cada acerto que passa

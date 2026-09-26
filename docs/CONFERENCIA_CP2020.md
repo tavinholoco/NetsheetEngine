@@ -36,7 +36,7 @@ modelo ainda não representa:
 
 | Regra | Vai para | Por quê não agora |
 |---|---|---|
-| Ordem ×2 × BTM na cabeça | **Dono**, antes da D.1 | O livro não é explícito |
+| Ordem ×2 × BTM na cabeça | **Dono**, antes da D.1 — recomendação: **SP → BTM → ×2** | O livro dá a regra e não diz quando ([pesquisa de 26/09](#dano--a-ordem-do-pipeline-para-a-fase-d)) |
 | Dano → ferimento, penetração escalonada, perda de membro, dificuldade por alcance | Fase D | É o loop de combate |
 | Combat Sense na iniciativa | D.4 | A iniciativa automática nasce lá |
 | Texto das tabelas de fumble | ADIAR | O dado já sai rolado; o GM lê no livro |
@@ -61,6 +61,9 @@ uma regra só foi aceita quando **duas ou mais concordam**. Onde só há inferê
 | S5 | [2d4chan — Cyberpunk 2020](https://2d4chan.org/mediawiki/index.php/Cyberpunk_2020) | Resolução, 10 encadeia, 1 é falha + tabela de fumble, saves, BTM nunca zera o dano, iniciativa |
 | S6 | [Writeup de SirPhoebos](https://writeups.letsyouandhimfight.com/sirphoebos/cyberpunk-2020/) | Combat Sense; Interface (INT), Streetdeal e Authority (COOL) |
 | S7 | [Octopus Carnival — On Cyberpsychosis](https://bira.github.io/octopus-carnival/2023/10/23/on-cyberpsychosis.html) | Humanidade = EMP × 10; −1 EMP a cada 10 de Humanidade perdida |
+| S8 | [Sistema Cyberpunk 2020 do Foundry VTT](https://github.com/2020-Fission/cyberpunk2020) — `lookups.js` e `role-skills.db` | Arma → perícia (escopeta → Rifle); atributo de 7 habilidades especiais; Jury Rig, Medical Tech e Combat Sense **sem** atributo |
+| S9 | [Módulo cp2020-augmented do Foundry](https://github.com/ryno4ever16/cp2020-augmented) — `DamageApplicator.js` | Sequência de dano com página do livro: SP e BTM mínimo 1 (p. 98–99); cabeça dobra (p. 103) "sem dizer quando" |
+| S10 | [FNFFAutoFire](https://github.com/krze/FNFFAutoFire) — calculadora de rajada | Aplica SP → BTM → ×2 na cabeça |
 
 **Fontes descartadas, e por quê** — é daqui que vinham duas premissas erradas do plano:
 
@@ -71,8 +74,11 @@ uma regra só foi aceita quando **duas ou mais concordam**. Onde só há inferê
 | [datafortress2020 — combat rules](https://datafortress2020.com/combatrules.html) | **Regra de casa** declarada |
 | Qualquer material do **Cyberpunk RED** | Sistema diferente. O fumble que subtrai 1d10, a explosão única e o death save que piora a cada sucesso são **do RED** e estavam no código ou no plano |
 
-> **Para o dono, com o livro na mão:** as linhas marcadas **inferido** são as que valem uma
-> conferência no físico. Tudo o que está marcado **confirmado** tem duas fontes concordando.
+> **Pesquisa de 26/09/2026, sobre as três inferências que a Fase C deixou:** a escopeta foi
+> **confirmada** (S6 e S8). Jury Rig e a ordem da cabeça **o livro não resolve** — nas duas, a linha
+> diz qual é a escolha do projeto e por quê. O **RPG.net**, onde estava o principal debate sobre a
+> cabeça, exige verificação anti-robô e não foi lido direto; o que se sabe dele veio de resumos de
+> busca.
 
 ---
 
@@ -118,7 +124,7 @@ da Fase D. **C.2** — `btmFromBody`, rótulo do `StatBlock` e PRD corrigidos.
 |---|---|---|---|
 | Rolagem de ataque | `1d10 + REF + perícia da arma + WA + modificadores` | Servidor: sem perícia. **Cliente: passava o WA no lugar da perícia** | **C.3** |
 | Perícia por tipo de arma | Pistola → Handgun; SMG → Submachinegun; Rifle → Rifle; Pesada → Heavy Weapons; Branca → Melee; Arco → Archery | Não existia mapa | **C.3** (`WEAPON_SKILL_BY_TYPE`) |
-| Escopeta | Não existe perícia de escopeta no 2020 | — | **C.3 — inferido:** Rifle (arma longa). Conferir no livro |
+| Escopeta | **Rifle** — não existe perícia de escopeta; o capítulo de armas manda usar Rifle | — | **C.3 — confirmado em 26/09** (S6, S8) |
 | Modificador de situação do GM | Entra na rolagem | `combatModifier` sem leitor | **C.4** — entra em ataque e perícia, visível no detalhe |
 | Dificuldade por alcance | Queima-roupa 10, curto 15, médio 20, longo 25, extremo 30 | Não existe | **Fase D** (acertar o alvo é do loop de combate) |
 
@@ -168,7 +174,7 @@ ferimento. É o que **toda** rolagem lê. **C.6.**
 |---|---|---|---|---|
 | Solo | Combat Sense | **não se rola sozinha**: soma em Awareness/Notice (INT) e na iniciativa | S1, S3, S5, S6 | REF |
 | Netrunner | Interface | INT | S1, S6 | INT ✅ |
-| Tech | Jury Rig | TECH | **inferido** — S1 não soma atributo nenhum (defeito da ficha), S3 não diz | EMP |
+| Tech | Jury Rig | TECH | **o livro não diz** — S6 lê a descrição e registra que ela não traz atributo; S1 e S8 deixam em branco. **TECH é escolha do projeto** (abaixo) | EMP |
 | Medtechie | Medical Tech | TECH | S1, S3 | EMP |
 | Media | Credibility | INT | S1, S3 | EMP |
 | Cop | Authority | COOL | S1, S3, S6 | EMP |
@@ -179,15 +185,48 @@ ferimento. É o que **toda** rolagem lê. **C.6.**
 
 **C.8** — o atributo mora em `OFFICIAL_ROLES`. O ternário acertava 1 de 10.
 
+**S8 confere 7 das 10 linhas exatamente como estão** (Interface, Credibility, Resources e Family em
+INT; Authority, Streetdeal e Charismatic Leadership em COOL). As três que ele deixa sem atributo são
+Combat Sense (que não se rola sozinha), Medical Tech (TECH por S1 e S3) e Jury Rig.
+
+**Jury Rig — por que TECH, se o livro não diz.** As alternativas são rolar **sem atributo** (só
+1d10 + nível, que é o que S1 e S8 fazem por omissão) ou escolher um. Sem atributo, um Techie de nível
+6 rolaria como um personagem comum sem treino rola uma perícia — a habilidade que define o role
+ficaria mais fraca que uma perícia qualquer. E Jury Rig é um conserto: todo conserto no 2020 é
+perícia de TECH (Basic Tech, Electronics, CyberTech, Weaponsmith). **Gatilho para rever:** o dono
+achar no livro físico um atributo diferente, ou a mesa sentir o Techie forte demais.
+
 ## Dano — a ordem do pipeline (para a Fase D)
 
-O livro diz que a cabeça dobra o dano **que passou da armadura**, e que o BTM **nunca reduz o dano
-abaixo de 1** (S5). Ele **não é explícito** sobre dobrar antes ou depois do BTM — há debate na
-comunidade, e o argumento pela outra ordem é só a ordem das seções no texto. A leitura mais comum,
-e a do [diagrama](./ARQUITETURA.md#pipeline-de-dano-fnff), é **SP → ×2 na cabeça → BTM (mínimo 1)**.
+O livro dá as duas regras e **não diz em que ordem**: a sequência de dano (SP, depois BTM com mínimo
+de 1) está nas p. 98–99, e "acerto na cabeça dobra o dano" aparece depois, na p. 103, sem dizer
+quando (S9, que cita as páginas e registra a omissão). **Nenhum FAQ oficial resolveu** — o debate do
+RPG.net trata como questão em aberto, e um moderador conclui que a escolha é da mesa.
 
-**Decisão pendente do dono antes da D.1**, com o livro na mão. Registrada aqui para não ser
-descoberta no meio do código.
+> **Correção de 26/09/2026.** A versão anterior desta seção dizia que "a leitura mais comum" era
+> dobrar antes do BTM. **Estava errado, e sem fonte:** as duas implementações encontradas (S9 e S10)
+> e o argumento registrado no debate aplicam **o BTM antes de dobrar**. Mesmo defeito que a
+> auditoria de 03/09 apontou no plano: afirmação escrita sem verificar.
+
+As duas opções, para 10 pontos que passaram da armadura contra BTM −3:
+
+| Opção | Ordem | Exemplo | Mínimo na cabeça |
+|---|---|---|---|
+| **A** (recomendada) | SP → BTM (mín. 1) → ×2 | (10 − 3) × 2 = **14** | 2 |
+| **B** (a do desenho original) | SP → ×2 → BTM (mín. 1) | 10 × 2 − 3 = **17** | 1 |
+
+**B é sempre mais letal, por exatamente o valor do BTM** (0 a 5 pontos). Para personagem de BODY 2
+(BTM 0) as duas dão o mesmo; para BODY 11+ (BTM −5), B tira 5 pontos a mais — mais de uma caixa da
+trilha.
+
+**Por que A:** (1) segue a ordem em que o livro apresenta as regras — o BTM faz parte da sequência de
+dano, o ×2 vem depois, como efeito do local; (2) é a que as duas implementações de fãs adotaram, uma
+delas citando as páginas; (3) o BTM representa a resistência do corpo a *qualquer* ferimento que
+passou da armadura, e a cabeça dobra o **ferimento** — o que de fato chegou ao corpo. **Por que
+alguém escolheria B:** combate mais letal, e o texto não proíbe.
+
+**Decisão pendente do dono antes da D.1.** Se for A, o [diagrama](./ARQUITETURA.md#pipeline-de-dano-fnff)
+muda junto (hoje desenha B).
 
 Também da Fase D: **penetração escalonada** (cada acerto que passa reduz o SP daquele ponto em 1) e
 **perda de membro** (mais de 8 pontos num membro de uma vez; na cabeça, morte).

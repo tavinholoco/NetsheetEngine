@@ -134,18 +134,19 @@ export interface WeaponSkillRow {
   /** Palavras que identificam o tipo (comparadas sem caixa nem pontuação). */
   keywords: readonly string[];
   skill: string;
-  /** true quando o livro não diz e a linha é inferência (ver a conferência). */
-  inferred?: boolean;
 }
 
 /**
  * Ordem importa: a primeira linha que casar vence. "Submachinegun" vem antes
  * de qualquer coisa com "gun", e "Shotgun" antes de "Rifle".
+ *
+ * Escopeta usa Rifle: não existe perícia de escopeta no 2020, e o capítulo de
+ * armas manda usar Rifle (confirmado em 26/09/2026 — ver a conferência).
  */
 export const WEAPON_SKILL_BY_TYPE: readonly WeaponSkillRow[] = [
   { keywords: ['submachinegun', 'smg'], skill: 'Submachinegun' },
   { keywords: ['pistol', 'handgun', 'autopistol', 'revolver'], skill: 'Handgun' },
-  { keywords: ['shotgun', 'shg', 'sht'], skill: 'Rifle', inferred: true },
+  { keywords: ['shotgun', 'shg', 'sht'], skill: 'Rifle' },
   { keywords: ['rifle', 'rif'], skill: 'Rifle' },
   { keywords: ['heavy', 'hvy'], skill: 'Heavy Weapons' },
   { keywords: ['bow', 'archery'], skill: 'Archery' },

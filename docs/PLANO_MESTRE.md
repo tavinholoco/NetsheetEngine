@@ -830,6 +830,9 @@ cliente e servidor para ela.
         (Jury Rig/TECH, escopeta→Rifle). Três fontes descartadas por serem regra de casa — era delas
         que vinham a tabela "−4/−6" e o "sem ×2 na cabeça".
       - **Pendente do dono, com o livro na mão:** as duas inferências e a ordem ×2 × BTM (decide a D.1).
+        *Pesquisa de 26/09:* escopeta→Rifle **confirmada** (duas fontes); Jury Rig **o livro não diz** —
+        fica TECH por escolha registrada; a ordem da cabeça **o livro não diz** — resta só essa decisão,
+        com recomendação (SP → BTM → ×2). A conferência também corrigiu uma afirmação minha sem fonte.
 - [x] **C.10** Testes de paridade cliente↔servidor com a mesma entrada nos dois RNGs. *(ARQ-08, parte 1 —
       25/09/2026)*
       - **A paridade achou divergência mesmo com o motor único:** a ficha escrevia `Perícia (4)` e
@@ -872,9 +875,11 @@ cliente e servidor para ela.
       premissas vindas do RED e de regra de casa). *(Item acrescentado em 26/09/2026, no pós-merge da
       C: o `CLAUDE.md` manda toda fase de construção abrir com um `.0`, e a D não tinha.)* Pontos de
       partida já conhecidos:
-      - **Três respostas do dono, com o livro na mão, antes de codar:** a ordem ×2 × BTM na cabeça
-        (decide a D.1), Jury Rig usa TECH, escopeta usa Rifle. Ver a
-        [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d).
+      - **Uma decisão do dono antes de codar a D.1:** a ordem ×2 × BTM na cabeça. O livro não diz; a
+        pesquisa de 26/09 recomenda **SP → BTM → ×2** (opções e números na
+        [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d)). As outras duas
+        dúvidas da C se resolveram na mesma pesquisa: escopeta usa Rifle (confirmado, duas fontes);
+        Jury Rig fica em TECH (o livro não diz; escolha registrada, com gatilho).
       - **As peças do pipeline já existem e seguem o livro** (Fase C): `HIT_LOCATIONS`,
         `btmFromBody`, `DAMAGE_POINTS_PER_WOUND_LEVEL`, `stunSaveRoll`, `deathSaveRoll`,
         `armorSpAt`. A D **liga** o que existe — não reescreve.
