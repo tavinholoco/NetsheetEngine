@@ -21,7 +21,7 @@ import {
 } from "../src/rules/rolls.js";
 import { attackHits, gmModifier, rangeBandFor } from "../src/rules/combat.js";
 // Fase D (D.1) — o dano vira ferimento no servidor, com as regras do livro.
-import { btmFromBody, deriveCurrentStats, woundRow } from "../src/rules/character.js";
+import { btmFromBody, deriveCurrentStats, mortalLevel, woundRow } from "../src/rules/character.js";
 import {
   applyHit,
   armorSpAt,
@@ -382,7 +382,7 @@ function writeWound(sheet: CharacterSheet, wound: WoundState): void {
  * isso baixava a penalidade da rolagem (achado do portão C.14).
  */
 function withServerWound(clientSheet: CharacterSheet, serverSheet: CharacterSheet): CharacterSheet {
-  const sheet = { ...clientSheet };
+  const sheet = { ...clientSheet, isStabilized: serverSheet.isStabilized === true };
   writeWound(sheet, woundStateOf(serverSheet));
   return sheet;
 }
@@ -1043,6 +1043,21 @@ function stampRoll(characterName: string, core: RollCore): RollResult {
 }
 
 /**
+ * D.5 — death save de quem está em Mortal: 1d10 ≤ BODY − nível Mortal. Falhou,
+ * morto. Chamado no dano (antes do stun) e na virada de turno. Devolve se
+ * sobreviveu.
+ */
+function rollDeathSaveFor(room: GameRoom, target: RoomPlayer, rng: Rng): boolean {
+  const sheet = target.sheet;
+  const core = sheetDeathSaveRoll(rng, sheet);
+  const survived = core.isCriticalSuccess;
+  if (!survived) writeWound(sheet, { ...woundStateOf(sheet), isDead: true });
+  const verdict = survived ? "passou, segue vivo" : "FALHOU — 💀 MORTO";
+  pushSystemMessage(room, "death", `☠️ Death save de [${target.handle}]: ${verdict}.`, stampRoll(target.handle, core));
+  return survived;
+}
+
+/**
  * O núcleo da D.1: aplica um dano já validado no alvo, espelha no token,
  * deixa a conta no chat e rola o stun save. `applyDamage` (o GM digita o
  * dano) e `resolveGmAttack` (o NPC acertou) passam por aqui.
@@ -1074,8 +1089,17 @@ function applyDamageTo(room: GameRoom, target: RoomPlayer, raw: number, location
   if (outcome.killed === "track") text += " 💀 MORTO — o dano passou da última caixa da trilha.";
   pushSystemMessage(room, "damage", text);
 
+  if (outcome.steps.final > 0) {
+    // D.5 — dano que entra desfaz a estabilização (p. 105, via S9)...
+    sheet.isStabilized = false;
+    // ...e, em Mortal, o death save vem na hora e ANTES do stun (S9, p. 99).
+    if (!outcome.after.isDead && mortalLevel(outcome.after.woundLevel) !== null) {
+      rollDeathSaveFor(room, target, rng);
+    }
+  }
+
   // Stun save a cada dano que entrou (C.7), com o nível NOVO. Morto não rola.
-  if (outcome.steps.final > 0 && !outcome.after.isDead) {
+  if (outcome.steps.final > 0 && !sheet.isDead) {
     const core = stunSaveRoll(rng, body, outcome.after.woundLevel);
     const verdict = core.isCriticalSuccess ? "passou, segue de pé" : "FALHOU — fora de ação até passar num novo teste";
     pushSystemMessage(room, "stun", `😵 Stun save de [${target.handle}]: ${verdict}.`, stampRoll(target.handle, core));
@@ -1287,7 +1311,7 @@ export function rollInitiative(
 }
 
 // GM Power: Advance to next turn (T1.3)
-export function nextTurn(code: string, requesterPeerId: string): { room: GameRoom | null; error?: string } {
+export function nextTurn(code: string, requesterPeerId: string, rng: Rng = serverRng): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
   if (!room) return { room: null, error: "Sala não encontrada" };
 
@@ -1303,6 +1327,45 @@ export function nextTurn(code: string, requesterPeerId: string): { room: GameRoo
     isCurrentTurn: idx === room.activeTurnIndex
   }));
 
+  // D.5 — a vez chegou a quem está em Mortal, vivo e não estabilizado: o
+  // servidor rola o death save do turno. Entrada posta à mão não tem ficha.
+  const current = room.initiativeList[room.activeTurnIndex];
+  const who = current && (room.players[current.playerId] ?? room.npcs?.[current.playerId]);
+  if (who?.sheet && !who.sheet.isDead && !who.sheet.isStabilized && mortalLevel(woundStateOf(who.sheet).woundLevel) !== null) {
+    rollDeathSaveFor(room, who, rng);
+  }
+
+  return { room };
+}
+
+/**
+ * D.5 — o GM marca (ou desfaz) a estabilização, depois do teste de First Aid
+ * ou Medical Tech que ele conduz. Só faz sentido em Mortal.
+ */
+export function setStabilized(
+  code: string,
+  requesterPeerId: string,
+  request: { targetId?: unknown; stabilized?: unknown }
+): { room: GameRoom | null; error?: string } {
+  const room = getRoom(code);
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa estabiliza." };
+  }
+  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
+  if (!target) return { room: null, error };
+  const stabilized = request?.stabilized === true;
+  if (stabilized && mortalLevel(woundStateOf(target.sheet).woundLevel) === null) {
+    return { room: null, error: `[${target.handle}] não está em Mortal: não há o que estabilizar.` };
+  }
+  target.sheet.isStabilized = stabilized;
+  pushSystemMessage(
+    room,
+    "stabilize",
+    stabilized
+      ? `🩹 [${target.handle}] foi estabilizado: para de rolar o death save a cada turno.`
+      : `🩹 [${target.handle}] não está mais estabilizado.`
+  );
   return { room };
 }
 

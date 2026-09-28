@@ -214,6 +214,10 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 - **Death save** *(Fase C, C.7)*: em nível Mortal, **a cada turno**, `1d10 ≤ BODY −
   nível Mortal` (Mortal 0 = BODY, Mortal 6 = BODY −6), até morrer ou ser
   estabilizado. Sem acúmulo por turno. Mortal 6 ainda está vivo.
+  **Na mesa, automático** *(Fase D, D.5)*: o servidor rola quando a vez chega a quem está
+  em Mortal, e também **logo depois do dano** que deixa em Mortal — antes do stun save.
+  Falhou, **Morto**. O GM **estabiliza** pelo cartão do token (depois do teste de First
+  Aid/Medical Tech): estabilizado não rola mais, e dano que entra desfaz.
 - **Dano → ferimento** *(Fase D, D.1)*: dano bruto − SP da localização → BTM (nunca
   abaixo de 1) → ×2 na cabeça. O resultado soma **pontos** na trilha de 40 caixas (4 por
   nível); o nível é derivado dos pontos. Aplicado **pelo GM, no servidor**, com a conta
@@ -221,8 +225,8 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
   ferimento.
 - **Acerto grave** *(D.1)*: mais de 8 pontos num acerto, depois de tudo. Na cabeça,
   morte; num membro, o membro é perdido (aviso no chat).
-- **Morto** *(D.1)*: dano além de 40 pontos, ou mais de 8 na cabeça. Mortal 6 ainda
-  está vivo.
+- **Morto** *(D.1, D.5)*: dano além de 40 pontos, mais de 8 na cabeça, ou death save
+  falho. Mortal 6 ainda está vivo.
 - Bio-monitor com **11 níveis** (0 Saudável → 10 Mortal 6). Efeito do livro
   nos atributos, **sem acumular** entre níveis *(Fase C, C.5)*:
   **Sério** REF −2; **Crítico** REF, INT e COOL pela metade; **Mortal** REF, INT

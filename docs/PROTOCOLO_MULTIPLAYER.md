@@ -101,7 +101,8 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `POST` | `/api/rooms/:code/heartbeat` | qualquer membro | `{}` | `{ success, isOnline }` (sem broadcast) |
 | `POST` | `/api/rooms/:code/leave` | qualquer membro | `{}` | `{ success }` (fecha WS do peer) |
 | `POST` | `/api/rooms/:code/attack` | **GM** | `{ attackerId, targetId, range?, difficulty? }` | `GameRoom` (NPC ataca: ataque, dano, local e ferimento numa mutação — D.3) |
-| `POST` | `/api/rooms/:code/damage` | **GM** | `{ targetId, raw, location }` | `GameRoom` (conta do livro e stun save no chat — D.1; token sem ficha → 400) |
+| `POST` | `/api/rooms/:code/stabilize` | **GM** | `{ targetId, stabilized }` | `GameRoom` (D.5 — só em Mortal; fora dele → 400) |
+| `POST` | `/api/rooms/:code/damage` | **GM** | `{ targetId, raw, location }` | `GameRoom` (conta do livro, death save em Mortal e stun save no chat — D.1/D.5; token sem ficha → 400) |
 | `POST` | `/api/rooms/:code/player-health` | **GM** | `{ targetPeerId, woundLevel }` | `GameRoom` (nível vira o mínimo da caixa em pontos) |
 | `POST` | `/api/rooms/:code/tactical-grid` | **GM** (ou Yjs) | `{ gridState }` | `GameRoom` |
 | `POST` | `/api/rooms/:code/npcs/generate` | **GM** | `{ archetypeId? }` | `GameRoom` |
@@ -155,7 +156,7 @@ o cliente **não** reconecta com o mesmo token; ele refaz o re-join (T3.3).
 | `message` | `{ type, text }` | `postChatMessage` — handle/role derivados do servidor; `rollResult` do cliente é **ignorado** |
 | `roll` | `{ type, kind, skillName? }` | `rollDiceForPlayer` — RNG **server-authoritative** (ver §6) |
 | `heartbeat` | `{ type }` | `touchPlayer` — renova `isOnline`/`lastActiveAt` (**sem broadcast**) |
-| `initiative` | `{ type, action: "next" }` | `nextTurn` (GM) |
+| `initiative` | `{ type, action: "next" }` | `nextTurn` (GM — rola o death save de quem está em Mortal, D.5) |
 | `initiative` | `{ type, action: "roll" }` | `rollInitiative` (GM — D.4) |
 | `initiative` | `{ type, initiativeList }` | `updateInitiative` (GM) |
 

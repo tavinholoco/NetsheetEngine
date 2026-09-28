@@ -296,6 +296,20 @@ describe("API — GM permissions (jogador → 403)", () => {
     expect(res.body.chatMessages.some((m: { text: string }) => m.text.includes("levou 3 de dano"))).toBe(true);
   });
 
+  // D.5 — a regra está em death-save-turn.integration; aqui, o que é da rota.
+  it("stabilize: jogador → 403; GM em Mortal → 200; fora do Mortal → 400; alvo inexistente → 404", async () => {
+    const denied = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(playerToken), targetId: "peer_pj", stabilized: true });
+    expect(denied.status).toBe(403);
+    // O teste de player-health acima deixou o peer_pj em Mortal 6.
+    const ok = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(gmToken), targetId: "peer_pj", stabilized: true });
+    expect(ok.status).toBe(200);
+    expect(ok.body.players["peer_pj"].sheet.isStabilized).toBe(true);
+    const notMortal = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(gmToken), targetId: "gm_peer", stabilized: true });
+    expect(notMortal.status).toBe(400);
+    const missing = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(gmToken), targetId: "nao_existe", stabilized: true });
+    expect(missing.status).toBe(404);
+  });
+
   // D.3 — a regra está em gm-attack.integration; aqui, o que é da rota.
   it("attack: jogador → 403; faixa inválida → 400; GM com NPC → 200 e o ataque no chat", async () => {
     const gen = await request(app).post(`/api/rooms/${code}/npcs/generate`).send({ ...authed(gmToken) });

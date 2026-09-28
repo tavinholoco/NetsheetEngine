@@ -44,6 +44,7 @@ import {
   updateNpcWoundLevel,
   applyDamage,
   resolveGmAttack,
+  setStabilized,
   rollDiceForPlayer,
   verifySession,
   sanitizeText,
@@ -587,6 +588,16 @@ app.post("/api/rooms/:code/attack", roomLimiter, (req, res) => {
   }
   const { attackerId, targetId, range, difficulty } = req.body ?? {};
   return respondToCombat(res, resolveGmAttack(req.params.code, requesterPeerId, { attackerId, targetId, range, difficulty }));
+});
+
+// Fase D (D.5) — GM estabiliza quem está em Mortal: para o death save por turno.
+app.post("/api/rooms/:code/stabilize", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
+  }
+  const { targetId, stabilized } = req.body ?? {};
+  return respondToCombat(res, setStabilized(req.params.code, requesterPeerId, { targetId, stabilized }));
 });
 
 // Send chat message (T1.7 — autenticado; handle/role vêm do servidor).

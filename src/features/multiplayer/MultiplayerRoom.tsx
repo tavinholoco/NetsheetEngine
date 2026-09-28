@@ -14,6 +14,7 @@ import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSheetStore } from '../../stores/useSheetStore';
 import { woundStateOf } from '../../rules/damage';
+import { mortalLevel, woundRow } from '../../rules/character';
 import { useUiStore } from '../../stores/useUiStore';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
@@ -73,15 +74,19 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // dano ou ajusta o Bio-Monitor, a ficha local acompanha (e é salva com ele).
   // Sem loop: a sincronia da ficha não leva o ferimento de volta.
   const tableSheet = view === 'active' && peerId ? room?.players?.[peerId]?.sheet : undefined;
-  const serverWound = tableSheet ? woundStateOf(tableSheet) : null;
+  // D.5 — a estabilização também é do servidor, e vem junto.
+  const serverWound = tableSheet ? { ...woundStateOf(tableSheet), isStabilized: tableSheet.isStabilized === true } : null;
   const localWound = woundStateOf(sheet);
   const woundDiffers =
     !!serverWound &&
-    (serverWound.damagePoints !== localWound.damagePoints || serverWound.isDead !== localWound.isDead || sheet.damagePoints === undefined);
+    (serverWound.damagePoints !== localWound.damagePoints ||
+      serverWound.isDead !== localWound.isDead ||
+      serverWound.isStabilized !== (sheet.isStabilized === true) ||
+      sheet.damagePoints === undefined);
   useEffect(() => {
     if (woundDiffers && serverWound) updateSheet(serverWound);
     // O gatilho é a divergência e os valores do servidor, não o objeto (novo a cada render).
-  }, [woundDiffers, serverWound?.damagePoints, serverWound?.isDead]);
+  }, [woundDiffers, serverWound?.damagePoints, serverWound?.isDead, serverWound?.isStabilized]);
 
   const [roomName, setRoomName] = useState('Mesa de Night City');
   const [chatInput, setChatInput] = useState('');
@@ -401,6 +406,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       return <p className="text-[10px] text-slate-500 border-t border-slate-800 pt-2">Token sem ficha: não recebe dano.</p>;
     }
     const attackers = Object.values(room?.npcs ?? {}).filter((n) => n.peerId !== ownerId && !n.sheet?.isDead);
+    const wound = woundStateOf(owner.sheet ?? {});
     // Só dano rolado por JOGADOR: o do ataque de NPC (mensagem do sistema) o
     // servidor já aplicou, e oferecê-lo aqui convidaria a aplicar duas vezes.
     const lastDamageRoll = [...(room?.chatMessages ?? [])]
@@ -415,6 +421,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         lastDamageRoll={lastDamageRoll}
         onAttack={(input) => roomAction(roomsApi.gmAttack(roomCode, input))}
         onApplyDamage={(targetId, raw, location) => roomAction(roomsApi.applyDamage(roomCode, targetId, raw, location))}
+        status={{
+          label: woundRow(wound.woundLevel).name,
+          points: wound.damagePoints,
+          isMortal: mortalLevel(wound.woundLevel) !== null,
+          isDead: wound.isDead,
+          isStabilized: owner.sheet?.isStabilized === true
+        }}
+        onToggleStabilized={(targetId, value) => roomAction(roomsApi.setStabilized(roomCode, targetId, value))}
       />
     );
   };

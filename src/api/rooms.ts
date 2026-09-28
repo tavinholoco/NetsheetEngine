@@ -232,6 +232,11 @@ export function gmAttack(
   return authedFetch(`/api/rooms/${code}/attack`, input);
 }
 
+/** POST /api/rooms/:code/stabilize — GM estabiliza (ou desfaz) quem está em Mortal (D.5). */
+export function setStabilized(code: string, targetId: string, stabilized: boolean): Promise<GameRoom> {
+  return authedFetch(`/api/rooms/${code}/stabilize`, { targetId, stabilized });
+}
+
 /** POST /api/rooms/:code/npcs/:npcId/delete — GM remove NPC. */
 export function deleteNpc(code: string, npcId: string): Promise<GameRoom> {
   return authedFetch(`/api/rooms/${code}/npcs/${npcId}/delete`, {});

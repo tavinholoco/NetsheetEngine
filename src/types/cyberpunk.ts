@@ -119,6 +119,11 @@ export interface CharacterSheet {
   damagePoints?: number;
   /** Morto: dano além da trilha, cabeça com mais de 8, ou death save falho. */
   isDead?: boolean;
+  /**
+   * Estabilizado (D.5): em Mortal, para de rolar o death save a cada turno.
+   * Na mesa, só o GM marca; dano que entra desfaz (p. 105, via S9).
+   */
+  isStabilized?: boolean;
   skills: SkillItem[];
   cyberware: CyberwareItem[];
   weapons: WeaponItem[];

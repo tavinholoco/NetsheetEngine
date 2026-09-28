@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { ArmorLocation, RollResult } from '../../types/cyberpunk';
 import type { RoomPlayer } from '../../types/multiplayer';
-import { HIT_LOCATIONS, RANGE_BANDS, type RangeBandKey } from '../../rules/tables';
+import { HIT_LOCATIONS, RANGE_BANDS, WOUND_TRACK_POINTS, type RangeBandKey } from '../../rules/tables';
 import { rangeBandMeters } from '../../rules/combat';
 import { Crosshair, Droplet } from 'lucide-react';
 
@@ -22,11 +22,23 @@ interface CombatPanelProps {
   lastDamageRoll?: RollResult;
   onAttack: (input: { attackerId: string; targetId: string; range?: RangeBandKey; difficulty?: number }) => void;
   onApplyDamage: (targetId: string, raw: number, location: ArmorLocation) => void;
+  /** D.5 — estado do alvo e o botão de estabilizar (só em Mortal). */
+  status: { label: string; points: number; isMortal: boolean; isDead: boolean; isStabilized: boolean };
+  onToggleStabilized: (targetId: string, stabilized: boolean) => void;
 }
 
 const FREE = 'free';
 
-export const CombatPanel: React.FC<CombatPanelProps> = ({ targetId, targetName, attackers, lastDamageRoll, onAttack, onApplyDamage }) => {
+export const CombatPanel: React.FC<CombatPanelProps> = ({
+  targetId,
+  targetName,
+  attackers,
+  lastDamageRoll,
+  onAttack,
+  onApplyDamage,
+  status,
+  onToggleStabilized
+}) => {
   const [attackerId, setAttackerId] = useState(attackers[0]?.peerId ?? '');
   const [range, setRange] = useState<RangeBandKey | typeof FREE>('medium');
   const [freeDifficulty, setFreeDifficulty] = useState(15);
@@ -56,6 +68,24 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({ targetId, targetName, 
 
   return (
     <div className="space-y-2 border-t border-slate-800 pt-2">
+      {/* Estado do alvo (D.1/D.5) */}
+      <div className="flex items-center justify-between gap-2 text-[10px] font-mono">
+        <span className={status.isDead ? 'text-red-400 font-bold' : 'text-slate-300'}>
+          {status.isDead ? '💀 MORTO' : status.label} · {status.points}/{WOUND_TRACK_POINTS}
+          {status.isStabilized && !status.isDead && <span className="text-emerald-400"> · estabilizado</span>}
+        </span>
+        {status.isMortal && !status.isDead && (
+          <button
+            type="button"
+            onClick={() => onToggleStabilized(targetId, !status.isStabilized)}
+            title="Depois do teste de First Aid / Medical Tech: para o death save a cada turno. Dano novo desfaz."
+            className="px-1.5 py-0.5 rounded border border-emerald-600 text-emerald-300 hover:bg-emerald-950 cursor-pointer shrink-0"
+          >
+            {status.isStabilized ? 'Desfazer' : '🩹 Estabilizar'}
+          </button>
+        )}
+      </div>
+
       {/* O NPC ataca */}
       <details className="group bg-slate-900/90 rounded-lg border border-slate-800">
         <summary className="flex items-center gap-1 p-2 text-[11px] font-bold text-amber-300 uppercase cursor-pointer select-none">

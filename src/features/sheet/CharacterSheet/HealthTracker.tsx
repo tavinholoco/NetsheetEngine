@@ -125,6 +125,9 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
             <span className="text-[10px] font-mono text-slate-400 uppercase">Estado</span>
           </div>
           <span className={`font-mono font-black text-sm ${isDead ? 'text-red-400' : current.color}`}>{isDead ? 'Morto' : current.name}</span>
+          {sheet.isStabilized && !isDead && mortal !== null && (
+            <span className="block font-mono text-[10px] text-emerald-400 mt-0.5">Estabilizado — sem death save por turno</span>
+          )}
         </div>
 
         <div className="bg-slate-950/80 p-3 rounded-lg border border-slate-800">

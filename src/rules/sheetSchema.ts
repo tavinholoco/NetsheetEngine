@@ -321,6 +321,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     woundLevel,
     damagePoints: wound.damagePoints,
     isDead: wound.isDead,
+    isStabilized: input.isStabilized === true,
     skills: sanitizeSkills(input.skills, changed),
     cyberware,
     weapons: sanitizeWeapons(input.weapons, changed),

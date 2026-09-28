@@ -151,7 +151,8 @@ mais no banco por mais um dia; recolher cedo apaga a mesa de alguém, e o delete
 **Implementado na D.1 (28/09/2026)** (RUL-04): `resolveHit` e `applyHit` em
 [`src/rules/damage.ts`](../src/rules/damage.ts), chamados pelo `applyDamage` do servidor
 (`POST /api/rooms/:code/damage`, só o GM). A trilha conta **pontos** (decisão 7b): 40 caixas de 1
-ponto, e o `woundLevel` é derivado delas. O death save por turno (último nó) é da D.5.
+ponto, e o `woundLevel` é derivado delas. O death save (último nó) entrou na D.5: rolado pelo
+servidor logo depois do dano e na virada de turno (`nextTurn`), até morrer ou o GM estabilizar.
 
 *Conferido contra o livro na C.9 (25/09/2026) — fontes em
 [`CONFERENCIA_CP2020.md`](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d). Ordem na
@@ -187,7 +188,9 @@ flowchart TB
     K --> L["Novo woundLevel<br/>derivado dos pontos"]
     L --> N["Efeito nos atributos<br/>Serio REF -2<br/>Critico REF INT COOL /2<br/>Mortal REF INT COOL /3"]
     L --> M{"Nivel Mortal?"}
-    M -->|"sim"| O["Death save a cada turno<br/>1d10 menor ou igual a<br/>BODY menos nivel Mortal"]
+    M -->|"sim"| O["Death save na hora, antes do stun,<br/>e a cada turno depois<br/>1d10 menor ou igual a<br/>BODY menos nivel Mortal"]
+    O -->|"falhou"| X
+    O -->|"estabilizado pelo GM"| Z["Para de rolar<br/>dano novo desfaz"]
 ```
 
 O que a conferência fixou, e o que ficou para o dono:

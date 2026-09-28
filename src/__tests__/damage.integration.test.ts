@@ -112,6 +112,41 @@ describe('D.1 — stun save automático a cada dano que entra', () => {
   });
 });
 
+describe('D.5 — o dano que deixa em Mortal pede o death save na hora, antes do stun', () => {
+  it('Crítico (12) + 2 no braço = 14 = Mortal 0: death 8 ≤ 8 passa, depois stun 5 ≤ 5 passa', () => {
+    const code = mesa({ damagePoints: 12 } as Partial<CharacterSheet>);
+    applyDamage(code, 'gm_1', { targetId: 'p1', raw: 5, location: 'Left Arm' }, scriptedRng([8, 5]));
+    const rolls = getRoom(code)!.chatMessages.slice(-2).map((m) => m.rollResult!.label);
+    expect(rolls).toEqual(['Death Save (Mortal 0)', 'Stun Save (Mortal 0)']);
+    expect(vex(code).sheet.isDead).toBe(false);
+  });
+
+  it('falhou o death save: morto, e sem stun save (a fila só tem o 9)', () => {
+    const code = mesa({ damagePoints: 12 } as Partial<CharacterSheet>);
+    applyDamage(code, 'gm_1', { targetId: 'p1', raw: 5, location: 'Left Arm' }, scriptedRng([9]));
+    expect(vex(code).sheet.isDead).toBe(true);
+    expect(lastChat(code)).toContain('MORTO');
+  });
+
+  it('abaixo do Mortal não há death save — só o stun', () => {
+    const code = mesa();
+    applyDamage(code, 'gm_1', { targetId: 'p1', raw: 20, location: 'Torso' }, scriptedRng([5]));
+    expect(getRoom(code)!.chatMessages.at(-1)!.rollResult!.label).toBe('Stun Save (Sério)');
+  });
+
+  it('dano que entra desfaz a estabilização (p. 105, via S9)', () => {
+    const code = mesa({ damagePoints: 14, isStabilized: true } as Partial<CharacterSheet>);
+    applyDamage(code, 'gm_1', { targetId: 'p1', raw: 4, location: 'Left Arm' }, scriptedRng([1, 1]));
+    expect(vex(code).sheet.isStabilized).toBe(false);
+  });
+
+  it('dano que a armadura segurou não desfaz a estabilização', () => {
+    const code = mesa({ damagePoints: 14, isStabilized: true } as Partial<CharacterSheet>);
+    applyDamage(code, 'gm_1', { targetId: 'p1', raw: 8, location: 'Torso' }, scriptedRng([]));
+    expect(vex(code).sheet.isStabilized).toBe(true);
+  });
+});
+
 describe('D.1 — as mortes e o membro perdido', () => {
   it('cabeça com mais de 8 (já dobrado): morto, e sem stun save', () => {
     const code = mesa();
@@ -165,7 +200,8 @@ describe('D.1 — quem pode aplicar, e em quem', () => {
     const expected = resolveHit({
       raw: 40, sp: armorSpAt(npc.sheet.armor, 'Torso'), btm: btmFromBody(npc.sheet.stats.BODY), location: 'Torso'
     }).final;
-    applyDamage(code, 'gm_1', { targetId: npc.peerId, raw: 40, location: 'Torso' }, scriptedRng([1]));
+    // Pode cair em Mortal: a fila cobre o death save (D.5) e o stun.
+    applyDamage(code, 'gm_1', { targetId: npc.peerId, raw: 40, location: 'Torso' }, scriptedRng([1, 1]));
     expect(getRoom(code)!.npcs![npc.peerId].sheet.damagePoints).toBe(Math.min(40, expected));
   });
 });

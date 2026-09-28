@@ -1078,7 +1078,28 @@ cliente e servidor para ela.
         Vex 27 (o 10 explodiu, 10 → 9), o NPC 23 e o Kaze 14 (Solo, com Combat Sense 3), e o "Guarda"
         posto à mão continuou na lista.
       - 15 testes em `initiative.integration` + 1 de rota.
-- [ ] **D.5** Death saves entrando na virada de turno de quem está em nível mortal.
+- [x] **D.5** Death saves entrando na virada de turno de quem está em nível mortal. *(28/09/2026)*
+      - **Regra conferida, e maior que o texto do item:** em Mortal, o death save vem **logo depois do
+        dano** (antes do stun save) **e a cada turno** depois, até morrer ou ser **estabilizado**; dano
+        novo desfaz a estabilização (S5; S9 com as p. 99 e 105). Sem estabilização, a rolagem
+        automática a cada turno mataria todo mundo cedo ou tarde — divergência do livro. Por isso a
+        D.5 trouxe o `isStabilized` mínimo.
+      - **Servidor:** o `nextTurn` rola o death save quando a vez chega a quem está em Mortal, vivo e
+        não estabilizado (jogador ou NPC; entrada posta à mão não tem ficha). O núcleo do dano rola o
+        death save antes do stun; falhou, Morto e sem stun. `setStabilized` + `POST
+        /api/rooms/:code/stabilize` (só GM, só em Mortal). Na mesa, o `isStabilized` é do servidor —
+        a sincronia e a reconexão o mantêm, como o ferimento.
+      - **Provado revertendo:** sem a linha que mantém o `isStabilized` do servidor na sincronia, o
+        jogador se estabiliza sozinho e o teste falha.
+      - **Tela:** o cartão do token mostra o estado ("Mortal 2 · 21/40 · estabilizado") e o botão
+        "🩹 Estabilizar"/"Desfazer" em Mortal; a ficha do jogador mostra "Estabilizado". **Visto no
+        navegador:** a vez chegou ao Vex (Mortal 2) e o servidor rolou "4 ≤ 6 (BODY 8 − 2)";
+        estabilizado pelo cartão, a vez deu a volta e nenhum death save novo saiu.
+      - Um teste da D.1 ganhou um dado na fila: o NPC que leva 40 pode cair em Mortal e agora rola o
+        death save também. 14 testes em `death-save-turn.integration` + 5 no `damage.integration` +
+        1 de rota.
+      - **ADIAR:** a rolagem de estabilização (First Aid/Medical Tech) automática — o GM conduz e
+        marca; gatilho na conferência.
 - [ ] **D.6** Testes de comportamento do loop (aplicar dano, avançar turno). *(ARQ-08, parte 2)*
 - [ ] **D.7** `git tag v0.4.3`.
 - [ ] **D.8** 📐 **Desenho** — implementar o `applyDamage` contra o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) já confirmado pela Fase C. Se a implementação divergir do desenho, o desenho muda junto no mesmo commit.
