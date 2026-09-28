@@ -874,7 +874,18 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           <div className="lg:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between p-3 border-b border-slate-800">
               <span className="text-xs font-black text-yellow-400 uppercase tracking-widest">Ordem de Iniciativa</span>
-              <span className="text-[9px] text-slate-500">{initiative.length} entradas</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-slate-500">{initiative.length} entradas</span>
+                {isGm && (
+                  <button
+                    onClick={() => roomAction(roomsApi.rollInitiative(roomCode))}
+                    title="1d10 + REF (+ Combat Sense do Solo) para cada combatente com ficha. Quem você pôs à mão continua."
+                    className="px-2.5 py-1 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-[10px] uppercase rounded cursor-pointer transition-all"
+                  >
+                    🎲 Rolar iniciativa
+                  </button>
+                )}
+              </div>
             </div>
             <div className="divide-y divide-slate-900">
               {initiative.map((entry, idx) => (
@@ -897,7 +908,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 </div>
               ))}
               {initiative.length === 0 && (
-                <div className="text-center py-10 text-[10px] text-slate-600">Adicione combatentes para iniciar a rodada.</div>
+                <div className="text-center py-10 text-[10px] text-slate-600">Role a iniciativa ou adicione combatentes para iniciar a rodada.</div>
               )}
             </div>
             {initiative.length > 0 && (

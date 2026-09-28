@@ -1058,8 +1058,26 @@ cliente e servidor para ela.
         `/multiplayer`) volta para `/`. O efeito "aba → URL" do `App.tsx` se protege do primeiro render
         com um `ref`, e o `StrictMode` roda o efeito duas vezes. Produção não tem `StrictMode` duplo,
         mas o E2E roda o build de produção — por isso nunca apareceu.
-- [ ] **D.4** Iniciativa automática (`1d10 + REF` no servidor para todos), com ajuste manual mantido.
-      *(RUL-09)*
+- [x] **D.4** Iniciativa automática (`1d10 + REF` no servidor para todos), com ajuste manual mantido.
+      *(RUL-09 — 28/09/2026)*
+      - **Regra conferida:** `1d10` **aberto** + REF **corrente** + Combat Sense do Solo (S1
+        `1d10!!+REF+Combat_Sense`; S8 `1d10x10 + ref.total + CombatSense`, com o ferimento já no REF).
+        O 1 **não** é fumble: iniciativa não é teste. O `resolveCheck` ganhou `fumbleTable: false`
+        para isso; `sheetInitiativeRoll` em `rolls.ts`, `combatSenseBonus` em `roles.ts`.
+      - **Servidor:** `rollInitiative` (só GM), pela rota e pelo WebSocket (`action: "roll"`). Rola
+        para os jogadores (menos o GM) e os NPCs vivos com ficha; a entrada que o GM pôs à mão continua
+        com o valor dela. Empate fica na ordem da rolagem (o livro não dá desempate — ADIAR com
+        gatilho na conferência). As parcelas de cada rolagem vão para o chat.
+      - **Achado ao mexer no `updateInitiative`:** a entrada era gravada com `{ ...e }` — **qualquer
+        campo** do cliente virava estado da sala, persistido e transmitido a todos, sem teto de
+        tamanho; e a vez podia apontar para outra entrada que não a primeira. Agora a entrada é montada
+        campo a campo e a vez começa no primeiro. **Provado revertendo:** com o corpo antigo, os 2
+        testes do ajuste manual falham; com o novo, passam. Só o GM chegava a esse caminho — vai para
+        o portão (D.9).
+      - **Tela:** "🎲 Rolar iniciativa" na aba de iniciativa, só para o GM. **Visto no navegador:**
+        Vex 27 (o 10 explodiu, 10 → 9), o NPC 23 e o Kaze 14 (Solo, com Combat Sense 3), e o "Guarda"
+        posto à mão continuou na lista.
+      - 15 testes em `initiative.integration` + 1 de rota.
 - [ ] **D.5** Death saves entrando na virada de turno de quem está em nível mortal.
 - [ ] **D.6** Testes de comportamento do loop (aplicar dano, avançar turno). *(ARQ-08, parte 2)*
 - [ ] **D.7** `git tag v0.4.3`.

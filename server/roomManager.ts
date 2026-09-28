@@ -11,6 +11,7 @@ import { parseDamageFormula, type Rng } from "../src/rules/dice.js";
 import {
   FALLBACK_DAMAGE,
   sheetAttackRoll,
+  sheetInitiativeRoll,
   sheetDamageRoll,
   sheetDeathSaveRoll,
   sheetSkillRoll,
@@ -1214,14 +1215,74 @@ export function updateInitiative(code: string, requesterPeerId: string, initiati
 
   if (!Array.isArray(initiativeList)) return { room: null, error: "Lista de iniciativa inválida" };
 
-  room.initiativeList = initiativeList
-    .map(e => ({
-      ...e,
+  // D.4 — a entrada é montada campo a campo. Antes era `{ ...e }`: qualquer
+  // campo que o cliente mandasse virava estado da sala, persistido e
+  // transmitido a todos, sem teto de tamanho.
+  setInitiativeOrder(
+    room,
+    initiativeList.slice(0, MAX_INITIATIVE_ENTRIES).map((e, i) => ({
+      playerId: sanitizeText(e?.playerId, 64) || `init_${i}`,
       handle: sanitizeText(e?.handle, 30) || "—",
-      score: Math.max(0, Math.min(999, Number(e?.score) || 0))
+      role: sanitizeText(e?.role, 30) || "—",
+      score: Math.max(0, Math.min(999, Number(e?.score) || 0)),
+      isCurrentTurn: false
     }))
-    .slice(0, 50);
+  );
+  return { room };
+}
+
+const MAX_INITIATIVE_ENTRIES = 50;
+
+/** Grava a ordem e dá a vez ao primeiro — a rodada (re)começa. */
+function setInitiativeOrder(room: GameRoom, entries: InitiativeEntry[]): void {
+  room.initiativeList = entries.map((e, i) => ({ ...e, isCurrentTurn: i === 0 }));
   room.activeTurnIndex = 0;
+}
+
+// ============================================================
+// INICIATIVA AUTOMÁTICA (Fase D, D.4)
+// ============================================================
+// 1d10 aberto + REF corrente + Combat Sense, rolado no servidor para todo
+// combatente com ficha: os jogadores (menos o GM) e os NPCs vivos. Quem o GM
+// pôs à mão (sem ficha) continua na lista com o valor dele — o ajuste manual
+// segue valendo, antes e depois. Empate: o livro não dá desempate; a ordem
+// fica a da rolagem (a `sort` do JS é estável).
+export function rollInitiative(
+  code: string,
+  requesterPeerId: string,
+  rng: Rng = serverRng
+): { room: GameRoom | null; error?: string } {
+  const room = getRoom(code);
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa rola a iniciativa." };
+  }
+
+  const combatants = [
+    ...Object.values(room.players).filter((p) => p.peerId !== room.gmPeerId),
+    ...Object.values(room.npcs ?? {})
+  ].filter((c) => c.sheet && !c.sheet.isDead);
+
+  const rolled = combatants.map((c) => ({ c, roll: sheetInitiativeRoll(rng, c.sheet) }));
+  const isCharacter = (id: string) => !!room.players[id] || !!room.npcs?.[id];
+  const manual = room.initiativeList.filter((e) => !isCharacter(e.playerId));
+
+  const entries: InitiativeEntry[] = [
+    ...rolled.map(({ c, roll }) => ({
+      playerId: c.peerId,
+      handle: sanitizeText(c.handle, 30) || "—",
+      role: sanitizeText(c.role, 30) || "—",
+      score: roll.total,
+      isCurrentTurn: false
+    })),
+    ...manual
+  ]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_INITIATIVE_ENTRIES);
+  setInitiativeOrder(room, entries);
+
+  const lines = rolled.map(({ c, roll }) => `${c.handle} ${roll.total} (${roll.details})`);
+  pushSystemMessage(room, "initiative", `⚔️ Iniciativa rolada pelo servidor: ${lines.join(" · ") || "nenhum combatente com ficha"}.`);
   return { room };
 }
 

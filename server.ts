@@ -31,6 +31,7 @@ import {
   updateRoomSettings,
   updateInitiative,
   nextTurn,
+  rollInitiative,
   leaveRoom,
   getAllActiveRooms,
   getRoomPublicSummary,
@@ -677,6 +678,9 @@ app.post("/api/rooms/:code/initiative", roomLimiter, (req, res) => {
   let result;
   if (action === 'next') {
     result = nextTurn(req.params.code, requesterPeerId);
+  } else if (action === 'roll') {
+    // D.4 — iniciativa automática, rolada no servidor.
+    result = rollInitiative(req.params.code, requesterPeerId);
   } else if (initiativeList) {
     result = updateInitiative(req.params.code, requesterPeerId, initiativeList);
   } else {
@@ -1072,7 +1076,9 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           const result =
             msg.action === "next"
               ? nextTurn(code, peerId)
-              : Array.isArray(msg.initiativeList)
+              : msg.action === "roll"
+                ? rollInitiative(code, peerId)
+                : Array.isArray(msg.initiativeList)
                 ? updateInitiative(code, peerId, msg.initiativeList)
                 : null;
           if (result?.room) broadcastRoomUpdate(code);

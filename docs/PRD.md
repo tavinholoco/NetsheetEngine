@@ -246,7 +246,11 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
   aplica o dano que um jogador rolou — a rolagem de dano guarda o local de impacto.
 - Rolagens da mesa são **server-authoritative**: o cliente nunca envia o
   resultado; o bônus é derivado da ficha que o servidor possui.
-- Iniciativa ordenada por score (decrescente) com avanço de turno.
+- **Iniciativa automática** *(Fase D, D.4)*: o GM rola e o servidor faz `1d10`
+  aberto + REF corrente (+ Combat Sense do Solo) para cada combatente com ficha — os
+  jogadores e os NPCs vivos. O 1 não é fumble. Quem o GM pôs à mão continua na lista
+  com o valor dele; empate fica na ordem da rolagem. Ordem decrescente, com avanço
+  de turno.
 
 ---
 

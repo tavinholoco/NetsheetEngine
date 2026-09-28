@@ -251,3 +251,8 @@ export function setInitiativeList(code: string, list: InitiativeEntry[]): Promis
 export function nextTurn(code: string): Promise<GameRoom> {
   return authedFetch(`/api/rooms/${code}/initiative`, { action: 'next' });
 }
+
+/** D.4 — o servidor rola 1d10 + REF (+ Combat Sense) para todo combatente com ficha. */
+export function rollInitiative(code: string): Promise<GameRoom> {
+  return authedFetch(`/api/rooms/${code}/initiative`, { action: 'roll' });
+}

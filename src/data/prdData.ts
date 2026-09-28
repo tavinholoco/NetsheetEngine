@@ -117,7 +117,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       features: [
         'Salas com código único e SSE de baixa latência',
         'Grid tático com tokens, cobertura, temas e drag & drop',
-        'Iniciativa de combate e rolagens compartilhadas na mesa',
+        'Iniciativa automática no servidor (1d10 + REF + Combat Sense) e rolagens compartilhadas na mesa',
         'Geração de NPCs e fichas de edgerunner pelo GM',
         'Chat da mesa com mensagens do sistema e dados rolados'
       ],

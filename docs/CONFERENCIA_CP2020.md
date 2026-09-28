@@ -38,7 +38,7 @@ modelo ainda não representa:
 |---|---|---|
 | Ordem ×2 × BTM na cabeça | **Decidido em 26/09: SP → BTM → ×2** (decisão 6). Implementa na D.1 | O livro dá a regra e não diz quando ([pesquisa de 26/09](#dano--a-ordem-do-pipeline-para-a-fase-d)) |
 | Dano → ferimento, perda de membro, dificuldade por alcance | Fase D | É o loop de combate. Penetração escalonada e cobertura: **ADIAR** na D.0 ([detalhe](#o-que-a-fase-d-conferiu)) |
-| Combat Sense na iniciativa | D.4 | A iniciativa automática nasce lá |
+| Combat Sense na iniciativa | **D.4 — feito** | Ver [o que a Fase D conferiu](#o-que-a-fase-d-conferiu) |
 | Texto das tabelas de fumble | ADIAR | O dado já sai rolado; o GM lê no livro |
 | Cromo que soma atributo; EV da armadura no REF | Fase K | O modelo de dados não tem o campo |
 | Humanidade de implante "desinstalado" | ADIAR | O modelo não distingue nunca-instalado de removido |
@@ -244,7 +244,8 @@ Verificação da **D.0** (28/09/2026), com as decisões do dono (decisão 7 do p
 | Perda de membro | Membro com **mais de 8** pontos num acerto, depois de todos os modificadores: decepado ou inutilizado | S5, S9 | **D.1** — aviso no chat |
 | Death save ao perder membro | Imediato, em Mortal 0 | **só S9** | **D.1 como aviso**, sem rolagem automática. **Gatilho:** o dono confirmar no livro |
 | Cabeça com mais de 8 | Morte instantânea (o ×2 já aplicado) | S5, S9 | **D.1** — estado Morto |
-| Iniciativa | `1d10 + REF`; Solo soma Combat Sense | S5 (e S3, S6 acima) | **D.4** |
+| Iniciativa | `1d10` **aberto** (o 10 explode) + REF **corrente** (com o ferimento) + Combat Sense do Solo. O 1 **não** é fumble — iniciativa não é teste | S1 (`1d10!!+REF+Combat_Sense`), S8 (`1d10x10 + ref.total + CombatSense`, com o `ref.total` já ferido), S5 | **D.4** — `sheetInitiativeRoll` |
+| Empate na iniciativa | O livro não dá desempate | Nenhuma fonte trata | Fica a ordem da rolagem. **ADIAR** — gatilho: a mesa pedir um desempate (ex.: maior REF) |
 | Dificuldade por alcance | Queima-roupa 10 (até 1 m); curto 15 (¼ do alcance); médio 20 (½); longo 25 (alcance); extremo 30 (2×) — p. 99 | **S8** (`lookups.js`) e **S9** (`rangefinding.js`, cita a p. 99) dão as cinco; **S1** confirma as quatro de cima | **D.3** — `RANGE_BANDS` no `tables.ts` |
 | O ataque acerta com | Total **igual ou maior** que a dificuldade | S8 (`attackRoll.total >= DC`), S9 | **D.3** — `attackHits` |
 | Fumble no ataque | Erro, mesmo com total alto | S9; e a regra do 1 (C.1) | **D.3** |

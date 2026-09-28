@@ -358,6 +358,18 @@ describe("API — iniciativa (GM only)", () => {
     const res = await request(app).post(`/api/rooms/${code}/initiative`).send({ ...authed(playerToken), action: "next" });
     expect(res.status).toBe(403);
   });
+
+  // D.4 — a regra está em initiative.integration; aqui, o que é da rota.
+  it("roll: jogador → 403; GM → 200, o jogador entra rolado e as entradas manuais ficam", async () => {
+    const denied = await request(app).post(`/api/rooms/${code}/initiative`).send({ ...authed(playerToken), action: "roll" });
+    expect(denied.status).toBe(403);
+    const ok = await request(app).post(`/api/rooms/${code}/initiative`).send({ ...authed(gmToken), action: "roll" });
+    expect(ok.status).toBe(200);
+    const ids = ok.body.initiativeList.map((i: { playerId: string }) => i.playerId);
+    expect(ids).toContain("peer_pj");
+    expect(ids).toContain("peer_npc"); // entrada manual (não é personagem da sala) continua
+    expect(ok.body.initiativeList[0].isCurrentTurn).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

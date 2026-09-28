@@ -110,7 +110,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `POST` | `/api/rooms/:code/npcs/:npcId/delete` | **GM** | `{}` | `GameRoom` |
 | `POST` | `/api/rooms/:code/npcs/:npcId/health` | **GM** | `{ woundLevel }` | `GameRoom` |
 | `POST` | `/api/rooms/:code/settings` | **GM** | `{ locationName?, combatModifier?, modifierReason? }` | `GameRoom` |
-| `POST` | `/api/rooms/:code/initiative` | **GM** | `{ action: "next" }` **ou** `{ initiativeList }` | `GameRoom` |
+| `POST` | `/api/rooms/:code/initiative` | **GM** | `{ action: "next" }`, `{ action: "roll" }` (D.4 — servidor rola para todos) **ou** `{ initiativeList }` (campos montados um a um) | `GameRoom` |
 
 **Anti-forjamento (T5.4):** o campo `rollResult` enviado no `message` é **ignorado** — vira texto
 normal. Rolagens só existem via `roll`/`/roll`, com RNG e bônus derivados da ficha do servidor.
@@ -156,6 +156,7 @@ o cliente **não** reconecta com o mesmo token; ele refaz o re-join (T3.3).
 | `roll` | `{ type, kind, skillName? }` | `rollDiceForPlayer` — RNG **server-authoritative** (ver §6) |
 | `heartbeat` | `{ type }` | `touchPlayer` — renova `isOnline`/`lastActiveAt` (**sem broadcast**) |
 | `initiative` | `{ type, action: "next" }` | `nextTurn` (GM) |
+| `initiative` | `{ type, action: "roll" }` | `rollInitiative` (GM — D.4) |
 | `initiative` | `{ type, initiativeList }` | `updateInitiative` (GM) |
 
 Qualquer outro `type` ou JSON inválido é ignorado silenciosamente. Tipos de rolagem válidos:
