@@ -322,8 +322,9 @@ Firebase → Supabase) · 3 (multiplayer: persistência e confiabilidade) ·
 documentação e identidade do produto) · 9 (testes) · 10 (deploy/CI-CD/hardening).
 As Fases 11 e 12 foram reordenadas para as Fases K e M do plano novo.
 
-**Em andamento:** Fase A (reancorar o projeto) do `PLANO_MESTRE.md`.
+**Concluídas:** A (reancorar o projeto, 03/09) · B (fechar buracos de autorização, 03/09 —
+mergeada em 24/09) · C (fonte única de regras, 25/09 — mergeada em 26/09, tag `v0.4.2`).
 
-**Próximas:** B (fechar buracos de autorização) · C (fonte única de regras) · D (loop de
-combate) · E–J (varreduras) · F (identidade visual Cyberpunk 2020) · K (profundidade de
-sistema) · L (performance e escala) · M (validação e encerramento).
+**Próxima:** D (loop de combate), abrindo pela D.0. Depois: E–J (varreduras) · F (identidade
+visual Cyberpunk 2020) · K (profundidade de sistema) · L (performance e escala) · M (validação e
+encerramento).
