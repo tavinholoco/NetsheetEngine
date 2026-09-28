@@ -6,6 +6,9 @@
 
 ## Primeiro passo, sempre
 
+0. **Atualize o `master` local antes de ler qualquer coisa:** `git fetch --all --prune --tags` e
+   `git merge --ff-only origin/master`. Os PRs são mergeados pelo dono no GitHub; sem isso você lê um
+   plano velho. *(A sessão de 25/09 abriu com o `master` 14 commits atrás.)*
 1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M).
 2. Ache o **primeiro item `[ ]` não marcado**. É de onde o trabalho continua.
 3. Rode `git log --oneline -15` e `git tag -l` — as tags marcam o fim de cada fase de construção.
