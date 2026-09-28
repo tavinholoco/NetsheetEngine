@@ -41,11 +41,13 @@ e ainda será encerrado formalmente na Fase M.
 O detalhamento de produto está em [`docs/PRD.md`](./docs/PRD.md) e em
 [`src/data/prdData.ts`](./src/data/prdData.ts) (consumido pelo visualizador de PRD do app).
 
-Dois documentos vivos sustentam o plano e são atualizados pelas fases que mudam o sistema:
+Três documentos vivos sustentam o plano e são atualizados pelas fases que mudam o sistema:
 
 - [`docs/ARQUITETURA.md`](./docs/ARQUITETURA.md) — diagramas Mermaid do sistema: contêineres e
   fronteiras de confiança, ciclo de vida de sala e sessão, pipeline de dano FNFF e máquina de estados
   do ferimento.
+- [`docs/CONFERENCIA_CP2020.md`](./docs/CONFERENCIA_CP2020.md) — cada regra do jogo contra o livro de
+  1990, com fonte, e o que ficou para outra fase.
 - [`docs/SEGURANCA.md`](./docs/SEGURANCA.md) — o portão de segurança (seis perguntas STRIDE que toda
   fase de construção responde antes de fechar) e o modelo de ameaça.
 

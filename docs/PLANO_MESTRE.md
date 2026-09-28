@@ -940,6 +940,25 @@ cliente e servidor para ela.
         no `ARQUITETURA.md`. Conferir se a D precisa desse estado ou se ele fica para depois.
       - Conferir contra o livro o que a C deixou para a D: penetração escalonada, perda de membro,
         dificuldade por alcance e o Combat Sense na iniciativa (D.4).
+      - **Premissa de modelo, achada no preparo da D (28/09):** a ficha guarda só o **nível**
+        (`woundLevel` 0–10), e o livro conta **pontos** (4 por caixa, 40 no total). Aplicar 6 pontos
+        deixa Leve com 2 guardados para a próxima caixa — o modelo atual perde esses 2. Guardar pontos
+        muda o **formato salvo** da ficha (o `data` jsonb e o `room_state`): não é migration SQL,
+        mas é mudança de contrato que o `sheetSchema` e fichas antigas precisam aceitar. Decidir na
+        D.0, antes da D.1. Se virar migration, vale a decisão 5 (PR próprio, antes do código).
+      - **Duas perguntas para o dono, cedo na fase:** quem escreve o `woundLevel` quando o dano virar
+        automático (D.1 — hoje o jogador baixa o próprio pela ficha), e o que acontece com dano em token
+        sem ficha (D.2).
+      - **Onde está o código:** regras em `src/rules/` (`tables.ts`, `character.ts`, `rolls.ts`);
+        `armorSpAt` ainda mora em `src/utils/derivedStats.ts`; na mesa, `updatePlayerWoundLevel`,
+        `updateNpcWoundLevel` e `rollDiceForPlayer` em `server/roomManager.ts`; grid em
+        `src/features/multiplayer/TacticalGrid.tsx`. Padrão de teste da C: `scriptedRng`
+        (`src/test/`), `table-rolls.integration` e `parity.integration` — a D deve seguir o mesmo.
+      - **Custo:** cada dano aplicado é uma mutação da sala, e cada mutação reenvia a sala inteira a
+        todos (ARQ-01). Não muda a estimativa de banda do contrato de custo zero, mas o fluxo da D.3
+        não deve gerar mutação por passo intermediário (mirar, escolher alvo) — só no dano aplicado.
+      - **Infra:** o Render está suspenso até 01/10 (ver Operação). Não bloqueia a D: o CI testa o
+        build de produção, inclusive o E2E com dois navegadores.
 - [ ] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → BTM → ×2 na cabeça →
       conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04)*
       - **Ordem decidida (decisão 6):** armadura → BTM (mínimo 1) → ×2 na cabeça. O
@@ -1337,7 +1356,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | Verificação | Ao fechar a Fase C (25/09/2026) |
 |---|---|
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **395** testes, 19 arquivos |
+| `npx vitest run` | **394** testes, 19 arquivos *(395 ao fechar a C; o PR #9 removeu o teste que exigia a marca de "inferência" na escopeta)* |
 | `npm run test:e2e` | 6/6 (Playwright) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C** (Supabase local desligado; a fase não mexeu em schema nem RLS) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia** (3 moderadas do `qs`, não bloqueiam) |

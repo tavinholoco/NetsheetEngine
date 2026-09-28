@@ -6,6 +6,9 @@
 
 ## Primeiro passo, sempre
 
+0. **Atualize o `master` local antes de ler qualquer coisa:** `git fetch --all --prune --tags` e
+   `git merge --ff-only origin/master`. Os PRs são mergeados pelo dono no GitHub; sem isso você lê um
+   plano velho. *(A sessão de 25/09 abriu com o `master` 14 commits atrás.)*
 1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M).
 2. Ache o **primeiro item `[ ]` não marcado**. É de onde o trabalho continua.
 3. Rode `git log --oneline -15` e `git tag -l` — as tags marcam o fim de cada fase de construção.
@@ -64,7 +67,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 395 testes ao fechar a Fase C (ver "Linha de base atual" no plano)
+npx vitest run            # 394 testes na abertura da Fase D (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 6 testes, sobe o servidor de produção
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
