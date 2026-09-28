@@ -237,6 +237,13 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 - O **modificador de situação do GM** (`combatModifier`, ±10) entra em ataque e
   perícia, com o motivo no detalhe da rolagem. Não entra em dano nem em save.
   *(Fase C, C.4 — antes era exibido e nenhuma rolagem o somava.)*
+- **Acertar o alvo** *(Fase D, D.3)*: o ataque precisa **igualar ou superar** a
+  dificuldade da faixa de alcance — queima-roupa 10 (até 1 m), curta 15 (¼ do
+  alcance da arma), média 20 (½), longa 25 (alcance), extrema 30 (2×). Fumble erra
+  sempre. No corpo a corpo, o GM usa o total do defensor como dificuldade.
+- **Combate no grid** *(D.3)*: o GM seleciona o token alvo e, no cartão dele, faz
+  um NPC atacar (o servidor rola ataque, dano e local e aplica, numa mutação só) ou
+  aplica o dano que um jogador rolou — a rolagem de dano guarda o local de impacto.
 - Rolagens da mesa são **server-authoritative**: o cliente nunca envia o
   resultado; o bônus é derivado da ficha que o servidor possui.
 - Iniciativa ordenada por score (decrescente) com avanço de turno.

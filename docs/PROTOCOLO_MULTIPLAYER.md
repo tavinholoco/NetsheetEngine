@@ -100,6 +100,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `POST` | `/api/rooms/:code/roll` | qualquer membro | `{ kind, skillName? }` | `{ room, roll }` (RNG no servidor) |
 | `POST` | `/api/rooms/:code/heartbeat` | qualquer membro | `{}` | `{ success, isOnline }` (sem broadcast) |
 | `POST` | `/api/rooms/:code/leave` | qualquer membro | `{}` | `{ success }` (fecha WS do peer) |
+| `POST` | `/api/rooms/:code/attack` | **GM** | `{ attackerId, targetId, range?, difficulty? }` | `GameRoom` (NPC ataca: ataque, dano, local e ferimento numa mutação — D.3) |
 | `POST` | `/api/rooms/:code/damage` | **GM** | `{ targetId, raw, location }` | `GameRoom` (conta do livro e stun save no chat — D.1; token sem ficha → 400) |
 | `POST` | `/api/rooms/:code/player-health` | **GM** | `{ targetPeerId, woundLevel }` | `GameRoom` (nível vira o mínimo da caixa em pontos) |
 | `POST` | `/api/rooms/:code/tactical-grid` | **GM** (ou Yjs) | `{ gridState }` | `GameRoom` |

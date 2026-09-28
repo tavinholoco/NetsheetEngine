@@ -127,7 +127,7 @@ da Fase D. **C.2** — `btmFromBody`, rótulo do `StatBlock` e PRD corrigidos.
 | Perícia por tipo de arma | Pistola → Handgun; SMG → Submachinegun; Rifle → Rifle; Pesada → Heavy Weapons; Branca → Melee; Arco → Archery | Não existia mapa | **C.3** (`WEAPON_SKILL_BY_TYPE`) |
 | Escopeta | **Rifle** — não existe perícia de escopeta; o capítulo de armas manda usar Rifle | — | **C.3 — confirmado em 26/09** (S6, S8) |
 | Modificador de situação do GM | Entra na rolagem | `combatModifier` sem leitor | **C.4** — entra em ataque e perícia, visível no detalhe |
-| Dificuldade por alcance | Queima-roupa 10, curto 15, médio 20, longo 25, extremo 30 | Não existe | **Fase D** (acertar o alvo é do loop de combate) |
+| Dificuldade por alcance | Queima-roupa 10, curto 15, médio 20, longo 25, extremo 30 | Não existe | **D.3** — `RANGE_BANDS`; ver [o que a Fase D conferiu](#o-que-a-fase-d-conferiu) |
 
 ## Ferimentos
 
@@ -245,7 +245,11 @@ Verificação da **D.0** (28/09/2026), com as decisões do dono (decisão 7 do p
 | Death save ao perder membro | Imediato, em Mortal 0 | **só S9** | **D.1 como aviso**, sem rolagem automática. **Gatilho:** o dono confirmar no livro |
 | Cabeça com mais de 8 | Morte instantânea (o ×2 já aplicado) | S5, S9 | **D.1** — estado Morto |
 | Iniciativa | `1d10 + REF`; Solo soma Combat Sense | S5 (e S3, S6 acima) | **D.4** |
-| Dificuldade por alcance | Queima-roupa 10; curto 15 (¼ do alcance); médio 20 (½); longo 25 (alcance); extremo 30 (2×) | Um resumo de busca; **nenhuma fonte lida** | **D.3 confirma com duas fontes antes de codar** |
+| Dificuldade por alcance | Queima-roupa 10 (até 1 m); curto 15 (¼ do alcance); médio 20 (½); longo 25 (alcance); extremo 30 (2×) — p. 99 | **S8** (`lookups.js`) e **S9** (`rangefinding.js`, cita a p. 99) dão as cinco; **S1** confirma as quatro de cima | **D.3** — `RANGE_BANDS` no `tables.ts` |
+| O ataque acerta com | Total **igual ou maior** que a dificuldade | S8 (`attackRoll.total >= DC`), S9 | **D.3** — `attackHits` |
+| Fumble no ataque | Erro, mesmo com total alto | S9; e a regra do 1 (C.1) | **D.3** |
+| Queima-roupa dá dano máximo | Com arma de fogo | **Uma linhagem só**: o S9 descreve o S8 fazendo isso, mas o arquivo do S8 lido não tem; um resumo de busca repete | **ADIAR** — gatilho: o dono confirmar no livro |
+| Corpo a corpo | Teste **resistido**: o defensor rola (Dodge, Melee…) | Conhecido; não conferido em fonte nesta fase | **D.3 parcial:** o GM informa o total do defensor como dificuldade livre. Rolagem resistida automática: **ADIAR** — gatilho: a mesa usar corpo a corpo com frequência |
 | Penetração escalonada | Cada acerto que fura a armadura tira 1 do SP daquele ponto | Um resumo de busca a chama de **opcional** ("One option is…"), página de origem não lida; S9 a implementa **atrás de uma chave** | **ADIAR** (decisão 7d). **Gatilho:** a mesa pedir, ou uma luta longa em que a armadura que nunca gasta incomode |
 | Cobertura entre atirador e alvo | SP da cobertura contra o dano | S5 diz só "subtraído do dano"; S9 **combina** cobertura e armadura pela tabela proporcional (p. 99) | **ADIAR** (decisão 7c: token sem ficha não recebe dano). **Gatilho:** o GM precisar da cobertura no cálculo, com a regra de combinação conferida em duas fontes |
 | Estado atordoado | Falhou o stun save, fora de ação até passar num novo | Conferido na C.7 | O stun save rola sozinho com o dano (D.1); o **estado** não é guardado. **ADIAR** — gatilho: a mesa esquecer quem está atordoado |

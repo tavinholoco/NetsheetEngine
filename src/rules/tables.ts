@@ -146,6 +146,30 @@ export const HIT_LOCATIONS: readonly HitLocationRow[] = [
 ];
 
 // ------------------------------------------------------------
+// Dificuldade por alcance (D.3) — p. 99
+// ------------------------------------------------------------
+
+export type RangeBandKey = 'pointBlank' | 'close' | 'medium' | 'long' | 'extreme';
+
+export interface RangeBandRow {
+  key: RangeBandKey;
+  name: string;
+  /** Número que o ataque precisa igualar ou superar (S8, S9). */
+  difficulty: number;
+  /** Até que fração do alcance da arma vai a faixa; `null` = até 1 m. */
+  ofWeaponRange: number | null;
+}
+
+/** Fontes S1, S8 e S9 (esta cita a p. 99); o queima-roupa, S8 e S9. */
+export const RANGE_BANDS: readonly RangeBandRow[] = [
+  { key: 'pointBlank', name: 'Queima-roupa', difficulty: 10, ofWeaponRange: null },
+  { key: 'close', name: 'Curta', difficulty: 15, ofWeaponRange: 1 / 4 },
+  { key: 'medium', name: 'Média', difficulty: 20, ofWeaponRange: 1 / 2 },
+  { key: 'long', name: 'Longa', difficulty: 25, ofWeaponRange: 1 },
+  { key: 'extreme', name: 'Extrema', difficulty: 30, ofWeaponRange: 2 }
+];
+
+// ------------------------------------------------------------
 // Perícia de arma por tipo
 // ------------------------------------------------------------
 

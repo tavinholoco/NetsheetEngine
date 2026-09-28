@@ -295,6 +295,19 @@ describe("API — GM permissions (jogador → 403)", () => {
     expect(res.body.players["peer_pj"].sheet.damagePoints).toBeGreaterThan(0);
     expect(res.body.chatMessages.some((m: { text: string }) => m.text.includes("levou 3 de dano"))).toBe(true);
   });
+
+  // D.3 — a regra está em gm-attack.integration; aqui, o que é da rota.
+  it("attack: jogador → 403; faixa inválida → 400; GM com NPC → 200 e o ataque no chat", async () => {
+    const gen = await request(app).post(`/api/rooms/${code}/npcs/generate`).send({ ...authed(gmToken) });
+    const npcId = Object.keys(gen.body.npcs).at(-1)!;
+    const denied = await request(app).post(`/api/rooms/${code}/attack`).send({ ...authed(playerToken), attackerId: npcId, targetId: "peer_pj", range: "medium" });
+    expect(denied.status).toBe(403);
+    const invalid = await request(app).post(`/api/rooms/${code}/attack`).send({ ...authed(gmToken), attackerId: npcId, targetId: "peer_pj", range: "perto" });
+    expect(invalid.status).toBe(400);
+    const ok = await request(app).post(`/api/rooms/${code}/attack`).send({ ...authed(gmToken), attackerId: npcId, targetId: "peer_pj", range: "medium" });
+    expect(ok.status).toBe(200);
+    expect(ok.body.chatMessages.some((m: { text: string }) => m.text.includes("ataca [PlayerJogador]"))).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

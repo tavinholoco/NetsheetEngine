@@ -42,6 +42,7 @@ import {
   deleteRoomNpc,
   updateNpcWoundLevel,
   applyDamage,
+  resolveGmAttack,
   rollDiceForPlayer,
   verifySession,
   sanitizeText,
@@ -549,6 +550,21 @@ app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
   return respondWithResult(res, result);
 });
 
+/**
+ * Resposta das ações de combate da Fase D. Entrada inválida é 400, não 403:
+ * o `respondWithResult` classifica todo erro que não é "não encontrado" como
+ * recusa de permissão.
+ */
+function respondToCombat(res: express.Response, result: { room: { code: string } | null; error?: string }) {
+  if (!result.room) {
+    const msg = result.error || "Ação de combate não aplicada";
+    const status = msg.startsWith("Acesso Negado") ? 403 : /não encontrad/.test(msg) ? 404 : 400;
+    return res.status(status).json({ error: msg });
+  }
+  broadcastRoomUpdate(result.room.code);
+  return res.json(result.room);
+}
+
 // Fase D (D.1) — GM aplica dano: o servidor faz a conta do livro (armadura →
 // BTM → ×2 na cabeça), marca os pontos na trilha e rola o stun save. O
 // cliente manda só alvo, dano bruto e localização.
@@ -558,15 +574,18 @@ app.post("/api/rooms/:code/damage", roomLimiter, (req, res) => {
     return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { targetId, raw, location } = req.body ?? {};
-  const result = applyDamage(req.params.code, requesterPeerId, { targetId, raw, location });
-  if (!result.room) {
-    // Entrada inválida é 400, não 403: o respondWithResult não distingue.
-    const msg = result.error || "Dano não aplicado";
-    const status = msg.startsWith("Acesso Negado") ? 403 : /não encontrad/.test(msg) ? 404 : 400;
-    return res.status(status).json({ error: msg });
+  return respondToCombat(res, applyDamage(req.params.code, requesterPeerId, { targetId, raw, location }));
+});
+
+// Fase D (D.3) — GM ataca com um NPC: o servidor rola ataque contra a
+// dificuldade de alcance e, se acertou, dano e local, e aplica. Uma mutação.
+app.post("/api/rooms/:code/attack", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
-  broadcastRoomUpdate(result.room.code);
-  return res.json(result.room);
+  const { attackerId, targetId, range, difficulty } = req.body ?? {};
+  return respondToCombat(res, resolveGmAttack(req.params.code, requesterPeerId, { attackerId, targetId, range, difficulty }));
 });
 
 // Send chat message (T1.7 — autenticado; handle/role vêm do servidor).

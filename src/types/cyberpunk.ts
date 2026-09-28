@@ -146,4 +146,9 @@ export interface RollResult {
   isCriticalSuccess: boolean;
   isCriticalFailure: boolean;
   details: string;
+  /**
+   * Só em rolagem de dano (D.3): o local de impacto sorteado, estruturado.
+   * Antes existia só no texto do `details`; o GM aplica o dano a partir dele.
+   */
+  hitLocation?: ArmorLocation;
 }

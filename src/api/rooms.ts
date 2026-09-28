@@ -15,6 +15,7 @@ import { ArmorLocation, CharacterSheet, RollResult } from '../types/cyberpunk';
 import { GameRoom, InitiativeEntry, TableRollKind, TacticalGridState } from '../types/multiplayer';
 import { useRoomStore } from '../stores/useRoomStore';
 import { useSheetStore } from '../stores/useSheetStore';
+import type { RangeBandKey } from '../rules/tables';
 
 export interface JoinResponse {
   room: GameRoom;
@@ -218,6 +219,17 @@ export function setNpcHealth(code: string, npcId: string, woundLevel: number): P
  */
 export function applyDamage(code: string, targetId: string, raw: number, location: ArmorLocation): Promise<GameRoom> {
   return authedFetch(`/api/rooms/${code}/damage`, { targetId, raw, location });
+}
+
+/**
+ * POST /api/rooms/:code/attack — GM ataca com um NPC (D.3). `range` é uma
+ * faixa de `RANGE_BANDS`, ou `difficulty` um número livre (corpo a corpo).
+ */
+export function gmAttack(
+  code: string,
+  input: { attackerId: string; targetId: string; range?: RangeBandKey; difficulty?: number }
+): Promise<GameRoom> {
+  return authedFetch(`/api/rooms/${code}/attack`, input);
 }
 
 /** POST /api/rooms/:code/npcs/:npcId/delete — GM remove NPC. */

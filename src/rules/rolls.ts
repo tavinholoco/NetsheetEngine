@@ -62,7 +62,8 @@ export function damageRoll(rng: Rng, label: string, formula: string): RollCore |
     total: damage.total,
     isCriticalSuccess: false,
     isCriticalFailure: false,
-    details: `Dados: [${damage.rolls.join(', ')}] • Local de Impacto: ${location.label}`
+    details: `Dados: [${damage.rolls.join(', ')}] • Local de Impacto: ${location.label}`,
+    hitLocation: location.row.location
   };
 }
 

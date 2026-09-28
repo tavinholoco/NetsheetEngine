@@ -1,14 +1,15 @@
 import crypto from "crypto";
 import { GameRoom, RoomPlayer, ChatMessage, InitiativeEntry, TacticalGridState } from "../src/types/multiplayer.js";
-import { CharacterSheet, RollResult } from "../src/types/cyberpunk.js";
+import { ArmorLocation, CharacterSheet, RollResult } from "../src/types/cyberpunk.js";
 import { generateRandomNpc } from "../src/utils/npcGenerator.js";
 // Fase B (B.2 — SEC-05) — a ficha é entrada não confiável. A validação mora
 // aqui, e não na rota HTTP, para cobrir TODO caminho que escreve ficha
 // (REST, WebSocket e o que vier), não só o endpoint que existe hoje.
 import { sanitizeCharacterSheet } from "../src/rules/sheetSchema.js";
 // Fase C (C.1) — as regras de rolagem são as mesmas do cliente, em src/rules/.
-import type { Rng } from "../src/rules/dice.js";
+import { parseDamageFormula, type Rng } from "../src/rules/dice.js";
 import {
+  FALLBACK_DAMAGE,
   sheetAttackRoll,
   sheetDamageRoll,
   sheetDeathSaveRoll,
@@ -17,7 +18,7 @@ import {
   stunSaveRoll,
   type RollCore
 } from "../src/rules/rolls.js";
-import { gmModifier } from "../src/rules/combat.js";
+import { attackHits, gmModifier, rangeBandFor } from "../src/rules/combat.js";
 // Fase D (D.1) — o dano vira ferimento no servidor, com as regras do livro.
 import { btmFromBody, deriveCurrentStats, woundRow } from "../src/rules/character.js";
 import {
@@ -1032,26 +1033,20 @@ function hitAuditText(outcome: HitOutcome): string {
   return `${armor} → ${btm} = ${s.afterBtm}${minNote}${head} → ${s.final} ponto(s).`;
 }
 
-export function applyDamage(
-  code: string,
-  requesterPeerId: string,
-  request: { targetId?: unknown; raw?: unknown; location?: unknown },
-  rng: Rng = serverRng
-): { room: GameRoom | null; outcome?: HitOutcome; error?: string } {
-  const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
-  if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa aplica dano." };
-  }
+/** Horário curto do chat, igual ao resto da mesa. */
+const chatTime = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-  const raw = Number(request?.raw);
-  if (!Number.isFinite(raw) || raw < 0) return { room: null, error: "Dano inválido: informe um número de 0 para cima." };
-  if (!isArmorLocation(request?.location)) return { room: null, error: "Localização inválida." };
-  const location = request.location;
+/** Carimba uma rolagem montada pelo servidor em nome de um personagem. */
+function stampRoll(characterName: string, core: RollCore): RollResult {
+  return { id: "roll_" + Date.now() + "_" + crypto.randomBytes(3).toString("hex"), timestamp: chatTime(), characterName, ...core };
+}
 
-  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
-  if (!target) return { room: null, error };
-
+/**
+ * O núcleo da D.1: aplica um dano já validado no alvo, espelha no token,
+ * deixa a conta no chat e rola o stun save. `applyDamage` (o GM digita o
+ * dano) e `resolveGmAttack` (o NPC acertou) passam por aqui.
+ */
+function applyDamageTo(room: GameRoom, target: RoomPlayer, raw: number, location: ArmorLocation, rng: Rng): HitOutcome {
   const sheet = target.sheet;
   const body = deriveCurrentStats(sheet).BODY;
   const before = woundStateOf(sheet);
@@ -1081,17 +1076,106 @@ export function applyDamage(
   // Stun save a cada dano que entrou (C.7), com o nível NOVO. Morto não rola.
   if (outcome.steps.final > 0 && !outcome.after.isDead) {
     const core = stunSaveRoll(rng, body, outcome.after.woundLevel);
-    const roll: RollResult = {
-      id: "roll_" + Date.now() + "_" + crypto.randomBytes(3).toString("hex"),
-      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      characterName: target.handle,
-      ...core
-    };
     const verdict = core.isCriticalSuccess ? "passou, segue de pé" : "FALHOU — fora de ação até passar num novo teste";
-    pushSystemMessage(room, "stun", `😵 Stun save de [${target.handle}]: ${verdict}.`, roll);
+    pushSystemMessage(room, "stun", `😵 Stun save de [${target.handle}]: ${verdict}.`, stampRoll(target.handle, core));
   }
 
-  return { room, outcome };
+  return outcome;
+}
+
+export function applyDamage(
+  code: string,
+  requesterPeerId: string,
+  request: { targetId?: unknown; raw?: unknown; location?: unknown },
+  rng: Rng = serverRng
+): { room: GameRoom | null; outcome?: HitOutcome; error?: string } {
+  const room = getRoom(code);
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa aplica dano." };
+  }
+
+  const raw = Number(request?.raw);
+  if (!Number.isFinite(raw) || raw < 0) return { room: null, error: "Dano inválido: informe um número de 0 para cima." };
+  if (!isArmorLocation(request?.location)) return { room: null, error: "Localização inválida." };
+
+  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
+  if (!target) return { room: null, error };
+
+  return { room, outcome: applyDamageTo(room, target, raw, request.location, rng) };
+}
+
+// ------------------------------------------------------------
+// O NPC ataca (Fase D, D.3)
+// ------------------------------------------------------------
+// O GM escolhe atacante, alvo e faixa de alcance no grid; o servidor rola o
+// ataque com a ficha do NPC e, se acertou, o dano e o local, e aplica pelo
+// núcleo da D.1. Tudo numa mutação só. Jogador não passa por aqui: ele rola
+// o próprio ataque e o próprio dano, e o GM aplica o dano rolado (D.1).
+
+/** Dificuldade livre aceita (ex.: o total do defensor no corpo a corpo). */
+const MIN_FREE_DIFFICULTY = 1;
+const MAX_FREE_DIFFICULTY = 50;
+
+export function resolveGmAttack(
+  code: string,
+  requesterPeerId: string,
+  request: { attackerId?: unknown; targetId?: unknown; range?: unknown; difficulty?: unknown },
+  rng: Rng = serverRng
+): { room: GameRoom | null; hit?: boolean; outcome?: HitOutcome; error?: string } {
+  const room = getRoom(code);
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa ataca pelos NPCs." };
+  }
+
+  // A faixa do livro, ou uma dificuldade livre dentro do limite.
+  const band = rangeBandFor(request?.range);
+  const free = Number(request?.difficulty);
+  const hasFree = !band && Number.isInteger(free) && free >= MIN_FREE_DIFFICULTY && free <= MAX_FREE_DIFFICULTY;
+  if (!band && !hasFree) {
+    return { room: null, error: `Informe a faixa de alcance, ou uma dificuldade de ${MIN_FREE_DIFFICULTY} a ${MAX_FREE_DIFFICULTY}.` };
+  }
+  const difficulty = band ? band.difficulty : free;
+  const difficultyLabel = band ? `${band.name} (${band.difficulty})` : `Dificuldade ${free}`;
+
+  // Atacante: um NPC com ficha, pelo id ou pelo token dele.
+  const attackerKey = sanitizeText(request?.attackerId, 64);
+  const attackerToken = room.tacticalGrid?.tokens.find((t) => t.id === attackerKey);
+  const attackerId = attackerToken?.peerId ?? attackerKey;
+  const attacker = room.npcs?.[attackerId];
+  if (!attacker) {
+    return room.players[attackerId]
+      ? { room: null, error: "Jogador rola o próprio ataque; aplique o dano que ele rolar." }
+      : { room: null, error: "Atacante não encontrado entre os NPCs da mesa." };
+  }
+  if (attacker.sheet.isDead) return { room: null, error: `[${attacker.handle}] está morto e não ataca.` };
+
+  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
+  if (!target) return { room: null, error };
+  if (target === attacker) return { room: null, error: "O NPC não ataca a si mesmo." };
+
+  const weapon = firstWeapon(attacker.sheet);
+  const formula = weapon?.damage || FALLBACK_DAMAGE;
+  if (!parseDamageFormula(formula)) return { room: null, error: `Fórmula de dano inválida na arma do NPC: ${formula}` };
+
+  // O ataque, com o modificador do GM (C.4), em nome do NPC.
+  const gm = gmModifier(room.combatModifier, room.modifierReason);
+  const attack = stampRoll(attacker.handle, sheetAttackRoll(rng, attacker.sheet, weapon, gm));
+  const hit = attackHits(attack, difficulty);
+  const verdict = hit
+    ? `acertou (${attack.total} ≥ ${difficulty})`
+    : attack.isCriticalFailure
+      ? "errou — fumble"
+      : `errou (${attack.total} < ${difficulty})`;
+  pushSystemMessage(room, "attack", `🎯 [${attacker.handle}] ataca [${target.handle}] — ${difficultyLabel}: ${verdict}.`, attack);
+  if (!hit) return { room, hit };
+
+  const { core } = sheetDamageRoll(rng, weapon);
+  const damage = stampRoll(attacker.handle, core!);
+  pushSystemMessage(room, "dmgroll", "", damage);
+  const outcome = applyDamageTo(room, target, damage.total, damage.hitLocation ?? "Torso", rng);
+  return { room, hit, outcome };
 }
 
 // GM Power: Update room atmosphere/combat modifiers (T1.3)

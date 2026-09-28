@@ -1014,6 +1014,9 @@ cliente e servidor para ela.
         testes da decisão 7a em `damage.integration` falham; com as novas, passam.
       - Um teste antigo mudou de propósito: o LWW da reconexão (T3.3) usava o `woundLevel` como
         amostra — agora usa `gearNotes`, porque o ferimento não segue mais o LWW.
+      - **O commit da D.1 quebrou 2 E2E da ficha** (clicavam os 11 botões de nível que viraram 40
+        caixas). Só apareceu ao rodar o E2E na D.3; corrigido lá, trocando os seletores pelo primeiro
+        ponto de cada nível — as asserções de regra ficaram iguais.
       - **ADIAR — desfazer uma morte na mesa.** O ajuste manual do GM não mexe no `isDead`, e a
         sincronia também não. **Gatilho:** o GM precisar corrigir uma morte aplicada por engano.
       - Diagramas (pipeline e máquina de ferimento) atualizados no mesmo commit — a D.8. A máquina
@@ -1031,7 +1034,30 @@ cliente e servidor para ela.
       deles; token sem dono com ficha (cobertura, perigo, NPC criado direto no grid) é recusado com
       `400` e a mensagem "gere-o com ficha". Testado em `damage.integration`. Cobertura como proteção
       do alvo: ADIAR, gatilho na conferência.
-- [ ] **D.3** Fluxo de GM: rolar ataque → acertar token → aplicar dano, sem sair do grid.
+- [x] **D.3** Fluxo de GM: rolar ataque → acertar token → aplicar dano, sem sair do grid. *(28/09/2026)*
+      - **Regra conferida antes de codar:** a tabela de alcance (10/15/20/25/30, cortes em 1 m, ¼, ½,
+        1× e 2× o alcance da arma — p. 99) tem **S8 e S9**, e o S1 confirma as quatro de cima. O ataque
+        acerta com total **igual ou maior** que a dificuldade (S8, S9); fumble erra sempre.
+        `RANGE_BANDS` no `tables.ts`; `rangeBandFor`, `rangeBandMeters` e `attackHits` no `combat.ts`.
+      - **Servidor:** `resolveGmAttack` + `POST /api/rooms/:code/attack` (só GM). Um NPC **com
+        ficha** ataca um alvo com ficha, numa faixa ou numa dificuldade livre (1–50); se acertou, rola
+        dano e local e aplica pelo **mesmo núcleo da D.1** (`applyDamageTo`). Uma mutação por ataque,
+        como o contrato de custo pede. Recusa antes de rolar qualquer dado: jogador como atacante (ele
+        rola o próprio), NPC morto, alvo sem ficha, o NPC contra si mesmo, faixa inválida.
+      - **Rolagem de dano com local estruturado:** `RollResult.hitLocation`. Antes o local só existia no
+        texto do detalhe. A paridade cliente↔servidor (C.10) continua verde.
+      - **Tela:** o cartão do token selecionado ganhou, para o GM, "NPC ataca" (atacante, faixas com os
+        metros da arma, "Outra") e "Aplicar dano" (com "usar último dano" rolado **por jogador** — o
+        dano do ataque de NPC já foi aplicado pelo servidor e não é oferecido de novo). As duas seções
+        recolhem, para o cartão não cobrir o grid. Token sem ficha mostra o aviso da D.2.
+      - **Visto funcionando no navegador**, com sala semeada localmente: ataque que errou (17 < 20),
+        ataque que acertou (dano 5 no braço → 2 pontos, stun save), e o "aplicar dano" pela tela.
+      - 19 testes em `gm-attack.integration` + 1 de rota. **ADIAR:** queima-roupa com dano máximo (uma
+        linhagem de fonte) e a rolagem resistida do corpo a corpo — gatilhos na conferência.
+      - **Pista da Fase G (achada ao testar):** em modo dev, **todo deep link** (`/room/X`,
+        `/multiplayer`) volta para `/`. O efeito "aba → URL" do `App.tsx` se protege do primeiro render
+        com um `ref`, e o `StrictMode` roda o efeito duas vezes. Produção não tem `StrictMode` duplo,
+        mas o E2E roda o build de produção — por isso nunca apareceu.
 - [ ] **D.4** Iniciativa automática (`1d10 + REF` no servidor para todos), com ajuste manual mantido.
       *(RUL-09)*
 - [ ] **D.5** Death saves entrando na virada de turno de quem está em nível mortal.

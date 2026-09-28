@@ -5,9 +5,11 @@ import {
   ChatMessage,
   InitiativeEntry,
   TableRollKind,
-  TacticalGridState
+  TacticalGridState,
+  TacticalToken
 } from '../../types/multiplayer';
 import { TacticalGrid } from './TacticalGrid';
+import { CombatPanel } from './CombatPanel';
 import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSheetStore } from '../../stores/useSheetStore';
@@ -387,6 +389,34 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
 
   const updateNpcHealth = (npcId: string, woundLevel: number) => {
     roomAction(roomsApi.setNpcHealth(roomCode, npcId, woundLevel));
+  };
+
+  // Fase D (D.3) — combate no cartão do token. O servidor faz toda a conta;
+  // aqui só se escolhe quem, onde e de onde. Token sem ficha não recebe dano
+  // (D.2), então o painel nem aparece para ele.
+  const renderTokenCombat = (token: TacticalToken) => {
+    const ownerId = token.peerId;
+    const owner = ownerId ? room?.players?.[ownerId] ?? room?.npcs?.[ownerId] : undefined;
+    if (!owner) {
+      return <p className="text-[10px] text-slate-500 border-t border-slate-800 pt-2">Token sem ficha: não recebe dano.</p>;
+    }
+    const attackers = Object.values(room?.npcs ?? {}).filter((n) => n.peerId !== ownerId && !n.sheet?.isDead);
+    // Só dano rolado por JOGADOR: o do ataque de NPC (mensagem do sistema) o
+    // servidor já aplicou, e oferecê-lo aqui convidaria a aplicar duas vezes.
+    const lastDamageRoll = [...(room?.chatMessages ?? [])]
+      .reverse()
+      .find((m) => m.senderHandle !== 'SISTEMA_NET' && m.rollResult?.rollType === 'DAMAGE' && m.rollResult.hitLocation)?.rollResult;
+    return (
+      <CombatPanel
+        key={token.id}
+        targetId={token.id}
+        targetName={owner.handle}
+        attackers={attackers}
+        lastDamageRoll={lastDamageRoll}
+        onAttack={(input) => roomAction(roomsApi.gmAttack(roomCode, input))}
+        onApplyDamage={(targetId, raw, location) => roomAction(roomsApi.applyDamage(roomCode, targetId, raw, location))}
+      />
+    );
   };
 
   const deleteNpc = (npcId: string) => {
@@ -833,6 +863,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             onInspectPlayer={(p) => setInspectedPlayer(p)}
             remoteCursors={remoteCursors}
             onCursorMove={handleGmCursorMove}
+            renderTokenCombat={isGm ? renderTokenCombat : undefined}
           />
         </div>
       )}
