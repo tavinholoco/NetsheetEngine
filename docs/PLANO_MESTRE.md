@@ -169,7 +169,7 @@ descrição — e é ali que uma premissa velha vira trabalho errado.
 ## ⚖️ Decisões tomadas (02/09/2026)
 
 Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo. *(1 a 3 em
-02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09/2026.)*
+02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09/2026.)*
 
 | # | Pergunta | Decisão | Consequência |
 |---|---|---|---|
@@ -179,6 +179,7 @@ Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem mo
 | 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo. **Gatilho:** um incidente real de perda de dado que o backup diário não cobriria |
 | 5 | Como evitar que o Render publique código antes da migration que ele usa? (P.5) | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa | O Render faz auto-deploy a cada push no `master`, sem esperar o `db-sync`. Regra de processo, custo zero, nada novo para configurar. Ver o passo 5 do ritual de encerramento |
 | 6 | Na cabeça, o dano dobra antes ou depois do BTM? | **Depois — opção A: armadura → BTM (mín. 1) → ×2** | O livro dá a regra e não diz quando; A é a ordem do texto e a das implementações de fãs. B seria mais letal pelo valor do BTM. Pesquisa e números na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d) |
+| 7 | As quatro perguntas da D.0: quem escreve o ferimento na mesa, pontos × nível, token sem ficha, penetração escalonada | **(a)** Na mesa, **só o servidor e o GM** escrevem o ferimento — a sincronia da ficha deixa de levá-lo. **(b)** A ficha **guarda pontos** (0–40), e o nível é derivado; junto nasce o estado **Morto**. **(c)** Token sem ficha **não recebe dano**. **(d)** Penetração escalonada: **ADIAR** | (a) fecha o achado do portão C.14. (b) é fidelidade estrita: o livro conta pontos, e o nível sozinho perde o resto da caixa. Sem migration SQL — a ficha mora no `data` jsonb. (c) e (d) são as versões menores, com gatilho na [conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu). Detalhe na D.0 |
 
 ---
 
@@ -923,7 +924,7 @@ cliente e servidor para ela.
 
 ### FASE D — FECHAR O LOOP DE COMBATE 🔨 *(3–4 dias)*
 
-- [ ] **D.0** 🔍 **Verificação de premissas** — a mesma disciplina da B.0 e da C.0 (que achou três
+- [x] **D.0** 🔍 **Verificação de premissas** — a mesma disciplina da B.0 e da C.0 (que achou três
       premissas vindas do RED e de regra de casa). *(Item acrescentado em 26/09/2026, no pós-merge da
       C: o `CLAUDE.md` manda toda fase de construção abrir com um `.0`, e a D não tinha.)* Pontos de
       partida já conhecidos:
@@ -959,6 +960,38 @@ cliente e servidor para ela.
         não deve gerar mutação por passo intermediário (mirar, escolher alvo) — só no dano aplicado.
       - **Infra:** o Render está suspenso até 01/10 (ver Operação). Não bloqueia a D: o CI testa o
         build de produção, inclusive o E2E com dois navegadores.
+      - **Resultado da verificação (28/09/2026).** Linha de base conferida (0 erros, 394 testes). As
+        quatro perguntas foram ao dono e viraram a **decisão 7**. O que a leitura do código e das
+        fontes mudou na fase:
+        - **Pontos, não nível** (decisão 7b). Campo novo na ficha, `woundLevel` derivado. Ficha antiga
+          sem o campo converte para o **mínimo da caixa** (`4 × (nível − 1) + 1`): não inventa dano.
+          Sem migration SQL — confirmado que nenhuma migration tem coluna de ferimento; a ficha mora
+          no `data` jsonb. O `HealthTracker` hoje mostra 11 botões de nível, não 40 caixas: a D mexe
+          na ficha também.
+        - **"Morto" entra na D** — as três mortes do livro chegam com ela: dano além da 40ª caixa, e
+          cabeça com **mais de 8** pontos (D.1); death save falho (D.5).
+        - **Perda de membro entra na D.1.** Mais de 8 pontos num membro de uma vez, **depois de todos
+          os modificadores**, decepa ou inutiliza (S5, S9). O S9 manda um death save imediato em Mortal
+          0 — **uma fonte só**: entra como aviso no chat, não como rolagem automática, até o dono
+          conferir no livro.
+        - **Stun save automático a cada dano aplicado** (regra conferida na C.7), rolado pelo servidor
+          e registrado no chat com o dano. É o mesmo mecanismo da D.5 e fecha o "trilha de auditoria"
+          da D.1. O estado **atordoado** não é guardado: o chat diz "FALHOU — fora de ação" e o GM
+          conduz. **ADIAR**, gatilho: a mesa esquecer quem está atordoado.
+        - **O GM não rola por NPC na mesa.** O `rollDiceForPlayer` só rola a ficha de quem pede. O
+          fluxo da D.3 (NPC ataca) precisa de rolagem do GM **com a ficha do NPC** — autorização nova,
+          vai para o portão. E o `damageRoll` devolve o local de impacto **só no texto** do detalhe; a
+          D.3 precisa dele estruturado.
+        - **Dificuldade por alcance** (D.3): queima-roupa 10, curto 15 (25% do alcance da arma), médio
+          20 (50%), longo 25 (100%), extremo 30 (200%). A arma já tem `rangeMeters`. **Só um resumo de
+          busca sustenta a tabela hoje** — a D.3 confirma com duas fontes antes de codar.
+        - **Combat Sense soma na iniciativa** — confirmado (S5; S3 e S6 já estavam na conferência).
+        - **Penetração escalonada** é opcional no livro segundo um resumo de busca (a página de origem
+          não foi lida), e o S9 a trata como chave desligável. **ADIAR** (decisão 7d); gatilho na
+          conferência.
+        - **O `hp` do token no grid é espelho** do ferimento, mas o GM pode escrevê-lo direto pelo
+          grid (o `mirrorDocToJson` deixa) sem mexer na ficha. Com o dano automático, o espelho passa
+          a ser escrito só pelo servidor, a partir da ficha.
 - [ ] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → BTM → ×2 na cabeça →
       conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04)*
       - **Ordem decidida (decisão 6):** armadura → BTM (mínimo 1) → ×2 na cabeça. O

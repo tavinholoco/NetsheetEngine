@@ -37,7 +37,7 @@ modelo ainda não representa:
 | Regra | Vai para | Por quê não agora |
 |---|---|---|
 | Ordem ×2 × BTM na cabeça | **Decidido em 26/09: SP → BTM → ×2** (decisão 6). Implementa na D.1 | O livro dá a regra e não diz quando ([pesquisa de 26/09](#dano--a-ordem-do-pipeline-para-a-fase-d)) |
-| Dano → ferimento, penetração escalonada, perda de membro, dificuldade por alcance | Fase D | É o loop de combate |
+| Dano → ferimento, perda de membro, dificuldade por alcance | Fase D | É o loop de combate. Penetração escalonada e cobertura: **ADIAR** na D.0 ([detalhe](#o-que-a-fase-d-conferiu)) |
 | Combat Sense na iniciativa | D.4 | A iniciativa automática nasce lá |
 | Texto das tabelas de fumble | ADIAR | O dado já sai rolado; o GM lê no livro |
 | Cromo que soma atributo; EV da armadura no REF | Fase K | O modelo de dados não tem o campo |
@@ -233,6 +233,22 @@ que só feche com B.
 
 Também da Fase D: **penetração escalonada** (cada acerto que passa reduz o SP daquele ponto em 1) e
 **perda de membro** (mais de 8 pontos num membro de uma vez; na cabeça, morte).
+
+## O que a Fase D conferiu
+
+Verificação da **D.0** (28/09/2026), com as decisões do dono (decisão 7 do plano).
+
+| Regra | Livro | Fontes | Status |
+|---|---|---|---|
+| Dano conta **pontos** | 4 pontos por caixa, 40 no total; o resto de uma caixa fica marcado | Trilha acima; S9 escreve pontos | **D.1** — a ficha guarda pontos, o nível é derivado (decisão 7b) |
+| Perda de membro | Membro com **mais de 8** pontos num acerto, depois de todos os modificadores: decepado ou inutilizado | S5, S9 | **D.1** — aviso no chat |
+| Death save ao perder membro | Imediato, em Mortal 0 | **só S9** | **D.1 como aviso**, sem rolagem automática. **Gatilho:** o dono confirmar no livro |
+| Cabeça com mais de 8 | Morte instantânea (o ×2 já aplicado) | S5, S9 | **D.1** — estado Morto |
+| Iniciativa | `1d10 + REF`; Solo soma Combat Sense | S5 (e S3, S6 acima) | **D.4** |
+| Dificuldade por alcance | Queima-roupa 10; curto 15 (¼ do alcance); médio 20 (½); longo 25 (alcance); extremo 30 (2×) | Um resumo de busca; **nenhuma fonte lida** | **D.3 confirma com duas fontes antes de codar** |
+| Penetração escalonada | Cada acerto que fura a armadura tira 1 do SP daquele ponto | Um resumo de busca a chama de **opcional** ("One option is…"), página de origem não lida; S9 a implementa **atrás de uma chave** | **ADIAR** (decisão 7d). **Gatilho:** a mesa pedir, ou uma luta longa em que a armadura que nunca gasta incomode |
+| Cobertura entre atirador e alvo | SP da cobertura contra o dano | S5 diz só "subtraído do dano"; S9 **combina** cobertura e armadura pela tabela proporcional (p. 99) | **ADIAR** (decisão 7c: token sem ficha não recebe dano). **Gatilho:** o GM precisar da cobertura no cálculo, com a regra de combinação conferida em duas fontes |
+| Estado atordoado | Falhou o stun save, fora de ação até passar num novo | Conferido na C.7 | O stun save rola sozinho com o dano (D.1); o **estado** não é guardado. **ADIAR** — gatilho: a mesa esquecer quem está atordoado |
 
 ## O que fica para a Fase K
 
