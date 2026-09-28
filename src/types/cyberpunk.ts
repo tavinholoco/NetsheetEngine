@@ -107,7 +107,18 @@ export interface CharacterSheet {
    * servidor o recalcula a cada sync e descarta o que o cliente mandou.
    */
   currentStats: CharacterStats;
+  /**
+   * Nível de ferimento (0–10). Desde a Fase D é DERIVADO de `damagePoints` —
+   * continua gravado porque todo leitor antigo o usa. Leia com `woundStateOf`.
+   */
   woundLevel: number;
+  /**
+   * Pontos de dano na trilha (0–40), como o livro conta. Opcional: ficha de
+   * antes da Fase D não tem, e `woundStateOf` converte do `woundLevel`.
+   */
+  damagePoints?: number;
+  /** Morto: dano além da trilha, cabeça com mais de 8, ou death save falho. */
+  isDead?: boolean;
   skills: SkillItem[];
   cyberware: CyberwareItem[];
   weapons: WeaponItem[];

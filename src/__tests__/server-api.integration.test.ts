@@ -276,6 +276,25 @@ describe("API — GM permissions (jogador → 403)", () => {
     const res = await request(app).post(`/api/rooms/${code}/player-health`).send({ ...authed(gmToken), targetPeerId: "nao_existe", woundLevel: 1 });
     expect(res.status).toBe(404);
   });
+
+  // D.1 — a regra está em damage.integration; aqui, o que é da rota.
+  it("damage: sem sessão → 401; jogador → 403; entrada inválida → 400; alvo inexistente → 404", async () => {
+    const noAuth = await request(app).post(`/api/rooms/${code}/damage`).send({ targetId: "peer_pj", raw: 5, location: "Torso" });
+    expect(noAuth.status).toBe(401);
+    const denied = await request(app).post(`/api/rooms/${code}/damage`).send({ ...authed(playerToken), targetId: "gm_peer", raw: 5, location: "Torso" });
+    expect(denied.status).toBe(403);
+    const invalid = await request(app).post(`/api/rooms/${code}/damage`).send({ ...authed(gmToken), targetId: "peer_pj", raw: 5, location: "Rabo" });
+    expect(invalid.status).toBe(400);
+    const missing = await request(app).post(`/api/rooms/${code}/damage`).send({ ...authed(gmToken), targetId: "nao_existe", raw: 5, location: "Torso" });
+    expect(missing.status).toBe(404);
+  });
+
+  it("damage: GM aplica e a sala volta com os pontos e a conta no chat", async () => {
+    const res = await request(app).post(`/api/rooms/${code}/damage`).send({ ...authed(gmToken), targetId: "peer_pj", raw: 3, location: "Torso" });
+    expect(res.status).toBe(200);
+    expect(res.body.players["peer_pj"].sheet.damagePoints).toBeGreaterThan(0);
+    expect(res.body.chatMessages.some((m: { text: string }) => m.text.includes("levou 3 de dano"))).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

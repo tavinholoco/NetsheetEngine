@@ -91,8 +91,25 @@ export const WOUND_TRACK: readonly WoundLevelRow[] = [
   { level: 10, name: 'Mortal 6', stunModifier: -9, mortalLevel: 6, effect: MORTAL }
 ];
 
-/** Pontos de dano por caixa da trilha (para a Fase D: 4 pontos = 1 nível). */
+/** Pontos de dano por nível da trilha: cada nível tem 4 caixas de 1 ponto. */
 export const DAMAGE_POINTS_PER_WOUND_LEVEL = 4;
+
+/**
+ * A trilha inteira: 10 níveis × 4 = 40 pontos. Dano além disso mata (D.1).
+ * Os pontos 1–4 são Leve, 5–8 Sério, e assim por diante: 6 pontos é Sério com
+ * 2 das 4 caixas marcadas — o que o `woundLevel` sozinho não guardava.
+ */
+export const WOUND_TRACK_POINTS = (WOUND_TRACK.length - 1) * DAMAGE_POINTS_PER_WOUND_LEVEL;
+
+/**
+ * Ferimento grave num acerto só (D.1): MAIS de 8 pontos, depois de todos os
+ * modificadores (armadura, BTM e o ×2 da cabeça). Num membro, decepa ou
+ * inutiliza; na cabeça, morte instantânea. Fontes S5 e S9 na conferência.
+ */
+export const SEVERE_HIT_THRESHOLD = 8;
+
+/** Dano mínimo que passa do BTM quando o acerto furou a armadura (S5, S9). */
+export const MIN_DAMAGE_AFTER_BTM = 1;
 
 // ------------------------------------------------------------
 // Humanidade
@@ -115,15 +132,17 @@ export interface HitLocationRow {
   /** Rótulo das faces como o livro imprime (o 10 aparece como 0). */
   facesLabel: string;
   damageMultiplier: number;
+  /** Membro: acerto grave decepa (D.1). A cabeça tem regra própria (morte). */
+  limb: boolean;
 }
 
 export const HIT_LOCATIONS: readonly HitLocationRow[] = [
-  { faces: [1], location: 'Head', name: 'Cabeça', facesLabel: '1', damageMultiplier: 2 },
-  { faces: [2, 3, 4], location: 'Torso', name: 'Tronco', facesLabel: '2-4', damageMultiplier: 1 },
-  { faces: [5], location: 'Right Arm', name: 'Braço Direito', facesLabel: '5', damageMultiplier: 1 },
-  { faces: [6], location: 'Left Arm', name: 'Braço Esquerdo', facesLabel: '6', damageMultiplier: 1 },
-  { faces: [7, 8], location: 'Right Leg', name: 'Perna Direita', facesLabel: '7-8', damageMultiplier: 1 },
-  { faces: [9, 10], location: 'Left Leg', name: 'Perna Esquerda', facesLabel: '9-0', damageMultiplier: 1 }
+  { faces: [1], location: 'Head', name: 'Cabeça', facesLabel: '1', damageMultiplier: 2, limb: false },
+  { faces: [2, 3, 4], location: 'Torso', name: 'Tronco', facesLabel: '2-4', damageMultiplier: 1, limb: false },
+  { faces: [5], location: 'Right Arm', name: 'Braço Direito', facesLabel: '5', damageMultiplier: 1, limb: true },
+  { faces: [6], location: 'Left Arm', name: 'Braço Esquerdo', facesLabel: '6', damageMultiplier: 1, limb: true },
+  { faces: [7, 8], location: 'Right Leg', name: 'Perna Direita', facesLabel: '7-8', damageMultiplier: 1, limb: true },
+  { faces: [9, 10], location: 'Left Leg', name: 'Perna Esquerda', facesLabel: '9-0', damageMultiplier: 1, limb: true }
 ];
 
 // ------------------------------------------------------------

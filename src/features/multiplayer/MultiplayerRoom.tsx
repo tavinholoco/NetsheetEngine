@@ -11,6 +11,7 @@ import { TacticalGrid } from './TacticalGrid';
 import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSheetStore } from '../../stores/useSheetStore';
+import { woundStateOf } from '../../rules/damage';
 import { useUiStore } from '../../stores/useUiStore';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
@@ -64,6 +65,21 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // Fase 4 — dados da ficha/user/rolagem via stores (sem props)
   const sheet = useSheetStore((s) => s.sheet);
   const user = useSheetStore((s) => s.user);
+  const updateSheet = useSheetStore((s) => s.updateSheet);
+
+  // D.1 (decisão 7a) — na mesa, o ferimento é do servidor: quando o GM aplica
+  // dano ou ajusta o Bio-Monitor, a ficha local acompanha (e é salva com ele).
+  // Sem loop: a sincronia da ficha não leva o ferimento de volta.
+  const tableSheet = view === 'active' && peerId ? room?.players?.[peerId]?.sheet : undefined;
+  const serverWound = tableSheet ? woundStateOf(tableSheet) : null;
+  const localWound = woundStateOf(sheet);
+  const woundDiffers =
+    !!serverWound &&
+    (serverWound.damagePoints !== localWound.damagePoints || serverWound.isDead !== localWound.isDead || sheet.damagePoints === undefined);
+  useEffect(() => {
+    if (woundDiffers && serverWound) updateSheet(serverWound);
+    // O gatilho é a divergência e os valores do servidor, não o objeto (novo a cada render).
+  }, [woundDiffers, serverWound?.damagePoints, serverWound?.isDead]);
 
   const [roomName, setRoomName] = useState('Mesa de Night City');
   const [chatInput, setChatInput] = useState('');

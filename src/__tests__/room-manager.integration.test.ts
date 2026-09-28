@@ -128,25 +128,28 @@ describe("roomManager — reconexão (T3.3)", () => {
     teardownRoom(code);
   });
 
+  // Até a Fase D este teste usava o woundLevel como amostra. Desde a D.1
+  // (decisão 7a) o ferimento na reconexão é SEMPRE o do servidor — ver
+  // damage.integration — e o LWW vale para o resto da ficha.
   it("ficha persistida (updatedAt mais novo) vence na reconexão — LWW", () => {
     const code = uniqueCode();
     createRoom(code, "Mesa de Teste", "Mestre", "gm_1");
     // O servidor "persistiu" a ficha mais nova (primeiro join com ela)
     const newer = sheet("X", "2026-08-05T00:00:00.000Z");
-    newer.woundLevel = 7; // estado avançado no servidor
+    newer.gearNotes = "estado do servidor";
     joinRoom(code, "peer_x", "X", newer);
 
     // reconexão manda ficha "estale" (mais antiga) → a do servidor vence
     const stale = sheet("X", "2026-08-02T00:00:00.000Z");
-    stale.woundLevel = 1;
+    stale.gearNotes = "velha";
     const re = joinRoom(code, "peer_x", "X", stale)!;
-    expect(re.room.players["peer_x"].sheet.woundLevel).toBe(7);
+    expect(re.room.players["peer_x"].sheet.gearNotes).toBe("estado do servidor");
 
     // e ficha mais NOVA que a do servidor sobrescreve
     const fresher = sheet("X", "2026-08-09T00:00:00.000Z");
-    fresher.woundLevel = 3;
+    fresher.gearNotes = "nova";
     const re2 = joinRoom(code, "peer_x", "X", fresher)!;
-    expect(re2.room.players["peer_x"].sheet.woundLevel).toBe(3);
+    expect(re2.room.players["peer_x"].sheet.gearNotes).toBe("nova");
     teardownRoom(code);
   });
 

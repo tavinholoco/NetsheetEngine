@@ -11,7 +11,7 @@
  */
 
 import { apiFetch, ApiError } from './http';
-import { CharacterSheet, RollResult } from '../types/cyberpunk';
+import { ArmorLocation, CharacterSheet, RollResult } from '../types/cyberpunk';
 import { GameRoom, InitiativeEntry, TableRollKind, TacticalGridState } from '../types/multiplayer';
 import { useRoomStore } from '../stores/useRoomStore';
 import { useSheetStore } from '../stores/useSheetStore';
@@ -210,6 +210,14 @@ export function setPlayerHealth(code: string, targetPeerId: string, woundLevel: 
 /** POST /api/rooms/:code/npcs/:npcId/health — GM ajusta ferimento de NPC. */
 export function setNpcHealth(code: string, npcId: string, woundLevel: number): Promise<GameRoom> {
   return authedFetch(`/api/rooms/${code}/npcs/${npcId}/health`, { woundLevel });
+}
+
+/**
+ * POST /api/rooms/:code/damage — GM aplica dano (D.1). `targetId` é o peerId
+ * do jogador, o id do NPC ou o id de um token. O servidor faz a conta.
+ */
+export function applyDamage(code: string, targetId: string, raw: number, location: ArmorLocation): Promise<GameRoom> {
+  return authedFetch(`/api/rooms/${code}/damage`, { targetId, raw, location });
 }
 
 /** POST /api/rooms/:code/npcs/:npcId/delete — GM remove NPC. */

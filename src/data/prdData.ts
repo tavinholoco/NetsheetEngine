@@ -65,7 +65,8 @@ export const PRD_DOCUMENT: PrdDocument = {
         'Rolagem de perícia: 1d10 + Atributo + Nível da Perícia. 10 explode encadeando; 1 é falha automática com dado para a tabela de fumble.',
         'Dano: por fórmula (ex.: 2d6+2) com local de impacto sorteado (1d10).',
         'Saves: stun a cada dano (1d10 ≤ BODY − 0 a 9 pelo ferimento) e death save a cada turno em Mortal (1d10 ≤ BODY − nível Mortal).',
-        'Ferimentos: 11 estados (0 Saudável a 10 Mortal 6). Sério REF −2; Crítico REF/INT/COOL ÷2; Mortal ÷3 — e toda rolagem usa os atributos já com o ferimento.'
+        'Ferimentos: 40 caixas de 1 ponto, 11 níveis (0 Saudável a 10 Mortal 6). Sério REF −2; Crítico REF/INT/COOL ÷2; Mortal ÷3 — e toda rolagem usa os atributos já com o ferimento.',
+        'Dano → ferimento: dano − SP da localização → BTM (mínimo 1) → ×2 na cabeça, aplicado pelo GM no servidor com a conta no chat. Mais de 8 num acerto: na cabeça mata, num membro o perde.'
       ]
     },
     {

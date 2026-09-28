@@ -148,10 +148,10 @@ mais no banco por mais um dia; recolher cedo apaga a mesa de alguém, e o delete
 
 ## Pipeline de dano FNFF
 
-**Este diagrama é a especificação da Fase D** (RUL-04). Depois da Fase C, as peças existem e seguem o
-livro — local de impacto por tabela (`HIT_LOCATIONS`), `btmFromBody`, efeito de ferimento
-(`applyWoundEffect`), stun e death save — mas **ainda não se conectam**: o dano sai como texto no
-chat e o `woundLevel` é clicado à mão. Ligar é a D.1.
+**Implementado na D.1 (28/09/2026)** (RUL-04): `resolveHit` e `applyHit` em
+[`src/rules/damage.ts`](../src/rules/damage.ts), chamados pelo `applyDamage` do servidor
+(`POST /api/rooms/:code/damage`, só o GM). A trilha conta **pontos** (decisão 7b): 40 caixas de 1
+ponto, e o `woundLevel` é derivado delas. O death save por turno (último nó) é da D.5.
 
 *Conferido contra o livro na C.9 (25/09/2026) — fontes em
 [`CONFERENCIA_CP2020.md`](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d). Ordem na
@@ -175,11 +175,16 @@ flowchart TB
     I -->|"sim"| H["Subtrai BTM<br/>so BODY, 0 a -5<br/>nunca abaixo de 1"]
     H --> Q{"Foi na cabeca?"}
     Q -->|"sim"| G["Dobra o ferimento<br/>x2 depois do BTM"]
-    Q -->|"nao"| K["Acumula no track<br/>4 pontos = 1 nivel"]
-    G --> K
+    Q -->|"nao"| V{"Mais de 8 pontos<br/>neste acerto?"}
+    G --> V
+    V -->|"cabeca"| X["Morto"]
+    V -->|"membro"| Y["Perda do membro<br/>aviso no chat"]
+    V -->|"nao, ou tronco"| K["Soma os pontos na trilha<br/>40 caixas, 4 por nivel"]
+    Y --> K
+    K -->|"passou de 40"| X
 
-    K --> S["Stun save a cada dano<br/>1d10 menor ou igual a BODY<br/>menos 0 a 9 pelo nivel"]
-    K --> L["Novo woundLevel"]
+    K --> S["Stun save a cada dano<br/>1d10 menor ou igual a BODY<br/>menos 0 a 9 pelo nivel novo"]
+    K --> L["Novo woundLevel<br/>derivado dos pontos"]
     L --> N["Efeito nos atributos<br/>Serio REF -2<br/>Critico REF INT COOL /2<br/>Mortal REF INT COOL /3"]
     L --> M{"Nivel Mortal?"}
     M -->|"sim"| O["Death save a cada turno<br/>1d10 menor ou igual a<br/>BODY menos nivel Mortal"]
@@ -198,9 +203,11 @@ O que a conferência fixou, e o que ficou para o dono:
   valor do BTM. Detalhe na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d).
 - **Não há modificador cumulativo por turno no death save** — o nó antigo dizia "com modificador
   cumulativo", que é do Cyberpunk RED. É BODY menos o nível Mortal, a cada turno.
-- Também da Fase D, e fora do desenho de propósito: **penetração escalonada** (cada acerto que passa
-  tira 1 do SP daquele ponto) e **perda de membro** (mais de 8 pontos num membro de uma vez; na
-  cabeça, morte).
+- **Acerto grave (D.1):** mais de 8 pontos num acerto, depois de tudo — na cabeça mata, num membro o
+  perde (S5, S9). O death save em Mortal 0 que o S9 pede ao perder o membro tem **uma fonte só** e
+  fica como aviso no chat.
+- **Fora do desenho de propósito (ADIAR, decisão 7):** penetração escalonada e cobertura entre
+  atirador e alvo. Gatilhos na [conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu).
 
 ---
 
@@ -208,25 +215,27 @@ O que a conferência fixou, e o que ficou para o dono:
 
 **Implementada na Fase C** (C.5 e C.7) — a trilha está em `WOUND_TRACK`
 ([`src/rules/tables.ts`](../src/rules/tables.ts)), com o nome, o modificador de stun, o nível
-Mortal e o efeito de cada caixa. Onze estados: `woundLevel` 0 é ileso e 1–10 são as dez caixas de
-quatro pontos.
+Mortal e o efeito de cada caixa. Onze níveis: `woundLevel` 0 é ileso e 1–10 são os dez níveis de quatro caixas de 1 ponto.
+**Desde a D.1 a ficha guarda os pontos** (`damagePoints`, 0–40) e o nível é derivado deles: cada
+transição abaixo acontece no **primeiro** ponto do nível seguinte.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Ileso
     Ileso --> Leve: 1 a 4 pontos
-    Leve --> Serio: 8 pontos
-    Serio --> Critico: 12 pontos
-    Critico --> Mortal0: 16 pontos
-    Mortal0 --> Mortal1: 20 pontos
-    Mortal1 --> Mortal2: 24 pontos
-    Mortal2 --> Mortal3: 28 pontos
-    Mortal3 --> Mortal4: 32 pontos
-    Mortal4 --> Mortal5: 36 pontos
-    Mortal5 --> Mortal6: 40 pontos
+    Leve --> Serio: 5 pontos
+    Serio --> Critico: 9 pontos
+    Critico --> Mortal0: 13 pontos
+    Mortal0 --> Mortal1: 17 pontos
+    Mortal1 --> Mortal2: 21 pontos
+    Mortal2 --> Mortal3: 25 pontos
+    Mortal3 --> Mortal4: 29 pontos
+    Mortal4 --> Mortal5: 33 pontos
+    Mortal5 --> Mortal6: 37 pontos
     Mortal6 --> Morto: dano alem de 40
     Mortal0 --> Morto: falhou death save
     Mortal6 --> Morto: falhou death save
+    Ileso --> Morto: mais de 8 na cabeca
     Morto --> [*]
 
     note left of Serio
@@ -247,8 +256,10 @@ stateDiagram-v2
 ```
 
 > **Morto não é um `woundLevel`.** O modelo tem 0–10, e o 10 é Mortal 6 — **ainda vivo**. Até a
-> Fase C o app tratava o 10 como morte e desligava o death save justo ali (`isDead`, hoje
-> `isLastWoundBox`). Representar a morte como estado é da Fase D, junto com o dano que a causa.
+> Fase C o app tratava o 10 como morte e desligava o death save justo ali (o antigo `isDead`, hoje
+> `isLastWoundBox`). **Desde a D.1 a morte é um campo à parte da ficha, `isDead`**, escrito pelo
+> servidor: dano além de 40, mais de 8 na cabeça (a seta do Ileso vale de qualquer nível) e, na
+> D.5, o death save falho.
 
 ---
 

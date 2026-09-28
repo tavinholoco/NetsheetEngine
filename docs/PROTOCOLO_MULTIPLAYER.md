@@ -95,12 +95,13 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 
 | Método | Rota | Permissão | Corpo | Resposta |
 |---|---|---|---|---|
-| `POST` | `/api/rooms/:code/sheet` | qualquer membro | `{ sheet }` | `GameRoom` (ficha sincronizada) |
+| `POST` | `/api/rooms/:code/sheet` | qualquer membro | `{ sheet }` | `GameRoom` (ficha sincronizada; **o ferimento do cliente é ignorado** — D.1) |
 | `POST` | `/api/rooms/:code/message` | qualquer membro | `{ text }` | `GameRoom` (chat atualizado) |
 | `POST` | `/api/rooms/:code/roll` | qualquer membro | `{ kind, skillName? }` | `{ room, roll }` (RNG no servidor) |
 | `POST` | `/api/rooms/:code/heartbeat` | qualquer membro | `{}` | `{ success, isOnline }` (sem broadcast) |
 | `POST` | `/api/rooms/:code/leave` | qualquer membro | `{}` | `{ success }` (fecha WS do peer) |
-| `POST` | `/api/rooms/:code/player-health` | **GM** | `{ targetPeerId, woundLevel }` | `GameRoom` |
+| `POST` | `/api/rooms/:code/damage` | **GM** | `{ targetId, raw, location }` | `GameRoom` (conta do livro e stun save no chat — D.1; token sem ficha → 400) |
+| `POST` | `/api/rooms/:code/player-health` | **GM** | `{ targetPeerId, woundLevel }` | `GameRoom` (nível vira o mínimo da caixa em pontos) |
 | `POST` | `/api/rooms/:code/tactical-grid` | **GM** (ou Yjs) | `{ gridState }` | `GameRoom` |
 | `POST` | `/api/rooms/:code/npcs/generate` | **GM** | `{ archetypeId? }` | `GameRoom` |
 | `POST` | `/api/rooms/:code/players/generate` | **GM** | `{}` | `GameRoom` |

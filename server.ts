@@ -41,6 +41,7 @@ import {
   deleteGeneratedPlayer,
   deleteRoomNpc,
   updateNpcWoundLevel,
+  applyDamage,
   rollDiceForPlayer,
   verifySession,
   sanitizeText,
@@ -546,6 +547,26 @@ app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
   }
   const result = updateNpcWoundLevel(req.params.code, requesterPeerId, req.params.npcId, woundLevel);
   return respondWithResult(res, result);
+});
+
+// Fase D (D.1) — GM aplica dano: o servidor faz a conta do livro (armadura →
+// BTM → ×2 na cabeça), marca os pontos na trilha e rola o stun save. O
+// cliente manda só alvo, dano bruto e localização.
+app.post("/api/rooms/:code/damage", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
+  }
+  const { targetId, raw, location } = req.body ?? {};
+  const result = applyDamage(req.params.code, requesterPeerId, { targetId, raw, location });
+  if (!result.room) {
+    // Entrada inválida é 400, não 403: o respondWithResult não distingue.
+    const msg = result.error || "Dano não aplicado";
+    const status = msg.startsWith("Acesso Negado") ? 403 : /não encontrad/.test(msg) ? 404 : 400;
+    return res.status(status).json({ error: msg });
+  }
+  broadcastRoomUpdate(result.room.code);
+  return res.json(result.room);
 });
 
 // Send chat message (T1.7 — autenticado; handle/role vêm do servidor).

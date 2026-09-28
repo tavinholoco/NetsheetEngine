@@ -943,7 +943,9 @@ cliente e servidor para ela.
         dificuldade por alcance e o Combat Sense na iniciativa (D.4).
       - **Premissa de modelo, achada no preparo da D (28/09):** a ficha guarda só o **nível**
         (`woundLevel` 0–10), e o livro conta **pontos** (4 por caixa, 40 no total). Aplicar 6 pontos
-        deixa Leve com 2 guardados para a próxima caixa — o modelo atual perde esses 2. Guardar pontos
+        deixa Leve com 2 guardados para a próxima caixa — o modelo atual perde esses 2. *(Correção da
+        D.1: 6 pontos já é **Sério**, com 2 das 4 caixas dele marcadas — o nível muda no primeiro
+        ponto da caixa seguinte. O argumento vale igual: só o nível não diz quantas caixas faltam.)* Guardar pontos
         muda o **formato salvo** da ficha (o `data` jsonb e o `room_state`): não é migration SQL,
         mas é mudança de contrato que o `sheetSchema` e fichas antigas precisam aceitar. Decidir na
         D.0, antes da D.1. Se virar migration, vale a decisão 5 (PR próprio, antes do código).
@@ -992,16 +994,43 @@ cliente e servidor para ela.
         - **O `hp` do token no grid é espelho** do ferimento, mas o GM pode escrevê-lo direto pelo
           grid (o `mirrorDocToJson` deixa) sem mexer na ficha. Com o dano automático, o espelho passa
           a ser escrito só pelo servidor, a partir da ficha.
-- [ ] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → BTM → ×2 na cabeça →
-      conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04)*
+- [x] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → BTM → ×2 na cabeça →
+      conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04 —
+      28/09/2026)*
+      - **Regra:** `resolveHit` e `applyHit` em `src/rules/damage.ts`, testados contra a tabela
+        (`rules-damage`, 25 casos). Constantes novas no `tables.ts`: `WOUND_TRACK_POINTS` (40),
+        `SEVERE_HIT_THRESHOLD` (8), `MIN_DAMAGE_AFTER_BTM`, e `limb` em cada local de impacto. O
+        `armorSpAt` saiu do `utils` para `src/rules/` (o servidor lê).
+      - **Ficha em pontos (decisão 7b):** `damagePoints` e `isDead` no tipo e no `sheetSchema`; o
+        `woundLevel` é derivado e continua gravado para os leitores antigos. A ficha mostra as 40
+        caixas do livro (10 níveis × 4) em vez de 11 botões.
+      - **Servidor:** `applyDamage` (só GM) + `POST /api/rooms/:code/damage`. Faz a conta, grava os
+        pontos, espelha o nível no token do grid, **rola o stun save sozinho** (com o nível novo) e
+        deixa a conta inteira no chat. Mais de 8 na cabeça ou além dos 40 → Morto; mais de 8 num
+        membro → aviso de perda do membro. O ajuste manual do GM passou a gravar pontos.
+      - **Achado do portão C.14 fechado (decisão 7a):** a sincronia e a reconexão mantêm o ferimento
+        do servidor; a ficha do jogador fica só-leitura na mesa e **recebe** o ferimento de lá.
+        **Provado revertendo:** com as duas linhas antigas (`updatePlayerSheet` e `joinRoom`), os 3
+        testes da decisão 7a em `damage.integration` falham; com as novas, passam.
+      - Um teste antigo mudou de propósito: o LWW da reconexão (T3.3) usava o `woundLevel` como
+        amostra — agora usa `gearNotes`, porque o ferimento não segue mais o LWW.
+      - **ADIAR — desfazer uma morte na mesa.** O ajuste manual do GM não mexe no `isDead`, e a
+        sincronia também não. **Gatilho:** o GM precisar corrigir uma morte aplicada por engano.
+      - Diagramas (pipeline e máquina de ferimento) atualizados no mesmo commit — a D.8. A máquina
+        tinha as transições no **teto** de cada caixa (Leve → Sério em "8 pontos"); o nível muda no
+        primeiro ponto da seguinte (5).
       - **Ordem decidida (decisão 6):** armadura → BTM (mínimo 1) → ×2 na cabeça. O
         [diagrama](./ARQUITETURA.md#pipeline-de-dano-fnff) já está nessa ordem.
       - **Achado do portão da C.14:** hoje o jogador escreve o próprio `woundLevel` pela sincronia da
         ficha (`updatePlayerSheet`), e desde a C.6 isso **baixa a penalidade da rolagem**. Quando o dano
         virar ferimento no servidor, a sincronia não pode mais baixá-lo. Se a D não resolver, vira item
         da Fase J.
-- [ ] **D.2** Definir e implementar o caso do **token sem ficha**: o grid tem tokens `cover` e
+- [x] **D.2** Definir e implementar o caso do **token sem ficha**: o grid tem tokens `cover` e
       `hazard` sem `sheet` nem BTM, só `spCover`. Precisa estar decidido antes de codar.
+      *(28/09/2026 — decisão 7c)* O `applyDamage` acha a ficha pelo jogador, pelo NPC ou pelo token
+      deles; token sem dono com ficha (cobertura, perigo, NPC criado direto no grid) é recusado com
+      `400` e a mensagem "gere-o com ficha". Testado em `damage.integration`. Cobertura como proteção
+      do alvo: ADIAR, gatilho na conferência.
 - [ ] **D.3** Fluxo de GM: rolar ataque → acertar token → aplicar dano, sem sair do grid.
 - [ ] **D.4** Iniciativa automática (`1d10 + REF` no servidor para todos), com ajuste manual mantido.
       *(RUL-09)*
