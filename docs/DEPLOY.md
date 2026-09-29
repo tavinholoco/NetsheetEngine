@@ -123,6 +123,12 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
 > por instâncias do Newra News criadas sem querer (erro operacional do dono, já corrigido lá). **Volta em 01/10/2026** — o que conferir nesse dia está na seção de
 > operação do [plano](./PLANO_MESTRE.md#linha-de-base-atual). O produto ainda não foi publicado.
 
+> **Versão do Node: o arquivo [`.node-version`](../.node-version) (24, LTS).** O Render o lê antes do
+> `engines` do `package.json`, e o CI usa o mesmo arquivo (`node-version-file`). *Até a R.8 não havia
+> versão fixada: `engines: ">=20"` sem teto, que o Render resolve para o `latest` — em setembro de
+> 2026, o Node 26, que não é LTS e que o CI nunca testou.* Trocar de versão é mudar esse arquivo, e só
+> ele. **Não** definir `NODE_VERSION` no painel: ela passaria por cima do arquivo, em silêncio.
+
 1. Em [render.com](https://render.com): **New → Blueprint** e selecione o repo
    (detecta `render.yaml`).
 2. Defina os valores das variáveis com `sync: false` no painel do serviço

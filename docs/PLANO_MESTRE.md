@@ -1389,10 +1389,16 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       **Armadilha achada:** o `npm audit fix` atualizou o lock mas **não** o `node_modules` — a suíte
       rodou verde contra o `express` antigo, sem provar nada. Com `npm ci` (o que o CI faz), as versões
       novas entraram e a suíte passou de novo: 571/571, com o `vitest` 4.1.11.
-- [ ] **R.8** **OPS-02 — fixar o Node.** `.node-version` com `24` (LTS; manutenção a partir de
+- [x] **R.8** **OPS-02 — fixar o Node.** `.node-version` com `24` (LTS; manutenção a partir de
       20/10/2026, fim de vida em 30/04/2028), `engines` com teto (`">=24 <25"`), e o CI — a matriz e o
       job de E2E — no 24. O 20 está em fim de vida, e o 22 não é o que roda em produção. **Conferir no
       log do deploy de 01/10** qual versão o Render vinha usando.
+      *(29/09/2026)* Um lugar só decide: o CI deixou de ter matriz e lê o **mesmo** `.node-version`
+      que o Render (`node-version-file`), nos jobs `validate` e `e2e`. O `DEPLOY.md` avisa para **não**
+      definir `NODE_VERSION` no painel, que passaria por cima do arquivo. `npm ci` local (Node 24.14)
+      sem aviso de `engines`. Não há teste automatizado possível do que o Render escolhe: **a prova é o
+      log do deploy** — em 01/10, o primeiro deploy deve dizer Node 24.x. *O `@types/node` segue no
+      ^22: tipos mais velhos que o runtime não quebram nada; sobe quando algo do 24 fizer falta.*
 - [ ] **R.9** **OPS-03 — versão com a tag.** `package.json` → `0.4.3`. A regra entrou no passo 3 do
       ritual de abertura.
 - [ ] **R.10** 🧑‍⚖️ **Decisão do dono — backup (reabre a decisão 4, OPS-01).** Em ordem de tamanho:
@@ -1958,7 +1964,7 @@ vermelho se algum virar erro antes:
 | `ubuntu-latest` passa a ser Ubuntu 26 | os 4 jobs do `ci.yml` e o `keepalive.yml` | **A partir de 19/10/2026** — conferir o primeiro run depois dessa data |
 | CodeQL Action v3 descontinuada | `github/codeql-action/upload-sarif@v3` (gitleaks) | **Dezembro de 2026** — trocar por `@v4` antes |
 | Actions em Node 20 forçadas a rodar em Node 24 | `actions/checkout@v4`, `supabase/setup-cli@v1` | Um run falhar por isso, ou sair versão nova das duas |
-| **Node 20 na matriz do `validate`** *(revisão pós-D)* | `ci.yml` — o runtime do **projeto**, não das actions | **Disparado:** fim de vida em 30/04/2026. Sai na R.8 |
+| **Node 20 na matriz do `validate`** *(revisão pós-D)* | `ci.yml` — o runtime do **projeto**, não das actions | ✅ **Resolvido na R.8 (29/09):** o CI lê o `.node-version` (24), o mesmo arquivo do Render |
 
 ### Registro de sessões
 
