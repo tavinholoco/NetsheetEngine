@@ -41,7 +41,7 @@ e ainda será encerrado formalmente na Fase M.
 O detalhamento de produto está em [`docs/PRD.md`](./docs/PRD.md) e em
 [`src/data/prdData.ts`](./src/data/prdData.ts) (consumido pelo visualizador de PRD do app).
 
-Três documentos vivos sustentam o plano e são atualizados pelas fases que mudam o sistema:
+Quatro documentos vivos sustentam o plano e são atualizados pelas fases que mudam o sistema:
 
 - [`docs/ARQUITETURA.md`](./docs/ARQUITETURA.md) — diagramas Mermaid do sistema: contêineres e
   fronteiras de confiança, ciclo de vida de sala e sessão, pipeline de dano FNFF e máquina de estados
@@ -50,6 +50,8 @@ Três documentos vivos sustentam o plano e são atualizados pelas fases que muda
   1990, com fonte, e o que ficou para outra fase.
 - [`docs/SEGURANCA.md`](./docs/SEGURANCA.md) — o portão de segurança (seis perguntas STRIDE que toda
   fase de construção responde antes de fechar) e o modelo de ameaça.
+- [`docs/BACKUP.md`](./docs/BACKUP.md) — o backup manual do banco (`npm run backup:db`): quando, o que
+  fica de fora, onde guardar e como restaurar.
 
 Fases 0–10 do plano antigo concluídas: fundação, segurança, migração Firebase → Supabase, multiplayer
 (persistência, estado global, tempo real com WebSockets/Yjs), motor de dados FNFF, roteamento, PRD,

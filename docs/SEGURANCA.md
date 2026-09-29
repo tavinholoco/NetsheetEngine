@@ -398,6 +398,28 @@ PR traz o texto **e** o código juntos, e a recomendação ao dono é mergear an
 **O que ensina antes de o conserto estar no ar?** O SEC-13 fica descrito neste PR; o Render volta em
 01/10 e publica o `master`. Mesma recomendação do #14: mergear antes.
 
+**29/09/2026 — R.10, o backup manual** (decisão 8). Não muda o produto, mas cria uma ferramenta que lê
+o banco de produção inteiro — e isso passa pelo portão:
+
+1. **Entrada nova?** Só a variável `NETSHEET_BACKUP_DIR` (o destino), na máquina do dono. O script
+   recusa qualquer destino dentro do repositório.
+2. **Dado novo sai? Sim — é o achado do portão, e é o propósito da ferramenta.** O `data.sql` leva do
+   banco para o disco do dono **todo** o dado, inclusive `auth.users` (e-mail e hash de senha), perfis e
+   mensagens diretas. Quem lê: quem tiver o arquivo. Por isso: destino **fora do repo** (público),
+   verificado no código e barrado de novo no `.gitignore`; o runbook manda guardar fora da máquina e
+   **cifrado**, com a senha num gerenciador; e o `MANIFEST.txt` conta linhas **sem** copiar conteúdo.
+   *Hoje o dump não tem dado pessoal nenhum — a produção ainda não tem usuário.*
+3. **Autorização nova?** Nenhuma. Usa o login do CLI que já existe na máquina do dono — o mesmo que
+   verificou a `0007` em produção. Nada vai para o CI nem ganha secret novo.
+4. **Jogador convidado hostil?** Fora de alcance: não há caminho do jogador até o script.
+5. **Estado novo sem limite?** Os dumps acumulam no disco do dono, **por escolha**: um por mês e um por
+   migration. O registro em `BACKUP.md` diz quantos existem.
+6. **Custo?** Zero. O dump puxa ~30 kB hoje, e a banda de saída do Supabase gratuito é de GB.
+
+**Efeito colateral de operação:** o dump usa o mesmo papel temporário do CLI (`cli_login_postgres`) que
+o `db-sync` e o keepalive. Rodar junto derruba a senha do outro (`28P01`) — o runbook e o cabeçalho do
+script avisam.
+
 ### Fase F — Reestruturação visual
 
 *(a preencher)*
