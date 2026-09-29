@@ -1,5 +1,6 @@
 import React from 'react';
 import { TabType } from './CyberpunkMenu';
+import { APP_VERSION } from '../version';
 import {
   Home,
   Radio,
@@ -67,7 +68,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               <span>Jogar Agora</span>
             </button>
             <span className="text-[10px] text-slate-500 uppercase tracking-wider">
-              v0.4.0-RELEASE • Estado: {new Date().toLocaleTimeString('pt-BR')}
+              {APP_VERSION} • Estado: {new Date().toLocaleTimeString('pt-BR')}
             </span>
           </div>
         </div>

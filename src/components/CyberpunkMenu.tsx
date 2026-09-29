@@ -25,6 +25,7 @@ import {
 import { User, generateCyberpunkId, fetchUserProfile } from '../lib/supabase';
 import { ActivityStatus } from '../hooks/useUserActivity';
 import { PatchNotesFeed } from './PatchNotesFeed';
+import { APP_VERSION } from '../version';
 import { FriendsList } from '../features/social/FriendsList';
 import { useUiStore } from '../stores/useUiStore';
 import { useSheetStore } from '../stores/useSheetStore';
@@ -221,7 +222,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
               NETSHEET
             </span>
             <span className="text-[9px] text-red-500 font-bold uppercase tracking-tight block pt-0.5">
-              v0.4.0
+              {APP_VERSION}
             </span>
           </div>
         </div>
@@ -382,7 +383,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                   CYBERPUNK 2020
                 </h2>
                 <span className="text-[9px] text-slate-400 font-bold tracking-tight bg-red-950/80 px-1.5 py-0.5 border border-red-800/80 rounded leading-none">
-                  v0.4.0
+                  {APP_VERSION}
                 </span>
               </div>
             </div>
@@ -392,7 +393,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                 <span className="text-yellow-400 font-black text-xs tracking-tighter">NE</span>
               </div>
               <span className="text-[8px] text-red-400 font-black uppercase block mt-1 tracking-widest">
-                v0.4.0
+                {APP_VERSION}
               </span>
             </div>
           )}
@@ -498,7 +499,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                 {!isMinimized && (
                   <div className="flex items-center space-x-2">
                     <span className="text-[10px] text-red-400 bg-red-950 px-2 py-0.5 border border-red-800/80 rounded font-bold">
-                      v0.4.0
+                      {APP_VERSION}
                     </span>
                     <ChevronDown
                       className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${

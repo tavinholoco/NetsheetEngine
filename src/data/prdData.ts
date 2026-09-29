@@ -8,6 +8,7 @@
  */
 
 import type { PrdDocument } from '../types/prd';
+import { APP_VERSION } from '../version';
 
 /** Documento PRD oficial do produto. */
 export const PRD_DOCUMENT: PrdDocument = {
@@ -15,7 +16,7 @@ export const PRD_DOCUMENT: PrdDocument = {
   title: 'NETSHEET ENGINE — Cyberpunk 2020 Sheet Builder & PRD Suite',
   subtitle:
     'Especificação de produto: criação de fichas, calculador de estatísticas, cyberware, lifepath, rolagem FNFF, mesa multiplayer em tempo real, sistema social e visualizador de PRD.',
-  version: 'v0.4.0-RELEASE',
+  version: APP_VERSION,
   updatedAt: '03/08/2026',
   overview: [
     {
