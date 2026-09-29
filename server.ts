@@ -438,22 +438,23 @@ app.post("/api/gemini", aiLimiter, async (req, res) => {
 // MULTIPLAYER ROOM API ENDPOINTS (FASE 3)
 // ==========================================
 
-// Get list of public active rooms
-app.get("/api/rooms", (_req, res) => {
-  res.json(getAllActiveRooms());
-});
+// R.11 (DOC-07) — o lobby NÃO lista salas. Aqui havia `GET /api/rooms`, que
+// entregava o código de toda sala a qualquer visitante — e com o código
+// qualquer um entrava. A decisão 3 (só convidados do dono) passou a valer: a
+// sala se acha pelo código ou pelo link que o GM manda. As contagens seguem no
+// /api/health, sem código nenhum.
 
 // Create a new room
 app.post("/api/rooms/create", roomLimiter, (req, res) => {
   const { code, name, gmHandle, gmPeerId } = req.body ?? {};
   if (typeof code !== "string" || !isValidRoomCode(code)) {
-    return res.status(400).json({ error: "Código de sala inválido. Use 2–12 caracteres alfanuméricos ou hífen (ex.: NC-2020)." });
+    return res.status(400).json({ error: "Código de sala inválido. Use 2–24 caracteres alfanuméricos ou hífen (ex.: NC-2020)." });
   }
   // R.2 (SEC-08) — código em uso é outra mesa, com gente dentro: nunca
   // sobrescrever. Antes, qualquer um apagava a mesa com o código do lobby.
   if (getRoom(code)) {
     return res.status(409).json({
-      error: `Já existe uma mesa com o código ${code.trim().toUpperCase()}. Entre nela pelo lobby ou escolha outro código.`,
+      error: `Já existe uma mesa com o código ${code.trim().toUpperCase()}. Entre nela pelo código, ou escolha outro.`,
       code: "room_exists"
     });
   }

@@ -86,14 +86,14 @@ describe("API de salas — criar/join/leave", () => {
     expect(res.body.error).toContain("Código de sala inválido");
   });
 
-  it("lista salas ativas (GET /api/rooms)", async () => {
+  // R.11 — este teste afirmava que qualquer um listava as salas: era o lobby
+  // aberto (DOC-07) escrito como expectativa. A lista saiu; o caso mora em
+  // room-invite.integration.
+  it("NÃO lista salas (GET /api/rooms saiu na R.11)", async () => {
     const { room } = await createRoom(uniqueCode());
     const res = await request(app).get("/api/rooms");
-    expect(res.status).toBe(200);
-    const found = res.body.find((r: { code: string }) => r.code === room.code);
-    expect(found).toBeDefined();
-    expect(found.gmHandle).toBe("MestreZeta");
-    expect(found.playersCount).toBe(1);
+    expect(res.status).toBe(404);
+    expect(JSON.stringify(res.body ?? "")).not.toContain(room.code);
   });
 
   it("jogador entra na sala e ganha sessionToken próprio", async () => {

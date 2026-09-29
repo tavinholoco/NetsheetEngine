@@ -247,7 +247,7 @@ Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem mo
 |---|---|---|---|
 | 1 | A explosão do d10 encadeia? | **Sim, encadeia** | Cliente e PRD já estão certos. Corrigir só o servidor, sem configuração por mesa. |
 | 2 | Fidelidade estrita ou regras de casa? | **Fidelidade estrita ao CP2020** | Nenhuma divergência vira "regra de casa". A Fase C ganha conferência sistemática contra o livro. |
-| 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase L (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. **⚠️ Revisão pós-D (29/09):** o produto não impõe o convite — o lobby lista toda sala e o `join` aceita quem souber o código. Quem pode entrar volta ao dono na **R.11** |
+| 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase L (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. **⚠️ Revisão pós-D (29/09):** o produto não impunha o convite — o lobby listava toda sala e o `join` aceitava quem soubesse o código. **Imposto na R.11 (29/09):** a sala saiu do lobby, e o código, com sufixo aleatório, é o convite |
 | 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. ~~O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo.~~ **⚠️ Premissa falsa (revisão pós-D, 29/09):** o plano gratuito **não tem backup automático nenhum** — só Pro, Team e Enterprise ([docs](https://supabase.com/docs/guides/platform/backups)). O "não ao PITR" continua; **como fazer backup** voltou ao dono na R.10 e virou a **decisão 8** |
 | 5 | Como evitar que o Render publique código antes da migration que ele usa? (P.5) | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa | O Render faz auto-deploy a cada push no `master`, sem esperar o `db-sync`. Regra de processo, custo zero, nada novo para configurar. Ver o passo 5 do ritual de encerramento |
 | 6 | Na cabeça, o dano dobra antes ou depois do BTM? | **Depois — opção A: armadura → BTM (mín. 1) → ×2** | O livro dá a regra e não diz quando; A é a ordem do texto e a das implementações de fãs. B seria mais letal pelo valor do BTM. Pesquisa e números na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d) |
@@ -426,8 +426,9 @@ site. Continua valendo, mas não é urgente — fazer quando o produto for publi
 
 **Os riscos reais — os dois de uso normal ainda sem sintoma; o de abuso, calculado na revisão pós-D:**
 
-1. **Aba esquecida.** O lobby consulta a lista de salas a cada **8 s**, e a mesa manda heartbeat a
-   cada 20 s — **inclusive com a aba em segundo plano** (o navegador desacelera os timers, mas não para
+1. **Aba esquecida.** ~~O lobby consulta a lista de salas a cada **8 s**, e~~ a mesa manda heartbeat a
+   cada 20 s — **inclusive com a aba em segundo plano** *(desde a R.11, 29/09, o lobby não consulta
+   mais nada: a lista de salas saiu, e com ela metade deste risco)* (o navegador desacelera os timers, mas não para
    intervalos acima de 15 min). Uma aba de mesa esquecida mantém o serviço acordado enquanto o
    computador estiver ligado: uma noite ≈ +10 h; um PC que nunca desliga ≈ +720 h — o mesmo efeito do
    uptime bot da regra 3. **ADIAR — gatilho:** a página de uso do Render mostrar o NetSheet acima de
@@ -539,7 +540,7 @@ fim desta seção. IDs referenciados pelas fases.
 | SEC-12 | 🟡 Médio | Posse de token no grid Yjs compara o dono **novo** — jogador move e toma token alheio *(reproduzido na R.6)* | ✅ R.6 |
 | OPS-02 | 🟡 Médio | Node sem versão fixa: produção no `latest` (26, não LTS), CI no 20 (fim de vida) e no 22 | ✅ R.8 (conferir no log de 01/10) |
 | DOC-06 | 🟡 Médio | A L.6 depende de meses de log, e o Render Hobby guarda 7 dias | ✅ R.12 |
-| DOC-07 | 🟡 Médio | A decisão 3 (só convidados) não é imposta pelo produto: lobby público e `join` aberto | R.11 |
+| DOC-07 | 🟡 Médio | A decisão 3 (só convidados) não é imposta pelo produto: lobby público e `join` aberto | ✅ R.11 |
 | OPS-03 | 🔵 Baixo | `version` do `package.json` em 0.4.0 com a tag em `v0.4.3` | ✅ R.9 |
 
 ---
@@ -1303,11 +1304,12 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
         vira `undefined` e quem entrar com o **handle** do GM (público no lobby) assume o cargo
         (T1.1/T1.8). Não há prova possível — o assento do GM já não existe —, e mudar isso muda como
         uma mesa sem GM volta a ter um. **Gatilho:** a R.11 decidir manter o lobby aberto, ou uma mesa
-        ser tomada assim.
+        ser tomada assim. *(R.11, 29/09: o lobby fechou — o handle do GM só aparece para quem tem o
+        código, que é o convite. O gatilho não disparou; o ADIAR fica.)*
 - [x] **R.2** **SEC-08 — `create` não sobrescreve.** Código em uso → `409`, com mensagem que diga
       para escolher outro. Conferir os testes que reaproveitam o mesmo código de sala entre casos.
-      *(29/09/2026)* A rota responde **409 `{ code: "room_exists" }`** ("Entre nela pelo lobby ou
-      escolha outro código" — a tela de criação já mostra a mensagem do servidor), com o código
+      *(29/09/2026)* A rota responde **409 `{ code: "room_exists" }`** ("Entre nela pelo código, ou
+      escolha outro" — a tela de criação já mostra a mensagem do servidor), com o código
       comparado já normalizado. O `createRoom` **lança** se chegar com código em uso: é defesa para
       caminho futuro, e chegar lá é bug. Nenhum teste antigo reaproveitava código — conferido: a suíte
       inteira passou sem ajuste. `create-conflict.integration` (4); **provado revertendo:** 3 dos 4
@@ -1441,7 +1443,7 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
         renomear. Contorno reversível, registrado no runbook: renomear **as duas** pastas juntas. Nada
         foi apagado, e o "Reset to factory defaults" da janela de erro — que apagaria o Supabase local
         — não foi usado.
-- [ ] **R.11** 🧑‍⚖️ **Decisão do dono — quem pode entrar numa mesa (DOC-07; o alcance da decisão 3).**
+- [x] **R.11** 🧑‍⚖️ **Decisão do dono — quem pode entrar numa mesa (DOC-07; o alcance da decisão 3).**
       Hoje o lobby lista toda sala a qualquer visitante, e o `join` aceita quem souber o código.
       1. **Manter aberto** e assumir o modelo de ameaça real, "qualquer pessoa com a URL". R.1–R.4
          impedem que ela *tome* a mesa; ela continua *lendo* fichas e chat.
@@ -1451,6 +1453,32 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
          acrescentaria um sufixo aleatório.
       3. **Mesa exige login** (JWT do Supabase no `join`, como a IA já exige). O mais forte, e abre a
          versão maior da R.1.
+      *(29/09/2026 — **o dono escolheu a opção 2**, sala fora do lobby.)*
+      - **Reproduzido antes:** `GET /api/rooms` respondia **200 com o código de toda sala** a um
+        visitante sem sessão nenhuma.
+      - **O lobby não lista mais:** a rota `GET /api/rooms` saiu (404); a lista "Salas ativas" e o
+        *polling* de 8 s sumiram do cliente — visto no navegador: nenhuma chamada a `/api/rooms`. De
+        carona, **metade do risco 1 do custo zero** (aba esquecida no lobby mantendo o Render acordado)
+        deixou de existir. As contagens seguem no `/api/health`, sem código nenhum.
+      - **O código é o convite:** o GM digita um prefixo (`NC-2020`) e o cliente acrescenta um sufixo
+        aleatório de Web Crypto — `NC-2020-K7Q9XD`, seis símbolos de um alfabeto de 31 sem ambíguos
+        (0/O, 1/I/L), ~30 bits. Com o limitador do `join`, chutar uma sala leva anos
+        ([`src/lib/roomCode.ts`](../src/lib/roomCode.ts)). O servidor passou a aceitar código de até
+        24 caracteres (era 12).
+      - **No cliente, e não no servidor, como a opção descrevia** — escolha registrada: o contrato da
+        API não muda, e quem cria sala por fora da interface com código fraco só expõe a própria mesa
+        (ninguém ganha acesso à de outro). E os ~15 arquivos de teste que criam salas com código fixo
+        seguem valendo.
+      - **O GM ganhou "Copiar convite"** no cabeçalho da mesa: copia `/room/CÓDIGO`; se o navegador
+        não deixar, o link aparece para seleção manual.
+      - `room-invite.integration` (4), `room-invite` (5), `invite-button` (3, teste do componente —
+        sem o clique, os 2 do GM falham). **Provado revertendo** o servidor: 2 falham (200 em vez de
+        404; código de convite recusado). O teste antigo que afirmava a lista pública foi substituído,
+        como o da B.3. E2E 6/6: o fluxo de dois navegadores entra por código.
+      - **Achado na verificação visual:** a interface mostrava **"v0.4.0" escrito à mão em seis
+        lugares** (rodapé, menu, página inicial, PRD) — o R.9 consertou o `package.json` e não pegou
+        a tela. Agora os seis leem o `package.json` (`src/version.ts`; só a string entra no bundle),
+        e um teste falha se alguém escrever versão à mão de novo — provado reintroduzindo o literal.
 - [x] **R.12** **DOC-06 — a L.6 precisa de outra fonte de dado.** Com 7 dias de retenção, "meses de
       log" não existe. Versão 10× menor: depois de cada sessão de jogo em produção, buscar
       `sse_fallback` no log do Render (dentro dos 7 dias) e anotar a contagem numa tabela **Registro de
@@ -1525,8 +1553,8 @@ Escopo: `server.ts`, `server/roomManager.ts`, `server/roomPersistence.ts`, `serv
     jogador "online" que já fechou a aba.
   - **`updateTacticalGrid` grava o `gridState` como veio** (`room.tacticalGrid = gridState`) — a
     mesma classe do `updateInitiative` que a D.4 fechou. Só o GM chega lá.
-  - **O lobby (`GET /api/rooms`) só passa pelo limitador global** — relevante se a R.11 mantiver a
-    lista.
+  - ~~**O lobby (`GET /api/rooms`) só passa pelo limitador global** — relevante se a R.11 mantiver a
+    lista.~~ *Resolvida pela R.11 (29/09): a rota saiu.*
   - **O modelo de IA está fixo no código** (`gemini-2.5-flash`). Desde 18/09/2026 o Google limita o
     acesso aos modelos 2.5 a quem já os usava, sem data de desligamento
     ([descontinuações](https://ai.google.dev/gemini-api/docs/deprecations)). Ler o nome do modelo de
@@ -1839,8 +1867,9 @@ sistematicamente, e depois de todo o código novo de C, D e F ter entrado.
 - **Da D.9 (28/09/2026) — sair e voltar "curado":** o `leaveRoom` apaga o registro do jogador, e a
   volta é um join novo, que aceita o ferimento da ficha do cliente. A decisão 7a fechou a sincronia e
   a reconexão, não essa porta. **Gatilho:** um jogador aparecer inteiro depois de sair no meio de uma
-  luta, ou a mesa ter público fora dos convidados do dono. *(Revisão pós-D: o segundo gatilho já vale
-  enquanto o lobby for aberto — ver R.11; a versão maior da R.1, assento por conta, fecha esta porta.)*
+  luta, ou a mesa ter público fora dos convidados do dono. *(Revisão pós-D: o segundo gatilho valia
+  enquanto o lobby era aberto. A R.11 (29/09) o fechou — a sala se acha pelo código-convite —, então
+  o gatilho volta a ser o primeiro. A versão maior da R.1, assento por conta, fecha esta porta.)*
 
 **O que a varredura pergunta:** se um jogador convidado virar hostil, o que ele consegue fazer? (é o
 modelo de ameaça real da decisão 3) Que dado sai do servidor para quem não deveria vê-lo? **E quem
@@ -1951,7 +1980,7 @@ público mudar.
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
-| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.10, R.12, R.14 e R.16 feitos; faltam a decisão R.11, a proposta R.13 e o R.15 | — |
+| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.12, R.14 e R.16 feitos; faltam a R.13 (aprovada, PR próprio) e o R.15 | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
@@ -1970,7 +1999,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **577** testes, 36 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10)* — `vitest` 4.1.11 |
+| `npx vitest run` | **591** testes, 40 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |

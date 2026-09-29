@@ -32,8 +32,7 @@ import {
   Crosshair,
   Eye,
   Lock,
-  ChevronDown,
-  ChevronUp,
+  Link2,
   Target,
   Zap,
   HeartPulse
@@ -60,8 +59,6 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const setPeerId = useRoomStore((s) => s.setPeerId);
   const sessionToken = useRoomStore((s) => s.sessionToken);
   const setSessionToken = useRoomStore((s) => s.setSessionToken);
-  const activeRooms = useRoomStore((s) => s.activeRooms);
-  const setActiveRooms = useRoomStore((s) => s.setActiveRooms);
   const errorMsg = useRoomStore((s) => s.errorMsg);
   const setErrorMsg = useRoomStore((s) => s.setErrorMsg);
   const resetRoom = useRoomStore((s) => s.resetRoom);
@@ -101,7 +98,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const [initiativeScore, setInitiativeScore] = useState(10);
   const [selectedHealthPlayer, setSelectedHealthPlayer] = useState<RoomPlayer | null>(null);
   const [inspectedPlayer, setInspectedPlayer] = useState<RoomPlayer | null>(null);
-  const [showRoomList, setShowRoomList] = useState(false);
+  // R.11 — o convite que o GM copia (o link /room/CÓDIGO). Se o navegador não
+  // deixar copiar, o link aparece para seleção manual.
+  const [inviteState, setInviteState] = useState<'idle' | 'copied' | 'manual'>('idle');
   const eventSourceRef = useRef<EventSource | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   // Fase 5 (T5.2) — contador para retry do WebSocket após queda (backoff simples)
@@ -121,19 +120,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
 
   const ensurePeerId = roomsApi.getPeerId;
 
-  // Lista salas públicas no lobby
-  useEffect(() => {
-    if (view !== 'lobby') return;
-    const load = () => {
-      roomsApi
-        .listRooms()
-        .then((data) => useRoomStore.getState().setActiveRooms(data))
-        .catch(() => useRoomStore.getState().setActiveRooms([]));
-    };
-    load();
-    const iv = setInterval(load, 8000);
-    return () => clearInterval(iv);
-  }, [view]);    // Fase 5 (T5.2) — TRANSPORTE UNIFICADO: tenta WebSocket; se não conectar
+  // R.11 — o lobby não lista salas (entra-se pelo código ou pelo link do GM).
+  // Aqui havia uma consulta a /api/rooms a cada 8 s, com a aba do lobby
+  // aberta: além de mostrar a sala de todo mundo a qualquer visitante, era uma
+  // das duas coisas que mantinham o Render acordado (risco 1 do custo zero).
+
+  // Fase 5 (T5.2) — TRANSPORTE UNIFICADO: tenta WebSocket; se não conectar
   // (bloqueado/falhou), cai automaticamente para o SSE (EventSource). Ambos
   // entregam o MESMO payload (room inteiro em JSON).
   // Fase 5 (T5.3) — sobre o WS também trafega o protocolo binário do Yjs
@@ -472,6 +464,15 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     roomAction(roomsApi.nextTurn(roomCode));
   };
 
+  // R.11 — sem a lista do lobby, o convite é o link /room/CÓDIGO.
+  const inviteLink = `${window.location.origin}/room/${roomCode}`;
+  const copyInvite = () => {
+    navigator.clipboard
+      .writeText(inviteLink)
+      .then(() => setInviteState('copied'))
+      .catch(() => setInviteState('manual'));
+  };
+
   const leaveRoom = async () => {
     const { roomCode: code, sessionToken: token } = useRoomStore.getState();
     if (code && token) {
@@ -524,9 +525,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               type="text"
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-              placeholder="Código da sala (ex.: NC-2020)"
+              placeholder="Prefixo do código (ex.: NC-2020)"
               className="w-full bg-slate-900 border border-slate-700 text-sm text-cyan-300 font-mono px-3 py-2 rounded focus:border-emerald-400 focus:outline-none uppercase"
             />
+            <p className="text-[10px] text-slate-500 leading-relaxed">
+              O código ganha um final aleatório (ex.: NC-2020-K7Q9XD) — é ele o convite, e ninguém o adivinha.
+            </p>
             <input
               type="text"
               value={roomName}
@@ -561,39 +565,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             >
               🎮 Entrar na Mesa
             </button>
-
-            <button
-              onClick={() => setShowRoomList(!showRoomList)}
-              className="w-full py-1.5 text-[10px] text-slate-400 hover:text-cyan-300 uppercase flex items-center justify-center space-x-1 transition-all cursor-pointer"
-            >
-              {showRoomList ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              <span>Salas ativas ({activeRooms.length})</span>
-            </button>
-
-            {showRoomList && (
-              <div className="space-y-1.5 animate-fadeIn">
-                {activeRooms.map((r) => (
-                  <div key={r.code} className="flex items-center justify-between bg-slate-900/80 border border-slate-800 rounded px-3 py-2">
-                    <div>
-                      <span className="text-xs font-black text-cyan-300 font-mono">{r.code}</span>
-                      <span className="text-[10px] text-slate-400 ml-2">{r.name}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[9px] text-slate-500">{r.playersCount} jog.</span>
-                      <button
-                        onClick={() => joinRoom(r.code)}
-                        className="px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-[9px] uppercase rounded cursor-pointer transition-all"
-                      >
-                        Entrar
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {activeRooms.length === 0 && (
-                  <div className="text-center py-3 text-[10px] text-slate-600">Nenhuma sala ativa no momento.</div>
-                )}
-              </div>
-            )}
+            <p className="text-[10px] text-slate-500 leading-relaxed">
+              As mesas não aparecem numa lista: peça ao Mestre o código ou o link do convite.
+            </p>
           </div>
         </div>
 
@@ -627,9 +601,18 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           <div>
             <div className="flex items-center space-x-2">
               <span className="text-sm font-black text-white uppercase tracking-wider">{room?.name}</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-bold font-mono">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-bold font-mono select-all">
                 {roomCode}
               </span>
+              {isGm && (
+                <button
+                  onClick={copyInvite}
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-cyan-700/60 text-cyan-300 hover:border-cyan-400 font-bold uppercase flex items-center space-x-1 cursor-pointer transition-all"
+                >
+                  <Link2 className="w-3 h-3" />
+                  <span>{inviteState === 'copied' ? 'Link copiado' : 'Copiar convite'}</span>
+                </button>
+              )}
               {isGm && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-950 border border-red-500/60 text-red-300 font-black uppercase">
                   GM
@@ -637,6 +620,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               )}
             </div>
             <p className="text-[10px] text-slate-500">{room?.locationName || 'Night City'}</p>
+            {isGm && inviteState === 'manual' && (
+              <p className="text-[10px] text-cyan-300 font-mono select-all break-all">{inviteLink}</p>
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">

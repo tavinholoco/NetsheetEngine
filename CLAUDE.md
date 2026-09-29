@@ -57,7 +57,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 |---|---|
 | Explosão do d10 | **Encadeia.** O cliente e o PRD estão certos; corrigir o servidor |
 | Regras | **Fidelidade estrita** ao Cyberpunk 2020 |
-| Público da alpha | **Jogadores convidados pelo dono** — é o modelo de ameaça real. ⚠️ *29/09: o produto ainda não impõe isso (lobby lista toda sala, `join` aberto); quem pode entrar volta ao dono na R.11* |
+| Público da alpha | **Jogadores convidados pelo dono** — é o modelo de ameaça real. **Imposto na R.11 (29/09):** o lobby não lista salas; o código, com sufixo aleatório, é o convite |
 | Identidade visual | **Cyberpunk 2020** (mesa de 1988) — *não* 2077 nem RED. Ver ADR 0006 |
 | Provedor de IA | **Groq primário, Gemini fallback — decidido, NÃO implementado.** A B.1 trancou o endpoint mantendo o Gemini; a migração ainda não tem fase dona. Ver ADR 0005 |
 | Yjs / CRDT do grid | **Mantido sob observação**, com gatilho para reabrir. Ver ADR 0002 |
@@ -72,7 +72,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 577 testes depois das R.1–R.10 e R.16 (ver "Linha de base atual" no plano)
+npx vitest run            # 591 testes depois das R.1–R.12 e R.16 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 6 testes, sobe o servidor de produção
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
