@@ -10,11 +10,12 @@
  * - Run/Walk: MA × 3 metros por turno; Walk = metade do Run (piso).
  *   (Walk não existe no livro — RUL-11, Fase K.)
  * - Humanidade restante, para o painel de cromo.
- * - SP (Stopping Power) da peça EQUIPADA que cobre a localização.
+ * O SP por localização (`armorSpAt`) foi para src/rules/damage.ts na Fase D.
  */
 
-import type { ArmorLocation, ArmorPiece, CyberwareItem } from '../types/cyberpunk';
+import type { CyberwareItem } from '../types/cyberpunk';
 import { humanityFromEmp, humanityLossTotal } from '../rules/character';
+import { armorSpAt } from '../rules/damage';
 
 export { humanityFromEmp, humanityLossTotal };
 
@@ -48,11 +49,6 @@ export function walkFromMa(ma: number): number {
 // Armadura — SP por localização
 // ---------------------------------------------------------------------------
 
-/**
- * SP (Stopping Power) da peça EQUIPADA que cobre a localização corporal.
- * Retorna 0 quando não há proteção equipada naquela localização
- * (sem peça, peça desequipada ou localização sem cobertura).
- */
-export function armorSpAt(armor: ArmorPiece[], location: ArmorLocation): number {
-  return armor.find((a) => a.location === location && a.equipped)?.sp ?? 0;
-}
+// Desde a Fase D (D.1) mora em src/rules/damage.ts: o servidor a lê para
+// aplicar dano. Reexportada aqui para a ficha não mudar de import.
+export { armorSpAt };

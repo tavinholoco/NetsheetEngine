@@ -169,7 +169,7 @@ descrição — e é ali que uma premissa velha vira trabalho errado.
 ## ⚖️ Decisões tomadas (02/09/2026)
 
 Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo. *(1 a 3 em
-02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09/2026.)*
+02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09/2026.)*
 
 | # | Pergunta | Decisão | Consequência |
 |---|---|---|---|
@@ -179,6 +179,7 @@ Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem mo
 | 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo. **Gatilho:** um incidente real de perda de dado que o backup diário não cobriria |
 | 5 | Como evitar que o Render publique código antes da migration que ele usa? (P.5) | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa | O Render faz auto-deploy a cada push no `master`, sem esperar o `db-sync`. Regra de processo, custo zero, nada novo para configurar. Ver o passo 5 do ritual de encerramento |
 | 6 | Na cabeça, o dano dobra antes ou depois do BTM? | **Depois — opção A: armadura → BTM (mín. 1) → ×2** | O livro dá a regra e não diz quando; A é a ordem do texto e a das implementações de fãs. B seria mais letal pelo valor do BTM. Pesquisa e números na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d) |
+| 7 | As quatro perguntas da D.0: quem escreve o ferimento na mesa, pontos × nível, token sem ficha, penetração escalonada | **(a)** Na mesa, **só o servidor e o GM** escrevem o ferimento — a sincronia da ficha deixa de levá-lo. **(b)** A ficha **guarda pontos** (0–40), e o nível é derivado; junto nasce o estado **Morto**. **(c)** Token sem ficha **não recebe dano**. **(d)** Penetração escalonada: **ADIAR** | (a) fecha o achado do portão C.14. (b) é fidelidade estrita: o livro conta pontos, e o nível sozinho perde o resto da caixa. Sem migration SQL — a ficha mora no `data` jsonb. (c) e (d) são as versões menores, com gatilho na [conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu). Detalhe na D.0 |
 
 ---
 
@@ -923,7 +924,7 @@ cliente e servidor para ela.
 
 ### FASE D — FECHAR O LOOP DE COMBATE 🔨 *(3–4 dias)*
 
-- [ ] **D.0** 🔍 **Verificação de premissas** — a mesma disciplina da B.0 e da C.0 (que achou três
+- [x] **D.0** 🔍 **Verificação de premissas** — a mesma disciplina da B.0 e da C.0 (que achou três
       premissas vindas do RED e de regra de casa). *(Item acrescentado em 26/09/2026, no pós-merge da
       C: o `CLAUDE.md` manda toda fase de construção abrir com um `.0`, e a D não tinha.)* Pontos de
       partida já conhecidos:
@@ -942,7 +943,9 @@ cliente e servidor para ela.
         dificuldade por alcance e o Combat Sense na iniciativa (D.4).
       - **Premissa de modelo, achada no preparo da D (28/09):** a ficha guarda só o **nível**
         (`woundLevel` 0–10), e o livro conta **pontos** (4 por caixa, 40 no total). Aplicar 6 pontos
-        deixa Leve com 2 guardados para a próxima caixa — o modelo atual perde esses 2. Guardar pontos
+        deixa Leve com 2 guardados para a próxima caixa — o modelo atual perde esses 2. *(Correção da
+        D.1: 6 pontos já é **Sério**, com 2 das 4 caixas dele marcadas — o nível muda no primeiro
+        ponto da caixa seguinte. O argumento vale igual: só o nível não diz quantas caixas faltam.)* Guardar pontos
         muda o **formato salvo** da ficha (o `data` jsonb e o `room_state`): não é migration SQL,
         mas é mudança de contrato que o `sheetSchema` e fichas antigas precisam aceitar. Decidir na
         D.0, antes da D.1. Se virar migration, vale a decisão 5 (PR próprio, antes do código).
@@ -959,26 +962,185 @@ cliente e servidor para ela.
         não deve gerar mutação por passo intermediário (mirar, escolher alvo) — só no dano aplicado.
       - **Infra:** o Render está suspenso até 01/10 (ver Operação). Não bloqueia a D: o CI testa o
         build de produção, inclusive o E2E com dois navegadores.
-- [ ] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → BTM → ×2 na cabeça →
-      conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04)*
+      - **Resultado da verificação (28/09/2026).** Linha de base conferida (0 erros, 394 testes). As
+        quatro perguntas foram ao dono e viraram a **decisão 7**. O que a leitura do código e das
+        fontes mudou na fase:
+        - **Pontos, não nível** (decisão 7b). Campo novo na ficha, `woundLevel` derivado. Ficha antiga
+          sem o campo converte para o **mínimo da caixa** (`4 × (nível − 1) + 1`): não inventa dano.
+          Sem migration SQL — confirmado que nenhuma migration tem coluna de ferimento; a ficha mora
+          no `data` jsonb. O `HealthTracker` hoje mostra 11 botões de nível, não 40 caixas: a D mexe
+          na ficha também.
+        - **"Morto" entra na D** — as três mortes do livro chegam com ela: dano além da 40ª caixa, e
+          cabeça com **mais de 8** pontos (D.1); death save falho (D.5).
+        - **Perda de membro entra na D.1.** Mais de 8 pontos num membro de uma vez, **depois de todos
+          os modificadores**, decepa ou inutiliza (S5, S9). O S9 manda um death save imediato em Mortal
+          0 — **uma fonte só**: entra como aviso no chat, não como rolagem automática, até o dono
+          conferir no livro.
+        - **Stun save automático a cada dano aplicado** (regra conferida na C.7), rolado pelo servidor
+          e registrado no chat com o dano. É o mesmo mecanismo da D.5 e fecha o "trilha de auditoria"
+          da D.1. O estado **atordoado** não é guardado: o chat diz "FALHOU — fora de ação" e o GM
+          conduz. **ADIAR**, gatilho: a mesa esquecer quem está atordoado.
+        - **O GM não rola por NPC na mesa.** O `rollDiceForPlayer` só rola a ficha de quem pede. O
+          fluxo da D.3 (NPC ataca) precisa de rolagem do GM **com a ficha do NPC** — autorização nova,
+          vai para o portão. E o `damageRoll` devolve o local de impacto **só no texto** do detalhe; a
+          D.3 precisa dele estruturado.
+        - **Dificuldade por alcance** (D.3): queima-roupa 10, curto 15 (25% do alcance da arma), médio
+          20 (50%), longo 25 (100%), extremo 30 (200%). A arma já tem `rangeMeters`. **Só um resumo de
+          busca sustenta a tabela hoje** — a D.3 confirma com duas fontes antes de codar.
+        - **Combat Sense soma na iniciativa** — confirmado (S5; S3 e S6 já estavam na conferência).
+        - **Penetração escalonada** é opcional no livro segundo um resumo de busca (a página de origem
+          não foi lida), e o S9 a trata como chave desligável. **ADIAR** (decisão 7d); gatilho na
+          conferência.
+        - **O `hp` do token no grid é espelho** do ferimento, mas o GM pode escrevê-lo direto pelo
+          grid (o `mirrorDocToJson` deixa) sem mexer na ficha. Com o dano automático, o espelho passa
+          a ser escrito só pelo servidor, a partir da ficha.
+- [x] **D.1** `applyDamage(alvo, danoBruto, localizacao)`: SP da localização → BTM → ×2 na cabeça →
+      conversão em níveis de ferimento (4 pontos por nível), com trilha de auditoria no chat. *(RUL-04 —
+      28/09/2026)*
+      - **Regra:** `resolveHit` e `applyHit` em `src/rules/damage.ts`, testados contra a tabela
+        (`rules-damage`, 25 casos). Constantes novas no `tables.ts`: `WOUND_TRACK_POINTS` (40),
+        `SEVERE_HIT_THRESHOLD` (8), `MIN_DAMAGE_AFTER_BTM`, e `limb` em cada local de impacto. O
+        `armorSpAt` saiu do `utils` para `src/rules/` (o servidor lê).
+      - **Ficha em pontos (decisão 7b):** `damagePoints` e `isDead` no tipo e no `sheetSchema`; o
+        `woundLevel` é derivado e continua gravado para os leitores antigos. A ficha mostra as 40
+        caixas do livro (10 níveis × 4) em vez de 11 botões.
+      - **Servidor:** `applyDamage` (só GM) + `POST /api/rooms/:code/damage`. Faz a conta, grava os
+        pontos, espelha o nível no token do grid, **rola o stun save sozinho** (com o nível novo) e
+        deixa a conta inteira no chat. Mais de 8 na cabeça ou além dos 40 → Morto; mais de 8 num
+        membro → aviso de perda do membro. O ajuste manual do GM passou a gravar pontos.
+      - **Achado do portão C.14 fechado (decisão 7a):** a sincronia e a reconexão mantêm o ferimento
+        do servidor; a ficha do jogador fica só-leitura na mesa e **recebe** o ferimento de lá.
+        **Provado revertendo:** com as duas linhas antigas (`updatePlayerSheet` e `joinRoom`), os 3
+        testes da decisão 7a em `damage.integration` falham; com as novas, passam.
+      - Um teste antigo mudou de propósito: o LWW da reconexão (T3.3) usava o `woundLevel` como
+        amostra — agora usa `gearNotes`, porque o ferimento não segue mais o LWW.
+      - **O commit da D.1 quebrou 2 E2E da ficha** (clicavam os 11 botões de nível que viraram 40
+        caixas). Só apareceu ao rodar o E2E na D.3; corrigido lá, trocando os seletores pelo primeiro
+        ponto de cada nível — as asserções de regra ficaram iguais.
+      - **ADIAR — desfazer uma morte na mesa.** O ajuste manual do GM não mexe no `isDead`, e a
+        sincronia também não. **Gatilho:** o GM precisar corrigir uma morte aplicada por engano.
+      - Diagramas (pipeline e máquina de ferimento) atualizados no mesmo commit — a D.8. A máquina
+        tinha as transições no **teto** de cada caixa (Leve → Sério em "8 pontos"); o nível muda no
+        primeiro ponto da seguinte (5).
       - **Ordem decidida (decisão 6):** armadura → BTM (mínimo 1) → ×2 na cabeça. O
         [diagrama](./ARQUITETURA.md#pipeline-de-dano-fnff) já está nessa ordem.
       - **Achado do portão da C.14:** hoje o jogador escreve o próprio `woundLevel` pela sincronia da
         ficha (`updatePlayerSheet`), e desde a C.6 isso **baixa a penalidade da rolagem**. Quando o dano
         virar ferimento no servidor, a sincronia não pode mais baixá-lo. Se a D não resolver, vira item
         da Fase J.
-- [ ] **D.2** Definir e implementar o caso do **token sem ficha**: o grid tem tokens `cover` e
+- [x] **D.2** Definir e implementar o caso do **token sem ficha**: o grid tem tokens `cover` e
       `hazard` sem `sheet` nem BTM, só `spCover`. Precisa estar decidido antes de codar.
-- [ ] **D.3** Fluxo de GM: rolar ataque → acertar token → aplicar dano, sem sair do grid.
-- [ ] **D.4** Iniciativa automática (`1d10 + REF` no servidor para todos), com ajuste manual mantido.
-      *(RUL-09)*
-- [ ] **D.5** Death saves entrando na virada de turno de quem está em nível mortal.
-- [ ] **D.6** Testes de comportamento do loop (aplicar dano, avançar turno). *(ARQ-08, parte 2)*
-- [ ] **D.7** `git tag v0.4.3`.
-- [ ] **D.8** 📐 **Desenho** — implementar o `applyDamage` contra o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) já confirmado pela Fase C. Se a implementação divergir do desenho, o desenho muda junto no mesmo commit.
-- [ ] **D.9** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
-- [ ] **D.10** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase D concluída em:** ____/____/______
+      *(28/09/2026 — decisão 7c)* O `applyDamage` acha a ficha pelo jogador, pelo NPC ou pelo token
+      deles; token sem dono com ficha (cobertura, perigo, NPC criado direto no grid) é recusado com
+      `400` e a mensagem "gere-o com ficha". Testado em `damage.integration`. Cobertura como proteção
+      do alvo: ADIAR, gatilho na conferência.
+- [x] **D.3** Fluxo de GM: rolar ataque → acertar token → aplicar dano, sem sair do grid. *(28/09/2026)*
+      - **Regra conferida antes de codar:** a tabela de alcance (10/15/20/25/30, cortes em 1 m, ¼, ½,
+        1× e 2× o alcance da arma — p. 99) tem **S8 e S9**, e o S1 confirma as quatro de cima. O ataque
+        acerta com total **igual ou maior** que a dificuldade (S8, S9); fumble erra sempre.
+        `RANGE_BANDS` no `tables.ts`; `rangeBandFor`, `rangeBandMeters` e `attackHits` no `combat.ts`.
+      - **Servidor:** `resolveGmAttack` + `POST /api/rooms/:code/attack` (só GM). Um NPC **com
+        ficha** ataca um alvo com ficha, numa faixa ou numa dificuldade livre (1–50); se acertou, rola
+        dano e local e aplica pelo **mesmo núcleo da D.1** (`applyDamageTo`). Uma mutação por ataque,
+        como o contrato de custo pede. Recusa antes de rolar qualquer dado: jogador como atacante (ele
+        rola o próprio), NPC morto, alvo sem ficha, o NPC contra si mesmo, faixa inválida.
+      - **Rolagem de dano com local estruturado:** `RollResult.hitLocation`. Antes o local só existia no
+        texto do detalhe. A paridade cliente↔servidor (C.10) continua verde.
+      - **Tela:** o cartão do token selecionado ganhou, para o GM, "NPC ataca" (atacante, faixas com os
+        metros da arma, "Outra") e "Aplicar dano" (com "usar último dano" rolado **por jogador** — o
+        dano do ataque de NPC já foi aplicado pelo servidor e não é oferecido de novo). As duas seções
+        recolhem, para o cartão não cobrir o grid. Token sem ficha mostra o aviso da D.2.
+      - **Visto funcionando no navegador**, com sala semeada localmente: ataque que errou (17 < 20),
+        ataque que acertou (dano 5 no braço → 2 pontos, stun save), e o "aplicar dano" pela tela.
+      - 19 testes em `gm-attack.integration` + 1 de rota. **ADIAR:** queima-roupa com dano máximo (uma
+        linhagem de fonte) e a rolagem resistida do corpo a corpo — gatilhos na conferência.
+      - **Pista da Fase G (achada ao testar):** em modo dev, **todo deep link** (`/room/X`,
+        `/multiplayer`) volta para `/`. O efeito "aba → URL" do `App.tsx` se protege do primeiro render
+        com um `ref`, e o `StrictMode` roda o efeito duas vezes. Produção não tem `StrictMode` duplo,
+        mas o E2E roda o build de produção — por isso nunca apareceu.
+- [x] **D.4** Iniciativa automática (`1d10 + REF` no servidor para todos), com ajuste manual mantido.
+      *(RUL-09 — 28/09/2026)*
+      - **Regra conferida:** `1d10` **aberto** + REF **corrente** + Combat Sense do Solo (S1
+        `1d10!!+REF+Combat_Sense`; S8 `1d10x10 + ref.total + CombatSense`, com o ferimento já no REF).
+        O 1 **não** é fumble: iniciativa não é teste. O `resolveCheck` ganhou `fumbleTable: false`
+        para isso; `sheetInitiativeRoll` em `rolls.ts`, `combatSenseBonus` em `roles.ts`.
+      - **Servidor:** `rollInitiative` (só GM), pela rota e pelo WebSocket (`action: "roll"`). Rola
+        para os jogadores (menos o GM) e os NPCs vivos com ficha; a entrada que o GM pôs à mão continua
+        com o valor dela. Empate fica na ordem da rolagem (o livro não dá desempate — ADIAR com
+        gatilho na conferência). As parcelas de cada rolagem vão para o chat.
+      - **Achado ao mexer no `updateInitiative`:** a entrada era gravada com `{ ...e }` — **qualquer
+        campo** do cliente virava estado da sala, persistido e transmitido a todos, sem teto de
+        tamanho; e a vez podia apontar para outra entrada que não a primeira. Agora a entrada é montada
+        campo a campo e a vez começa no primeiro. **Provado revertendo:** com o corpo antigo, os 2
+        testes do ajuste manual falham; com o novo, passam. Só o GM chegava a esse caminho — vai para
+        o portão (D.9).
+      - **Tela:** "🎲 Rolar iniciativa" na aba de iniciativa, só para o GM. **Visto no navegador:**
+        Vex 27 (o 10 explodiu, 10 → 9), o NPC 23 e o Kaze 14 (Solo, com Combat Sense 3), e o "Guarda"
+        posto à mão continuou na lista.
+      - 15 testes em `initiative.integration` + 1 de rota.
+- [x] **D.5** Death saves entrando na virada de turno de quem está em nível mortal. *(28/09/2026)*
+      - **Regra conferida, e maior que o texto do item:** em Mortal, o death save vem **logo depois do
+        dano** (antes do stun save) **e a cada turno** depois, até morrer ou ser **estabilizado**; dano
+        novo desfaz a estabilização (S5; S9 com as p. 99 e 105). Sem estabilização, a rolagem
+        automática a cada turno mataria todo mundo cedo ou tarde — divergência do livro. Por isso a
+        D.5 trouxe o `isStabilized` mínimo.
+      - **Servidor:** o `nextTurn` rola o death save quando a vez chega a quem está em Mortal, vivo e
+        não estabilizado (jogador ou NPC; entrada posta à mão não tem ficha). O núcleo do dano rola o
+        death save antes do stun; falhou, Morto e sem stun. `setStabilized` + `POST
+        /api/rooms/:code/stabilize` (só GM, só em Mortal). Na mesa, o `isStabilized` é do servidor —
+        a sincronia e a reconexão o mantêm, como o ferimento.
+      - **Provado revertendo:** sem a linha que mantém o `isStabilized` do servidor na sincronia, o
+        jogador se estabiliza sozinho e o teste falha.
+      - **Tela:** o cartão do token mostra o estado ("Mortal 2 · 21/40 · estabilizado") e o botão
+        "🩹 Estabilizar"/"Desfazer" em Mortal; a ficha do jogador mostra "Estabilizado". **Visto no
+        navegador:** a vez chegou ao Vex (Mortal 2) e o servidor rolou "4 ≤ 6 (BODY 8 − 2)";
+        estabilizado pelo cartão, a vez deu a volta e nenhum death save novo saiu.
+      - Um teste da D.1 ganhou um dado na fila: o NPC que leva 40 pode cair em Mortal e agora rola o
+        death save também. 14 testes em `death-save-turn.integration` + 5 no `damage.integration` +
+        1 de rota.
+      - **ADIAR:** a rolagem de estabilização (First Aid/Medical Tech) automática — o GM conduz e
+        marca; gatilho na conferência.
+- [x] **D.6** Testes de comportamento do loop (aplicar dano, avançar turno). *(ARQ-08, parte 2 — 28/09/2026)*
+      - Cada peça já nasceu com teste na D.1–D.5 (`rules-damage`, `damage`, `gm-attack`, `initiative`,
+        `death-save-turn`). A D.6 acrescentou o que faltava:
+      - **`combat-loop.integration`** — **uma luta inteira**, na ordem da mesa e com dados
+        roteirizados: iniciativa → o NPC acerta → perda da perna e Mortal 0 → death save na hora e
+        stun → o jogador tenta se curar pela sincronia (não passa) → death save na virada de turno →
+        o GM estabiliza → a vez passa sem rolar → dano novo desfaz a estabilização → death save falha
+        → morto sai da iniciativa seguinte. Confere também a trilha do chat, na ordem.
+        O teste pegou um erro **meu**, não do código: eu esperava a iniciativa do Vex com REF 8, e ele
+        estava Sério — o REF corrente é 6. É a D.4 funcionando.
+      - **`combat-ui`** — 19 testes de comportamento dos componentes que a fase criou, onde o ARQ-08
+        apontava o buraco (a UI tinha 3 smoke tests): o `CombatPanel` (o que manda ao atacar e ao
+        aplicar dano, faixas e "Outra", "usar último dano", estado do alvo, estabilizar só em Mortal) e
+        o `HealthTracker` (40 caixas, marcar e desmarcar, ficha antiga no mínimo da caixa, **só
+        leitura na mesa**, Morto, estabilizado).
+      - **Provado que mordem:** sem a trava da mesa no `HealthTracker` e sem o filtro de Mortal no
+        botão de estabilizar, os 2 testes certos falham; com elas, os 19 passam.
+      - 505 → 525 testes. A parte 3 do ARQ-08 (o resto dos componentes) continua com as Fases G–H.
+- [x] **D.7** `git tag v0.4.3`. *(28/09/2026, no último commit da fase, antes do PR — como a `v0.4.2` na C)*
+- [x] **D.8** 📐 **Desenho** — implementar o `applyDamage` contra o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) já confirmado pela Fase C. Se a implementação divergir do desenho, o desenho muda junto no mesmo commit.
+      *(28/09/2026)* Divergiu, e o desenho mudou junto em cada commit: o pipeline ganhou o acerto grave
+      (> 8: cabeça mata, membro se perde), a trilha em pontos e a morte além dos 40 (D.1), e o death
+      save na hora do dano e a estabilização (D.5). A máquina de ferimento tinha as transições no
+      **teto** de cada caixa (Leve → Sério em "8 pontos") — corrigidas para o primeiro ponto do nível
+      seguinte — e ganhou o `isDead` e a estabilização. Conferidos de novo no fechamento.
+- [x] **D.9** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+      *(28/09/2026)* Registro em [`SEGURANCA.md`](./SEGURANCA.md#fase-d--loop-de-combate). O GM ganhou
+      poderes sobre as fichas dos outros (dano, ataque do NPC, estabilizar, iniciativa), todos com
+      `checkIsGm` e 403 testado. **O achado da C.14 está fechado** (a sincronia e a reconexão não
+      escrevem mais o ferimento), e o `updateInitiative` parou de gravar campo arbitrário — os dois
+      provados revertendo. **Achado do portão:** a porta lateral "sair e voltar curado", levada à Fase
+      J com gatilho; e a sala sem teto de NPCs, pista da Fase E. Nenhum diagrama de contêineres mudou:
+      as rotas novas vivem no mesmo servidor, atrás da mesma sessão.
+- [x] **D.10** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+      *(28/09/2026)* Plano, linha de base, `CLAUDE.md` (o "falta fechar o loop" virou falso), PRD,
+      protocolo, conferência e diagramas em dia. **Revisão do que a fase produziu:** o
+      `clampWoundLevel` ficou morto com o `HealthTracker` novo (saiu, com os 3 testes dele); o
+      `pushSystemMessage` passou a usar o `chatTime`; o ajuste manual do GM parou de ter uma lista
+      própria de nomes de nível (duplicava a `WOUND_TRACK`) e passou a dizer pontos, não "/10 caixas".
+      Memória: só o truque de testar a mesa como GM no navegador local.
+- [x] ✅ **Fase D concluída em:** __28__/__09__/__2026__ *(a mergear — PR para o dono)*
 
 > **Ponto de corte:** com A–D fechadas o jogo roda certo. Dá para jogar aqui e tratar o resto como
 > manutenção — com a exceção da F, que é a única fase restante que muda o que o jogador vê.
@@ -1000,7 +1162,13 @@ Escopo: `server.ts`, `server/roomManager.ts`, `server/roomPersistence.ts`, `serv
 - Conferir se algum erro de `roomPersistence` é engolido em silêncio.
 - `(ws as any)._peerId` e os `any` do protocolo Yjs.
 - Candidato a refactor: fatiar `roomManager` (1.035 linhas) em sessão / autorização / regras / npcs /
-  chat. *(ARQ-05)*
+  chat. *(ARQ-05)* *(A Fase D o levou a 1.461: dano, ataque de NPC, iniciativa e death save.)*
+- **A sala não tem teto de NPCs** (`generateRoomNpc`) — só o GM gera e o limitador de taxa segura o
+  ritmo, mas a mensagem de iniciativa da D.4 cresce com eles. *(portão da D.9, 28/09/2026)*
+- O `respondToCombat` (D.1) já contorna o `respondWithResult` para devolver 400 em entrada inválida
+  — mesma classificação por substring, agora em dois lugares.
+- Mais de dez timestamps do chat montados à mão no `roomManager`; a D criou o `chatTime` e o
+  `pushSystemMessage`, e só o código da própria fase passou a usá-los.
 
 **O que a varredura pergunta:** todo caminho de erro devolve o status certo e uma mensagem tratável?
 Existe estado que cresce sem limite? Que suposição quebra se duas requisições chegarem juntas?
@@ -1170,13 +1338,16 @@ Fase F para não varrer código que acabou de ser reestilizado.
 - `syncSheetStore(sheetResult)` é chamado **no corpo do render** do `App.tsx` — efeito colateral fora
   de efeito. **Agora com sintoma** *(visto na C, 25/09/2026)*: o React avisa no console, a cada carga,
   "Cannot update a component while rendering a different component". Anterior à Fase C (`7fe4f47`).
-- Os dois `useEffect` que sincronizam URL ↔ aba com dois refs de guarda.
+- Os dois `useEffect` que sincronizam URL ↔ aba com dois refs de guarda. **Agora com sintoma**
+  *(visto na D.3, 28/09/2026)*: em modo dev, **todo deep link** (`/room/X`, `/multiplayer`) volta
+  para `/` — o `StrictMode` roda o efeito "aba → URL" duas vezes e a guarda do primeiro render só
+  segura a primeira. Produção não tem o duplo efeito, e o E2E roda o build de produção.
 - `createBlankCharacterSheet` gera seis IDs de armadura no mesmo tick com `Date.now()` + sufixo curto.
 - ~~`StatBlock.handleSet` altera `stats` sem tocar em `currentStats`; `handleChange` aplica um
   `Math.min` difícil de justificar.~~ *Resolvida na C.6: o `currentStats` virou derivado e o
   `StatBlock` parou de escrevê-lo.*
 - 16 `console.*` sobrevivendo ao logger estruturado. *(ARQ-07, parte 1)*
-- Candidatos a refactor: `MultiplayerRoom` 944, `FriendsList` 723, `CyberpunkMenu` 608. *(ARQ-05)*
+- Candidatos a refactor: `MultiplayerRoom` 944 (1.031 depois da Fase D), `FriendsList` 723, `CyberpunkMenu` 608. *(ARQ-05)*
 
 **O que a varredura pergunta:** que estado existe em dois lugares e pode divergir? O que a UI faz
 quando a rede falha, o token expira ou a resposta demora? Dá para operar a ficha só com teclado?
@@ -1259,6 +1430,10 @@ sistematicamente, e depois de todo o código novo de C, D e F ter entrado.
 - `npm audit` e `gitleaks` sobre o **histórico completo**, não só o HEAD.
 - Conferir que nenhum segredo entrou no bundle depois das mudanças de B (transformar o teste da T10.7
   em script).
+- **Da D.9 (28/09/2026) — sair e voltar "curado":** o `leaveRoom` apaga o registro do jogador, e a
+  volta é um join novo, que aceita o ferimento da ficha do cliente. A decisão 7a fechou a sincronia e
+  a reconexão, não essa porta. **Gatilho:** um jogador aparecer inteiro depois de sair no meio de uma
+  luta, ou a mesa ter público fora dos convidados do dono.
 
 **O que a varredura pergunta:** se um jogador convidado virar hostil, o que ele consegue fazer? (é o
 modelo de ameaça real da decisão 3) Que dado sai do servidor para quem não deveria vê-lo?
@@ -1338,7 +1513,7 @@ público mudar.
 | A | 🔨 | Reancorar o projeto | ✅ | 03/09/2026 |
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
-| D | 🔨 | Loop de combate | ⬜ | — |
+| D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
@@ -1353,15 +1528,15 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a Fase C (25/09/2026) |
+| Verificação | Ao fechar a Fase D (28/09/2026) |
 |---|---|
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **394** testes, 19 arquivos *(395 ao fechar a C; o PR #9 removeu o teste que exigia a marca de "inferência" na escopeta)* |
-| `npm run test:e2e` | 6/6 (Playwright) |
-| `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C** (Supabase local desligado; a fase não mexeu em schema nem RLS) |
+| `npx vitest run` | **522** testes, 26 arquivos *(394 na abertura da D)* |
+| `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
+| `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia** (3 moderadas do `qs`, não bloqueiam) |
-| Chunk de entrada | 628 kB / 186 kB gzip |
-| Migrations em produção | `0001`–`0007` |
+| Chunk de entrada | 629 kB / 186 kB gzip |
+| Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
 Renovar até 22/10 — passo a passo no P.2.

@@ -96,8 +96,8 @@ O produto cobre **sete módulos funcionais interligados**:
 - Cyberware com custo em eb e **perda de humanidade**.
 - Arsenal: armas (dano por fórmula, ex.: `2d6+2`) e proteção SP por
   localização.
-- Bio-monitor de ferimentos (0 Saudável → 10 Mortal 6) com penalidades de
-  REF/MA e teste de morte (1d10 ≤ BODY).
+- Bio-monitor de ferimentos: a trilha do livro, **40 caixas de 1 ponto** (10 níveis × 4), com o
+  efeito do nível nos atributos, stun e death save, e o estado **Morto**.
 - Lifepath narrativo editável + gerador 1d10.
 - Persistência: nuvem (Supabase, JSONB) com fallback localStorage offline e
   autosave; modo visitante permite criar localmente, login habilita a nuvem.
@@ -117,8 +117,8 @@ O produto cobre **sete módulos funcionais interligados**:
 - **RNG server-authoritative** (T5.4): o cliente pede só o tipo
   (`attack`/`damage`/`save`/`stun`/`skill`); o servidor rola com `crypto.randomInt`
   usando a ficha que ELE possui — resultado forjado é ignorado.
-- Poderes de GM: gerar NPCs e fichas de edgerunner, ajustar ferimentos de
-  jogadores/NPCs, remover jogadores/NPCs, definir condições de combate
+- Poderes de GM: gerar NPCs e fichas de edgerunner, **aplicar dano** (o servidor
+  faz a conta do livro — Fase D) e ajustar ferimentos de jogadores/NPCs, remover jogadores/NPCs, definir condições de combate
   (localização, modificador e motivo).
 - **Presença e reconexão**: heartbeat a cada 20s (timeout de 60s marca
   offline), reconexão automática com o mesmo peerId restaurando a ficha
@@ -214,7 +214,20 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 - **Death save** *(Fase C, C.7)*: em nível Mortal, **a cada turno**, `1d10 ≤ BODY −
   nível Mortal` (Mortal 0 = BODY, Mortal 6 = BODY −6), até morrer ou ser
   estabilizado. Sem acúmulo por turno. Mortal 6 ainda está vivo.
-- Bio-monitor com **11 estados** (0 Saudável → 10 Mortal 6). Efeito do livro
+  **Na mesa, automático** *(Fase D, D.5)*: o servidor rola quando a vez chega a quem está
+  em Mortal, e também **logo depois do dano** que deixa em Mortal — antes do stun save.
+  Falhou, **Morto**. O GM **estabiliza** pelo cartão do token (depois do teste de First
+  Aid/Medical Tech): estabilizado não rola mais, e dano que entra desfaz.
+- **Dano → ferimento** *(Fase D, D.1)*: dano bruto − SP da localização → BTM (nunca
+  abaixo de 1) → ×2 na cabeça. O resultado soma **pontos** na trilha de 40 caixas (4 por
+  nível); o nível é derivado dos pontos. Aplicado **pelo GM, no servidor**, com a conta
+  inteira e o stun save automático no chat. Na mesa, o jogador **não** edita o próprio
+  ferimento.
+- **Acerto grave** *(D.1)*: mais de 8 pontos num acerto, depois de tudo. Na cabeça,
+  morte; num membro, o membro é perdido (aviso no chat).
+- **Morto** *(D.1, D.5)*: dano além de 40 pontos, mais de 8 na cabeça, ou death save
+  falho. Mortal 6 ainda está vivo.
+- Bio-monitor com **11 níveis** (0 Saudável → 10 Mortal 6). Efeito do livro
   nos atributos, **sem acumular** entre níveis *(Fase C, C.5)*:
   **Sério** REF −2; **Crítico** REF, INT e COOL pela metade; **Mortal** REF, INT
   e COOL a um terço (arredondando para cima). Ferimento **não** afeta MA.
@@ -228,9 +241,20 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 - O **modificador de situação do GM** (`combatModifier`, ±10) entra em ataque e
   perícia, com o motivo no detalhe da rolagem. Não entra em dano nem em save.
   *(Fase C, C.4 — antes era exibido e nenhuma rolagem o somava.)*
+- **Acertar o alvo** *(Fase D, D.3)*: o ataque precisa **igualar ou superar** a
+  dificuldade da faixa de alcance — queima-roupa 10 (até 1 m), curta 15 (¼ do
+  alcance da arma), média 20 (½), longa 25 (alcance), extrema 30 (2×). Fumble erra
+  sempre. No corpo a corpo, o GM usa o total do defensor como dificuldade.
+- **Combate no grid** *(D.3)*: o GM seleciona o token alvo e, no cartão dele, faz
+  um NPC atacar (o servidor rola ataque, dano e local e aplica, numa mutação só) ou
+  aplica o dano que um jogador rolou — a rolagem de dano guarda o local de impacto.
 - Rolagens da mesa são **server-authoritative**: o cliente nunca envia o
   resultado; o bônus é derivado da ficha que o servidor possui.
-- Iniciativa ordenada por score (decrescente) com avanço de turno.
+- **Iniciativa automática** *(Fase D, D.4)*: o GM rola e o servidor faz `1d10`
+  aberto + REF corrente (+ Combat Sense do Solo) para cada combatente com ficha — os
+  jogadores e os NPCs vivos. O 1 não é fumble. Quem o GM pôs à mão continua na lista
+  com o valor dele; empate fica na ordem da rolagem. Ordem decrescente, com avanço
+  de turno.
 
 ---
 

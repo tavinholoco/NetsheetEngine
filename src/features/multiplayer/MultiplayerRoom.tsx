@@ -5,12 +5,16 @@ import {
   ChatMessage,
   InitiativeEntry,
   TableRollKind,
-  TacticalGridState
+  TacticalGridState,
+  TacticalToken
 } from '../../types/multiplayer';
 import { TacticalGrid } from './TacticalGrid';
+import { CombatPanel } from './CombatPanel';
 import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSheetStore } from '../../stores/useSheetStore';
+import { woundStateOf } from '../../rules/damage';
+import { mortalLevel, woundRow } from '../../rules/character';
 import { useUiStore } from '../../stores/useUiStore';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
@@ -64,6 +68,25 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // Fase 4 — dados da ficha/user/rolagem via stores (sem props)
   const sheet = useSheetStore((s) => s.sheet);
   const user = useSheetStore((s) => s.user);
+  const updateSheet = useSheetStore((s) => s.updateSheet);
+
+  // D.1 (decisão 7a) — na mesa, o ferimento é do servidor: quando o GM aplica
+  // dano ou ajusta o Bio-Monitor, a ficha local acompanha (e é salva com ele).
+  // Sem loop: a sincronia da ficha não leva o ferimento de volta.
+  const tableSheet = view === 'active' && peerId ? room?.players?.[peerId]?.sheet : undefined;
+  // D.5 — a estabilização também é do servidor, e vem junto.
+  const serverWound = tableSheet ? { ...woundStateOf(tableSheet), isStabilized: tableSheet.isStabilized === true } : null;
+  const localWound = woundStateOf(sheet);
+  const woundDiffers =
+    !!serverWound &&
+    (serverWound.damagePoints !== localWound.damagePoints ||
+      serverWound.isDead !== localWound.isDead ||
+      serverWound.isStabilized !== (sheet.isStabilized === true) ||
+      sheet.damagePoints === undefined);
+  useEffect(() => {
+    if (woundDiffers && serverWound) updateSheet(serverWound);
+    // O gatilho é a divergência e os valores do servidor, não o objeto (novo a cada render).
+  }, [woundDiffers, serverWound?.damagePoints, serverWound?.isDead, serverWound?.isStabilized]);
 
   const [roomName, setRoomName] = useState('Mesa de Night City');
   const [chatInput, setChatInput] = useState('');
@@ -371,6 +394,43 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
 
   const updateNpcHealth = (npcId: string, woundLevel: number) => {
     roomAction(roomsApi.setNpcHealth(roomCode, npcId, woundLevel));
+  };
+
+  // Fase D (D.3) — combate no cartão do token. O servidor faz toda a conta;
+  // aqui só se escolhe quem, onde e de onde. Token sem ficha não recebe dano
+  // (D.2), então o painel nem aparece para ele.
+  const renderTokenCombat = (token: TacticalToken) => {
+    const ownerId = token.peerId;
+    const owner = ownerId ? room?.players?.[ownerId] ?? room?.npcs?.[ownerId] : undefined;
+    if (!owner) {
+      return <p className="text-[10px] text-slate-500 border-t border-slate-800 pt-2">Token sem ficha: não recebe dano.</p>;
+    }
+    const attackers = Object.values(room?.npcs ?? {}).filter((n) => n.peerId !== ownerId && !n.sheet?.isDead);
+    const wound = woundStateOf(owner.sheet ?? {});
+    // Só dano rolado por JOGADOR: o do ataque de NPC (mensagem do sistema) o
+    // servidor já aplicou, e oferecê-lo aqui convidaria a aplicar duas vezes.
+    const lastDamageRoll = [...(room?.chatMessages ?? [])]
+      .reverse()
+      .find((m) => m.senderHandle !== 'SISTEMA_NET' && m.rollResult?.rollType === 'DAMAGE' && m.rollResult.hitLocation)?.rollResult;
+    return (
+      <CombatPanel
+        key={token.id}
+        targetId={token.id}
+        targetName={owner.handle}
+        attackers={attackers}
+        lastDamageRoll={lastDamageRoll}
+        onAttack={(input) => roomAction(roomsApi.gmAttack(roomCode, input))}
+        onApplyDamage={(targetId, raw, location) => roomAction(roomsApi.applyDamage(roomCode, targetId, raw, location))}
+        status={{
+          label: woundRow(wound.woundLevel).name,
+          points: wound.damagePoints,
+          isMortal: mortalLevel(wound.woundLevel) !== null,
+          isDead: wound.isDead,
+          isStabilized: owner.sheet?.isStabilized === true
+        }}
+        onToggleStabilized={(targetId, value) => roomAction(roomsApi.setStabilized(roomCode, targetId, value))}
+      />
+    );
   };
 
   const deleteNpc = (npcId: string) => {
@@ -817,6 +877,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             onInspectPlayer={(p) => setInspectedPlayer(p)}
             remoteCursors={remoteCursors}
             onCursorMove={handleGmCursorMove}
+            renderTokenCombat={isGm ? renderTokenCombat : undefined}
           />
         </div>
       )}
@@ -827,7 +888,18 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           <div className="lg:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between p-3 border-b border-slate-800">
               <span className="text-xs font-black text-yellow-400 uppercase tracking-widest">Ordem de Iniciativa</span>
-              <span className="text-[9px] text-slate-500">{initiative.length} entradas</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-slate-500">{initiative.length} entradas</span>
+                {isGm && (
+                  <button
+                    onClick={() => roomAction(roomsApi.rollInitiative(roomCode))}
+                    title="1d10 + REF (+ Combat Sense do Solo) para cada combatente com ficha. Quem você pôs à mão continua."
+                    className="px-2.5 py-1 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-[10px] uppercase rounded cursor-pointer transition-all"
+                  >
+                    🎲 Rolar iniciativa
+                  </button>
+                )}
+              </div>
             </div>
             <div className="divide-y divide-slate-900">
               {initiative.map((entry, idx) => (
@@ -850,7 +922,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 </div>
               ))}
               {initiative.length === 0 && (
-                <div className="text-center py-10 text-[10px] text-slate-600">Adicione combatentes para iniciar a rodada.</div>
+                <div className="text-center py-10 text-[10px] text-slate-600">Role a iniciativa ou adicione combatentes para iniciar a rodada.</div>
               )}
             </div>
             {initiative.length > 0 && (

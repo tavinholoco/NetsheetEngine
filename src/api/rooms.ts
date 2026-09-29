@@ -11,10 +11,11 @@
  */
 
 import { apiFetch, ApiError } from './http';
-import { CharacterSheet, RollResult } from '../types/cyberpunk';
+import { ArmorLocation, CharacterSheet, RollResult } from '../types/cyberpunk';
 import { GameRoom, InitiativeEntry, TableRollKind, TacticalGridState } from '../types/multiplayer';
 import { useRoomStore } from '../stores/useRoomStore';
 import { useSheetStore } from '../stores/useSheetStore';
+import type { RangeBandKey } from '../rules/tables';
 
 export interface JoinResponse {
   room: GameRoom;
@@ -212,6 +213,30 @@ export function setNpcHealth(code: string, npcId: string, woundLevel: number): P
   return authedFetch(`/api/rooms/${code}/npcs/${npcId}/health`, { woundLevel });
 }
 
+/**
+ * POST /api/rooms/:code/damage — GM aplica dano (D.1). `targetId` é o peerId
+ * do jogador, o id do NPC ou o id de um token. O servidor faz a conta.
+ */
+export function applyDamage(code: string, targetId: string, raw: number, location: ArmorLocation): Promise<GameRoom> {
+  return authedFetch(`/api/rooms/${code}/damage`, { targetId, raw, location });
+}
+
+/**
+ * POST /api/rooms/:code/attack — GM ataca com um NPC (D.3). `range` é uma
+ * faixa de `RANGE_BANDS`, ou `difficulty` um número livre (corpo a corpo).
+ */
+export function gmAttack(
+  code: string,
+  input: { attackerId: string; targetId: string; range?: RangeBandKey; difficulty?: number }
+): Promise<GameRoom> {
+  return authedFetch(`/api/rooms/${code}/attack`, input);
+}
+
+/** POST /api/rooms/:code/stabilize — GM estabiliza (ou desfaz) quem está em Mortal (D.5). */
+export function setStabilized(code: string, targetId: string, stabilized: boolean): Promise<GameRoom> {
+  return authedFetch(`/api/rooms/${code}/stabilize`, { targetId, stabilized });
+}
+
 /** POST /api/rooms/:code/npcs/:npcId/delete — GM remove NPC. */
 export function deleteNpc(code: string, npcId: string): Promise<GameRoom> {
   return authedFetch(`/api/rooms/${code}/npcs/${npcId}/delete`, {});
@@ -230,4 +255,9 @@ export function setInitiativeList(code: string, list: InitiativeEntry[]): Promis
 /** POST /api/rooms/:code/initiative — GM avança o turno. */
 export function nextTurn(code: string): Promise<GameRoom> {
   return authedFetch(`/api/rooms/${code}/initiative`, { action: 'next' });
+}
+
+/** D.4 — o servidor rola 1d10 + REF (+ Combat Sense) para todo combatente com ficha. */
+export function rollInitiative(code: string): Promise<GameRoom> {
+  return authedFetch(`/api/rooms/${code}/initiative`, { action: 'roll' });
 }

@@ -1,22 +1,38 @@
 import crypto from "crypto";
 import { GameRoom, RoomPlayer, ChatMessage, InitiativeEntry, TacticalGridState } from "../src/types/multiplayer.js";
-import { CharacterSheet, RollResult } from "../src/types/cyberpunk.js";
+import { ArmorLocation, CharacterSheet, RollResult } from "../src/types/cyberpunk.js";
 import { generateRandomNpc } from "../src/utils/npcGenerator.js";
 // Fase B (B.2 — SEC-05) — a ficha é entrada não confiável. A validação mora
 // aqui, e não na rota HTTP, para cobrir TODO caminho que escreve ficha
 // (REST, WebSocket e o que vier), não só o endpoint que existe hoje.
 import { sanitizeCharacterSheet } from "../src/rules/sheetSchema.js";
 // Fase C (C.1) — as regras de rolagem são as mesmas do cliente, em src/rules/.
-import type { Rng } from "../src/rules/dice.js";
+import { parseDamageFormula, type Rng } from "../src/rules/dice.js";
 import {
+  FALLBACK_DAMAGE,
   sheetAttackRoll,
+  sheetInitiativeRoll,
   sheetDamageRoll,
   sheetDeathSaveRoll,
   sheetSkillRoll,
   sheetStunSaveRoll,
+  stunSaveRoll,
   type RollCore
 } from "../src/rules/rolls.js";
-import { gmModifier } from "../src/rules/combat.js";
+import { attackHits, gmModifier, rangeBandFor } from "../src/rules/combat.js";
+// Fase D (D.1) — o dano vira ferimento no servidor, com as regras do livro.
+import { btmFromBody, deriveCurrentStats, mortalLevel, woundRow } from "../src/rules/character.js";
+import {
+  applyHit,
+  armorSpAt,
+  hitLocationRow,
+  isArmorLocation,
+  resolveHit,
+  woundStateOf,
+  type HitOutcome,
+  type WoundState
+} from "../src/rules/damage.js";
+import { WOUND_TRACK_POINTS } from "../src/rules/tables.js";
 import { logger } from "./logger.js";
 
 // ============================================================
@@ -349,6 +365,39 @@ function isUsableSheet(sheet: unknown): boolean {
  * - Ambas usáveis → vence a de `updatedAt` mais recente (ou a do cliente se
  *   as persistidas não tiverem timestamp — ficha nova/placeholder do servidor).
  */
+/**
+ * Fase D (D.1, decisão 7a) — grava o estado de ferimento na ficha e recalcula
+ * os atributos correntes. Na mesa, só o servidor e o GM passam por aqui.
+ */
+function writeWound(sheet: CharacterSheet, wound: WoundState): void {
+  sheet.damagePoints = wound.damagePoints;
+  sheet.woundLevel = wound.woundLevel;
+  sheet.isDead = wound.isDead;
+  sheet.currentStats = deriveCurrentStats(sheet);
+}
+
+/**
+ * Ficha vinda do cliente, com o ferimento que o SERVIDOR já tinha. Até a Fase
+ * D o jogador escrevia o próprio `woundLevel` pela sincronia e, desde a C.6,
+ * isso baixava a penalidade da rolagem (achado do portão C.14).
+ */
+function withServerWound(clientSheet: CharacterSheet, serverSheet: CharacterSheet): CharacterSheet {
+  const sheet = { ...clientSheet, isStabilized: serverSheet.isStabilized === true };
+  writeWound(sheet, woundStateOf(serverSheet));
+  return sheet;
+}
+
+/**
+ * Nível pedido no ajuste manual do GM (Bio-Monitor), grampeado em 0..10. Vira
+ * o MÍNIMO da caixa em pontos: o GM escolhe o nível, não o resto da caixa. O
+ * estado Morto não muda por aqui: desfazer morte na mesa é ADIAR (gatilho no
+ * plano, D.1).
+ */
+function manualWoundLevel(woundLevel: unknown): number {
+  const n = Math.round(Number(woundLevel));
+  return Number.isFinite(n) ? Math.max(0, Math.min(10, n)) : 0;
+}
+
 function pickSheet(clientSheet: CharacterSheet, persistedSheet: CharacterSheet | undefined): CharacterSheet {
   if (!isUsableSheet(clientSheet)) return persistedSheet ?? clientSheet;
   if (!persistedSheet) return clientSheet;
@@ -394,7 +443,8 @@ export function joinRoom(code: string, peerId: string, handle: string, sheet: Ch
         role: safeSheet.role || existing.role || "Edgerunner",
         // T3.3 — ficha resolvida por last-write-wins (updatedAt): cliente com
         // ficha antiga/estale não sobrescreve a versão mais recente do banco.
-        sheet: pickSheet(safeSheet, existing.sheet),
+        // D.1 — menos o ferimento: esse é sempre o que a mesa já tinha.
+        sheet: withServerWound(pickSheet(safeSheet, existing.sheet), existing.sheet),
         isOnline: true,
         // T3.4 — renova lastActiveAt na reconexão: sem isso, um player que
         // voltou de um restart (timestamp velho preservado) seria marcado
@@ -466,7 +516,9 @@ export function updatePlayerSheet(code: string, peerId: string, sheet: Character
   if (validated.changed.length > 0) {
     logger.warn("sheet_sanitized", { at: "updatePlayerSheet", code, peerId, fields: validated.changed.slice(0, 20), count: validated.changed.length });
   }
-  const safeSheet = validated.sheet;
+  // D.1 (decisão 7a) — o ferimento na mesa é do servidor e do GM: o que o
+  // cliente mandou em `damagePoints`/`woundLevel`/`isDead` é descartado.
+  const safeSheet = withServerWound(validated.sheet, room.players[peerId].sheet);
 
   room.players[peerId].sheet = safeSheet;
   room.players[peerId].handle = sanitizeText(safeSheet.handle, 30) || room.players[peerId].handle;
@@ -502,8 +554,8 @@ export function updatePlayerWoundLevel(
   const player = room.players[targetPeerId];
   if (!player) return { room: null, error: "Jogador não encontrado na mesa." };
 
-  const clamped = Math.max(0, Math.min(10, woundLevel));
-  player.sheet.woundLevel = clamped;
+  const clamped = manualWoundLevel(woundLevel);
+  writeWound(player.sheet, { ...woundStateOf({ woundLevel: clamped }), isDead: player.sheet.isDead === true });
 
   // Sync token HP if present
   if (room.tacticalGrid) {
@@ -511,28 +563,13 @@ export function updatePlayerWoundLevel(
     if (token) token.hp = clamped;
   }
 
-  const woundNames = [
-    "Saudável (OK)",
-    "Ferimento Leve (Light)",
-    "Ferimento Sério (Serious)",
-    "Ferimento Crítico (Critical)",
-    "Mortal 0",
-    "Mortal 1",
-    "Mortal 2",
-    "Mortal 3",
-    "Mortal 4",
-    "Mortal 5",
-    "Mortal 6 (Morte Iminente)"
-  ];
-  const statusStr = woundNames[clamped] || `Nível ${clamped}`;
-
-  room.chatMessages.push({
-    id: "msg_health_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
-    senderHandle: "SISTEMA_NET",
-    senderRole: "gm",
-    text: `🩸 [MESTRE DE JOGO] alterou o Bio-Monitor de [${player.handle}] para: ${statusStr} (${clamped}/10 Caixas).`,
-    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-  });
+  // Os nomes vêm da trilha do livro (WOUND_TRACK) — a lista própria que
+  // morava aqui duplicava a tabela. Desde a D.1 a trilha conta pontos.
+  pushSystemMessage(
+    room,
+    "health",
+    `🩸 [MESTRE DE JOGO] alterou o Bio-Monitor de [${player.handle}] para: ${woundRow(clamped).name} (${player.sheet.damagePoints}/${WOUND_TRACK_POINTS} pontos).`
+  );
 
   return { room };
 }
@@ -799,8 +836,8 @@ export function updateNpcWoundLevel(
   }
 
   const npc = room.npcs[npcId];
-  const clamped = Math.max(0, Math.min(10, woundLevel));
-  npc.sheet.woundLevel = clamped;
+  const clamped = manualWoundLevel(woundLevel);
+  writeWound(npc.sheet, { ...woundStateOf({ woundLevel: clamped }), isDead: npc.sheet.isDead === true });
 
   if (room.tacticalGrid) {
     const token = room.tacticalGrid.tokens.find(t => t.peerId === npcId || t.id === `npc_token_${npcId}`);
@@ -929,6 +966,230 @@ export function rollDiceForPlayer(
   return { room: result.room, roll };
 }
 
+// ============================================================
+// DANO → FERIMENTO (Fase D, D.1 e D.2)
+// ============================================================
+// O GM aplica; o servidor faz a conta do livro (armadura → BTM mín. 1 → ×2 na
+// cabeça — decisão 6), marca os PONTOS na trilha (decisão 7b), rola o stun
+// save e deixa a conta inteira no chat. Uma mutação só por dano aplicado: o
+// custo por broadcast (ARQ-01) não muda com a D.
+
+/** Teto do dano bruto: 20d100 (o teto do parser de fórmula) com folga. */
+const MAX_RAW_DAMAGE = 2500;
+
+/** Horário curto do chat, igual ao resto da mesa. */
+const chatTime = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+/** Mensagem do sistema no chat da mesa, com o mesmo teto de 100 do `postChatMessage`. */
+function pushSystemMessage(room: GameRoom, prefix: string, text: string, rollResult?: RollResult): void {
+  room.chatMessages.push({
+    id: `msg_${prefix}_` + Date.now() + "_" + crypto.randomBytes(3).toString("hex"),
+    senderHandle: "SISTEMA_NET",
+    senderRole: "gm",
+    text,
+    timestamp: chatTime(),
+    isDiceRoll: !!rollResult,
+    rollResult
+  });
+  if (room.chatMessages.length > 100) room.chatMessages.splice(0, room.chatMessages.length - 100);
+}
+
+/**
+ * Acha a ficha do alvo: jogador, NPC, ou o token de um deles no grid. D.2
+ * (decisão 7c): token sem ficha — cobertura, perigo, NPC criado direto no
+ * grid — não recebe dano.
+ */
+function findDamageTarget(room: GameRoom, targetId: string): { target?: RoomPlayer; error?: string } {
+  const byId = (id: string) => room.players[id] ?? room.npcs?.[id];
+  const direct = byId(targetId);
+  if (direct) return { target: direct };
+  const token = room.tacticalGrid?.tokens.find((t) => t.id === targetId);
+  if (!token) return { error: "Alvo não encontrado na mesa." };
+  const owner = token.peerId ? byId(token.peerId) : undefined;
+  if (!owner) {
+    return { error: `[${token.name}] é um token sem ficha e não recebe dano. Para um NPC que sangra, gere-o com ficha.` };
+  }
+  return { target: owner };
+}
+
+/** A conta do acerto como o livro a faz, para o chat. */
+function hitAuditText(outcome: HitOutcome): string {
+  const s = outcome.steps;
+  const armor = `${s.raw} − SP ${s.sp} = ${s.afterArmor}`;
+  if (!s.penetrated) return `${armor}: a armadura segurou. Sem ferimento.`;
+  const btm = s.btm === 0 ? "BTM 0" : `BTM −${Math.abs(s.btm)}`;
+  const minNote = s.afterArmor + s.btm < s.afterBtm ? " (mín. 1)" : "";
+  const head = s.multiplier > 1 ? ` → × ${s.multiplier} = ${s.final}` : "";
+  return `${armor} → ${btm} = ${s.afterBtm}${minNote}${head} → ${s.final} ponto(s).`;
+}
+
+
+/** Carimba uma rolagem montada pelo servidor em nome de um personagem. */
+function stampRoll(characterName: string, core: RollCore): RollResult {
+  return { id: "roll_" + Date.now() + "_" + crypto.randomBytes(3).toString("hex"), timestamp: chatTime(), characterName, ...core };
+}
+
+/**
+ * D.5 — death save de quem está em Mortal: 1d10 ≤ BODY − nível Mortal. Falhou,
+ * morto. Chamado no dano (antes do stun) e na virada de turno. Devolve se
+ * sobreviveu.
+ */
+function rollDeathSaveFor(room: GameRoom, target: RoomPlayer, rng: Rng): boolean {
+  const sheet = target.sheet;
+  const core = sheetDeathSaveRoll(rng, sheet);
+  const survived = core.isCriticalSuccess;
+  if (!survived) writeWound(sheet, { ...woundStateOf(sheet), isDead: true });
+  const verdict = survived ? "passou, segue vivo" : "FALHOU — 💀 MORTO";
+  pushSystemMessage(room, "death", `☠️ Death save de [${target.handle}]: ${verdict}.`, stampRoll(target.handle, core));
+  return survived;
+}
+
+/**
+ * O núcleo da D.1: aplica um dano já validado no alvo, espelha no token,
+ * deixa a conta no chat e rola o stun save. `applyDamage` (o GM digita o
+ * dano) e `resolveGmAttack` (o NPC acertou) passam por aqui.
+ */
+function applyDamageTo(room: GameRoom, target: RoomPlayer, raw: number, location: ArmorLocation, rng: Rng): HitOutcome {
+  const sheet = target.sheet;
+  const body = deriveCurrentStats(sheet).BODY;
+  const before = woundStateOf(sheet);
+  const steps = {
+    raw: Math.min(MAX_RAW_DAMAGE, Math.floor(raw)),
+    sp: armorSpAt(sheet.armor, location),
+    btm: btmFromBody(body),
+    location
+  };
+  const outcome = applyHit(before, resolveHit(steps), location);
+  writeWound(sheet, outcome.after);
+
+  const token = room.tacticalGrid?.tokens.find((t) => t.peerId === target.peerId);
+  if (token) token.hp = outcome.after.woundLevel;
+
+  const where = hitLocationRow(location).name;
+  const track = `${woundRow(before.woundLevel).name} → ${woundRow(outcome.after.woundLevel).name} (${outcome.after.damagePoints}/${WOUND_TRACK_POINTS})`;
+  let text = `🩸 [${target.handle}] levou ${steps.raw} de dano — ${where}: ${hitAuditText(outcome)}`;
+  if (outcome.steps.penetrated) text += ` Ferimento: ${track}.`;
+  if (outcome.limbLost) {
+    text += ` ⚠️ Perda de membro: mais de 8 pontos em ${where} — decepado ou inutilizado (o death save em Mortal 0 que uma fonte pede fica com o Mestre).`;
+  }
+  if (outcome.killed === "head") text += " 💀 MORTO — mais de 8 pontos na cabeça.";
+  if (outcome.killed === "track") text += " 💀 MORTO — o dano passou da última caixa da trilha.";
+  pushSystemMessage(room, "damage", text);
+
+  if (outcome.steps.final > 0) {
+    // D.5 — dano que entra desfaz a estabilização (p. 105, via S9)...
+    sheet.isStabilized = false;
+    // ...e, em Mortal, o death save vem na hora e ANTES do stun (S9, p. 99).
+    if (!outcome.after.isDead && mortalLevel(outcome.after.woundLevel) !== null) {
+      rollDeathSaveFor(room, target, rng);
+    }
+  }
+
+  // Stun save a cada dano que entrou (C.7), com o nível NOVO. Morto não rola.
+  if (outcome.steps.final > 0 && !sheet.isDead) {
+    const core = stunSaveRoll(rng, body, outcome.after.woundLevel);
+    const verdict = core.isCriticalSuccess ? "passou, segue de pé" : "FALHOU — fora de ação até passar num novo teste";
+    pushSystemMessage(room, "stun", `😵 Stun save de [${target.handle}]: ${verdict}.`, stampRoll(target.handle, core));
+  }
+
+  return outcome;
+}
+
+export function applyDamage(
+  code: string,
+  requesterPeerId: string,
+  request: { targetId?: unknown; raw?: unknown; location?: unknown },
+  rng: Rng = serverRng
+): { room: GameRoom | null; outcome?: HitOutcome; error?: string } {
+  const room = getRoom(code);
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa aplica dano." };
+  }
+
+  const raw = Number(request?.raw);
+  if (!Number.isFinite(raw) || raw < 0) return { room: null, error: "Dano inválido: informe um número de 0 para cima." };
+  if (!isArmorLocation(request?.location)) return { room: null, error: "Localização inválida." };
+
+  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
+  if (!target) return { room: null, error };
+
+  return { room, outcome: applyDamageTo(room, target, raw, request.location, rng) };
+}
+
+// ------------------------------------------------------------
+// O NPC ataca (Fase D, D.3)
+// ------------------------------------------------------------
+// O GM escolhe atacante, alvo e faixa de alcance no grid; o servidor rola o
+// ataque com a ficha do NPC e, se acertou, o dano e o local, e aplica pelo
+// núcleo da D.1. Tudo numa mutação só. Jogador não passa por aqui: ele rola
+// o próprio ataque e o próprio dano, e o GM aplica o dano rolado (D.1).
+
+/** Dificuldade livre aceita (ex.: o total do defensor no corpo a corpo). */
+const MIN_FREE_DIFFICULTY = 1;
+const MAX_FREE_DIFFICULTY = 50;
+
+export function resolveGmAttack(
+  code: string,
+  requesterPeerId: string,
+  request: { attackerId?: unknown; targetId?: unknown; range?: unknown; difficulty?: unknown },
+  rng: Rng = serverRng
+): { room: GameRoom | null; hit?: boolean; outcome?: HitOutcome; error?: string } {
+  const room = getRoom(code);
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa ataca pelos NPCs." };
+  }
+
+  // A faixa do livro, ou uma dificuldade livre dentro do limite.
+  const band = rangeBandFor(request?.range);
+  const free = Number(request?.difficulty);
+  const hasFree = !band && Number.isInteger(free) && free >= MIN_FREE_DIFFICULTY && free <= MAX_FREE_DIFFICULTY;
+  if (!band && !hasFree) {
+    return { room: null, error: `Informe a faixa de alcance, ou uma dificuldade de ${MIN_FREE_DIFFICULTY} a ${MAX_FREE_DIFFICULTY}.` };
+  }
+  const difficulty = band ? band.difficulty : free;
+  const difficultyLabel = band ? `${band.name} (${band.difficulty})` : `Dificuldade ${free}`;
+
+  // Atacante: um NPC com ficha, pelo id ou pelo token dele.
+  const attackerKey = sanitizeText(request?.attackerId, 64);
+  const attackerToken = room.tacticalGrid?.tokens.find((t) => t.id === attackerKey);
+  const attackerId = attackerToken?.peerId ?? attackerKey;
+  const attacker = room.npcs?.[attackerId];
+  if (!attacker) {
+    return room.players[attackerId]
+      ? { room: null, error: "Jogador rola o próprio ataque; aplique o dano que ele rolar." }
+      : { room: null, error: "Atacante não encontrado entre os NPCs da mesa." };
+  }
+  if (attacker.sheet.isDead) return { room: null, error: `[${attacker.handle}] está morto e não ataca.` };
+
+  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
+  if (!target) return { room: null, error };
+  if (target === attacker) return { room: null, error: "O NPC não ataca a si mesmo." };
+
+  const weapon = firstWeapon(attacker.sheet);
+  const formula = weapon?.damage || FALLBACK_DAMAGE;
+  if (!parseDamageFormula(formula)) return { room: null, error: `Fórmula de dano inválida na arma do NPC: ${formula}` };
+
+  // O ataque, com o modificador do GM (C.4), em nome do NPC.
+  const gm = gmModifier(room.combatModifier, room.modifierReason);
+  const attack = stampRoll(attacker.handle, sheetAttackRoll(rng, attacker.sheet, weapon, gm));
+  const hit = attackHits(attack, difficulty);
+  const verdict = hit
+    ? `acertou (${attack.total} ≥ ${difficulty})`
+    : attack.isCriticalFailure
+      ? "errou — fumble"
+      : `errou (${attack.total} < ${difficulty})`;
+  pushSystemMessage(room, "attack", `🎯 [${attacker.handle}] ataca [${target.handle}] — ${difficultyLabel}: ${verdict}.`, attack);
+  if (!hit) return { room, hit };
+
+  const { core } = sheetDamageRoll(rng, weapon);
+  const damage = stampRoll(attacker.handle, core!);
+  pushSystemMessage(room, "dmgroll", "", damage);
+  const outcome = applyDamageTo(room, target, damage.total, damage.hitLocation ?? "Torso", rng);
+  return { room, hit, outcome };
+}
+
 // GM Power: Update room atmosphere/combat modifiers (T1.3)
 export function updateRoomSettings(
   code: string,
@@ -965,19 +1226,79 @@ export function updateInitiative(code: string, requesterPeerId: string, initiati
 
   if (!Array.isArray(initiativeList)) return { room: null, error: "Lista de iniciativa inválida" };
 
-  room.initiativeList = initiativeList
-    .map(e => ({
-      ...e,
+  // D.4 — a entrada é montada campo a campo. Antes era `{ ...e }`: qualquer
+  // campo que o cliente mandasse virava estado da sala, persistido e
+  // transmitido a todos, sem teto de tamanho.
+  setInitiativeOrder(
+    room,
+    initiativeList.slice(0, MAX_INITIATIVE_ENTRIES).map((e, i) => ({
+      playerId: sanitizeText(e?.playerId, 64) || `init_${i}`,
       handle: sanitizeText(e?.handle, 30) || "—",
-      score: Math.max(0, Math.min(999, Number(e?.score) || 0))
+      role: sanitizeText(e?.role, 30) || "—",
+      score: Math.max(0, Math.min(999, Number(e?.score) || 0)),
+      isCurrentTurn: false
     }))
-    .slice(0, 50);
+  );
+  return { room };
+}
+
+const MAX_INITIATIVE_ENTRIES = 50;
+
+/** Grava a ordem e dá a vez ao primeiro — a rodada (re)começa. */
+function setInitiativeOrder(room: GameRoom, entries: InitiativeEntry[]): void {
+  room.initiativeList = entries.map((e, i) => ({ ...e, isCurrentTurn: i === 0 }));
   room.activeTurnIndex = 0;
+}
+
+// ============================================================
+// INICIATIVA AUTOMÁTICA (Fase D, D.4)
+// ============================================================
+// 1d10 aberto + REF corrente + Combat Sense, rolado no servidor para todo
+// combatente com ficha: os jogadores (menos o GM) e os NPCs vivos. Quem o GM
+// pôs à mão (sem ficha) continua na lista com o valor dele — o ajuste manual
+// segue valendo, antes e depois. Empate: o livro não dá desempate; a ordem
+// fica a da rolagem (a `sort` do JS é estável).
+export function rollInitiative(
+  code: string,
+  requesterPeerId: string,
+  rng: Rng = serverRng
+): { room: GameRoom | null; error?: string } {
+  const room = getRoom(code);
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa rola a iniciativa." };
+  }
+
+  const combatants = [
+    ...Object.values(room.players).filter((p) => p.peerId !== room.gmPeerId),
+    ...Object.values(room.npcs ?? {})
+  ].filter((c) => c.sheet && !c.sheet.isDead);
+
+  const rolled = combatants.map((c) => ({ c, roll: sheetInitiativeRoll(rng, c.sheet) }));
+  const isCharacter = (id: string) => !!room.players[id] || !!room.npcs?.[id];
+  const manual = room.initiativeList.filter((e) => !isCharacter(e.playerId));
+
+  const entries: InitiativeEntry[] = [
+    ...rolled.map(({ c, roll }) => ({
+      playerId: c.peerId,
+      handle: sanitizeText(c.handle, 30) || "—",
+      role: sanitizeText(c.role, 30) || "—",
+      score: roll.total,
+      isCurrentTurn: false
+    })),
+    ...manual
+  ]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_INITIATIVE_ENTRIES);
+  setInitiativeOrder(room, entries);
+
+  const lines = rolled.map(({ c, roll }) => `${c.handle} ${roll.total} (${roll.details})`);
+  pushSystemMessage(room, "initiative", `⚔️ Iniciativa rolada pelo servidor: ${lines.join(" · ") || "nenhum combatente com ficha"}.`);
   return { room };
 }
 
 // GM Power: Advance to next turn (T1.3)
-export function nextTurn(code: string, requesterPeerId: string): { room: GameRoom | null; error?: string } {
+export function nextTurn(code: string, requesterPeerId: string, rng: Rng = serverRng): { room: GameRoom | null; error?: string } {
   const room = getRoom(code);
   if (!room) return { room: null, error: "Sala não encontrada" };
 
@@ -993,6 +1314,45 @@ export function nextTurn(code: string, requesterPeerId: string): { room: GameRoo
     isCurrentTurn: idx === room.activeTurnIndex
   }));
 
+  // D.5 — a vez chegou a quem está em Mortal, vivo e não estabilizado: o
+  // servidor rola o death save do turno. Entrada posta à mão não tem ficha.
+  const current = room.initiativeList[room.activeTurnIndex];
+  const who = current && (room.players[current.playerId] ?? room.npcs?.[current.playerId]);
+  if (who?.sheet && !who.sheet.isDead && !who.sheet.isStabilized && mortalLevel(woundStateOf(who.sheet).woundLevel) !== null) {
+    rollDeathSaveFor(room, who, rng);
+  }
+
+  return { room };
+}
+
+/**
+ * D.5 — o GM marca (ou desfaz) a estabilização, depois do teste de First Aid
+ * ou Medical Tech que ele conduz. Só faz sentido em Mortal.
+ */
+export function setStabilized(
+  code: string,
+  requesterPeerId: string,
+  request: { targetId?: unknown; stabilized?: unknown }
+): { room: GameRoom | null; error?: string } {
+  const room = getRoom(code);
+  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!checkIsGm(room, requesterPeerId)) {
+    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa estabiliza." };
+  }
+  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
+  if (!target) return { room: null, error };
+  const stabilized = request?.stabilized === true;
+  if (stabilized && mortalLevel(woundStateOf(target.sheet).woundLevel) === null) {
+    return { room: null, error: `[${target.handle}] não está em Mortal: não há o que estabilizar.` };
+  }
+  target.sheet.isStabilized = stabilized;
+  pushSystemMessage(
+    room,
+    "stabilize",
+    stabilized
+      ? `🩹 [${target.handle}] foi estabilizado: para de rolar o death save a cada turno.`
+      : `🩹 [${target.handle}] não está mais estabilizado.`
+  );
   return { room };
 }
 

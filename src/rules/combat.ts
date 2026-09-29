@@ -1,8 +1,10 @@
 // ============================================================
-// NETSHEET ENGINE — ATAQUE (Fase C, C.3 e C.4)
+// NETSHEET ENGINE — ATAQUE (Fase C, C.3 e C.4; Fase D, D.3)
 // ============================================================
 // Monta as parcelas de uma rolagem de ataque do jeito do livro:
 // 1d10 + REF + perícia da arma + WA + modificador de situação.
+// Desde a D.3, também decide se o ataque acerta: contra a dificuldade da
+// faixa de alcance (RANGE_BANDS), igualando ou superando.
 //
 // Antes da Fase C, o servidor rolava 1d10 + REF + WA (sem a perícia) e o
 // cliente passava o WA NO LUGAR da perícia. O `combatModifier` do GM era
@@ -11,7 +13,7 @@
 
 import type { CharacterSheet, SkillItem, WeaponItem } from '../types/cyberpunk';
 import type { Modifier } from './dice';
-import { WEAPON_SKILL_BY_TYPE, type WeaponSkillRow } from './tables';
+import { RANGE_BANDS, WEAPON_SKILL_BY_TYPE, type RangeBandRow, type WeaponSkillRow } from './tables';
 
 /** Perícia de ataque desarmado. */
 export const UNARMED_SKILL = 'Brawling';
@@ -51,6 +53,28 @@ export interface AttackInput {
   skills: CharacterSheet['skills'] | undefined;
   /** Parcela do GM, se houver (só existe na mesa). */
   gm?: Modifier | null;
+}
+
+// ------------------------------------------------------------
+// Acertar o alvo (Fase D, D.3)
+// ------------------------------------------------------------
+
+/** Faixa de alcance pela chave, ou `null` se a chave não for do livro. */
+export function rangeBandFor(key: unknown): RangeBandRow | null {
+  return RANGE_BANDS.find((row) => row.key === key) ?? null;
+}
+
+/** Até onde vai a faixa, em metros, para uma arma com este alcance (queima-roupa: 1 m). */
+export function rangeBandMeters(band: RangeBandRow, weaponRangeMeters: number): number {
+  return band.ofWeaponRange === null ? 1 : Math.round((Number(weaponRangeMeters) || 0) * band.ofWeaponRange);
+}
+
+/**
+ * O ataque acerta se o total IGUALA OU SUPERA a dificuldade (S8, S9). O
+ * fumble é sempre erro, mesmo com total alto — o 1 é falha automática (C.1).
+ */
+export function attackHits(roll: { total: number; isCriticalFailure: boolean }, difficulty: number): boolean {
+  return !roll.isCriticalFailure && roll.total >= difficulty;
 }
 
 /** Parcelas do ataque, na ordem em que aparecem no detalhe da rolagem. */

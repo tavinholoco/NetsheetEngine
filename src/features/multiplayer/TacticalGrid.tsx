@@ -29,6 +29,8 @@ interface TacticalGridProps {
   remoteCursors?: RemoteCursor[];
   /** GM: notifica a posição do cursor (percentuais 0..1) para o awareness. */
   onCursorMove?: (x: number | null, y: number | null) => void;
+  /** Fase D (D.3) — ações de combate do GM no cartão do token selecionado. */
+  renderTokenCombat?: (token: TacticalToken) => React.ReactNode;
 }
 
 interface ThemeConfig {
@@ -100,7 +102,8 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
   onSelectPlayerForHealthEdit,
   onInspectPlayer,
   remoteCursors = [],
-  onCursorMove
+  onCursorMove,
+  renderTokenCombat
 }) => {
   const gridCanvasRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef<boolean>(false);
@@ -736,6 +739,8 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                     <span>Editar Saúde</span>
                   </button>
                 )}
+
+                {roleMode === 'gm' && renderTokenCombat?.(selectedToken)}
 
                 {roleMode === 'gm' && (
                   <button

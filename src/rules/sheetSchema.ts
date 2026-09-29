@@ -45,6 +45,8 @@ import type {
   WeaponItem
 } from '../types/cyberpunk';
 import { STAT_NAMES, deriveCurrentStats } from './character';
+import { woundStateFromPoints, woundStateOf, type WoundState } from './damage';
+import { WOUND_TRACK_POINTS } from './tables';
 
 // --- Limites -----------------------------------------------------------------
 // Atributo: 2–10 na criação, até 15 com cromo (ver CharacterStats). O teto é
@@ -258,6 +260,24 @@ function sanitizeLifepath(value: unknown, changed: string[]): Lifepath {
   };
 }
 
+/**
+ * D.1 (decisão 7b) — a trilha em pontos. Com `damagePoints`, o nível sai
+ * deles e o `woundLevel` que veio junto é descartado (e registrado, se
+ * divergia). Sem pontos — ficha de antes da Fase D —, o nível vira o mínimo
+ * da caixa, sem marcar `changed`: é conversão, não correção.
+ */
+function sanitizeWound(input: Record<string, unknown>, changed: string[]): WoundState {
+  const isDead = input.isDead === true;
+  if (input.damagePoints === undefined || input.damagePoints === null) {
+    const level = clampInt(input.woundLevel, WOUND_LEVEL_MIN, WOUND_LEVEL_MAX, 0, 'woundLevel', changed);
+    return { ...woundStateOf({ woundLevel: level }), isDead };
+  }
+  const points = clampInt(input.damagePoints, 0, WOUND_TRACK_POINTS, 0, 'damagePoints', changed);
+  const state = woundStateFromPoints(points, isDead);
+  if (input.woundLevel !== undefined && input.woundLevel !== state.woundLevel) changed.push('woundLevel');
+  return state;
+}
+
 // --- Entrada pública ---------------------------------------------------------
 
 /**
@@ -277,7 +297,8 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
 
   const changed: string[] = [];
   const stats = sanitizeStats(input.stats, 'stats', changed);
-  const woundLevel = clampInt(input.woundLevel, WOUND_LEVEL_MIN, WOUND_LEVEL_MAX, 0, 'woundLevel', changed);
+  const wound = sanitizeWound(input, changed);
+  const woundLevel = wound.woundLevel;
   const cyberware = sanitizeCyberware(input.cyberware, changed);
 
   const sheet: CharacterSheet = {
@@ -298,6 +319,9 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     // divergência aqui encheria o log a cada sync.
     currentStats: deriveCurrentStats({ stats, woundLevel, cyberware }),
     woundLevel,
+    damagePoints: wound.damagePoints,
+    isDead: wound.isDead,
+    isStabilized: input.isStabilized === true,
     skills: sanitizeSkills(input.skills, changed),
     cyberware,
     weapons: sanitizeWeapons(input.weapons, changed),

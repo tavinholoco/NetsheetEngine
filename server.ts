@@ -31,6 +31,7 @@ import {
   updateRoomSettings,
   updateInitiative,
   nextTurn,
+  rollInitiative,
   leaveRoom,
   getAllActiveRooms,
   getRoomPublicSummary,
@@ -41,6 +42,9 @@ import {
   deleteGeneratedPlayer,
   deleteRoomNpc,
   updateNpcWoundLevel,
+  applyDamage,
+  resolveGmAttack,
+  setStabilized,
   rollDiceForPlayer,
   verifySession,
   sanitizeText,
@@ -548,6 +552,54 @@ app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
   return respondWithResult(res, result);
 });
 
+/**
+ * Resposta das ações de combate da Fase D. Entrada inválida é 400, não 403:
+ * o `respondWithResult` classifica todo erro que não é "não encontrado" como
+ * recusa de permissão.
+ */
+function respondToCombat(res: express.Response, result: { room: { code: string } | null; error?: string }) {
+  if (!result.room) {
+    const msg = result.error || "Ação de combate não aplicada";
+    const status = msg.startsWith("Acesso Negado") ? 403 : /não encontrad/.test(msg) ? 404 : 400;
+    return res.status(status).json({ error: msg });
+  }
+  broadcastRoomUpdate(result.room.code);
+  return res.json(result.room);
+}
+
+// Fase D (D.1) — GM aplica dano: o servidor faz a conta do livro (armadura →
+// BTM → ×2 na cabeça), marca os pontos na trilha e rola o stun save. O
+// cliente manda só alvo, dano bruto e localização.
+app.post("/api/rooms/:code/damage", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
+  }
+  const { targetId, raw, location } = req.body ?? {};
+  return respondToCombat(res, applyDamage(req.params.code, requesterPeerId, { targetId, raw, location }));
+});
+
+// Fase D (D.3) — GM ataca com um NPC: o servidor rola ataque contra a
+// dificuldade de alcance e, se acertou, dano e local, e aplica. Uma mutação.
+app.post("/api/rooms/:code/attack", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
+  }
+  const { attackerId, targetId, range, difficulty } = req.body ?? {};
+  return respondToCombat(res, resolveGmAttack(req.params.code, requesterPeerId, { attackerId, targetId, range, difficulty }));
+});
+
+// Fase D (D.5) — GM estabiliza quem está em Mortal: para o death save por turno.
+app.post("/api/rooms/:code/stabilize", roomLimiter, (req, res) => {
+  const requesterPeerId = getSessionPeerId(req, req.params.code);
+  if (!requesterPeerId) {
+    return res.status(401).json({ error: ERR_SESSAO_MESA });
+  }
+  const { targetId, stabilized } = req.body ?? {};
+  return respondToCombat(res, setStabilized(req.params.code, requesterPeerId, { targetId, stabilized }));
+});
+
 // Send chat message (T1.7 — autenticado; handle/role vêm do servidor).
 // Fase 5 (T5.4) — o cliente NÃO pode enviar rollResult no message: rolagens
 // só existem via /roll (RNG server-authoritative). rollResult do cliente é
@@ -637,6 +689,9 @@ app.post("/api/rooms/:code/initiative", roomLimiter, (req, res) => {
   let result;
   if (action === 'next') {
     result = nextTurn(req.params.code, requesterPeerId);
+  } else if (action === 'roll') {
+    // D.4 — iniciativa automática, rolada no servidor.
+    result = rollInitiative(req.params.code, requesterPeerId);
   } else if (initiativeList) {
     result = updateInitiative(req.params.code, requesterPeerId, initiativeList);
   } else {
@@ -1032,7 +1087,9 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           const result =
             msg.action === "next"
               ? nextTurn(code, peerId)
-              : Array.isArray(msg.initiativeList)
+              : msg.action === "roll"
+                ? rollInitiative(code, peerId)
+                : Array.isArray(msg.initiativeList)
                 ? updateInitiative(code, peerId, msg.initiativeList)
                 : null;
           if (result?.room) broadcastRoomUpdate(code);

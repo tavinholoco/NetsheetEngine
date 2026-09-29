@@ -38,10 +38,8 @@ export const WOUND_LEVEL_NAMES: { name: string; color: string }[] = [
   { name: 'Mortal 6 (Morte Iminente)', color: 'text-rose-700' }
 ];
 
-/** Limita o nível de ferimento ao intervalo válido 0..10. */
-export function clampWoundLevel(level: number): number {
-  return Math.max(0, Math.min(WOUND_MAX, level));
-}
+// O `clampWoundLevel` saiu na Fase D: a ficha passou a marcar PONTOS (D.1),
+// e o grampo mora em `woundStateFromPoints` (src/rules/damage.ts).
 
 /**
  * true na última caixa da trilha (Mortal 6). O personagem ainda está VIVO:

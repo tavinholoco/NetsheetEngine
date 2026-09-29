@@ -20,6 +20,7 @@ import {
   WOUND_LEVEL_MAX,
   sanitizeCharacterSheet
 } from "../rules/sheetSchema";
+import { WOUND_TRACK_POINTS } from "../rules/tables";
 
 const BASE = {
   handle: "Rex",
@@ -58,6 +59,39 @@ describe("sanitizeCharacterSheet — função pura", () => {
   it("grampeia woundLevel acima do máximo", () => {
     const r = sanitizeCharacterSheet({ ...BASE, woundLevel: 100 })!;
     expect(r.sheet.woundLevel).toBe(WOUND_LEVEL_MAX);
+  });
+
+  // D.1 — decisão 7b: a ficha guarda pontos, e o nível é derivado deles.
+  it("ficha sem pontos (de antes da Fase D) converte o nível para o mínimo da caixa", () => {
+    const r = sanitizeCharacterSheet({ ...BASE, woundLevel: 3 })!;
+    expect(r.sheet.damagePoints).toBe(9);
+    expect(r.sheet.woundLevel).toBe(3);
+    expect(r.changed).not.toContain("damagePoints");
+  });
+
+  it("com pontos, o nível sai deles — o woundLevel que veio junto não manda", () => {
+    const r = sanitizeCharacterSheet({ ...BASE, damagePoints: 6, woundLevel: 0 })!;
+    expect(r.sheet.woundLevel).toBe(2);
+    expect(r.changed).toContain("woundLevel");
+  });
+
+  it(`grampeia os pontos em 0..${WOUND_TRACK_POINTS}`, () => {
+    expect(sanitizeCharacterSheet({ ...BASE, damagePoints: -5 })!.sheet.damagePoints).toBe(0);
+    const r = sanitizeCharacterSheet({ ...BASE, damagePoints: 999 })!;
+    expect(r.sheet.damagePoints).toBe(WOUND_TRACK_POINTS);
+    expect(r.changed).toContain("damagePoints");
+  });
+
+  it("isDead só é verdadeiro com true de fato", () => {
+    expect(sanitizeCharacterSheet({ ...BASE, isDead: true })!.sheet.isDead).toBe(true);
+    expect(sanitizeCharacterSheet({ ...BASE, isDead: "sim" })!.sheet.isDead).toBe(false);
+    expect(sanitizeCharacterSheet(BASE)!.sheet.isDead).toBe(false);
+  });
+
+  it("os atributos correntes usam o nível derivado dos pontos", () => {
+    // 9 pontos = Crítico: REF 6 ÷ 2 = 3.
+    const r = sanitizeCharacterSheet({ ...BASE, damagePoints: 9, woundLevel: 0 })!;
+    expect(r.sheet.currentStats.REF).toBe(3);
   });
 
   it("grampeia nível de perícia fora da faixa", () => {

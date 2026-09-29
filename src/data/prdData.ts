@@ -64,8 +64,10 @@ export const PRD_DOCUMENT: PrdDocument = {
         'Atributos: INT, REF, TECH, COOL, ATTR, LUCK, MA, BODY, EMP.',
         'Rolagem de perícia: 1d10 + Atributo + Nível da Perícia. 10 explode encadeando; 1 é falha automática com dado para a tabela de fumble.',
         'Dano: por fórmula (ex.: 2d6+2) com local de impacto sorteado (1d10).',
-        'Saves: stun a cada dano (1d10 ≤ BODY − 0 a 9 pelo ferimento) e death save a cada turno em Mortal (1d10 ≤ BODY − nível Mortal).',
-        'Ferimentos: 11 estados (0 Saudável a 10 Mortal 6). Sério REF −2; Crítico REF/INT/COOL ÷2; Mortal ÷3 — e toda rolagem usa os atributos já com o ferimento.'
+        'Acerto: o ataque precisa igualar ou superar a dificuldade do alcance (queima-roupa 10, curta 15, média 20, longa 25, extrema 30); fumble erra sempre.',
+        'Saves: stun a cada dano (1d10 ≤ BODY − 0 a 9 pelo ferimento) e death save a cada turno em Mortal (1d10 ≤ BODY − nível Mortal) — na mesa, rolados pelo servidor; estabilizado não rola.',
+        'Ferimentos: 40 caixas de 1 ponto, 11 níveis (0 Saudável a 10 Mortal 6). Sério REF −2; Crítico REF/INT/COOL ÷2; Mortal ÷3 — e toda rolagem usa os atributos já com o ferimento.',
+        'Dano → ferimento: dano − SP da localização → BTM (mínimo 1) → ×2 na cabeça, aplicado pelo GM no servidor com a conta no chat. Mais de 8 num acerto: na cabeça mata, num membro o perde.'
       ]
     },
     {
@@ -115,7 +117,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       features: [
         'Salas com código único e SSE de baixa latência',
         'Grid tático com tokens, cobertura, temas e drag & drop',
-        'Iniciativa de combate e rolagens compartilhadas na mesa',
+        'Iniciativa automática no servidor (1d10 + REF + Combat Sense) e rolagens compartilhadas na mesa',
         'Geração de NPCs e fichas de edgerunner pelo GM',
         'Chat da mesa com mensagens do sistema e dados rolados'
       ],

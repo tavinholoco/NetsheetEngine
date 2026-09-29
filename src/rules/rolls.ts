@@ -19,6 +19,7 @@ import {
 } from './dice';
 import { deathSaveTarget, deriveCurrentStats, mortalLevel, stunSaveTarget, woundRow } from './character';
 import { attackModifiers } from './combat';
+import { combatSenseBonus } from './roles';
 
 /** O RollResult sem o que é do chamador (identidade e horário). */
 export type RollCore = Omit<RollResult, 'id' | 'timestamp' | 'characterName'>;
@@ -62,7 +63,8 @@ export function damageRoll(rng: Rng, label: string, formula: string): RollCore |
     total: damage.total,
     isCriticalSuccess: false,
     isCriticalFailure: false,
-    details: `Dados: [${damage.rolls.join(', ')}] • Local de Impacto: ${location.label}`
+    details: `Dados: [${damage.rolls.join(', ')}] • Local de Impacto: ${location.label}`,
+    hitLocation: location.row.location
   };
 }
 
@@ -158,6 +160,32 @@ export function sheetDamageRoll(
 ): { core: RollCore | null; formula: string } {
   const formula = weapon?.damage || FALLBACK_DAMAGE;
   return { core: damageRoll(rng, `Dano da Arma: ${weapon?.name || '—'}`, formula), formula };
+}
+
+/**
+ * Iniciativa (D.4): 1d10 aberto + REF CORRENTE + Combat Sense (Solo). O 10
+ * explode como em todo d10 do FNFF; o 1 não é fumble — iniciativa não é teste
+ * (S1 `1d10!!`, S8 `1d10x10`, os dois com o REF já ferido).
+ */
+export function sheetInitiativeRoll(
+  rng: Rng,
+  sheet: RollingSheet & Pick<CharacterSheet, 'role' | 'specialAbilityName' | 'specialAbilityRank'>
+): RollCore {
+  const modifiers = [{ label: 'REF', value: deriveCurrentStats(sheet).REF }];
+  const combatSense = combatSenseBonus(sheet);
+  if (combatSense > 0) modifiers.push({ label: 'Combat Sense', value: combatSense });
+  const check = resolveCheck(rng, modifiers, { fumbleTable: false });
+  return {
+    rollType: 'SKILL',
+    label: 'Iniciativa',
+    diceFormula: checkFormula(check.roll.exploded, false),
+    baseRoll: check.roll.natural,
+    bonus: check.bonus,
+    total: check.total,
+    isCriticalSuccess: check.roll.exploded,
+    isCriticalFailure: false,
+    details: check.details
+  };
 }
 
 export function sheetDeathSaveRoll(rng: Rng, sheet: RollingSheet): RollCore {

@@ -25,6 +25,18 @@ export function officialRoleFor(sheet: Pick<CharacterSheet, 'role' | 'specialAbi
   );
 }
 
+/**
+ * Bônus do Combat Sense na iniciativa (D.4): o nível da habilidade, só para
+ * quem tem o role cuja habilidade é Combat Sense (o Solo). S1, S5, S8.
+ */
+export function combatSenseBonus(
+  sheet: Pick<CharacterSheet, 'role' | 'specialAbilityName' | 'specialAbilityRank'>
+): number {
+  const role = officialRoleFor(sheet);
+  if (!role || normalizeName(role.specialAbility) !== normalizeName('Combat Sense')) return 0;
+  return Math.max(0, Number(sheet.specialAbilityRank) || 0);
+}
+
 export interface SpecialAbilityRoll {
   label: string;
   /** `null` quando o role não é do livro e não há atributo a somar. */

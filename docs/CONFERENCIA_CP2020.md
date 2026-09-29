@@ -37,8 +37,8 @@ modelo ainda não representa:
 | Regra | Vai para | Por quê não agora |
 |---|---|---|
 | Ordem ×2 × BTM na cabeça | **Decidido em 26/09: SP → BTM → ×2** (decisão 6). Implementa na D.1 | O livro dá a regra e não diz quando ([pesquisa de 26/09](#dano--a-ordem-do-pipeline-para-a-fase-d)) |
-| Dano → ferimento, penetração escalonada, perda de membro, dificuldade por alcance | Fase D | É o loop de combate |
-| Combat Sense na iniciativa | D.4 | A iniciativa automática nasce lá |
+| Dano → ferimento, perda de membro, dificuldade por alcance | Fase D | É o loop de combate. Penetração escalonada e cobertura: **ADIAR** na D.0 ([detalhe](#o-que-a-fase-d-conferiu)) |
+| Combat Sense na iniciativa | **D.4 — feito** | Ver [o que a Fase D conferiu](#o-que-a-fase-d-conferiu) |
 | Texto das tabelas de fumble | ADIAR | O dado já sai rolado; o GM lê no livro |
 | Cromo que soma atributo; EV da armadura no REF | Fase K | O modelo de dados não tem o campo |
 | Humanidade de implante "desinstalado" | ADIAR | O modelo não distingue nunca-instalado de removido |
@@ -127,7 +127,7 @@ da Fase D. **C.2** — `btmFromBody`, rótulo do `StatBlock` e PRD corrigidos.
 | Perícia por tipo de arma | Pistola → Handgun; SMG → Submachinegun; Rifle → Rifle; Pesada → Heavy Weapons; Branca → Melee; Arco → Archery | Não existia mapa | **C.3** (`WEAPON_SKILL_BY_TYPE`) |
 | Escopeta | **Rifle** — não existe perícia de escopeta; o capítulo de armas manda usar Rifle | — | **C.3 — confirmado em 26/09** (S6, S8) |
 | Modificador de situação do GM | Entra na rolagem | `combatModifier` sem leitor | **C.4** — entra em ataque e perícia, visível no detalhe |
-| Dificuldade por alcance | Queima-roupa 10, curto 15, médio 20, longo 25, extremo 30 | Não existe | **Fase D** (acertar o alvo é do loop de combate) |
+| Dificuldade por alcance | Queima-roupa 10, curto 15, médio 20, longo 25, extremo 30 | Não existe | **D.3** — `RANGE_BANDS`; ver [o que a Fase D conferiu](#o-que-a-fase-d-conferiu) |
 
 ## Ferimentos
 
@@ -233,6 +233,29 @@ que só feche com B.
 
 Também da Fase D: **penetração escalonada** (cada acerto que passa reduz o SP daquele ponto em 1) e
 **perda de membro** (mais de 8 pontos num membro de uma vez; na cabeça, morte).
+
+## O que a Fase D conferiu
+
+Verificação da **D.0** (28/09/2026), com as decisões do dono (decisão 7 do plano).
+
+| Regra | Livro | Fontes | Status |
+|---|---|---|---|
+| Dano conta **pontos** | 4 pontos por caixa, 40 no total; o resto de uma caixa fica marcado | Trilha acima; S9 escreve pontos | **D.1** — a ficha guarda pontos, o nível é derivado (decisão 7b) |
+| Perda de membro | Membro com **mais de 8** pontos num acerto, depois de todos os modificadores: decepado ou inutilizado | S5, S9 | **D.1** — aviso no chat |
+| Death save ao perder membro | Imediato, em Mortal 0 | **só S9** | **D.1 como aviso**, sem rolagem automática. **Gatilho:** o dono confirmar no livro |
+| Cabeça com mais de 8 | Morte instantânea (o ×2 já aplicado) | S5, S9 | **D.1** — estado Morto |
+| Iniciativa | `1d10` **aberto** (o 10 explode) + REF **corrente** (com o ferimento) + Combat Sense do Solo. O 1 **não** é fumble — iniciativa não é teste | S1 (`1d10!!+REF+Combat_Sense`), S8 (`1d10x10 + ref.total + CombatSense`, com o `ref.total` já ferido), S5 | **D.4** — `sheetInitiativeRoll` |
+| Empate na iniciativa | O livro não dá desempate | Nenhuma fonte trata | Fica a ordem da rolagem. **ADIAR** — gatilho: a mesa pedir um desempate (ex.: maior REF) |
+| Dificuldade por alcance | Queima-roupa 10 (até 1 m); curto 15 (¼ do alcance); médio 20 (½); longo 25 (alcance); extremo 30 (2×) — p. 99 | **S8** (`lookups.js`) e **S9** (`rangefinding.js`, cita a p. 99) dão as cinco; **S1** confirma as quatro de cima | **D.3** — `RANGE_BANDS` no `tables.ts` |
+| O ataque acerta com | Total **igual ou maior** que a dificuldade | S8 (`attackRoll.total >= DC`), S9 | **D.3** — `attackHits` |
+| Fumble no ataque | Erro, mesmo com total alto | S9; e a regra do 1 (C.1) | **D.3** |
+| Queima-roupa dá dano máximo | Com arma de fogo | **Uma linhagem só**: o S9 descreve o S8 fazendo isso, mas o arquivo do S8 lido não tem; um resumo de busca repete | **ADIAR** — gatilho: o dono confirmar no livro |
+| Corpo a corpo | Teste **resistido**: o defensor rola (Dodge, Melee…) | Conhecido; não conferido em fonte nesta fase | **D.3 parcial:** o GM informa o total do defensor como dificuldade livre. Rolagem resistida automática: **ADIAR** — gatilho: a mesa usar corpo a corpo com frequência |
+| Penetração escalonada | Cada acerto que fura a armadura tira 1 do SP daquele ponto | Um resumo de busca a chama de **opcional** ("One option is…"), página de origem não lida; S9 a implementa **atrás de uma chave** | **ADIAR** (decisão 7d). **Gatilho:** a mesa pedir, ou uma luta longa em que a armadura que nunca gasta incomode |
+| Cobertura entre atirador e alvo | SP da cobertura contra o dano | S5 diz só "subtraído do dano"; S9 **combina** cobertura e armadura pela tabela proporcional (p. 99) | **ADIAR** (decisão 7c: token sem ficha não recebe dano). **Gatilho:** o GM precisar da cobertura no cálculo, com a regra de combinação conferida em duas fontes |
+| Death save no Mortal | **Logo depois do dano** que deixa em Mortal (antes do stun) e **a cada turno** depois, até morrer ou ser estabilizado. Alvo ≤ 0 é morte certa | S5 ("and then again every round"), S9 (`save-rolls.js`, p. 99; uma pergunta por aplicação de dano, e a cadência por turno) | **D.5** |
+| Estabilização | Estabilizado não rola death save; **dano novo desfaz** | S9 (p. 105), S5 ("até morrer ou ser estabilizado") | **D.5** — o GM marca; o teste de First Aid/Medical Tech que estabiliza é rolado à parte. Rolagem de estabilização automática: **ADIAR** — gatilho: o GM pedir |
+| Estado atordoado | Falhou o stun save, fora de ação até passar num novo | Conferido na C.7 | O stun save rola sozinho com o dano (D.1); o **estado** não é guardado. **ADIAR** — gatilho: a mesa esquecer quem está atordoado |
 
 ## O que fica para a Fase K
 

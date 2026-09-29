@@ -107,7 +107,23 @@ export interface CharacterSheet {
    * servidor o recalcula a cada sync e descarta o que o cliente mandou.
    */
   currentStats: CharacterStats;
+  /**
+   * Nível de ferimento (0–10). Desde a Fase D é DERIVADO de `damagePoints` —
+   * continua gravado porque todo leitor antigo o usa. Leia com `woundStateOf`.
+   */
   woundLevel: number;
+  /**
+   * Pontos de dano na trilha (0–40), como o livro conta. Opcional: ficha de
+   * antes da Fase D não tem, e `woundStateOf` converte do `woundLevel`.
+   */
+  damagePoints?: number;
+  /** Morto: dano além da trilha, cabeça com mais de 8, ou death save falho. */
+  isDead?: boolean;
+  /**
+   * Estabilizado (D.5): em Mortal, para de rolar o death save a cada turno.
+   * Na mesa, só o GM marca; dano que entra desfaz (p. 105, via S9).
+   */
+  isStabilized?: boolean;
   skills: SkillItem[];
   cyberware: CyberwareItem[];
   weapons: WeaponItem[];
@@ -135,4 +151,9 @@ export interface RollResult {
   isCriticalSuccess: boolean;
   isCriticalFailure: boolean;
   details: string;
+  /**
+   * Só em rolagem de dano (D.3): o local de impacto sorteado, estruturado.
+   * Antes existia só no texto do `details`; o GM aplica o dano a partir dele.
+   */
+  hitLocation?: ArmorLocation;
 }

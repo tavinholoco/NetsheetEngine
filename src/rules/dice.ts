@@ -112,10 +112,13 @@ function describeDice(roll: OpenD10): string {
  * Resolve um teste. No fumble o total NÃO perde 1d10 — no Cyberpunk 2020 o 1
  * natural é falha automática, e o segundo dado vai para a tabela de fumble.
  * (Subtrair 1d10 é regra do RED; estava nos dois motores antes da Fase C.)
+ *
+ * `fumbleTable: false` é para rolagem que não é teste — a iniciativa (D.4):
+ * o 10 explode igual, mas o 1 é só um 1, sem falha nem dado de fumble (S1, S8).
  */
-export function resolveCheck(rng: Rng, modifiers: Modifier[]): CheckResult {
+export function resolveCheck(rng: Rng, modifiers: Modifier[], { fumbleTable = true }: { fumbleTable?: boolean } = {}): CheckResult {
   const roll = rollOpenD10(rng);
-  const fumbleRoll = roll.fumble ? rng(10) : null;
+  const fumbleRoll = fumbleTable && roll.fumble ? rng(10) : null;
   const bonus = modifiers.reduce((acc, m) => acc + m.value, 0);
   const total = roll.sum + bonus;
 

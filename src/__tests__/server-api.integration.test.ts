@@ -276,6 +276,52 @@ describe("API — GM permissions (jogador → 403)", () => {
     const res = await request(app).post(`/api/rooms/${code}/player-health`).send({ ...authed(gmToken), targetPeerId: "nao_existe", woundLevel: 1 });
     expect(res.status).toBe(404);
   });
+
+  // D.1 — a regra está em damage.integration; aqui, o que é da rota.
+  it("damage: sem sessão → 401; jogador → 403; entrada inválida → 400; alvo inexistente → 404", async () => {
+    const noAuth = await request(app).post(`/api/rooms/${code}/damage`).send({ targetId: "peer_pj", raw: 5, location: "Torso" });
+    expect(noAuth.status).toBe(401);
+    const denied = await request(app).post(`/api/rooms/${code}/damage`).send({ ...authed(playerToken), targetId: "gm_peer", raw: 5, location: "Torso" });
+    expect(denied.status).toBe(403);
+    const invalid = await request(app).post(`/api/rooms/${code}/damage`).send({ ...authed(gmToken), targetId: "peer_pj", raw: 5, location: "Rabo" });
+    expect(invalid.status).toBe(400);
+    const missing = await request(app).post(`/api/rooms/${code}/damage`).send({ ...authed(gmToken), targetId: "nao_existe", raw: 5, location: "Torso" });
+    expect(missing.status).toBe(404);
+  });
+
+  it("damage: GM aplica e a sala volta com os pontos e a conta no chat", async () => {
+    const res = await request(app).post(`/api/rooms/${code}/damage`).send({ ...authed(gmToken), targetId: "peer_pj", raw: 3, location: "Torso" });
+    expect(res.status).toBe(200);
+    expect(res.body.players["peer_pj"].sheet.damagePoints).toBeGreaterThan(0);
+    expect(res.body.chatMessages.some((m: { text: string }) => m.text.includes("levou 3 de dano"))).toBe(true);
+  });
+
+  // D.5 — a regra está em death-save-turn.integration; aqui, o que é da rota.
+  it("stabilize: jogador → 403; GM em Mortal → 200; fora do Mortal → 400; alvo inexistente → 404", async () => {
+    const denied = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(playerToken), targetId: "peer_pj", stabilized: true });
+    expect(denied.status).toBe(403);
+    // O teste de player-health acima deixou o peer_pj em Mortal 6.
+    const ok = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(gmToken), targetId: "peer_pj", stabilized: true });
+    expect(ok.status).toBe(200);
+    expect(ok.body.players["peer_pj"].sheet.isStabilized).toBe(true);
+    const notMortal = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(gmToken), targetId: "gm_peer", stabilized: true });
+    expect(notMortal.status).toBe(400);
+    const missing = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(gmToken), targetId: "nao_existe", stabilized: true });
+    expect(missing.status).toBe(404);
+  });
+
+  // D.3 — a regra está em gm-attack.integration; aqui, o que é da rota.
+  it("attack: jogador → 403; faixa inválida → 400; GM com NPC → 200 e o ataque no chat", async () => {
+    const gen = await request(app).post(`/api/rooms/${code}/npcs/generate`).send({ ...authed(gmToken) });
+    const npcId = Object.keys(gen.body.npcs).at(-1)!;
+    const denied = await request(app).post(`/api/rooms/${code}/attack`).send({ ...authed(playerToken), attackerId: npcId, targetId: "peer_pj", range: "medium" });
+    expect(denied.status).toBe(403);
+    const invalid = await request(app).post(`/api/rooms/${code}/attack`).send({ ...authed(gmToken), attackerId: npcId, targetId: "peer_pj", range: "perto" });
+    expect(invalid.status).toBe(400);
+    const ok = await request(app).post(`/api/rooms/${code}/attack`).send({ ...authed(gmToken), attackerId: npcId, targetId: "peer_pj", range: "medium" });
+    expect(ok.status).toBe(200);
+    expect(ok.body.chatMessages.some((m: { text: string }) => m.text.includes("ataca [PlayerJogador]"))).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -325,6 +371,18 @@ describe("API — iniciativa (GM only)", () => {
   it("jogador não pode avançar o turno (403)", async () => {
     const res = await request(app).post(`/api/rooms/${code}/initiative`).send({ ...authed(playerToken), action: "next" });
     expect(res.status).toBe(403);
+  });
+
+  // D.4 — a regra está em initiative.integration; aqui, o que é da rota.
+  it("roll: jogador → 403; GM → 200, o jogador entra rolado e as entradas manuais ficam", async () => {
+    const denied = await request(app).post(`/api/rooms/${code}/initiative`).send({ ...authed(playerToken), action: "roll" });
+    expect(denied.status).toBe(403);
+    const ok = await request(app).post(`/api/rooms/${code}/initiative`).send({ ...authed(gmToken), action: "roll" });
+    expect(ok.status).toBe(200);
+    const ids = ok.body.initiativeList.map((i: { playerId: string }) => i.playerId);
+    expect(ids).toContain("peer_pj");
+    expect(ids).toContain("peer_npc"); // entrada manual (não é personagem da sala) continua
+    expect(ok.body.initiativeList[0].isCurrentTurn).toBe(true);
   });
 });
 

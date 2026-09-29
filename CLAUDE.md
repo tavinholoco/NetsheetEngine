@@ -61,13 +61,14 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | PITR do Supabase | **Não** — exige plano pago. O backup diário gratuito basta (decisão 4 do plano) |
 | Vulnerabilidades sem correção | **Exceção nomeada, com motivo e gatilho** em `scripts/audit-ci.mjs` — nunca baixar o nível do portão |
 | Dano na cabeça | **Armadura → BTM (mín. 1) → ×2** — o livro não diz quando dobrar; decisão 6 do plano (26/09/2026) |
+| Ferimento na mesa | **Pontos (0–40) na ficha, nível derivado; só servidor e GM escrevem na mesa.** Token sem ficha não recebe dano; penetração escalonada ADIAR — decisão 7 (28/09/2026) |
 | Migration × deploy | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa. O Render publica sem esperar o `db-sync` |
 
 ## Comandos que importam
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 394 testes na abertura da Fase D (ver "Linha de base atual" no plano)
+npx vitest run            # 522 testes ao fechar a Fase D (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 6 testes, sobe o servidor de produção
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
@@ -77,8 +78,10 @@ node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
 ## Contexto que economiza tempo
 
 - O projeto **não está quebrado**: compila, testa e builda. Desde a Fase C as rolagens seguem o
-  livro, na ficha e na mesa, com **um motor só** em `src/rules/`. O que falta é fechar o *loop de
-  jogo* (Fase D): o dano ainda não vira ferimento sozinho — o `woundLevel` é clicado à mão.
+  livro, na ficha e na mesa, com **um motor só** em `src/rules/`. Desde a Fase D o *loop de jogo*
+  fecha no servidor: iniciativa → ataque contra o alcance → dano em **pontos** (armadura → BTM → ×2)
+  → stun e death save → virada de turno. O GM age pelo cartão do token no grid; na mesa, o jogador
+  não escreve o próprio ferimento.
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.
