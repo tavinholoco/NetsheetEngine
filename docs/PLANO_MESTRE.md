@@ -1140,7 +1140,9 @@ cliente e servidor para ela.
       `pushSystemMessage` passou a usar o `chatTime`; o ajuste manual do GM parou de ter uma lista
       própria de nomes de nível (duplicava a `WOUND_TRACK`) e passou a dizer pontos, não "/10 caixas".
       Memória: só o truque de testar a mesa como GM no navegador local.
-- [x] ✅ **Fase D concluída em:** __28__/__09__/__2026__ *(a mergear — PR para o dono)*
+- [x] ✅ **Fase D concluída em:** __28__/__09__/__2026__ *(mergeada em 29/09/2026 — PR #12, tag `v0.4.3`.
+      CI do `master` verde nos 5 jobs, e o `db-sync` conectou: "Remote database is up to date", como
+      esperado numa fase sem migration)*
 
 > **Ponto de corte:** com A–D fechadas o jogo roda certo. Dá para jogar aqui e tratar o resto como
 > manutenção — com a exceção da F, que é a única fase restante que muda o que o jogador vê.
