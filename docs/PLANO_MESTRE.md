@@ -1428,12 +1428,20 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       PR; a R.13 em PR próprio. Depois do merge, `master` verde e a verificação pós-deploy de 01/10.
       *(29/09/2026 — R.0–R.6 e R.12 publicados juntos, a pedido do dono: um commit por item, cada um
       com o teste que reproduz e a prova revertendo. R.7–R.11, R.13 e R.16 ficam para o próximo PR.)*
-- [ ] **R.16** **SEC-13 — teto de assentos por sala** *(achado do portão das R, 29/09/2026)*. Cada
+- [x] **R.16** **SEC-13 — teto de assentos por sala** *(achado do portão das R, 29/09/2026)*. Cada
       `join` com `peerId` novo cria um assento, cada assento abre até 3 sockets (R.4), e o `join` só
       tem o limitador de sala (120/min por IP): dezenas de assentos multiplicam cada reenvio da sala —
       o amplificador do SEC-10 por outra porta, e a mesma família da "sala sem teto de NPCs" (pista da
       E). **Reproduzir primeiro.** Versão 10× menor: teto de assentos por sala (uma mesa real tem até
       ~8; 12 dá folga), `409` com código estável acima dele. Antes da primeira sessão em produção.
+      *(29/09/2026)* **Reproduzido:** 100 `join`s criaram 101 assentos, e o GM gerou 41 fichas sem
+      parar. `MAX_SEATS_PER_ROOM = 16` — **não 12**: o teto conta **todo** assento (GM, jogadores e
+      fichas geradas pelo GM), porque contar só os "humanos" pelo prefixo do `peerId` seria contornável
+      (ele vem do cliente; bastaria entrar como `edgerunner_x`). 16 cabe GM, uma mesa cheia e fichas
+      pré-geradas. Acima do teto: `join` de assento novo → **409 `room_full`**; quem já tem assento
+      sempre volta ao seu; gerar ficha → recusado com "A mesa está cheia". Teto máximo de sockets por
+      sala: 48. `seat-cap.integration` (6). **Provado revertendo** as 2 linhas do teto: 4 falham. As
+      **fichas de NPC** (`room.npcs`) continuam sem teto — é a pista da E, e NPC não abre socket.
 - [ ] ✅ **Pendências da revisão pós-D resolvidas em:** ____/____/______
 
 ---

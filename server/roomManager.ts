@@ -438,6 +438,26 @@ export function seatClaimRefusal(code: string, peerId: string, proofToken?: stri
   return "Este assento já está ocupado na mesa. Entre como um novo jogador.";
 }
 
+/**
+ * Revisão pós-D (R.16 — SEC-13) — quantos assentos cabem numa sala. Cada
+ * assento abre até 3 sockets (R.4), e cada socket recebe cada reenvio da sala:
+ * sem teto, dezenas de `join` multiplicavam a banda do workspace. Uma mesa de
+ * CP2020 tem o GM e até ~6–8 jogadores; 16 dá folga para fichas pré-geradas.
+ *
+ * Conta TODO assento — GM, jogadores e fichas geradas pelo GM. Contar só os
+ * "humanos" pelo prefixo do peerId seria contornável: ele vem do cliente.
+ */
+export const MAX_SEATS_PER_ROOM = 16;
+
+/** A sala está cheia para um assento NOVO? Quem já tem assento sempre volta ao seu. */
+export function roomIsFullFor(code: string, peerId: string): boolean {
+  const room = getRoom(code);
+  if (!room) return false;
+  const safePeerId = sanitizeText(peerId, 64);
+  if (safePeerId && room.players[safePeerId]) return false;
+  return Object.keys(room.players).length >= MAX_SEATS_PER_ROOM;
+}
+
 function pickSheet(clientSheet: CharacterSheet, persistedSheet: CharacterSheet | undefined): CharacterSheet {
   if (!isUsableSheet(clientSheet)) return persistedSheet ?? clientSheet;
   if (!persistedSheet) return clientSheet;
@@ -462,6 +482,8 @@ export function joinRoom(
   if (wasRemovedByGm(room.code, safePeerId)) return null;
   // R.1 (SEC-07) — assento ocupado só com o token vigente dele.
   if (seatClaimRefusal(room.code, safePeerId, proofToken)) return null;
+  // R.16 (SEC-13) — assento novo só se couber.
+  if (roomIsFullFor(room.code, safePeerId)) return null;
 
   // B.2 (SEC-05) — a ficha do join é a primeira coisa que o servidor grava a
   // partir do navegador. Sem isto, atributos e woundLevel entravam verbatim.
@@ -707,6 +729,10 @@ export function generateRoomPlayerEdgerunner(
 
   if (!checkIsGm(room, requesterPeerId)) {
     return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode gerar Edgerunners." };
+  }
+  // R.16 (SEC-13) — ficha gerada ocupa assento como qualquer outro.
+  if (Object.keys(room.players).length >= MAX_SEATS_PER_ROOM) {
+    return { room: null, error: `A mesa está cheia (${MAX_SEATS_PER_ROOM} lugares). Remova alguém para gerar outra ficha.` };
   }
 
   const sheet = generateRandomNpc();

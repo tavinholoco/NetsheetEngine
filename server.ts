@@ -50,6 +50,8 @@ import {
   rollDiceForPlayer,
   seatClaimRefusal,
   wasRemovedByGm,
+  roomIsFullFor,
+  MAX_SEATS_PER_ROOM,
   verifySession,
   sanitizeText,
   isValidRoomCode,
@@ -484,6 +486,13 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   const refusal = seatClaimRefusal(code, peerId, proofToken);
   if (refusal) {
     return res.status(409).json({ error: refusal, code: "seat_taken" });
+  }
+  // R.16 (SEC-13) — assento novo só se couber: cada um abre até 3 sockets.
+  if (roomIsFullFor(code, peerId)) {
+    return res.status(409).json({
+      error: `Esta mesa está cheia (${MAX_SEATS_PER_ROOM} lugares). Peça ao Mestre para abrir espaço.`,
+      code: "room_full"
+    });
   }
   const result = joinRoom(code, peerId, handle, sheet, proofToken);
   if (!result) {
