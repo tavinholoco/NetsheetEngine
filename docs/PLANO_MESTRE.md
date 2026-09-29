@@ -1100,7 +1100,24 @@ cliente e servidor para ela.
         1 de rota.
       - **ADIAR:** a rolagem de estabilização (First Aid/Medical Tech) automática — o GM conduz e
         marca; gatilho na conferência.
-- [ ] **D.6** Testes de comportamento do loop (aplicar dano, avançar turno). *(ARQ-08, parte 2)*
+- [x] **D.6** Testes de comportamento do loop (aplicar dano, avançar turno). *(ARQ-08, parte 2 — 28/09/2026)*
+      - Cada peça já nasceu com teste na D.1–D.5 (`rules-damage`, `damage`, `gm-attack`, `initiative`,
+        `death-save-turn`). A D.6 acrescentou o que faltava:
+      - **`combat-loop.integration`** — **uma luta inteira**, na ordem da mesa e com dados
+        roteirizados: iniciativa → o NPC acerta → perda da perna e Mortal 0 → death save na hora e
+        stun → o jogador tenta se curar pela sincronia (não passa) → death save na virada de turno →
+        o GM estabiliza → a vez passa sem rolar → dano novo desfaz a estabilização → death save falha
+        → morto sai da iniciativa seguinte. Confere também a trilha do chat, na ordem.
+        O teste pegou um erro **meu**, não do código: eu esperava a iniciativa do Vex com REF 8, e ele
+        estava Sério — o REF corrente é 6. É a D.4 funcionando.
+      - **`combat-ui`** — 19 testes de comportamento dos componentes que a fase criou, onde o ARQ-08
+        apontava o buraco (a UI tinha 3 smoke tests): o `CombatPanel` (o que manda ao atacar e ao
+        aplicar dano, faixas e "Outra", "usar último dano", estado do alvo, estabilizar só em Mortal) e
+        o `HealthTracker` (40 caixas, marcar e desmarcar, ficha antiga no mínimo da caixa, **só
+        leitura na mesa**, Morto, estabilizado).
+      - **Provado que mordem:** sem a trava da mesa no `HealthTracker` e sem o filtro de Mortal no
+        botão de estabilizar, os 2 testes certos falham; com elas, os 19 passam.
+      - 505 → 525 testes. A parte 3 do ARQ-08 (o resto dos componentes) continua com as Fases G–H.
 - [ ] **D.7** `git tag v0.4.3`.
 - [ ] **D.8** 📐 **Desenho** — implementar o `applyDamage` contra o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) já confirmado pela Fase C. Se a implementação divergir do desenho, o desenho muda junto no mesmo commit.
 - [ ] **D.9** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
