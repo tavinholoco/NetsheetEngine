@@ -246,7 +246,55 @@ fizer isso, vira item da Fase J.
 
 ### Fase D — Loop de combate
 
-*(a preencher)*
+**28/09/2026.** Fase de regra que deu ao GM **poderes novos sobre as fichas dos outros** — aplicar
+dano, atacar pelo NPC, estabilizar, rolar a iniciativa de todos. O portão não é formalidade: é a
+fase que mais mexeu em quem escreve o quê desde a B.
+
+1. **Entrada nova?** Três rotas e uma ação, todas validadas no limite:
+   - `POST /damage` — `targetId` (texto, 64), `raw` (número finito ≥ 0, teto 2 500), `location`
+     (enum da tabela de local de impacto).
+   - `POST /attack` — `attackerId` e `targetId` (texto, 64), `range` (enum de `RANGE_BANDS`) **ou**
+     `difficulty` (inteiro 1–50). A fórmula de dano da arma do NPC passa pelo parser estrito
+     **antes** de rolar qualquer dado.
+   - `POST /stabilize` — `targetId`, `stabilized` (só `true` literal).
+   - `initiative` com `action: "roll"`, pela rota e pelo WebSocket — sem corpo além da ação.
+   - E três campos novos na ficha, saneados no `sheetSchema`: `damagePoints` (0–40), `isDead` e
+     `isStabilized` (só `true` literal). Entrada inválida responde **400** com mensagem clara, não o 403
+     genérico do `respondWithResult` (`respondToCombat` no `server.ts`).
+2. **Dado novo sai?** Nada que a mesa já não visse. O chat passou a mostrar a conta do dano, o ataque
+   do NPC com as parcelas (REF, perícia, WA) e as parcelas da iniciativa — as fichas dos NPCs **já**
+   vão inteiras no estado da sala transmitido a todos. O local de impacto estruturado
+   (`hitLocation`) é o mesmo que já saía no texto do detalhe.
+3. **Autorização nova?** Sim, e é o centro da fase: o GM passa a **agir sobre a ficha dos outros** e
+   a **rolar com a ficha do NPC**. As quatro ações passam por `checkIsGm` e o jogador recebe 403
+   (testado em cada uma, pela função e pela rota). A rolagem continua do servidor (`crypto.randomInt`)
+   — o GM escolhe **quem, onde e de onde**, nunca o número.
+4. **Jogador convidado hostil?**
+   - **Fechado nesta fase — o achado do portão C.14:** o jogador escrevia o próprio `woundLevel` pela
+     sincronia da ficha e rolava sem a penalidade. Agora, na mesa, o ferimento (`damagePoints`,
+     `woundLevel`, `isDead`) e a estabilização são **do servidor**: a sincronia e a reconexão mantêm
+     os valores dele. **Provado revertendo** nos dois casos: sem as linhas novas, os testes da decisão
+     7a e o do `isStabilized` falham.
+   - **Fechado de passagem — `updateInitiative` gravava qualquer campo:** a entrada era `{ ...e }`, e
+     qualquer campo do cliente virava estado da sala, persistido e transmitido, sem teto de tamanho.
+     Só o GM chegava lá — mas o GM também é um convidado de quem cria a sala. Agora a entrada é
+     montada campo a campo. **Provado revertendo:** com o corpo antigo, os 2 testes falham.
+   - **Continua podendo — sair e voltar "curado":** o `leaveRoom` apaga o registro do jogador, e a
+     volta é um **join novo**, que aceita o ferimento da ficha que o cliente trouxer. Exige editar a
+     ficha fora da mesa de propósito, e o chat anuncia a entrada (não é reconexão silenciosa). **Vai
+     para a Fase J**, com gatilho: um jogador aparecer inteiro depois de sair no meio de uma luta, ou
+     a mesa passar a ter público fora dos convidados do dono. Conserto provável: guardar o ferimento de
+     quem saiu, por sala, até ela expirar.
+5. **Estado novo sem limite?** Nenhum criado. O chat do sistema respeita o teto de 100 mensagens (o
+   `pushSystemMessage` corta como o `postChatMessage`); a iniciativa tem teto de 50 entradas. **Pista
+   da Fase E:** a mensagem da iniciativa cresce com o número de combatentes, e a sala **não tem teto
+   de NPCs** — anterior à fase (`generateRoomNpc`), só o GM gera, e o limitador de taxa segura o ritmo.
+6. **Custo por requisição a serviço externo?** Nenhum. Uma mutação por ação do GM (o ataque inteiro
+   do NPC — ataque, dano, local, ferimento e saves — é **uma** só), como o contrato de custo pedia; o
+   broadcast da sala inteira (ARQ-01) não mudou de tamanho de forma relevante.
+
+**O que o portão achou:** a porta lateral do item 4 (sair e voltar), levada à Fase J com gatilho; e
+a falta de teto de NPCs, que vira pista da Fase E. **O achado da C.14 está fechado.**
 
 ### Fase F — Reestruturação visual
 

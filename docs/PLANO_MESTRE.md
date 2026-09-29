@@ -1118,11 +1118,29 @@ cliente e servidor para ela.
       - **Provado que mordem:** sem a trava da mesa no `HealthTracker` e sem o filtro de Mortal no
         botão de estabilizar, os 2 testes certos falham; com elas, os 19 passam.
       - 505 → 525 testes. A parte 3 do ARQ-08 (o resto dos componentes) continua com as Fases G–H.
-- [ ] **D.7** `git tag v0.4.3`.
-- [ ] **D.8** 📐 **Desenho** — implementar o `applyDamage` contra o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) já confirmado pela Fase C. Se a implementação divergir do desenho, o desenho muda junto no mesmo commit.
-- [ ] **D.9** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
-- [ ] **D.10** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase D concluída em:** ____/____/______
+- [x] **D.7** `git tag v0.4.3`. *(28/09/2026, no último commit da fase, antes do PR — como a `v0.4.2` na C)*
+- [x] **D.8** 📐 **Desenho** — implementar o `applyDamage` contra o [pipeline de dano](./ARQUITETURA.md#pipeline-de-dano-fnff) já confirmado pela Fase C. Se a implementação divergir do desenho, o desenho muda junto no mesmo commit.
+      *(28/09/2026)* Divergiu, e o desenho mudou junto em cada commit: o pipeline ganhou o acerto grave
+      (> 8: cabeça mata, membro se perde), a trilha em pontos e a morte além dos 40 (D.1), e o death
+      save na hora do dano e a estabilização (D.5). A máquina de ferimento tinha as transições no
+      **teto** de cada caixa (Leve → Sério em "8 pontos") — corrigidas para o primeiro ponto do nível
+      seguinte — e ganhou o `isDead` e a estabilização. Conferidos de novo no fechamento.
+- [x] **D.9** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+      *(28/09/2026)* Registro em [`SEGURANCA.md`](./SEGURANCA.md#fase-d--loop-de-combate). O GM ganhou
+      poderes sobre as fichas dos outros (dano, ataque do NPC, estabilizar, iniciativa), todos com
+      `checkIsGm` e 403 testado. **O achado da C.14 está fechado** (a sincronia e a reconexão não
+      escrevem mais o ferimento), e o `updateInitiative` parou de gravar campo arbitrário — os dois
+      provados revertendo. **Achado do portão:** a porta lateral "sair e voltar curado", levada à Fase
+      J com gatilho; e a sala sem teto de NPCs, pista da Fase E. Nenhum diagrama de contêineres mudou:
+      as rotas novas vivem no mesmo servidor, atrás da mesma sessão.
+- [x] **D.10** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+      *(28/09/2026)* Plano, linha de base, `CLAUDE.md` (o "falta fechar o loop" virou falso), PRD,
+      protocolo, conferência e diagramas em dia. **Revisão do que a fase produziu:** o
+      `clampWoundLevel` ficou morto com o `HealthTracker` novo (saiu, com os 3 testes dele); o
+      `pushSystemMessage` passou a usar o `chatTime`; o ajuste manual do GM parou de ter uma lista
+      própria de nomes de nível (duplicava a `WOUND_TRACK`) e passou a dizer pontos, não "/10 caixas".
+      Memória: só o truque de testar a mesa como GM no navegador local.
+- [x] ✅ **Fase D concluída em:** __28__/__09__/__2026__ *(a mergear — PR para o dono)*
 
 > **Ponto de corte:** com A–D fechadas o jogo roda certo. Dá para jogar aqui e tratar o resto como
 > manutenção — com a exceção da F, que é a única fase restante que muda o que o jogador vê.
@@ -1144,7 +1162,13 @@ Escopo: `server.ts`, `server/roomManager.ts`, `server/roomPersistence.ts`, `serv
 - Conferir se algum erro de `roomPersistence` é engolido em silêncio.
 - `(ws as any)._peerId` e os `any` do protocolo Yjs.
 - Candidato a refactor: fatiar `roomManager` (1.035 linhas) em sessão / autorização / regras / npcs /
-  chat. *(ARQ-05)*
+  chat. *(ARQ-05)* *(A Fase D o levou a 1.461: dano, ataque de NPC, iniciativa e death save.)*
+- **A sala não tem teto de NPCs** (`generateRoomNpc`) — só o GM gera e o limitador de taxa segura o
+  ritmo, mas a mensagem de iniciativa da D.4 cresce com eles. *(portão da D.9, 28/09/2026)*
+- O `respondToCombat` (D.1) já contorna o `respondWithResult` para devolver 400 em entrada inválida
+  — mesma classificação por substring, agora em dois lugares.
+- Mais de dez timestamps do chat montados à mão no `roomManager`; a D criou o `chatTime` e o
+  `pushSystemMessage`, e só o código da própria fase passou a usá-los.
 
 **O que a varredura pergunta:** todo caminho de erro devolve o status certo e uma mensagem tratável?
 Existe estado que cresce sem limite? Que suposição quebra se duas requisições chegarem juntas?
@@ -1314,13 +1338,16 @@ Fase F para não varrer código que acabou de ser reestilizado.
 - `syncSheetStore(sheetResult)` é chamado **no corpo do render** do `App.tsx` — efeito colateral fora
   de efeito. **Agora com sintoma** *(visto na C, 25/09/2026)*: o React avisa no console, a cada carga,
   "Cannot update a component while rendering a different component". Anterior à Fase C (`7fe4f47`).
-- Os dois `useEffect` que sincronizam URL ↔ aba com dois refs de guarda.
+- Os dois `useEffect` que sincronizam URL ↔ aba com dois refs de guarda. **Agora com sintoma**
+  *(visto na D.3, 28/09/2026)*: em modo dev, **todo deep link** (`/room/X`, `/multiplayer`) volta
+  para `/` — o `StrictMode` roda o efeito "aba → URL" duas vezes e a guarda do primeiro render só
+  segura a primeira. Produção não tem o duplo efeito, e o E2E roda o build de produção.
 - `createBlankCharacterSheet` gera seis IDs de armadura no mesmo tick com `Date.now()` + sufixo curto.
 - ~~`StatBlock.handleSet` altera `stats` sem tocar em `currentStats`; `handleChange` aplica um
   `Math.min` difícil de justificar.~~ *Resolvida na C.6: o `currentStats` virou derivado e o
   `StatBlock` parou de escrevê-lo.*
 - 16 `console.*` sobrevivendo ao logger estruturado. *(ARQ-07, parte 1)*
-- Candidatos a refactor: `MultiplayerRoom` 944, `FriendsList` 723, `CyberpunkMenu` 608. *(ARQ-05)*
+- Candidatos a refactor: `MultiplayerRoom` 944 (1.031 depois da Fase D), `FriendsList` 723, `CyberpunkMenu` 608. *(ARQ-05)*
 
 **O que a varredura pergunta:** que estado existe em dois lugares e pode divergir? O que a UI faz
 quando a rede falha, o token expira ou a resposta demora? Dá para operar a ficha só com teclado?
@@ -1403,6 +1430,10 @@ sistematicamente, e depois de todo o código novo de C, D e F ter entrado.
 - `npm audit` e `gitleaks` sobre o **histórico completo**, não só o HEAD.
 - Conferir que nenhum segredo entrou no bundle depois das mudanças de B (transformar o teste da T10.7
   em script).
+- **Da D.9 (28/09/2026) — sair e voltar "curado":** o `leaveRoom` apaga o registro do jogador, e a
+  volta é um join novo, que aceita o ferimento da ficha do cliente. A decisão 7a fechou a sincronia e
+  a reconexão, não essa porta. **Gatilho:** um jogador aparecer inteiro depois de sair no meio de uma
+  luta, ou a mesa ter público fora dos convidados do dono.
 
 **O que a varredura pergunta:** se um jogador convidado virar hostil, o que ele consegue fazer? (é o
 modelo de ameaça real da decisão 3) Que dado sai do servidor para quem não deveria vê-lo?
@@ -1482,7 +1513,7 @@ público mudar.
 | A | 🔨 | Reancorar o projeto | ✅ | 03/09/2026 |
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
-| D | 🔨 | Loop de combate | ⬜ | — |
+| D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
@@ -1497,15 +1528,15 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a Fase C (25/09/2026) |
+| Verificação | Ao fechar a Fase D (28/09/2026) |
 |---|---|
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **394** testes, 19 arquivos *(395 ao fechar a C; o PR #9 removeu o teste que exigia a marca de "inferência" na escopeta)* |
-| `npm run test:e2e` | 6/6 (Playwright) |
-| `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C** (Supabase local desligado; a fase não mexeu em schema nem RLS) |
+| `npx vitest run` | **522** testes, 26 arquivos *(394 na abertura da D)* |
+| `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
+| `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia** (3 moderadas do `qs`, não bloqueiam) |
-| Chunk de entrada | 628 kB / 186 kB gzip |
-| Migrations em produção | `0001`–`0007` |
+| Chunk de entrada | 629 kB / 186 kB gzip |
+| Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
 Renovar até 22/10 — passo a passo no P.2.

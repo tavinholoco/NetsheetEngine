@@ -252,9 +252,11 @@ stateDiagram-v2
     note right of Mortal0
         Stun save a cada dano: BODY menos
         0 (Leve) ate 9 (Mortal 6).
-        Death save a cada turno em Mortal:
-        BODY menos o nivel Mortal, sem
-        acumulo por turno.
+        Death save em Mortal: na hora do dano
+        e a cada turno, BODY menos o nivel
+        Mortal, sem acumulo por turno.
+        Estabilizado (pelo GM) nao rola;
+        dano novo desfaz. (D.5)
     end note
 ```
 

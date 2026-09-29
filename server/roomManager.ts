@@ -563,28 +563,13 @@ export function updatePlayerWoundLevel(
     if (token) token.hp = clamped;
   }
 
-  const woundNames = [
-    "Saudável (OK)",
-    "Ferimento Leve (Light)",
-    "Ferimento Sério (Serious)",
-    "Ferimento Crítico (Critical)",
-    "Mortal 0",
-    "Mortal 1",
-    "Mortal 2",
-    "Mortal 3",
-    "Mortal 4",
-    "Mortal 5",
-    "Mortal 6 (Morte Iminente)"
-  ];
-  const statusStr = woundNames[clamped] || `Nível ${clamped}`;
-
-  room.chatMessages.push({
-    id: "msg_health_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
-    senderHandle: "SISTEMA_NET",
-    senderRole: "gm",
-    text: `🩸 [MESTRE DE JOGO] alterou o Bio-Monitor de [${player.handle}] para: ${statusStr} (${clamped}/10 Caixas).`,
-    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-  });
+  // Os nomes vêm da trilha do livro (WOUND_TRACK) — a lista própria que
+  // morava aqui duplicava a tabela. Desde a D.1 a trilha conta pontos.
+  pushSystemMessage(
+    room,
+    "health",
+    `🩸 [MESTRE DE JOGO] alterou o Bio-Monitor de [${player.handle}] para: ${woundRow(clamped).name} (${player.sheet.damagePoints}/${WOUND_TRACK_POINTS} pontos).`
+  );
 
   return { room };
 }
@@ -992,13 +977,17 @@ export function rollDiceForPlayer(
 /** Teto do dano bruto: 20d100 (o teto do parser de fórmula) com folga. */
 const MAX_RAW_DAMAGE = 2500;
 
+/** Horário curto do chat, igual ao resto da mesa. */
+const chatTime = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+/** Mensagem do sistema no chat da mesa, com o mesmo teto de 100 do `postChatMessage`. */
 function pushSystemMessage(room: GameRoom, prefix: string, text: string, rollResult?: RollResult): void {
   room.chatMessages.push({
     id: `msg_${prefix}_` + Date.now() + "_" + crypto.randomBytes(3).toString("hex"),
     senderHandle: "SISTEMA_NET",
     senderRole: "gm",
     text,
-    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    timestamp: chatTime(),
     isDiceRoll: !!rollResult,
     rollResult
   });
@@ -1034,8 +1023,6 @@ function hitAuditText(outcome: HitOutcome): string {
   return `${armor} → ${btm} = ${s.afterBtm}${minNote}${head} → ${s.final} ponto(s).`;
 }
 
-/** Horário curto do chat, igual ao resto da mesa. */
-const chatTime = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
 /** Carimba uma rolagem montada pelo servidor em nome de um personagem. */
 function stampRoll(characterName: string, core: RollCore): RollResult {

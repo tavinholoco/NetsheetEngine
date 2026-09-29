@@ -2,15 +2,14 @@
  * Fase 9 (T9.2) — UNIT TESTS DE REGRAS DE FERIMENTO
  * (src/utils/injuryRules.ts)
  * =================================================
- * Bio-Monitor CP2020: níveis de ferimento 0..10, clamp do woundLevel e o
- * último nível. O efeito de cada nível nos atributos é testado em
+ * Bio-Monitor CP2020: níveis de ferimento 0..10 e o último nível. (O clamp do
+ * woundLevel saiu na Fase D — o grampo agora é dos pontos, em rules-damage.) O efeito de cada nível nos atributos é testado em
  * rules-character.test.ts, derivado da tabela do livro (Fase C).
  */
 import { describe, it, expect } from 'vitest';
 import {
   WOUND_MAX,
   WOUND_LEVEL_NAMES,
-  clampWoundLevel,
   isLastWoundBox
 } from '../utils/injuryRules';
 
@@ -28,24 +27,6 @@ describe('WOUND_LEVEL_NAMES — 11 níveis (0..10)', () => {
     for (let i = 4; i <= WOUND_MAX; i++) {
       expect(WOUND_LEVEL_NAMES[i].color).toMatch(/red|rose/);
     }
-  });
-});
-
-describe('clampWoundLevel — intervalo válido 0..10', () => {
-  it('mantém valores dentro do intervalo', () => {
-    expect(clampWoundLevel(0)).toBe(0);
-    expect(clampWoundLevel(5)).toBe(5);
-    expect(clampWoundLevel(10)).toBe(10);
-  });
-
-  it('clampa valores negativos em 0', () => {
-    expect(clampWoundLevel(-1)).toBe(0);
-    expect(clampWoundLevel(-42)).toBe(0);
-  });
-
-  it('clampa valores acima de 10 em 10', () => {
-    expect(clampWoundLevel(11)).toBe(10);
-    expect(clampWoundLevel(99)).toBe(10);
   });
 });
 
