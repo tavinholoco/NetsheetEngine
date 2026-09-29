@@ -127,6 +127,11 @@ lista do que o jogador não pode alterar — reescrever o dono e mover no mesmo 
 item R.6 do plano). É exatamente o custo que a revisão de 02/09 apontou: 60 linhas de autorização que
 só existem porque o CRDT deixa o cliente escrever o documento inteiro.
 
+**Reproduzido e consertado na R.6 (29/09/2026)**, com um cliente Yjs real: o jogador moveu o NPC e
+**tomou o token de outro jogador**. A checagem passou a comparar todo campo que o doc carrega (a lista
+`TOKEN_KEYS` do `gridDoc`) contra o dono **anterior** — o defeito era uma lista de campos escrita à
+mão, e agora a lista é a mesma que define o doc.
+
 **O gatilho desta ADR não disparou** — ele é bug de *convergência*, e este é de *autorização*, com
 conserto de duas linhas. Fica registrado como evidência para a Fase H: se a H achar o segundo buraco
 da mesma classe, o protocolo de intenção (`{ move: tokenId, x, y }`) passa a ter sintoma.

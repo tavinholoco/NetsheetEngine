@@ -208,7 +208,7 @@ porque o portão pergunta sobre *o que a fase mudou*, e ali mudou quem **usa** a
 | SEC-09 | 🟡 | Expulsar jogador (`deleteGeneratedPlayer`) **não revoga a sessão nem fecha o socket**: o expulso reabre o WebSocket e segue recebendo a sala inteira, fichas e chat | Depois da expulsão, `verifySession` ainda devolve o `peerId` dele. A saída voluntária revoga certo |
 | SEC-10 | 🟠 | O WebSocket **não tem limitador por mensagem** — o chat pelo WS escapa do `chatLimiter` de 30/min — e o `maxPayload` é o padrão do `ws`, **100 MiB**. Cada mensagem reenvia a sala inteira a todas as conexões | Com a medição de 26/09 (sala ~48 KB × 5 conexões ≈ 250 KB por mensagem), **10 mensagens/s gastam os 5 GB do workspace em ~35 min** — e a cota estourada desliga NetSheet **e** Newra News até o mês seguinte. Um quadro de 100 MiB leva a instância gratuita perto do teto de memória |
 | SEC-11 | 🟡 | Nenhum `trust proxy`: atrás do proxy do Render o `req.ip` tende a ser o do proxy, e os três limitadores viram **um balde só para todo mundo** | Predito pela doc do Express e por deploys no Render. **Conferir em produção** — número de saltos de proxy é premissa de configuração |
-| SEC-12 | 🟡 | No grid Yjs, a checagem de posse (`mirrorDocToJson`) usa o `peerId` **novo** do token e não compara o campo `peerId` (nem o `icon`): um jogador moveria qualquer token reescrevendo o dono no mesmo update | **Derivado da leitura, não reproduzido** — exige cliente Yjs. Reproduzir com teste antes de consertar |
+| SEC-12 | 🟡 | No grid Yjs, a checagem de posse (`mirrorDocToJson`) usa o `peerId` **novo** do token e não compara o campo `peerId` (nem o `icon`): um jogador moveria qualquer token reescrevendo o dono no mesmo update | **Derivado da leitura, não reproduzido** — exige cliente Yjs. Reproduzir com teste antes de consertar. *(Reproduzido na R.6, com cliente Yjs real: pior que o lido — o jogador toma o token de outro jogador)* |
 
 ### O que a pesquisa acrescentou às próximas fases
 
@@ -532,7 +532,7 @@ fim desta seção. IDs referenciados pelas fases.
 | OPS-01 | 🟠 Alto | **Nenhum backup** — a decisão 4 supôs um backup diário que o plano gratuito não tem | R.10 |
 | SEC-09 | 🟡 Médio | Expulsar não revoga a sessão nem fecha o socket — o expulso segue lendo a mesa *(reproduzido)* | R.3 |
 | SEC-11 | 🟡 Médio | Sem `trust proxy`, os limitadores tendem a ser um balde só atrás do proxy do Render | R.5 |
-| SEC-12 | 🟡 Médio | Posse de token no grid Yjs compara o dono **novo** — jogador moveria token alheio *(lido, não reproduzido)* | R.6 |
+| SEC-12 | 🟡 Médio | Posse de token no grid Yjs compara o dono **novo** — jogador move e toma token alheio *(reproduzido na R.6)* | R.6 |
 | OPS-02 | 🟡 Médio | Node sem versão fixa: produção no `latest` (26, não LTS), CI no 20 (fim de vida) e no 22 | R.8 |
 | DOC-06 | 🟡 Médio | A L.6 depende de meses de log, e o Render Hobby guarda 7 dias | R.12 |
 | DOC-07 | 🟡 Médio | A decisão 3 (só convidados) não é imposta pelo produto: lobby público e `join` aberto | R.11 |
@@ -1365,11 +1365,19 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       **Provado revertendo** a linha do `app.set`: o jogador de outro IP levava **429 pelo chat do
       GM** (um balde só) e o health mostrava o IP do "proxy". **Pendente no ar:** o `clientIp` bater
       com o IP público de quem pergunta, no deploy de 01/10.
-- [ ] **R.6** **SEC-12 — posse no grid.** Reproduzir com teste (update Yjs que reescreve o `peerId`
+- [x] **R.6** **SEC-12 — posse no grid.** Reproduzir com teste (update Yjs que reescreve o `peerId`
       de um token alheio e o move). Se reproduzir: comparar com o dono **anterior** e proteger `peerId`
       e `icon`. Anotar na [ADR 0002](./adr/0002-yjs-websockets.md) como evidência — a autorização por
       diff é o custo que a revisão de 02/09 apontou no CRDT — **sem reabri-la**: o gatilho dela é bug de
       convergência, e isto é de autorização.
+      *(29/09/2026)* **Reproduziu**, com um cliente Yjs de verdade sobre o WebSocket: o jogador levou
+      o NPC para (0,0) tomando o dono dele, e **roubou o token de outro jogador** (`peer_kaze` →
+      `peer_vex`). A causa é de classe — a checagem enumerava à mão os campos protegidos e esqueceu
+      dois. O conserto compara **todo** campo que o doc carrega, menos `x`/`y`, pela mesma lista do
+      `gridDoc` (`TOKEN_KEYS`, agora exportada): campo novo nasce protegido. E a posse é a do dono
+      **anterior**. Conferido que o `deriveGridFromDoc` não converte tipo (não há falso positivo que
+      reverta movimento legítimo). `grid-ownership.integration` (5). **Provado revertendo:** com a
+      checagem antiga, 4 dos 5 falham (o que passa é mover o próprio token). Nota na ADR 0002 atualizada.
 - [ ] **R.7** **SEC-06 — o gatilho da B.6 disparou.** `npm audit fix` leva a `express@4.22.3` e
       `qs@6.16.0`. Esperado: `npm audit --omit=dev` com **0** vulnerabilidades. Atualizar a linha do
       SEC-06 em [`SEGURANCA.md`](./SEGURANCA.md#estado-dos-achados-de-segurança) e a linha de base.

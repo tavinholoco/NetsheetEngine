@@ -17,7 +17,7 @@ import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
 import * as syncProtocol from "y-protocols/sync";
 import * as awarenessProtocol from "y-protocols/awareness";
-import { deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
+import { TOKEN_KEYS, deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
 // Fase B (B.1 — SEC-01) — o Netrunner IA passa a exigir identidade verificada,
 // e a instrução do modelo passa a ser código do servidor, não entrada do cliente.
 import { bearerFromHeader, isAuthVerificationConfigured, verifySupabaseJwt } from "./server/supabaseAuth.js";
@@ -1016,22 +1016,18 @@ function mirrorDocToJson(code: string, originWs: WebSocket): boolean {
     for (const t of next.tokens) if (!prevById.has(t.id)) { allowed = false; break; }
     if (allowed) for (const id of prevById.keys()) if (!nextIds.has(id)) { allowed = false; break; }
   }
-  // Tokens alterados: jogador só pode mudar x/y do PRÓPRIO token
+  // Tokens alterados: jogador só pode mudar x/y do PRÓPRIO token.
+  // R.6 (SEC-12) — duas correções. (1) O dono é o de ANTES da mudança: a
+  // checagem olhava o `peerId` novo, e o jogador reescrevia o dono e movia no
+  // mesmo update. (2) Todo campo que o doc carrega, menos x/y, é imutável para
+  // o jogador — a lista escrita à mão tinha esquecido `peerId` e `icon`.
   if (allowed && !isGm) {
     for (const t of next.tokens) {
       const p = prevById.get(t.id);
       if (!p) continue;
       const posChanged = p.x !== t.x || p.y !== t.y;
-      const otherChanged =
-        p.name !== t.name ||
-        p.type !== t.type ||
-        p.hp !== t.hp ||
-        p.maxHp !== t.maxHp ||
-        p.spCover !== t.spCover ||
-        p.status !== t.status ||
-        p.color !== t.color ||
-        p.role !== t.role;
-      if (posChanged && t.peerId !== originPeerId) { allowed = false; break; }
+      const otherChanged = TOKEN_KEYS.some((k) => k !== "x" && k !== "y" && p[k] !== t[k]);
+      if (posChanged && p.peerId !== originPeerId) { allowed = false; break; }
       if (otherChanged) { allowed = false; break; }
     }
   }
