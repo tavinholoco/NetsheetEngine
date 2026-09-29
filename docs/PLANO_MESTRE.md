@@ -439,6 +439,11 @@ site. Continua valendo, mas não é urgente — fazer quando o produto for publi
    a sala inteira a todas as conexões. Um participante com um script — e, com o lobby aberto, qualquer
    visitante é participante — a **10 mensagens/s gasta os 5 GB do workspace em ~35 min**. Não é
    estimativa de uso, é teto que falta: **FAZER na R.4**, antes da primeira sessão em produção.
+   *(Feito na R.4, 29/09.)* O WebSocket ganhou os tetos do REST — mas os tetos do REST ainda deixam
+   120 reenvios da sala por minuto a um participante hostil: **menos de 3 h para os 5 GB**. O abuso
+   passou de minutos para horas, não para nunca. O que fecha de vez é quem pode entrar (R.11) e o
+   broadcast por diferença (L.1). **Gatilho para antecipar a L.1:** a R.11 manter a mesa aberta a
+   qualquer visitante, ou um `ws_rate_limited` aparecer no log de uma sessão real.
 
 **Medir em vez de estimar:** a partir de 01/10, a página de uso do workspace no painel do Render mostra
 horas e banda por serviço. Conferir depois da primeira sessão de jogo e trocar esta estimativa pelo
@@ -1322,10 +1327,32 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       - `kick.integration` (6, com um servidor HTTP de verdade para ver o stream fechar) + 1 em
         `rooms-client`. **Provado revertendo:** os 6 do R.3 falham com o código antigo; o de stream
         **estoura o tempo**, porque o stream do expulso nunca terminava.
-- [ ] **R.4** **SEC-10 — o WebSocket ganha os tetos do REST.** `maxPayload` explícito (1 MiB, o mesmo
+- [x] **R.4** **SEC-10 — o WebSocket ganha os tetos do REST.** `maxPayload` explícito (1 MiB, o mesmo
       do `express.json`) e limitador **por conexão** para os quadros JSON, com os números do REST (chat
       30/min; o resto, 120/min). O teste mede o que o contrato de custo precisa: N mensagens acima do
       teto **não** geram N reenvios da sala.
+      *(29/09/2026)* Os tetos moram em [`server/wsLimits.ts`](../server/wsLimits.ts), com o porquê de
+      cada número. Três mudanças no desenho, achadas ao escrever o teste:
+      - **Por jogador, não por conexão:** conta por conexão se compra abrindo mais sockets. E o
+        número de sockets **por jogador** ganhou teto (3, fecha os mais antigos com `4409`), porque
+        cada socket a mais recebe cada reenvio da sala — outro multiplicador de banda.
+      - **O binário também:** update do grid aceito reenvia a sala inteira (120/min, como o REST), e o
+        *awareness* é repassado a todos com estado livre — **4 KiB** de teto de tamanho e 1.200/min.
+        Antes de qualquer parse, 1.800 quadros/min por jogador (teto de CPU). Os baldes **não** somem
+        quando o socket fecha: somem quando a janela vence — senão reconectar zeraria a cota.
+      - **O cursor do GM ia a cada `mousemove`** (~60/s, sem throttle). Com o teto no servidor, o
+        cursor travaria para o GM legítimo; o cliente passou a mandar no máximo um a cada 60 ms,
+        sempre a última posição (`src/lib/throttle.ts`).
+      - O `makeRateLimiter` do REST passou a usar a mesma conta de janela (`allowInWindow`): uma
+        implementação para os dois transportes. O handler de *upgrade* saiu do `startServer` para
+        `attachRealtime`, para o teste subir o socket de verdade.
+      - `ws-limits.integration` (5, com socket real) + `throttle` (2). **Provado revertendo:**
+        neutralizadas as 4 linhas dos tetos, os 4 testes de socket falham — **100 reenvios para 100
+        mensagens**, quadro de 2 MiB aceito, *awareness* de 10 KB repassado, 5 sockets abertos.
+      - **O que sobra, com número:** com os tetos do REST, um participante hostil ainda reenvia a sala
+        120 vezes por minuto (~250 KB cada) — **menos de 3 h para os 5 GB**, em vez de ~35 min. O
+        teto certo é o ARQ-01 (broadcast por diferença, L.1), e quem entra na mesa é a R.11. Ver o
+        risco 3 do contrato de custo zero.
 - [ ] **R.5** **SEC-11 — `trust proxy`.** `app.set("trust proxy", 1)` só em produção (um salto: o
       proxy do Render). **Verificar no ar**, com uma requisição conhecida e o `req.ip` no log: o
       número de saltos é premissa de configuração, e premissa de configuração se confere.

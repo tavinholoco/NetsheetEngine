@@ -22,6 +22,8 @@ import { deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
 // e a instrução do modelo passa a ser código do servidor, não entrada do cliente.
 import { bearerFromHeader, isAuthVerificationConfigured, verifySupabaseJwt } from "./server/supabaseAuth.js";
 import { MAX_PROMPT_CHARS, NETRUNNER_SYSTEM_PROMPT } from "./server/aiPrompt.js";
+// Revisão pós-D (R.4 — SEC-10) — os tetos do WebSocket, que não tinha nenhum.
+import { WS_LIMITS, WsRateLimiter, allowInWindow, type WsBudget } from "./server/wsLimits.js";
 import {
   createRoom,
   getRoom,
@@ -189,13 +191,8 @@ function makeRateLimiter(maxRequests: number, windowMs: number) {
       pruneExpiredBuckets(buckets, now);
     }
 
-    const bucket = buckets.get(ip);
-    if (!bucket || bucket.resetAt <= now) {
-      buckets.set(ip, { count: 1, resetAt: now + windowMs });
-      return next();
-    }
-    bucket.count += 1;
-    if (bucket.count > maxRequests) {
+    // A mesma janela fixa do WebSocket (R.4) — uma conta só para os dois transportes.
+    if (!allowInWindow(buckets, ip, maxRequests, windowMs, now)) {
       return res.status(429).json({ error: "Muitas requisições. Aguarde um instante." });
     }
     next();
@@ -824,7 +821,27 @@ app.get("/api/rooms/:code/stream", (req, res) => {
 //   { type: "initiative", action?, initiativeList? } → nextTurn/updateInitiative
 // O broadcast (room inteiro em JSON) é o MESMO do SSE — o cliente usa WS ou
 // cai para SSE automaticamente.
-const wss = new WebSocketServer({ noServer: true });
+// R.4 (SEC-10) — o `maxPayload` era o padrão do `ws` (100 MiB); agora é o
+// mesmo teto do REST. Quadro maior fecha o socket com 1009.
+const wss = new WebSocketServer({ noServer: true, maxPayload: WS_LIMITS.maxPayloadBytes });
+// R.4 (SEC-10) — contas por jogador para os quadros do WS. Ver server/wsLimits.
+const wsLimiter = new WsRateLimiter();
+
+/**
+ * R.4 — `false` se o jogador estourou o orçamento. Na primeira vez em cada
+ * janela, registra no log (sinal de abuso para o Registro de sessões) e, se
+ * houver `aviso`, conta ao autor — uma vez só, porque o aviso também é banda.
+ */
+function wsAllow(ws: WebSocket, code: string, peerId: string, budget: WsBudget, aviso?: string): boolean {
+  if (wsLimiter.allow(code, peerId, budget)) return true;
+  if (wsLimiter.justExceeded(code, peerId, budget)) {
+    logger.warn("ws_rate_limited", { room: code, peerId, budget });
+    if (aviso && ws.readyState === WebSocket.OPEN) {
+      try { ws.send(JSON.stringify({ type: "error", error: aviso })); } catch { /* ignore */ }
+    }
+  }
+  return false;
+}
 
 // ==========================================
 // FASE 5 (T5.3) — GRID CRDT (Yjs) POR SALA
@@ -1078,6 +1095,15 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
   if (!wsClients[code]) wsClients[code] = new Set();
   wsClients[code].add(ws);
 
+  // R.4 (SEC-10) — cada socket recebe cada reenvio da sala: sockets demais do
+  // mesmo jogador multiplicam a banda. Fecha os mais antigos (o Set guarda a
+  // ordem de entrada) — uma aba recarregando convive com a anterior.
+  const doPeer = [...wsClients[code]].filter((s) => (s as any)._peerId === peerId);
+  for (const velho of doPeer.slice(0, Math.max(0, doPeer.length - WS_LIMITS.maxSocketsPerPeer))) {
+    wsClients[code].delete(velho);
+    velho.close(4409, "Conexão substituída por uma mais nova");
+  }
+
   // Estado inicial imediato (mesmo comportamento do SSE)
   const room = getRoom(code);
   if (room && ws.readyState === WebSocket.OPEN) {
@@ -1085,6 +1111,8 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
   }
 
   ws.on("message", (raw: any, isBinary: boolean) => {
+    // R.4 — teto de quadros antes de qualquer parse (CPU).
+    if (!wsAllow(ws, code, peerId, "frame")) return;
     // Texto → protocolo JSON existente; binário → Yjs (grid CRDT / awareness)
     // NOTA: frames de texto podem chegar como string OU Buffer conforme a
     // versão do ws — o discriminador confiável é o flag `isBinary`, não o
@@ -1104,6 +1132,8 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           // Chat — handle/role derivados do servidor (anti-spoofing).
           // T5.4: rolagens NÃO vêm por aqui (rollResult do cliente é ignorado
           // — só o tipo "roll" gera dado, no servidor).
+          // R.4 — o mesmo teto do `chatLimiter` do REST, que o WS não tinha.
+          if (!wsAllow(ws, code, peerId, "chat", "Muitas mensagens. Aguarde um instante.")) break;
           const result = postChatMessage(code, peerId, msg.text);
           if (result.room) broadcastRoomUpdate(code);
           else if (result.error) {
@@ -1116,6 +1146,8 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
         }
         case "roll": {
           // Fase 5 (T5.4) — RNG server-authoritative
+          // R.4 — rolagem e iniciativa dividem o teto do `roomLimiter` do REST.
+          if (!wsAllow(ws, code, peerId, "action", "Muitas ações. Aguarde um instante.")) break;
           const result = rollDiceForPlayer(code, peerId, { kind: msg.kind, skillName: msg.skillName });
           if (result.room) broadcastRoomUpdate(code);
           else if (ws.readyState === WebSocket.OPEN) {
@@ -1129,6 +1161,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           break;
         }
         case "initiative": {
+          if (!wsAllow(ws, code, peerId, "action", "Muitas ações. Aguarde um instante.")) break;
           const result =
             msg.action === "next"
               ? nextTurn(code, peerId)
@@ -1148,6 +1181,24 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
 
     // Binário → Yjs (lida com mensagens fragmentadas ws como Buffer[])
     const bin = Array.isArray(raw) ? Buffer.concat(raw) : (Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer));
+    // R.4 — o tipo do quadro decide o orçamento. Update do grid aceito reenvia
+    // a sala inteira; awareness é repassado a todos — e o estado dele é livre,
+    // então o tamanho também tem teto.
+    let kind: number;
+    try {
+      kind = decoding.readVarUint(decoding.createDecoder(new Uint8Array(bin)));
+    } catch {
+      return;
+    }
+    if (kind === messageAwareness) {
+      if (bin.byteLength > WS_LIMITS.maxAwarenessBytes) {
+        logger.warn("ws_awareness_too_big", { room: code, peerId, bytes: bin.byteLength });
+        return;
+      }
+      if (!wsAllow(ws, code, peerId, "awareness")) return;
+    } else if (!wsAllow(ws, code, peerId, "sync")) {
+      return;
+    }
     try {
       handleYjsBinary(code, ws, bin);
     } catch (e) {
@@ -1277,7 +1328,20 @@ async function startServer() {
 
   // Fase 5 (T5.2) — servidor HTTP explícito para anexar o WebSocket ao upgrade
   const server = http.createServer(app);
+  attachRealtime(server);
 
+  server.listen(PORT, HOST, () => {
+    logger.info("server_started", { host: HOST, port: PORT, env: process.env.NODE_ENV || "development", version: APP_VERSION });
+  });
+}
+
+/**
+ * Liga o WebSocket da mesa ao `upgrade` de um servidor HTTP. Separado do
+ * `startServer` na R.4 para os testes subirem o transporte real sem o resto
+ * (restore do banco, watchers, Vite) — os tetos do WS só se testam de verdade
+ * com um socket de verdade.
+ */
+export function attachRealtime(server: http.Server): void {
   // Upgrade handshake: /ws/rooms/:code?token=<sessão T1.7>
   server.on("upgrade", (req, socket, head) => {
     let url: URL;
@@ -1310,10 +1374,6 @@ async function startServer() {
       // Socket pode fechar entre o handshake e o upgrade (cliente desistiu)
       socket.destroy();
     }
-  });
-
-  server.listen(PORT, HOST, () => {
-    logger.info("server_started", { host: HOST, port: PORT, env: process.env.NODE_ENV || "development", version: APP_VERSION });
   });
 }
 

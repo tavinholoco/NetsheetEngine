@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CharacterSheet } from '../../types/cyberpunk';
 import {
   RoomPlayer,
@@ -11,6 +11,7 @@ import {
 import { TacticalGrid } from './TacticalGrid';
 import { CombatPanel } from './CombatPanel';
 import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
+import { trailingThrottle } from '../../lib/throttle';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSheetStore } from '../../stores/useSheetStore';
 import { woundStateOf } from '../../rules/damage';
@@ -371,13 +372,23 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     roomAction(roomsApi.updateTacticalGrid(roomCode, gridState));
   };
 
-  // GM: publica o cursor no grid via awareness Yjs (T5.3)
+  // GM: publica o cursor no grid via awareness Yjs (T5.3). R.4 — no máximo um
+  // envio a cada 60 ms, sempre a última posição: ia a cada mousemove (~60/s),
+  // e o servidor passou a aceitar ~20/s de awareness por jogador.
+  const sendCursor = useMemo(
+    () =>
+      trailingThrottle((x: number | null, y: number | null) => {
+        const conn = yjsConnRef.current;
+        if (!conn) return;
+        if (x === null || y === null) conn.clearCursor();
+        else conn.setCursor(x, y);
+      }, 60),
+    []
+  );
+  useEffect(() => () => sendCursor.cancel(), [sendCursor]);
   const handleGmCursorMove = (x: number | null, y: number | null) => {
     if (!isGm) return;
-    const conn = yjsConnRef.current;
-    if (!conn) return;
-    if (x === null || y === null) conn.clearCursor();
-    else conn.setCursor(x, y);
+    sendCursor(x, y);
   };
 
   const generateNpc = (archetypeId?: string) => {
