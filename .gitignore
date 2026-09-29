@@ -37,3 +37,8 @@ Thumbs.db
 test-results/
 playwright-report/
 blob-report/
+
+# Claude Code — cópias de trabalho de outras sessões e preferências pessoais ficam fora.
+# O .claude/launch.json (preview do app no painel) É versionado: é config do projeto.
+.claude/worktrees/
+.claude/settings.local.json

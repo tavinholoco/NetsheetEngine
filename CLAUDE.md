@@ -82,6 +82,10 @@ node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
   fecha no servidor: iniciativa → ataque contra o alcance → dano em **pontos** (armadura → BTM → ×2)
   → stun e death save → virada de turno. O GM age pelo cartão do token no grid; na mesa, o jogador
   não escreve o próprio ferimento.
+- **Ver o app rodando:** a configuração `netsheet-dev` do [`.claude/launch.json`](./.claude/launch.json)
+  (`npm run dev`, porta 3000) abre o preview no painel. Em modo dev, **deep link volta para `/`**
+  (pista da Fase G) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,
+  semeie a sala por REST com o `gmPeerId` do navegador (a D.3–D.5 fizeram assim).
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.
