@@ -1379,9 +1379,16 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       **anterior**. Conferido que o `deriveGridFromDoc` não converte tipo (não há falso positivo que
       reverta movimento legítimo). `grid-ownership.integration` (5). **Provado revertendo:** com a
       checagem antiga, 4 dos 5 falham (o que passa é mover o próprio token). Nota na ADR 0002 atualizada.
-- [ ] **R.7** **SEC-06 — o gatilho da B.6 disparou.** `npm audit fix` leva a `express@4.22.3` e
+- [x] **R.7** **SEC-06 — o gatilho da B.6 disparou.** `npm audit fix` leva a `express@4.22.3` e
       `qs@6.16.0`. Esperado: `npm audit --omit=dev` com **0** vulnerabilidades. Atualizar a linha do
       SEC-06 em [`SEGURANCA.md`](./SEGURANCA.md#estado-dos-achados-de-segurança) e a linha de base.
+      *(29/09/2026)* Só o `package-lock.json` mudou (a faixa `^4.21.2` do `package.json` já aceitava
+      a 4.22.3). Produção: `express` 4.22.2 → **4.22.3**, `body-parser` 1.20.6 → **1.20.8**, `qs`
+      6.15.3 → **6.16.0**. Desenvolvimento, de carona: `undici` 7.30.0 (via `jsdom`, também moderada) e
+      `vitest` 4.1.11 — patches. `npm audit`: **0** em produção e 0 no total (eram 3 e 6).
+      **Armadilha achada:** o `npm audit fix` atualizou o lock mas **não** o `node_modules` — a suíte
+      rodou verde contra o `express` antigo, sem provar nada. Com `npm ci` (o que o CI faz), as versões
+      novas entraram e a suíte passou de novo: 571/571, com o `vitest` 4.1.11.
 - [ ] **R.8** **OPS-02 — fixar o Node.** `.node-version` com `24` (LTS; manutenção a partir de
       20/10/2026, fim de vida em 30/04/2028), `engines` com teto (`">=24 <25"`), e o CI — a matriz e o
       job de E2E — no 24. O 20 está em fim de vida, e o 22 não é o que roda em produção. **Conferir no
@@ -1924,7 +1931,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
-| `npm run audit:ci` | passa, **ALLOWLIST vazia** (3 moderadas do `qs`, não bloqueiam — **a R.7 leva a 0**: o `express@4.22.3` saiu) |
+| `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`) |
 | Chunk de entrada | 629 kB / 186 kB gzip |
 | Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 

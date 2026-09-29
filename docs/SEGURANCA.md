@@ -199,7 +199,7 @@ projeto até aqui, então o portão vale mais que de costume.
   pela 5.5.x, ou alguma fórmula vinda da rede passar a ser avaliada no cliente.
 - **A cadeia `express → body-parser → qs`** (3 moderadas) não tem patch na linha 4.x — 4.22.2 é a
   última publicada. **Gatilho:** sair um patch 4.x, ou a migração para Express 5 entrar em pauta por
-  outro motivo.
+  outro motivo. *(Gatilho disparado e fechado em 29/09/2026 — R.7: `express@4.22.3`, `qs@6.16.0`.)*
 - **O binário Yjs continua sem validação** — a caixa `VAL` do diagrama cobre a ficha, não o CRDT.
   Segue como item da Fase J, agora explícito no `ARQUITETURA.md`.
 
@@ -406,7 +406,7 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-03 | Sessões só em memória — restart derruba as mesas | B | ✅ fechado 03/09 (B.4) |
 | SEC-04 | Salas, sessões e buckets nunca expiram | B | ✅ fechado 03/09 (B.5) |
 | SEC-05 | Ficha gravada sem validação | B | ✅ fechado 03/09 (B.2) |
-| SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ✅ fechado 03/09 (B.6) — `nanoid` corrigido; `qs`/`express` sem patch 4.x (3 moderadas, não bloqueiam). **`mathjs` saiu da árvore em 25/09 (C.1)**, com o `@dice-roller`; a ALLOWLIST ficou vazia. **Gatilho do `qs` disparou em 29/09:** saiu o `express@4.22.3` (`qs ~6.16.0`) — R.7 |
+| SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ✅ fechado 03/09 (B.6) — `nanoid` corrigido; `qs`/`express` sem patch 4.x (3 moderadas, não bloqueiam). **`mathjs` saiu da árvore em 25/09 (C.1)**, com o `@dice-roller`; a ALLOWLIST ficou vazia. **`qs` fechado em 29/09 (R.7):** o gatilho disparou com o `express@4.22.3`; `npm audit` com **0** vulnerabilidades |
 | SEC-07 | `join` com `peerId` existente emite sessão sem prova de posse — tomada de GM | R | ✅ fechado 29/09 (R.1) — variante do *handle* do GM: ADIAR |
 | SEC-08 | `create` com código existente substitui a sala | R | ✅ fechado 29/09 (R.2) |
 | SEC-09 | Expulsão não revoga sessão nem fecha socket | R | ✅ fechado 29/09 (R.3) — sem conta, aba nova é outro jogador (R.11) |
