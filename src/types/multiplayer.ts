@@ -85,5 +85,9 @@ export interface GameRoom {
   activeTurnIndex: number;
   tacticalGrid?: TacticalGridState;
   createdAt: string;
+  /** R.3 (SEC-09) — peerIds que o GM removeu (os 50 mais recentes). O `join`
+   *  por eles responde 403: é o que impede a reconexão automática de trazer o
+   *  expulso de volta. Não é banimento — uma aba nova é outro jogador. */
+  removedPeerIds?: string[];
 }
 

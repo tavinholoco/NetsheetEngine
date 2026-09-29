@@ -47,6 +47,7 @@ import {
   setStabilized,
   rollDiceForPlayer,
   seatClaimRefusal,
+  wasRemovedByGm,
   verifySession,
   sanitizeText,
   isValidRoomCode,
@@ -265,21 +266,40 @@ function respondWithResult(res: express.Response, result: { room: { code: string
 
 // SSE Active Connections Map: roomCode -> Set<Response>
 const sseClients: Record<string, Set<Response>> = {};
+// R.3 (SEC-09) — de quem é cada stream. O token só é conferido na abertura;
+// sem saber o dono, um stream de quem foi removido seguia recebendo a sala.
+const ssePeer = new WeakMap<Response, string>();
 
 // Fase 5 (T5.2) — WebSocket Active Connections Map: roomCode -> Set<WebSocket>
 const wsClients: Record<string, Set<WebSocket>> = {};
 
-// Fase 5 (T5.2) — fecha os sockets WS de um peer (ex.: ao sair da mesa via REST)
+// Fase 5 (T5.2) — fecha as conexões de um peer (sair da mesa ou ser removido
+// pelo GM). Desde a R.3, as duas: WebSocket e stream SSE.
 function closePeerSockets(code: string, peerId: string): void {
-  const sockets = wsClients[code.toUpperCase()];
-  if (!sockets) return;
-  for (const ws of sockets) {
-    if ((ws as any)._peerId === peerId) {
-      ws.close(4400, "Sessão encerrada");
-      sockets.delete(ws);
+  const key = code.toUpperCase();
+  const sockets = wsClients[key];
+  if (sockets) {
+    for (const ws of sockets) {
+      if ((ws as any)._peerId === peerId) {
+        ws.close(4400, "Sessão encerrada");
+        sockets.delete(ws);
+      }
+    }
+    if (sockets.size === 0) delete wsClients[key];
+  }
+  const streams = sseClients[key];
+  if (streams) {
+    for (const res of streams) {
+      if (ssePeer.get(res) === peerId) {
+        streams.delete(res);
+        try {
+          res.end();
+        } catch {
+          /* conexão já fechada */
+        }
+      }
     }
   }
-  if (sockets.size === 0) delete wsClients[code.toUpperCase()];
 }
 
 function broadcastRoomUpdate(code: string) {
@@ -431,6 +451,11 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   // R.1 (SEC-07) — voltar a um assento ocupado exige o token vigente dele, no
   // mesmo header da leitura autenticada (B.3). O `peerId` sozinho é público.
   // `code` estável: o cliente decide por ele, não pelo texto (pista da Fase I).
+  // R.3 (SEC-09) — quem o GM removeu não volta pelo mesmo peerId; sem isto, a
+  // reconexão automática do cliente desfazia a expulsão em segundos.
+  if (wasRemovedByGm(code, peerId)) {
+    return res.status(403).json({ error: "O Mestre removeu você desta mesa.", code: "removed_by_gm" });
+  }
   const proofToken = (req.get("X-Session-Token") || "").trim() || undefined;
   const refusal = seatClaimRefusal(code, peerId, proofToken);
   if (refusal) {
@@ -542,6 +567,8 @@ app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res
     return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = deleteGeneratedPlayer(req.params.code, requesterPeerId, req.params.targetPeerId);
+  // R.3 (SEC-09) — a sessão já foi revogada; fecha o que ele ainda tem aberto.
+  if (result.room && result.removedPeerId) closePeerSockets(req.params.code, result.removedPeerId);
   return respondWithResult(res, result);
 });
 
@@ -763,6 +790,7 @@ app.get("/api/rooms/:code/stream", (req, res) => {
     sseClients[code] = new Set();
   }
   sseClients[code].add(res);
+  ssePeer.set(res, peerId);
 
   // Send initial state immediately
   res.write(`data: ${JSON.stringify(room)}\n\n`);

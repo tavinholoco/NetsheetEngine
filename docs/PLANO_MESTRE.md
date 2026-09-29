@@ -1303,10 +1303,25 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       inteira passou sem ajuste. `create-conflict.integration` (4); **provado revertendo:** 3 dos 4
       falham com o código antigo (o que passa é o do código livre). Efeito colateral bom: o **próprio
       GM** também perdia a mesa se clicasse "criar" de novo com o mesmo código.
-- [ ] **R.3** **SEC-09 — expulsar revoga.** O `deleteGeneratedPlayer` revoga as sessões do alvo
+- [x] **R.3** **SEC-09 — expulsar revoga.** O `deleteGeneratedPlayer` revoga as sessões do alvo
       (`revokeSessionsForPeer`, como o `leaveRoom`) e a rota fecha os sockets dele (`closePeerSockets`,
       como a do `leave`). *Detalhe:* o mapa do SSE não sabe de quem é cada stream — um expulso que
       estiver no fallback só cai se o `peerId` for guardado junto. Decidir no teste se vale a linha.
+      *(29/09/2026)* **Maior que o descrito:** só revogar criaria uma regressão — no primeiro 401, a
+      reconexão automática do cliente (T3.3) faria um `join` novo com o mesmo `peerId`, e o expulso
+      voltaria em até 20 s (o próximo heartbeat). Então a expulsão faz quatro coisas:
+      - revoga a sessão do expulso;
+      - a rota fecha o WebSocket **e o stream SSE** dele — o `ssePeer` (um `WeakMap`) guarda o dono de
+        cada stream, e valeu a linha: o teste mostrou o stream do expulso **aberto para sempre**;
+      - a sala guarda o `peerId` em `removedPeerIds` (os **50** mais recentes — pergunta 5 do portão;
+        persiste com a sala e é saneado no restore), e o `join` por ele responde **403
+        `removed_by_gm`**; no cliente, a reconexão volta ao lobby com "O Mestre removeu você desta
+        mesa", sem insistir. **Não é banimento:** sem conta, uma aba nova é outro jogador — é a R.11;
+      - o GM **não remove a si mesmo** (ficaria trancado fora da própria mesa): a tela já não
+        oferecia, e o servidor passou a recusar.
+      - `kick.integration` (6, com um servidor HTTP de verdade para ver o stream fechar) + 1 em
+        `rooms-client`. **Provado revertendo:** os 6 do R.3 falham com o código antigo; o de stream
+        **estoura o tempo**, porque o stream do expulso nunca terminava.
 - [ ] **R.4** **SEC-10 — o WebSocket ganha os tetos do REST.** `maxPayload` explícito (1 MiB, o mesmo
       do `express.json`) e limitador **por conexão** para os quadros JSON, com os números do REST (chat
       30/min; o resto, 120/min). O teste mede o que o contrato de custo precisa: N mensagens acima do

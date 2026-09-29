@@ -351,6 +351,12 @@ export function restoreRoom(room: GameRoom): boolean {
   }
   if (!Array.isArray(room.tacticalGrid.tokens)) room.tacticalGrid.tokens = [];
   if (!room.npcs || typeof room.npcs !== "object") room.npcs = {};
+  // R.3 — a lista de removidos vem do banco: só strings, com o mesmo teto.
+  if (room.removedPeerIds !== undefined) {
+    room.removedPeerIds = Array.isArray(room.removedPeerIds)
+      ? room.removedPeerIds.filter((p): p is string => typeof p === "string" && p.length > 0).slice(-MAX_REMOVED_PEERS)
+      : undefined;
+  }
 
   for (const player of Object.values(room.players)) {
     if (player) player.isOnline = false;
@@ -452,6 +458,8 @@ export function joinRoom(
 
   const safePeerId = sanitizeText(peerId, 64);
   if (!safePeerId) return null;
+  // R.3 (SEC-09) — quem o GM removeu não volta pelo mesmo peerId.
+  if (wasRemovedByGm(room.code, safePeerId)) return null;
   // R.1 (SEC-07) — assento ocupado só com o token vigente dele.
   if (seatClaimRefusal(room.code, safePeerId, proofToken)) return null;
 
@@ -810,7 +818,7 @@ export function deleteGeneratedPlayer(
   code: string,
   requesterPeerId: string,
   targetPeerId: string
-): { room: GameRoom | null; error?: string } {
+): { room: GameRoom | null; error?: string; removedPeerId?: string } {
   const room = getRoom(code);
   if (!room) return { room: null, error: "Sala não encontrada" };
 
@@ -818,6 +826,7 @@ export function deleteGeneratedPlayer(
     return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode remover Edgerunners." };
   }
 
+  let removedPeerId: string | undefined;
   if (room.players) {
     const targetKey = Object.keys(room.players).find(
       key => key === targetPeerId ||
@@ -825,12 +834,27 @@ export function deleteGeneratedPlayer(
              room.players[key].sheet?.id === targetPeerId
     );
 
+    // R.3 — desde que remover revoga e barra a volta, o GM se removendo ficaria
+    // trancado fora da própria mesa. A tela já não oferece; o servidor recusa.
+    if (targetKey && targetKey === requesterPeerId) {
+      return { room: null, error: "Acesso Negado! O Mestre não remove a si mesmo — use Sair." };
+    }
+
     if (targetKey && room.players[targetKey]) {
       const playerObj = room.players[targetKey];
       const handle = playerObj.handle;
       const actualPeerId = playerObj.peerId || targetKey;
 
       delete room.players[targetKey];
+
+      // R.3 (SEC-09) — remover tira o ACESSO, não só o assento. Antes o
+      // expulso seguia com sessão: reabria o socket e lia a mesa inteira. E a
+      // sala lembra quem saiu assim, senão a reconexão automática do cliente
+      // (401 → join) o traria de volta em segundos. A rota fecha os sockets.
+      revokeSessionsForPeer(room.code, actualPeerId);
+      if (targetKey !== actualPeerId) revokeSessionsForPeer(room.code, targetKey);
+      rememberRemoved(room, actualPeerId);
+      removedPeerId = actualPeerId;
 
       if (room.tacticalGrid) {
         room.tacticalGrid.tokens = room.tacticalGrid.tokens.filter(
@@ -856,7 +880,29 @@ export function deleteGeneratedPlayer(
     }
   }
 
-  return { room };
+  return { room, removedPeerId };
+}
+
+/** R.3 — teto da lista de removidos: é estado persistido e transmitido (pergunta 5 do portão). */
+const MAX_REMOVED_PEERS = 50;
+
+/** Guarda quem o GM removeu, sem repetir, ficando com os mais recentes. */
+function rememberRemoved(room: GameRoom, peerId: string): void {
+  const list = (room.removedPeerIds ?? []).filter((p) => p !== peerId);
+  list.push(peerId);
+  room.removedPeerIds = list.slice(-MAX_REMOVED_PEERS);
+}
+
+/**
+ * R.3 (SEC-09) — o GM removeu este peerId da sala? O `join` por ele é recusado
+ * (a rota responde 403 `removed_by_gm`). Sem isto, a reconexão automática do
+ * cliente desfazia a expulsão. Não é banimento: sem conta, uma aba nova é
+ * outro jogador — quem decide se a mesa exige identidade é a R.11.
+ */
+export function wasRemovedByGm(code: string, peerId: string): boolean {
+  const room = getRoom(code);
+  const safePeerId = sanitizeText(peerId, 64);
+  return !!room && !!safePeerId && (room.removedPeerIds ?? []).includes(safePeerId);
 }
 
 // GM Power: Update NPC Wound Level

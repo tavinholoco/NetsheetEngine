@@ -79,13 +79,22 @@ describe("R.1 — SEC-07: o convidado não toma o GM", () => {
     expect(seatClaimRefusal(a, "peer_dono", outro.sessionToken)).not.toBeNull();
   });
 
-  it("o gmPeerId sem assento (GM removeu o próprio jogador) também exige prova", () => {
+  it("o gmPeerId sem assento (snapshot antigo) também exige prova", () => {
     const c = code();
     createRoom(c, "Mesa", "Dono", "peer_dono");
-    deleteGeneratedPlayer(c, "peer_dono", "peer_dono");
-    expect(getRoom(c)!.players["peer_dono"]).toBeUndefined();
+    // Desde a R.3 o GM não pode remover a si mesmo; o estado vem de snapshot:
+    delete getRoom(c)!.players["peer_dono"];
     expect(getRoom(c)!.gmPeerId).toBe("peer_dono");
     expect(joinRoom(c, "peer_dono", "Dono", SHEET as any)).toBeNull();
+  });
+
+  it("o GM não remove a si mesmo (ficaria trancado fora da própria mesa)", () => {
+    const c = code();
+    const gm = createRoom(c, "Mesa", "Dono", "peer_dono");
+    const r = deleteGeneratedPlayer(c, "peer_dono", "peer_dono");
+    expect(r.room).toBeNull();
+    expect(getRoom(c)!.players["peer_dono"]).toBeTruthy();
+    expect(verifySession(c, gm.sessionToken)).toBe("peer_dono");
   });
 });
 

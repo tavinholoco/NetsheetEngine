@@ -127,7 +127,14 @@ export async function reconnectSession(): Promise<boolean> {
       persistSession(sessionToken, room);
       useRoomStore.getState().setErrorMsg('');
       return true;
-    } catch {
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'removed_by_gm') {
+        // R.3 — o GM removeu este jogador: volta ao lobby, sem insistir.
+        sessionStorage.removeItem('cyberpunk_session_token');
+        useRoomStore.getState().resetRoom();
+        useRoomStore.getState().setErrorMsg('O Mestre removeu você desta mesa.');
+        return false;
+      }
       useRoomStore
         .getState()
         .setErrorMsg('Sessão expirada e reconexão falhou — a sala pode ter sido encerrada. Saia e entre novamente.');
