@@ -529,15 +529,15 @@ fim desta seção. IDs referenciados pelas fases.
 | SEC-07 | 🔴 Crítico | `join` com `peerId` já presente emite sessão sem prova de posse e revoga a do dono — **tomada de GM** por qualquer um na mesa *(reproduzido)* | ✅ R.1 |
 | SEC-08 | 🟠 Alto | `create` com código existente **substitui a sala** — sem sessão; perde fichas, chat e grid *(reproduzido)* | ✅ R.2 |
 | SEC-10 | 🟠 Alto | WebSocket sem limitador por mensagem e com `maxPayload` de 100 MiB — um participante gasta a banda do workspace | ✅ R.4 |
-| SEC-13 | 🟠 Alto | Sala sem teto de **assentos**: cada `join` novo cria um, cada um abre até 3 sockets e recebe cada reenvio *(achado do portão das R, 29/09 — não reproduzido)* | R.16 |
+| SEC-13 | 🟠 Alto | Sala sem teto de **assentos**: cada `join` novo cria um, cada um abre até 3 sockets e recebe cada reenvio *(achado do portão das R, 29/09 — reproduzido na R.16: 101 assentos para 100 joins)* | ✅ R.16 |
 | OPS-01 | 🟠 Alto | **Nenhum backup** — a decisão 4 supôs um backup diário que o plano gratuito não tem | R.10 |
 | SEC-09 | 🟡 Médio | Expulsar não revoga a sessão nem fecha o socket — o expulso segue lendo a mesa *(reproduzido)* | ✅ R.3 |
 | SEC-11 | 🟡 Médio | Sem `trust proxy`, os limitadores tendem a ser um balde só atrás do proxy do Render | ✅ R.5 (conferir no ar) |
 | SEC-12 | 🟡 Médio | Posse de token no grid Yjs compara o dono **novo** — jogador move e toma token alheio *(reproduzido na R.6)* | ✅ R.6 |
-| OPS-02 | 🟡 Médio | Node sem versão fixa: produção no `latest` (26, não LTS), CI no 20 (fim de vida) e no 22 | R.8 |
-| DOC-06 | 🟡 Médio | A L.6 depende de meses de log, e o Render Hobby guarda 7 dias | R.12 |
+| OPS-02 | 🟡 Médio | Node sem versão fixa: produção no `latest` (26, não LTS), CI no 20 (fim de vida) e no 22 | ✅ R.8 (conferir no log de 01/10) |
+| DOC-06 | 🟡 Médio | A L.6 depende de meses de log, e o Render Hobby guarda 7 dias | ✅ R.12 |
 | DOC-07 | 🟡 Médio | A decisão 3 (só convidados) não é imposta pelo produto: lobby público e `join` aberto | R.11 |
-| OPS-03 | 🔵 Baixo | `version` do `package.json` em 0.4.0 com a tag em `v0.4.3` | R.9 |
+| OPS-03 | 🔵 Baixo | `version` do `package.json` em 0.4.0 com a tag em `v0.4.3` | ✅ R.9 |
 
 ---
 
@@ -1246,7 +1246,8 @@ cliente e servidor para ela.
 > manutenção — com a exceção da F, que é a única fase restante que muda o que o jogador vê.
 > **Ressalva da revisão pós-D (29/09):** "roda certo" vale para as regras. Para jogar **em produção**,
 > as pendências R.1–R.5 abaixo vêm antes — sem elas, qualquer participante toma o GM, apaga a mesa ou
-> gasta a banda do workspace. *(R.1–R.6 feitas em 29/09; a R.16, teto de assentos, ainda vem antes.)*
+> gasta a banda do workspace. *(R.1–R.6 e a R.16, teto de assentos, feitas em 29/09. O que resta antes
+> de abrir a mesa ao público é a decisão R.11 — quem pode entrar.)*
 
 ---
 
@@ -1399,8 +1400,12 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       sem aviso de `engines`. Não há teste automatizado possível do que o Render escolhe: **a prova é o
       log do deploy** — em 01/10, o primeiro deploy deve dizer Node 24.x. *O `@types/node` segue no
       ^22: tipos mais velhos que o runtime não quebram nada; sobe quando algo do 24 fizer falta.*
-- [ ] **R.9** **OPS-03 — versão com a tag.** `package.json` → `0.4.3`. A regra entrou no passo 3 do
+- [x] **R.9** **OPS-03 — versão com a tag.** `package.json` → `0.4.3`. A regra entrou no passo 3 do
       ritual de abertura.
+      *(29/09/2026)* `npm version 0.4.3 --no-git-tag-version` (o `package.json` e as duas linhas da
+      raiz do lock; nenhuma tag criada). **Visto no build de produção:** o `/api/health` responde
+      `"version":"0.4.3"`. O bloco R não ganha tag própria — o plano reserva a `v0.4.4` para a F, e
+      renumerar tags é decisão do dono.
 - [ ] **R.10** 🧑‍⚖️ **Decisão do dono — backup (reabre a decisão 4, OPS-01).** Em ordem de tamanho:
       1. *(recomendada — a versão 10× menor)* **Dump manual** com o CLI já logado
          (`npx supabase db dump --linked`, esquema e `--data-only`), guardado **fora do repositório**,
@@ -1431,16 +1436,20 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       10× menor: mover o detalhe das fases fechadas (A–D e as pendências P) **verbatim** para
       `docs/historico/FASES_A-D.md`, deixando aqui uma linha por fase com o link. PR próprio, só de
       movimento de texto, revisável com `git diff --color-moved`.
-- [ ] **R.14** 🔒 **Portão de segurança** — o bloco muda autorização (R.1, R.3, R.6) e entrada (R.4):
+- [x] **R.14** 🔒 **Portão de segurança** — o bloco muda autorização (R.1, R.3, R.6) e entrada (R.4):
       as seis perguntas em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). E a pergunta que o repo
       público impõe: **o que este PR ensina a quem lê o código antes de o conserto estar no ar?**
       *(29/09/2026 — respondido para R.1–R.6, no [registro](./SEGURANCA.md#pendências-r--revisão-pós-d).
       Achado do portão: **SEC-13**, virou a R.16. O item fecha quando R.7–R.9 e a R.16 responderem.)*
+      *(29/09/2026 — R.16, R.7, R.8 e R.9 responderam no mesmo registro; nenhum achado novo. R.10,
+      R.11 e R.13 são decisão e documentação — o portão pergunta de novo se virarem código.)*
 - [ ] **R.15** 🧠 **Estado durável e PRs.** Ordem: consertos de segurança (R.1–R.6) **junto com** o
       texto que os descreve, nunca depois dele; dependências, Node e versão (R.7–R.9) podem ir no mesmo
       PR; a R.13 em PR próprio. Depois do merge, `master` verde e a verificação pós-deploy de 01/10.
       *(29/09/2026 — R.0–R.6 e R.12 publicados juntos, a pedido do dono: um commit por item, cada um
       com o teste que reproduz e a prova revertendo. R.7–R.11, R.13 e R.16 ficam para o próximo PR.)*
+      *(29/09/2026 — PR #14 mergeado. R.16, R.7, R.8 e R.9 no PR seguinte, um commit por item. Fica
+      aberto o que é do dono: R.10, R.11 e R.13.)*
 - [x] **R.16** **SEC-13 — teto de assentos por sala** *(achado do portão das R, 29/09/2026)*. Cada
       `join` com `peerId` novo cria um assento, cada assento abre até 3 sockets (R.4), e o `join` só
       tem o limitador de sala (120/min por IP): dezenas de assentos multiplicam cada reenvio da sala —
@@ -1915,7 +1924,7 @@ público mudar.
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
-| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.6 e R.12 feitos; falta R.7–R.11, R.13–R.16 | — |
+| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.9, R.12, R.14 e R.16 feitos; faltam as decisões do dono (R.10, R.11, R.13) e o R.15 | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
@@ -1930,10 +1939,11 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Depois das R.1–R.6 (29/09/2026) |
+| Verificação | Depois das R.1–R.9 e R.16 (29/09/2026) |
 |---|---|
+| Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **565** testes, 34 arquivos *(522 ao fechar a D; +43 das R.1–R.6, 8 arquivos novos)* |
+| `npx vitest run` | **571** testes, 35 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
@@ -1952,8 +1962,8 @@ o do commit mais recente do `master` — se não for, *Manual Deploy → Deploy 
 *Acrescentado na revisão pós-D:* no log desse deploy, anotar **qual versão do Node** o Render usou
 (OPS-02, R.8). E, se as R.1–R.5 ainda não estiverem no `master`, **não abrir mesa em produção** —
 o site pode voltar, a mesa espera. *(29/09: R.1–R.6 estão no PR da revisão; com ele mergeado, o passo
-novo é conferir o `clientIp` do `/api/health` contra o seu IP público — R.5. A R.16, teto de assentos,
-ainda falta antes da primeira sessão.)*
+novo é conferir o `clientIp` do `/api/health` contra o seu IP público — R.5. Com o PR seguinte, o
+log do deploy deve dizer **Node 24.x** (R.8) e o health, `"version":"0.4.3"` (R.9).)*
 
 **Avisos de descontinuação no log do CI** (vistos no merge da Fase C, 26/09/2026). Hoje são só aviso —
 o run está verde. **ADIAR**, cada um com gatilho datado; o passo 3b do ritual de abertura pega o

@@ -376,6 +376,28 @@ público: o texto vai ao ar com o conserto). R.7–R.9 respondem quando entrarem
 Tudo o que descreve, **se** o `master` não tiver o conserto quando o Render voltar (01/10). Por isso o
 PR traz o texto **e** o código juntos, e a recomendação ao dono é mergear antes de 01/10.
 
+**29/09/2026 — R.16, R.7, R.8 e R.9** (o PR seguinte, depois do merge do #14):
+
+1. **Entrada nova?** Nenhuma. A R.16 **recusa** entrada: `join` de assento novo numa sala com 16
+   assentos → 409 `room_full`, e a geração de ficha pelo GM para no mesmo teto.
+2. **Dado novo sai?** Nenhum além da mensagem do 409 (o número de lugares, que é constante do código).
+   O `/api/health` passa a publicar `0.4.3` em vez de `0.4.0` — a versão certa, sem dado novo.
+3. **Autorização nova?** Nenhuma. O teto vale para todo mundo, GM incluído — e **quem já tem assento
+   sempre volta ao seu**, então a sala cheia não tranca ninguém fora do próprio lugar.
+4. **Jogador convidado hostil?** Não multiplica mais os reenvios abrindo assentos: são no máximo 16,
+   com até 3 sockets cada (**48 por sala**). Pode **ocupar** os lugares vazios para impedir outros de
+   entrar — o GM o remove, e a R.3 impede a volta pelo mesmo `peerId`; com o lobby aberto, é mais um
+   motivo para a **R.11**.
+5. **Estado novo sem limite?** O contrário: `room.players` ganhou teto — inclusive as fichas geradas
+   pelo GM, que não tinham. `room.npcs` continua sem teto (pista da E; NPC não abre socket).
+6. **Custo por requisição a serviço externo?** Nenhum. **Dependências (R.7):** `express` 4.22.3,
+   `body-parser` 1.20.8, `qs` 6.16.0 em produção; `npm audit` com **0** vulnerabilidades. **Runtime
+   (R.8):** Node 24 (LTS) fixado no `.node-version`, o mesmo arquivo para o Render e o CI — a produção
+   deixa de rodar uma versão que o CI nunca testou.
+
+**O que ensina antes de o conserto estar no ar?** O SEC-13 fica descrito neste PR; o Render volta em
+01/10 e publica o `master`. Mesma recomendação do #14: mergear antes.
+
 ### Fase F — Reestruturação visual
 
 *(a preencher)*
@@ -413,7 +435,7 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-10 | WebSocket sem limitador por mensagem, `maxPayload` de 100 MiB | R | ✅ fechado 29/09 (R.4) — o ritmo do REST ainda gasta a banda em horas (L.1, R.11) |
 | SEC-11 | Sem `trust proxy`: limitadores contam o IP do proxy | R | ✅ fechado no código 29/09 (R.5) — **conferir no ar** com o `clientIp` do `/api/health` |
 | SEC-12 | Posse de token no grid Yjs conferida contra o dono novo | R | ✅ fechado 29/09 (R.6) — reproduzido antes, com cliente Yjs real |
-| SEC-13 | Sala sem teto de assentos: cada assento abre até 3 sockets e recebe cada reenvio | R | 🟠 **aberto** — achado do portão de 29/09; R.16 |
+| SEC-13 | Sala sem teto de assentos: cada assento abre até 3 sockets e recebe cada reenvio | R | ✅ fechado 29/09 (R.16) — 16 assentos, contando as fichas geradas; `room.npcs` segue sem teto (pista da E) |
 
 ---
 
