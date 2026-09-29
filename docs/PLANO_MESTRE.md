@@ -1353,9 +1353,18 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
         120 vezes por minuto (~250 KB cada) — **menos de 3 h para os 5 GB**, em vez de ~35 min. O
         teto certo é o ARQ-01 (broadcast por diferença, L.1), e quem entra na mesa é a R.11. Ver o
         risco 3 do contrato de custo zero.
-- [ ] **R.5** **SEC-11 — `trust proxy`.** `app.set("trust proxy", 1)` só em produção (um salto: o
+- [x] **R.5** **SEC-11 — `trust proxy`.** `app.set("trust proxy", 1)` só em produção (um salto: o
       proxy do Render). **Verificar no ar**, com uma requisição conhecida e o `req.ip` no log: o
       número de saltos é premissa de configuração, e premissa de configuração se confere.
+      *(29/09/2026 — o código; a conferência no ar fica para o deploy.)* `resolveTrustProxy`: 1 salto
+      em produção, nenhum fora dela; `TRUST_PROXY` corrige sem deploy de código, e `true` é recusado
+      (confiaria em qualquer `X-Forwarded-For`). **Em vez de log** (que o Render guarda 7 dias), o
+      `/api/health` devolve a quem pergunta o **próprio** IP como o servidor o enxerga (`clientIp`) —
+      a verificação no ar é uma requisição, e está no passo 1 da
+      [verificação pós-deploy](./DEPLOY.md#verificação-pós-deploy). `trust-proxy.integration` (5).
+      **Provado revertendo** a linha do `app.set`: o jogador de outro IP levava **429 pelo chat do
+      GM** (um balde só) e o health mostrava o IP do "proxy". **Pendente no ar:** o `clientIp` bater
+      com o IP público de quem pergunta, no deploy de 01/10.
 - [ ] **R.6** **SEC-12 — posse no grid.** Reproduzir com teste (update Yjs que reescreve o `peerId`
       de um token alheio e o move). Se reproduzir: comparar com o dono **anterior** e proteger `peerId`
       e `icon`. Anotar na [ADR 0002](./adr/0002-yjs-websockets.md) como evidência — a autorização por

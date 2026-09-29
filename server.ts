@@ -83,6 +83,29 @@ export const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
 
+/**
+ * Revisão pós-D (R.5 — SEC-11) — em quantos proxies confiar para achar o IP
+ * de quem joga. Os limitadores contam por `req.ip`; atrás do proxy do Render,
+ * sem isto, o `req.ip` é o do proxy para todo mundo e os limitadores viram um
+ * balde só.
+ *
+ * Produção: 1 salto (o proxy do Render). Fora dela: nenhum — sem proxy na
+ * frente, confiar no `X-Forwarded-For` deixaria o cliente escolher o próprio
+ * IP. `TRUST_PROXY` corrige sem deploy de código: número de saltos, `false`,
+ * ou lista de endereços/sub-redes. `true` é recusado de propósito — confiaria
+ * em qualquer `X-Forwarded-For`, e burlar o limitador seria trocar um header.
+ */
+export function resolveTrustProxy(env: NodeJS.ProcessEnv): boolean | number | string {
+  const fallback = env.NODE_ENV === "production" ? 1 : false;
+  const raw = (env.TRUST_PROXY || "").trim();
+  if (!raw || raw === "true") return fallback;
+  if (raw === "false") return false;
+  const hops = Number(raw);
+  if (Number.isInteger(hops) && hops >= 0) return hops;
+  return raw;
+}
+app.set("trust proxy", resolveTrustProxy(process.env));
+
 // T1.4 — limite de payload (fichas de personagem cabem folgadamente em 1MB)
 app.use(express.json({ limit: "1mb" }));
 
@@ -1226,7 +1249,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
 // T10.4 — healthcheck enriquecido para uptime bots: versão do build, uptime
 // do processo e contagem de salas/jogadores ativos. Sempre 200 quando vivo
 // (sem rate limit — bots externos não podem ser bloqueados por IP).
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", (req, res) => {
   const activeRooms = getAllActiveRooms();
   const playersActive = activeRooms.reduce((acc, r) => acc + r.playersCount, 0);
   res.json({
@@ -1236,7 +1259,11 @@ app.get("/api/health", (_req, res) => {
     uptime: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || "development",
-    rooms: { active: activeRooms.length, players: playersActive }
+    rooms: { active: activeRooms.length, players: playersActive },
+    // R.5 (SEC-11) — o IP que os limitadores enxergam para QUEM PERGUNTA (o
+    // próprio, nunca o de outro). Se for o do proxy do Render e não o seu, o
+    // `trust proxy` está errado: é a verificação no ar numa requisição só.
+    clientIp: req.ip
   });
 });
 
