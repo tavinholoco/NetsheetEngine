@@ -1448,8 +1448,9 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       PR; a R.13 em PR próprio. Depois do merge, `master` verde e a verificação pós-deploy de 01/10.
       *(29/09/2026 — R.0–R.6 e R.12 publicados juntos, a pedido do dono: um commit por item, cada um
       com o teste que reproduz e a prova revertendo. R.7–R.11, R.13 e R.16 ficam para o próximo PR.)*
-      *(29/09/2026 — PR #14 mergeado. R.16, R.7, R.8 e R.9 no PR seguinte, um commit por item. Fica
-      aberto o que é do dono: R.10, R.11 e R.13.)*
+      *(29/09/2026 — PR #14 mergeado; CI do `master` verde nos 5 jobs, e o `db-sync` conectou: "Remote
+      database is up to date", como esperado sem migration. R.16, R.7, R.8 e R.9 no PR seguinte, um
+      commit por item. Fica aberto o que é do dono: R.10, R.11 e R.13.)*
 - [x] **R.16** **SEC-13 — teto de assentos por sala** *(achado do portão das R, 29/09/2026)*. Cada
       `join` com `peerId` novo cria um assento, cada assento abre até 3 sockets (R.4), e o `join` só
       tem o limitador de sala (120/min por IP): dezenas de assentos multiplicam cada reenvio da sala —
