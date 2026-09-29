@@ -165,10 +165,11 @@ jobs:
           retention-days: 7
 
   db-sync:
-    # T10.8 — aplica migrations Supabase (0001–0006) no banco linked quando
-    # houver mudanças. INERTE até o usuário configurar os secrets do repo:
-    # SUPABASE_ACCESS_TOKEN (personal access token) + SUPABASE_PROJECT_REF
-    # (project-ref do projeto cloud). Sem eles, o job pula com exit 0.
+    # T10.8 — aplica as migrations Supabase pendentes no banco linked. Usa os
+    # secrets SUPABASE_ACCESS_TOKEN (personal access token, validade de 30 dias —
+    # ver "Operação" no PLANO_MESTRE.md) e SUPABASE_PROJECT_REF. Os dois existem
+    # desde antes da Fase A: o job nunca foi inerte (A.5). Sem eles, o script
+    # pula com exit 0. Só roda no master: PR verde não prova migration aplicada.
     name: Migrations Supabase (db push)
     runs-on: ubuntu-latest
     timeout-minutes: 15

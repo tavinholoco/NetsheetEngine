@@ -42,7 +42,7 @@ flowchart TB
 
     subgraph externo["SERVICOS EXTERNOS"]
         SB[("Supabase<br/>Auth - Postgres+RLS - Storage")]
-        AI["Provedor de IA<br/>Gemini hoje - Groq previsto na Fase B"]
+        AI["Provedor de IA<br/>Gemini hoje - Groq decidido, sem fase (ADR 0005)"]
     end
 
     SPA -->|"REST + sessionToken"| API
@@ -75,7 +75,10 @@ flowchart TB
    *A caixa `VAL` existe desde a Fase B (B.2): `src/rules/sheetSchema.ts`, aplicada dentro do
    `roomManager` para cobrir todo caminho que escreve ficha, não só a rota HTTP.* **O binário Yjs
    ainda não passa por ela** — continua com try/catch apenas, e é item da Fase J.
-2. **O autor de toda ação é derivado do `sessionToken`**, nunca de um campo do corpo.
+2. **O autor de toda ação é derivado do `sessionToken`**, nunca de um campo do corpo. *Revisão
+   pós-D (29/09/2026): a **emissão** do token é a outra metade da regra — o `join` entregava sessão a
+   quem apresentasse um `peerId` que o próprio estado da sala publica (SEC-07, R.1 do plano). A seta
+   `SPA → API` carrega o token; o que faltava estava antes dela.*
 3. **`service_role` e chave de IA não cruzam a fronteira** — vivem só no processo do servidor, jamais
    em variável `VITE_`.
 

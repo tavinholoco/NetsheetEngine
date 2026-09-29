@@ -65,6 +65,14 @@ enviado no corpo (anti-impersonificação).
   re-tenta a ação original. O servidor reconhece a reconexão, preserva a ficha persistida
   (last-write-wins por `updatedAt`) e emite um token novo — sem duplicar o jogador.
 
+> **⚠️ Este contrato é o SEC-07 (revisão pós-D, 29/09/2026).** O servidor aceita o `join` com um
+> `peerId` que já está na sala **sem pedir prova de posse** — e todo `peerId`, inclusive o
+> `gmPeerId`, vai no estado transmitido à mesa. A regra "1 sessão ativa por jogador" transforma isso
+> em tomada de assento: quem chama por último fica com a sessão, e o dono perde a dele. O contrato
+> muda na R.1 do [plano](./PLANO_MESTRE.md#-pendências-da-revisão-pós-d--antes-da-fase-e): reivindicar
+> um `peerId` existente passa a exigir o token vigente dele. **Esta seção é reescrita junto com o
+> conserto.**
+
 ---
 
 ## 3. Endpoints REST

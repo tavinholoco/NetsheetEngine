@@ -102,3 +102,18 @@ motivou a ADR (cota do Gemini incerta, dividida com o Newra News) **ainda não f
 falha** neste projeto. Até alguém decidir onde encaixar, o gatilho para fazer é: *a primeira resposta
 `429`/cota esgotada do Gemini no log `gemini_api_error`, ou o Newra News esgotar a cota
 compartilhada.*
+
+## Nota de 29/09/2026 — revisão pós-D
+
+Dois fatos novos, nenhum reabre a decisão:
+
+- **O acesso ao `gemini-2.5-flash` está restrito.** A
+  [página de descontinuações](https://ai.google.dev/gemini-api/docs/deprecations) diz que o Google
+  passou a limitar os modelos 2.5 a quem já os usava, e recomenda modelos novos para projeto novo.
+  **Não há data de desligamento.** O nome do modelo está fixo em `server.ts`. **Gatilho acrescido:**
+  o Gemini recusar o modelo (erro de acesso ou modelo inexistente no `gemini_api_error`). Versão 10×
+  menor quando disparar: ler o nome do modelo de uma variável de ambiente — é a `AI_MODEL` que esta
+  ADR já previa, sem esperar o Groq.
+- **O log do Render guarda 7 dias** (plano Hobby). Os dois gatilhos desta ADR são linhas de log: se
+  ninguém olhar o log dentro de uma semana, o gatilho dispara e some. O
+  [Registro de sessões](../PLANO_MESTRE.md#registro-de-sessões) do plano é o lugar de anotar.

@@ -118,3 +118,15 @@ sintoma e vira FAZER.
 A tarefa **L.2** planejava carregar o Yjs sob demanda na rota de mesa. Não vale investir em
 lazy-loading de algo que pode sair inteiro: a tarefa passa a priorizar a separação do **Supabase**,
 que está no chunk de entrada e é carregado até para quem só quer rolar dados.
+
+## Nota de 29/09/2026 — evidência, não gatilho
+
+A revisão pós-D leu a autorização por diff (`mirrorDocToJson`) e achou, **pela leitura**, um buraco:
+a posse do token é conferida contra o `peerId` **depois** da mudança, e o campo `peerId` não está na
+lista do que o jogador não pode alterar — reescrever o dono e mover no mesmo update passaria (SEC-12,
+item R.6 do plano). É exatamente o custo que a revisão de 02/09 apontou: 60 linhas de autorização que
+só existem porque o CRDT deixa o cliente escrever o documento inteiro.
+
+**O gatilho desta ADR não disparou** — ele é bug de *convergência*, e este é de *autorização*, com
+conserto de duas linhas. Fica registrado como evidência para a Fase H: se a H achar o segundo buraco
+da mesma classe, o protocolo de intenção (`{ move: tokenId, x, y }`) passa a ter sintoma.
