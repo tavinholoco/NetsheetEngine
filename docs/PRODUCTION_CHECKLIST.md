@@ -107,8 +107,9 @@ supabase db push                  # aplica as migrations pendentes (0001–0007)
 > no plano gratuito. **Ele não existe:** o Supabase só faz backup automático dos planos Pro, Team e
 > Enterprise, e recomenda que o gratuito exporte com `supabase db dump`
 > ([docs](https://supabase.com/docs/guides/platform/backups)). O projeto fica no gratuito (decisão 4 do
-> plano), então **hoje não há backup** — como fazer é a R.10 do [plano](./PLANO_MESTRE.md). Não guardar
-> dump no repositório: **ele é público**.
+> plano), então **até 29/09 não havia backup**. Desde a R.10 (decisão 8) o backup é **manual**:
+> `npm run backup:db`, todo mês e antes de toda migration — runbook em [`BACKUP.md`](./BACKUP.md).
+> Não guardar dump no repositório: **ele é público**.
 
 1. ~~No painel do Supabase cloud: **Database → Backups**.~~
 2. ~~Ative **PITR (Point-in-Time Recovery)** e escolha a retenção (7/14/30 dias).~~

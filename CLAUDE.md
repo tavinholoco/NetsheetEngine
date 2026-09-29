@@ -30,6 +30,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 |---|---|
 | `docs/PLANO_MESTRE.md` | Fases, tarefas, checkboxes, índice de achados (33 da auditoria + 12 da revisão pós-D), filtro de necessidade, contrato de custo zero, registro de sessões |
 | `docs/SEGURANCA.md` | Portão de segurança (6 perguntas) e o registro por fase |
+| `docs/BACKUP.md` | Runbook do backup manual (decisão 8), o registro de cada dump e o contorno do Docker que não sobe |
 | `docs/ARQUITETURA.md` | Diagramas Mermaid — contêineres, fronteiras de confiança, pipeline de dano, máquina de ferimento |
 | `docs/adr/` | Decisões arquiteturais com histórico de revisão. **Leia antes de reabrir uma decisão.** |
 | `docs/varreduras/` | Ledgers das varreduras (Fases E, G–J) com veredictos FAZER/ADIAR/DESCARTAR |
@@ -60,7 +61,8 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Identidade visual | **Cyberpunk 2020** (mesa de 1988) — *não* 2077 nem RED. Ver ADR 0006 |
 | Provedor de IA | **Groq primário, Gemini fallback — decidido, NÃO implementado.** A B.1 trancou o endpoint mantendo o Gemini; a migração ainda não tem fase dona. Ver ADR 0005 |
 | Yjs / CRDT do grid | **Mantido sob observação**, com gatilho para reabrir. Ver ADR 0002 |
-| PITR do Supabase | **Não** — exige plano pago (decisão 4). ⚠️ *29/09: a premissa "o backup diário gratuito basta" era falsa — o plano gratuito **não tem backup automático**. Como fazer backup é a R.10, decisão do dono* |
+| PITR do Supabase | **Não** — exige plano pago (decisão 4). *A premissa "o backup diário gratuito basta" era falsa: o plano gratuito não tem backup automático* |
+| Backup do banco | **Dump manual** (`npm run backup:db`), todo mês e antes de toda migration, **fora do repositório** — decisão 8 (29/09/2026). Runbook e registro em `docs/BACKUP.md` |
 | Vulnerabilidades sem correção | **Exceção nomeada, com motivo e gatilho** em `scripts/audit-ci.mjs` — nunca baixar o nível do portão |
 | Dano na cabeça | **Armadura → BTM (mín. 1) → ×2** — o livro não diz quando dobrar; decisão 6 do plano (26/09/2026) |
 | Ferimento na mesa | **Pontos (0–40) na ficha, nível derivado; só servidor e GM escrevem na mesa.** Token sem ficha não recebe dano; penetração escalonada ADIAR — decisão 7 (28/09/2026) |
@@ -70,11 +72,12 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 571 testes depois das R.1–R.9 e R.16 (ver "Linha de base atual" no plano)
+npx vitest run            # 577 testes depois das R.1–R.10 e R.16 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 6 testes, sobe o servidor de produção
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
 node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
+npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) — exige Docker; nunca junto do CI
 ```
 
 ## Contexto que economiza tempo

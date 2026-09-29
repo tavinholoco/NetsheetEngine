@@ -96,6 +96,8 @@ itens da própria fase. Não são opcionais:
       **Se a fase tiver migration** (decisão 5): a migration vai num **PR próprio**, que é mergeado
       primeiro e conferido em produção com `npx supabase migration list --linked`. Só depois abre o PR
       do código que a usa. O Render publica a cada push no `master` sem esperar o `db-sync`.
+      **E antes do merge do PR da migration, um backup** (`npm run backup:db` — decisão 8), anotado
+      no [registro](./BACKUP.md#registro-de-backups). Nunca durante um `db-sync` ou o keepalive.
 - **6.** **Depois do merge, conferir o CI do `master`.** O job `db-sync` só roda lá: **PR verde não
       prova que a migration entrou em produção.** A fase só termina de verdade com o `master` verde.
 
@@ -239,17 +241,18 @@ porque o portão pergunta sobre *o que a fase mudou*, e ali mudou quem **usa** a
 ## ⚖️ Decisões tomadas (02/09/2026)
 
 Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo. *(1 a 3 em
-02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09/2026.)*
+02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09; 8 em 29/09/2026.)*
 
 | # | Pergunta | Decisão | Consequência |
 |---|---|---|---|
 | 1 | A explosão do d10 encadeia? | **Sim, encadeia** | Cliente e PRD já estão certos. Corrigir só o servidor, sem configuração por mesa. |
 | 2 | Fidelidade estrita ou regras de casa? | **Fidelidade estrita ao CP2020** | Nenhuma divergência vira "regra de casa". A Fase C ganha conferência sistemática contra o livro. |
 | 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase L (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. **⚠️ Revisão pós-D (29/09):** o produto não impõe o convite — o lobby lista toda sala e o `join` aceita quem souber o código. Quem pode entrar volta ao dono na **R.11** |
-| 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. ~~O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo.~~ **⚠️ Premissa falsa (revisão pós-D, 29/09):** o plano gratuito **não tem backup automático nenhum** — só Pro, Team e Enterprise ([docs](https://supabase.com/docs/guides/platform/backups)). O "não ao PITR" continua; **como fazer backup** volta ao dono na **R.10** |
+| 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. ~~O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo.~~ **⚠️ Premissa falsa (revisão pós-D, 29/09):** o plano gratuito **não tem backup automático nenhum** — só Pro, Team e Enterprise ([docs](https://supabase.com/docs/guides/platform/backups)). O "não ao PITR" continua; **como fazer backup** voltou ao dono na R.10 e virou a **decisão 8** |
 | 5 | Como evitar que o Render publique código antes da migration que ele usa? (P.5) | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa | O Render faz auto-deploy a cada push no `master`, sem esperar o `db-sync`. Regra de processo, custo zero, nada novo para configurar. Ver o passo 5 do ritual de encerramento |
 | 6 | Na cabeça, o dano dobra antes ou depois do BTM? | **Depois — opção A: armadura → BTM (mín. 1) → ×2** | O livro dá a regra e não diz quando; A é a ordem do texto e a das implementações de fãs. B seria mais letal pelo valor do BTM. Pesquisa e números na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d) |
 | 7 | As quatro perguntas da D.0: quem escreve o ferimento na mesa, pontos × nível, token sem ficha, penetração escalonada | **(a)** Na mesa, **só o servidor e o GM** escrevem o ferimento — a sincronia da ficha deixa de levá-lo. **(b)** A ficha **guarda pontos** (0–40), e o nível é derivado; junto nasce o estado **Morto**. **(c)** Token sem ficha **não recebe dano**. **(d)** Penetração escalonada: **ADIAR** | (a) fecha o achado do portão C.14. (b) é fidelidade estrita: o livro conta pontos, e o nível sozinho perde o resto da caixa. Sem migration SQL — a ficha mora no `data` jsonb. (c) e (d) são as versões menores, com gatilho na [conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu). Detalhe na D.0 |
+| 8 | Como fazer backup, se o plano gratuito não faz nenhum? (R.10 — reabre a premissa da decisão 4) | **Dump manual** com o CLI (`npm run backup:db`), **todo mês e antes de toda migration**, guardado **fora do repositório** e fora da máquina, de preferência cifrado | Custo zero, e é o que a doc do Supabase recomenda ao gratuito. O repo é **público**: o script recusa destino dentro dele, e o `.gitignore` barra o dump à mão. Os arquivos do Storage (avatares) ficam de fora. Runbook e registro em [`BACKUP.md`](./BACKUP.md). **Gatilho para rever:** perder dado entre dois dumps, ou o volume de fichas tornar o mês de perda inaceitável — aí o workflow com dump cifrado (opção 2 da R.10) |
 
 ---
 
@@ -530,7 +533,7 @@ fim desta seção. IDs referenciados pelas fases.
 | SEC-08 | 🟠 Alto | `create` com código existente **substitui a sala** — sem sessão; perde fichas, chat e grid *(reproduzido)* | ✅ R.2 |
 | SEC-10 | 🟠 Alto | WebSocket sem limitador por mensagem e com `maxPayload` de 100 MiB — um participante gasta a banda do workspace | ✅ R.4 |
 | SEC-13 | 🟠 Alto | Sala sem teto de **assentos**: cada `join` novo cria um, cada um abre até 3 sockets e recebe cada reenvio *(achado do portão das R, 29/09 — reproduzido na R.16: 101 assentos para 100 joins)* | ✅ R.16 |
-| OPS-01 | 🟠 Alto | **Nenhum backup** — a decisão 4 supôs um backup diário que o plano gratuito não tem | R.10 |
+| OPS-01 | 🟠 Alto | **Nenhum backup** — a decisão 4 supôs um backup diário que o plano gratuito não tem | ✅ R.10 (decisão 8; restauração de teste com gatilho) |
 | SEC-09 | 🟡 Médio | Expulsar não revoga a sessão nem fecha o socket — o expulso segue lendo a mesa *(reproduzido)* | ✅ R.3 |
 | SEC-11 | 🟡 Médio | Sem `trust proxy`, os limitadores tendem a ser um balde só atrás do proxy do Render | ✅ R.5 (conferir no ar) |
 | SEC-12 | 🟡 Médio | Posse de token no grid Yjs compara o dono **novo** — jogador move e toma token alheio *(reproduzido na R.6)* | ✅ R.6 |
@@ -1406,7 +1409,7 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       raiz do lock; nenhuma tag criada). **Visto no build de produção:** o `/api/health` responde
       `"version":"0.4.3"`. O bloco R não ganha tag própria — o plano reserva a `v0.4.4` para a F, e
       renumerar tags é decisão do dono.
-- [ ] **R.10** 🧑‍⚖️ **Decisão do dono — backup (reabre a decisão 4, OPS-01).** Em ordem de tamanho:
+- [x] **R.10** 🧑‍⚖️ **Decisão do dono — backup (reabre a decisão 4, OPS-01).** Em ordem de tamanho:
       1. *(recomendada — a versão 10× menor)* **Dump manual** com o CLI já logado
          (`npx supabase db dump --linked`, esquema e `--data-only`), guardado **fora do repositório**,
          mensal e antes de toda migration. É o que a doc do Supabase recomenda ao plano gratuito.
@@ -1415,6 +1418,29 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
          Exige cifra e um secret novo.
       3. Plano Pro — colide com o custo zero.
       A K.1 (export da ficha em JSON) é o backup que o **jogador** controla — complementa, não substitui.
+      *(29/09/2026 — **o dono escolheu a opção 1**, que virou a [decisão 8](#-decisões-tomadas-02092026).)*
+      - **`npm run backup:db`** ([`scripts/backup-db.ts`](../scripts/backup-db.ts)): os três dumps do
+        guia oficial (papéis, esquema e dados em `COPY`) numa pasta datada **fora do repositório**
+        (`~/netsheet-backups/AAAA-MM-DD`), e um `MANIFEST.txt` com tamanho, SHA-256 e **linhas por
+        tabela**, contadas sem imprimir conteúdo. **Recusa destino dentro do repo** (é público) e nunca
+        sobrescreve; o `.gitignore` ganhou a mesma barreira para o dump à mão. `backup-script` (6
+        testes); **provado revertendo** a trava do repo: os 2 testes dela falham.
+      - **Runbook:** [`BACKUP.md`](./BACKUP.md) — quando (todo mês e antes de toda migration; o passo 5
+        do ritual de encerramento ganhou isso), o que fica de fora (os **arquivos** do Storage), onde
+        guardar (fora da máquina, **cifrado** — o `data.sql` tem `auth.users`), como restaurar, e o
+        registro de cada dump.
+      - **Primeiro backup, feito:** 29/09/2026, 20:42 UTC. **A produção ainda não tem usuário
+        nenhum** (`auth.users` 0, `character_sheets` 0, 1 sala velha) — o processo existe antes do
+        primeiro dado real, não depois de perdê-lo.
+      - **Restauração de teste: ADIAR, com gatilho.** O alvo certo é um projeto Supabase novo, com as
+        versões do `auth` da produção — criar isso é recurso na conta do dono; o Supabase local tem
+        outra versão do `auth`, e com uma linha o teste provaria pouco. **Gatilho:** a primeira linha
+        do registro com `character_sheets` acima de zero; a M.0 exige antes do fim do plano.
+      - **Achado no caminho — o Docker não subia:** dois *sockets* velhos
+        (`Docker\run\sailor-ingest.sock` e `docker-secrets-engine\engine.sock`) que o Windows não deixa
+        renomear. Contorno reversível, registrado no runbook: renomear **as duas** pastas juntas. Nada
+        foi apagado, e o "Reset to factory defaults" da janela de erro — que apagaria o Supabase local
+        — não foi usado.
 - [ ] **R.11** 🧑‍⚖️ **Decisão do dono — quem pode entrar numa mesa (DOC-07; o alcance da decisão 3).**
       Hoje o lobby lista toda sala a qualquer visitante, e o `join` aceita quem souber o código.
       1. **Manter aberto** e assumir o modelo de ameaça real, "qualquer pessoa com a URL". R.1–R.4
@@ -1901,7 +1927,7 @@ público mudar.
 
 - [ ] **M.0** 🔍 **Verificação de premissas** — *(acrescentado na revisão pós-D, 29/09/2026)*. Já
       sabido: as 56 de RLS **não rodam desde a Fase B** (Supabase local desligado na C e na D); o
-      backup (R.10) precisa ter sido **restaurado ao menos uma vez** num Supabase local para contar
+      backup (R.10) precisa ter sido **restaurado ao menos uma vez** num projeto Supabase novo para contar
       como backup; e a M.3 revisa também os ADIAR das ADRs e da conferência, não só os dos ledgers.
 - [ ] **M.1** Suíte completa: `tsc --noEmit`, build, unit, integração, E2E, RLS, `npm audit`.
       *(é a T12.2 do plano antigo)*
@@ -1925,7 +1951,7 @@ público mudar.
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
-| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.9, R.12, R.14 e R.16 feitos; faltam as decisões do dono (R.10, R.11, R.13) e o R.15 | — |
+| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.10, R.12, R.14 e R.16 feitos; faltam a decisão R.11, a proposta R.13 e o R.15 | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
@@ -1944,7 +1970,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **571** testes, 35 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16)* — `vitest` 4.1.11 |
+| `npx vitest run` | **577** testes, 36 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |

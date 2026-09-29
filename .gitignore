@@ -16,6 +16,15 @@ server.js
 *.db-shm
 *.db-wal
 
+# R.10 — dump do banco de produção NUNCA entra no repositório: ele é público, e o
+# dump tem auth.users (e-mail e hash de senha), perfis e mensagens diretas. O
+# `npm run backup:db` já recusa destino dentro do repo; isto pega o dump à mão.
+/roles.sql
+/schema.sql
+/data.sql
+/netsheet-backups/
+/backups/
+
 # Local workspace / tooling state
 .freebuff/
 
