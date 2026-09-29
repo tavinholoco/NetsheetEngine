@@ -46,8 +46,8 @@ let seq = 0;
 /** Mesa com o GM, o jogador `p1` (alvo) e um NPC com a ficha do ATIRADOR. */
 function mesa(): { code: string; npcId: string } {
   const code = `TGA-${Date.now().toString(36).slice(-4)}-${++seq}`.toUpperCase();
-  createRoom(code, 'Mesa', 'Mestre', 'gm_1');
-  joinRoom(code, 'gm_1', 'Mestre', { ...ALVO, handle: 'Mestre' });
+  const gm = createRoom(code, 'Mesa', 'Mestre', 'gm_1');
+  joinRoom(code, 'gm_1', 'Mestre', { ...ALVO, handle: 'Mestre' }, gm.sessionToken); // R.1: com o token do assento
   joinRoom(code, 'p1', 'Vex', ALVO);
   const npcId = generateRoomNpc(code, 'gm_1').npcPlayer!.peerId;
   getRoom(code)!.npcs![npcId].sheet = { ...ATIRADOR };

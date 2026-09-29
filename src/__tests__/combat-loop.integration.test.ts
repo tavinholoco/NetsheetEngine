@@ -52,8 +52,8 @@ const BOOSTER = {
 describe('D.6 — uma luta inteira', () => {
   it('da iniciativa à morte, cada regra no seu lugar', () => {
     const code = `TLP-${Date.now().toString(36).slice(-5)}`.toUpperCase();
-    createRoom(code, 'Mesa', 'Mestre', 'gm_1');
-    joinRoom(code, 'gm_1', 'Mestre', { ...VEX, handle: 'Mestre' });
+    const gm = createRoom(code, 'Mesa', 'Mestre', 'gm_1');
+    joinRoom(code, 'gm_1', 'Mestre', { ...VEX, handle: 'Mestre' }, gm.sessionToken); // R.1: com o token do assento
     joinRoom(code, 'p1', 'Vex', VEX);
     const npcId = generateRoomNpc(code, 'gm_1').npcPlayer!.peerId;
     const room = getRoom(code)!;

@@ -1260,7 +1260,7 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
 
 - [x] **R.0** 🔍 **Verificação de premissas** — a própria [revisão pós-D](#-revisão-pós-d-29092026).
       *(29/09/2026)*
-- [ ] **R.1** **SEC-07 — reconexão exige prova de posse.** Hoje o `peerId` faz papel de credencial, e
+- [x] **R.1** **SEC-07 — reconexão exige prova de posse.** Hoje o `peerId` faz papel de credencial, e
       ele é público. O `join` com um `peerId` que já está na sala passa a exigir **o token de sessão
       vigente daquele `peerId`** (header `X-Session-Token`, o mesmo da B.3); sem ele, `409` e o cliente
       entra como jogador novo. O `gmPeerId` inclusive.
@@ -1275,6 +1275,25 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
         porta "sair e voltar curado" da D.9. **Gatilho:** a R.11 decidir que a mesa exige login.
       - Teste primeiro, com o caso do script de 29/09 (o convidado toma o GM); depois o conserto,
         **provado revertendo**.
+      - *(29/09/2026 — feito.)* `seatClaimRefusal` no `roomManager` é a regra única: assento ocupado
+        (jogador **ou** `gmPeerId` sem jogador) só com o token vigente dele. O `joinRoom` a aplica e a
+        rota responde **409 `{ code: "seat_taken" }`** — o primeiro `code` estável da API, a versão
+        10× menor da RFC 9457. No cliente, `postJoin` manda o token no `X-Session-Token` e, no 409,
+        entra como jogador novo uma vez só. Protocolo reescrito (§2).
+      - **Testes:** `seat-claim.integration` (9) e `rooms-client` (5). **Provado revertendo:** com o
+        código antigo, 11 dos 14 falham (os 3 que passam são os caminhos legítimos).
+      - **Oito testes antigos reconectavam só com o `peerId`** — a tomada de assento escrita como
+        expectativa, como o teste do `GET /api/rooms/:code` que a B.3 substituiu. Os três da T3.3
+        passaram a provar o assento; e cinco helpers (`damage`, `death-save-turn`, `combat-loop`,
+        `initiative`, `gm-attack`) faziam o GM reentrar sem token — tinham virado no-op silencioso.
+        Um deles escondia um teste **passando pelo motivo errado**: "nem reconectando com uma ficha
+        curada" passava porque a reconexão era recusada, não pela decisão 7a. Agora reconecta com o
+        token e confere que a reconexão aconteceu.
+      - **Variante achada no conserto, ADIAR:** quando o GM sai e ninguém fica online, o `gmPeerId`
+        vira `undefined` e quem entrar com o **handle** do GM (público no lobby) assume o cargo
+        (T1.1/T1.8). Não há prova possível — o assento do GM já não existe —, e mudar isso muda como
+        uma mesa sem GM volta a ter um. **Gatilho:** a R.11 decidir manter o lobby aberto, ou uma mesa
+        ser tomada assim.
 - [ ] **R.2** **SEC-08 — `create` não sobrescreve.** Código em uso → `409`, com mensagem que diga
       para escolher outro. Conferir os testes que reaproveitam o mesmo código de sala entre casos.
 - [ ] **R.3** **SEC-09 — expulsar revoga.** O `deleteGeneratedPlayer` revoga as sessões do alvo

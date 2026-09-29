@@ -61,17 +61,17 @@ enviado no corpo (anti-impersonificação).
 - Token inválido/expirado → REST responde **401** `{ error: "Sessão inválida ou expirada..." }`; o
   WS rejeita o handshake com **HTTP 401** (socket destruído).
 - **1 sessão ativa por jogador**: re-join revoga os tokens antigos do mesmo `peerId`.
-- **Reconexão (T3.3)**: ao receber 401, o cliente refaz `POST /join` com o **mesmo `peerId`** e
-  re-tenta a ação original. O servidor reconhece a reconexão, preserva a ficha persistida
-  (last-write-wins por `updatedAt`) e emite um token novo — sem duplicar o jogador.
-
-> **⚠️ Este contrato é o SEC-07 (revisão pós-D, 29/09/2026).** O servidor aceita o `join` com um
-> `peerId` que já está na sala **sem pedir prova de posse** — e todo `peerId`, inclusive o
-> `gmPeerId`, vai no estado transmitido à mesa. A regra "1 sessão ativa por jogador" transforma isso
-> em tomada de assento: quem chama por último fica com a sessão, e o dono perde a dele. O contrato
-> muda na R.1 do [plano](./PLANO_MESTRE.md#-pendências-da-revisão-pós-d--antes-da-fase-e): reivindicar
-> um `peerId` existente passa a exigir o token vigente dele. **Esta seção é reescrita junto com o
-> conserto.**
+- **Voltar a um assento ocupado exige prova (R.1 — SEC-07, 29/09/2026).** Um `join` com um `peerId`
+  que já está na sala — ou que é o `gmPeerId` — só é aceito com o **token vigente daquele assento** no
+  header `X-Session-Token`. Sem ele: **409** `{ error, code: "seat_taken" }`. O `peerId` é público (vai
+  no estado da sala), então não prova nada sozinho. *Até a R.1, o servidor aceitava o `peerId` como
+  prova, e um convidado virava GM fazendo `join` com o `gmPeerId`.*
+- **Reconexão (T3.3)**: ao receber 401, o cliente refaz `POST /join` mandando o token que tem
+  (`postJoin` em `src/api/rooms.ts`) e re-tenta a ação original. Com a prova, o servidor reconhece a
+  reconexão, preserva a ficha persistida (last-write-wins por `updatedAt`; o ferimento é sempre o do
+  servidor — decisão 7a) e emite um token novo, sem duplicar o jogador. Se vier **409** `seat_taken`,
+  a sessão daquele assento se perdeu: o cliente entra como jogador novo, com outro `peerId`, **uma vez
+  só**, e o GM remove o assento antigo.
 
 ---
 
@@ -86,7 +86,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `GET` | `/api/health` | — | `{ status: "online", system }` |
 | `GET` | `/api/rooms` | — | Lista `{ code, name, gmHandle, playersCount }[]` das salas ativas |
 | `POST` | `/api/rooms/create` | `{ code, name, gmHandle, gmPeerId }` | `{ room, sessionToken }` |
-| `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` | `{ room, sessionToken }` |
+| `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` + header `X-Session-Token` para voltar ao próprio assento (R.1) | `{ room, sessionToken }` · **409** `seat_taken` se o assento é de outro |
 | `GET` | `/api/rooms/:code` | — | **Sem token:** recorte público `{ code, name, gmHandle, playersCount }`. **Com `X-Session-Token` válido:** `GameRoom` completo. **Token inválido:** 401. (404 se não existe) |
 
 > Validações do `code`: 2–12 caracteres alfanuméricos ou hífen, normalizado para maiúsculas

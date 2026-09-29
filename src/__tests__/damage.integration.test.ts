@@ -38,12 +38,15 @@ const SHEET: CharacterSheet = {
 } as unknown as CharacterSheet;
 
 let seq = 0;
+/** Token de sessão de `p1` por mesa — a reconexão legítima prova o assento com ele (R.1). */
+const p1Token = new Map<string, string>();
 /** Mesa com o GM `gm_1` (na mesa) e o jogador `p1` (BODY 8 → BTM −3, SP 10 no tronco). */
 function mesa(patch: Partial<CharacterSheet> = {}): string {
   const code = `TDM-${Date.now().toString(36).slice(-4)}-${++seq}`.toUpperCase();
-  createRoom(code, 'Mesa', 'Mestre', 'gm_1');
-  joinRoom(code, 'gm_1', 'Mestre', { ...SHEET, handle: 'Mestre' });
-  joinRoom(code, 'p1', 'Vex', { ...SHEET, ...patch });
+  const gm = createRoom(code, 'Mesa', 'Mestre', 'gm_1');
+  // O GM volta ao próprio assento com o token dele (R.1 — sem token seria recusado).
+  joinRoom(code, 'gm_1', 'Mestre', { ...SHEET, handle: 'Mestre' }, gm.sessionToken);
+  p1Token.set(code, joinRoom(code, 'p1', 'Vex', { ...SHEET, ...patch })!.sessionToken);
   return code;
 }
 
@@ -237,7 +240,14 @@ describe('D.1 — na mesa, o jogador não desfaz o dano (decisão 7a, achado do 
   it('nem reconectando com uma ficha "mais nova" e curada', () => {
     const code = mesa();
     applyDamage(code, 'gm_1', { targetId: 'p1', raw: 20, location: 'Torso' }, scriptedRng([5]));
-    joinRoom(code, 'p1', 'Vex', { ...SHEET, damagePoints: 0, updatedAt: '2999-01-01T00:00:00Z' } as CharacterSheet);
+    // Reconexão legítima (com o token do assento, R.1) — tem de ACONTECER, senão
+    // o teste passaria só porque o join foi recusado.
+    const re = joinRoom(
+      code, 'p1', 'Vex',
+      { ...SHEET, damagePoints: 0, updatedAt: '2999-01-01T00:00:00Z' } as CharacterSheet,
+      p1Token.get(code)
+    );
+    expect(re).not.toBeNull();
     expect(vex(code).sheet.damagePoints).toBe(7);
   });
 

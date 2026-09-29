@@ -46,6 +46,7 @@ import {
   resolveGmAttack,
   setStabilized,
   rollDiceForPlayer,
+  seatClaimRefusal,
   verifySession,
   sanitizeText,
   isValidRoomCode,
@@ -419,7 +420,15 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
     return res.status(400).json({ error: "Ficha de personagem inválida." });
   }
-  const result = joinRoom(code, peerId, handle, sheet);
+  // R.1 (SEC-07) — voltar a um assento ocupado exige o token vigente dele, no
+  // mesmo header da leitura autenticada (B.3). O `peerId` sozinho é público.
+  // `code` estável: o cliente decide por ele, não pelo texto (pista da Fase I).
+  const proofToken = (req.get("X-Session-Token") || "").trim() || undefined;
+  const refusal = seatClaimRefusal(code, peerId, proofToken);
+  if (refusal) {
+    return res.status(409).json({ error: refusal, code: "seat_taken" });
+  }
+  const result = joinRoom(code, peerId, handle, sheet, proofToken);
   if (!result) {
     return res.status(404).json({ error: "Room not found" });
   }

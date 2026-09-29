@@ -38,8 +38,8 @@ let seq = 0;
  */
 function mesa(vex: Partial<CharacterSheet> = { damagePoints: 21 }): string {
   const code = `TDS-${Date.now().toString(36).slice(-4)}-${++seq}`.toUpperCase();
-  createRoom(code, 'Mesa', 'Mestre', 'gm_1');
-  joinRoom(code, 'gm_1', 'Mestre', { ...FICHA, handle: 'Mestre' });
+  const gm = createRoom(code, 'Mesa', 'Mestre', 'gm_1');
+  joinRoom(code, 'gm_1', 'Mestre', { ...FICHA, handle: 'Mestre' }, gm.sessionToken); // R.1: com o token do assento
   joinRoom(code, 'p2', 'Kaze', { ...FICHA, handle: 'Kaze' });
   joinRoom(code, 'p1', 'Vex', { ...FICHA, ...vex } as CharacterSheet);
   updateInitiative(code, 'gm_1', [

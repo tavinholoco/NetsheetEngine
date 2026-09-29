@@ -111,6 +111,9 @@ describe("roomManager — sessões (T1.7)", () => {
 // ---------------------------------------------------------------------------
 // Reconexão (T3.3) — mesmo peerId não duplica jogador; ficha LWW
 // ---------------------------------------------------------------------------
+// Desde a R.1 (SEC-07) a reconexão prova o assento com o token vigente dele —
+// antes, estes testes reconectavam só com o peerId, que é público: era a tomada
+// de assento escrita como expectativa. O caso sem prova está em seat-claim.
 describe("roomManager — reconexão (T3.3)", () => {
   it("re-join com o mesmo peerId atualiza o jogador existente (sem duplicar)", () => {
     const code = uniqueCode();
@@ -118,7 +121,7 @@ describe("roomManager — reconexão (T3.3)", () => {
     const first = joinRoom(code, "peer_x", "X", sheet("X"))!;
     expect(Object.keys(first.room.players)).toHaveLength(2);
 
-    const second = joinRoom(code, "peer_x", "X", sheet("X"))!;
+    const second = joinRoom(code, "peer_x", "X", sheet("X"), first.sessionToken)!;
     expect(Object.keys(second.room.players)).toHaveLength(2); // não duplica
     expect(second.room.players["peer_x"].joinedAt).toBe(first.room.players["peer_x"].joinedAt);
 
@@ -137,18 +140,18 @@ describe("roomManager — reconexão (T3.3)", () => {
     // O servidor "persistiu" a ficha mais nova (primeiro join com ela)
     const newer = sheet("X", "2026-08-05T00:00:00.000Z");
     newer.gearNotes = "estado do servidor";
-    joinRoom(code, "peer_x", "X", newer);
+    const first = joinRoom(code, "peer_x", "X", newer)!;
 
     // reconexão manda ficha "estale" (mais antiga) → a do servidor vence
     const stale = sheet("X", "2026-08-02T00:00:00.000Z");
     stale.gearNotes = "velha";
-    const re = joinRoom(code, "peer_x", "X", stale)!;
+    const re = joinRoom(code, "peer_x", "X", stale, first.sessionToken)!;
     expect(re.room.players["peer_x"].sheet.gearNotes).toBe("estado do servidor");
 
-    // e ficha mais NOVA que a do servidor sobrescreve
+    // e ficha mais NOVA que a do servidor sobrescreve (cada re-join emite token novo)
     const fresher = sheet("X", "2026-08-09T00:00:00.000Z");
     fresher.gearNotes = "nova";
-    const re2 = joinRoom(code, "peer_x", "X", fresher)!;
+    const re2 = joinRoom(code, "peer_x", "X", fresher, re.sessionToken)!;
     expect(re2.room.players["peer_x"].sheet.gearNotes).toBe("nova");
     teardownRoom(code);
   });
@@ -156,8 +159,8 @@ describe("roomManager — reconexão (T3.3)", () => {
   it("reconexão reutiliza o token do grid (sem token duplicado)", () => {
     const code = uniqueCode();
     createRoom(code, "Mesa de Teste", "Mestre", "gm_1");
-    joinRoom(code, "peer_x", "X", sheet("X"));
-    const re = joinRoom(code, "peer_x", "X", sheet("X"))!;
+    const first = joinRoom(code, "peer_x", "X", sheet("X"))!;
+    const re = joinRoom(code, "peer_x", "X", sheet("X"), first.sessionToken)!;
     const tokens = re.room.tacticalGrid!.tokens.filter((t) => t.peerId === "peer_x");
     expect(tokens).toHaveLength(1);
     teardownRoom(code);
