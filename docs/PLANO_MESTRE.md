@@ -1294,8 +1294,15 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
         (T1.1/T1.8). Não há prova possível — o assento do GM já não existe —, e mudar isso muda como
         uma mesa sem GM volta a ter um. **Gatilho:** a R.11 decidir manter o lobby aberto, ou uma mesa
         ser tomada assim.
-- [ ] **R.2** **SEC-08 — `create` não sobrescreve.** Código em uso → `409`, com mensagem que diga
+- [x] **R.2** **SEC-08 — `create` não sobrescreve.** Código em uso → `409`, com mensagem que diga
       para escolher outro. Conferir os testes que reaproveitam o mesmo código de sala entre casos.
+      *(29/09/2026)* A rota responde **409 `{ code: "room_exists" }`** ("Entre nela pelo lobby ou
+      escolha outro código" — a tela de criação já mostra a mensagem do servidor), com o código
+      comparado já normalizado. O `createRoom` **lança** se chegar com código em uso: é defesa para
+      caminho futuro, e chegar lá é bug. Nenhum teste antigo reaproveitava código — conferido: a suíte
+      inteira passou sem ajuste. `create-conflict.integration` (4); **provado revertendo:** 3 dos 4
+      falham com o código antigo (o que passa é o do código livre). Efeito colateral bom: o **próprio
+      GM** também perdia a mesa se clicasse "criar" de novo com o mesmo código.
 - [ ] **R.3** **SEC-09 — expulsar revoga.** O `deleteGeneratedPlayer` revoga as sessões do alvo
       (`revokeSessionsForPeer`, como o `leaveRoom`) e a rota fecha os sockets dele (`closePeerSockets`,
       como a do `leave`). *Detalhe:* o mapa do SSE não sabe de quem é cada stream — um expulso que

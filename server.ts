@@ -403,6 +403,14 @@ app.post("/api/rooms/create", roomLimiter, (req, res) => {
   if (typeof code !== "string" || !isValidRoomCode(code)) {
     return res.status(400).json({ error: "Código de sala inválido. Use 2–12 caracteres alfanuméricos ou hífen (ex.: NC-2020)." });
   }
+  // R.2 (SEC-08) — código em uso é outra mesa, com gente dentro: nunca
+  // sobrescrever. Antes, qualquer um apagava a mesa com o código do lobby.
+  if (getRoom(code)) {
+    return res.status(409).json({
+      error: `Já existe uma mesa com o código ${code.trim().toUpperCase()}. Entre nela pelo lobby ou escolha outro código.`,
+      code: "room_exists"
+    });
+  }
   const result = createRoom(code, name, gmHandle, gmPeerId);
   broadcastRoomUpdate(result.room.code);
   res.json({ room: result.room, sessionToken: result.sessionToken });

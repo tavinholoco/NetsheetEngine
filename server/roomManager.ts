@@ -266,6 +266,13 @@ function checkIsGm(room: GameRoom, requesterPeerId: string): boolean {
 
 export function createRoom(code: string, roomName: string, gmHandle: string, gmPeerId?: string): { room: GameRoom; sessionToken: string } {
   const normalizedCode = code.trim().toUpperCase();
+  // R.2 (SEC-08) — criar nunca sobrescreve. Antes, `rooms[code] = novaSala`
+  // apagava a mesa de quem já estava nela, e qualquer um tinha o código pelo
+  // lobby. A rota responde 409 antes de chegar aqui; isto é a defesa para
+  // qualquer caminho futuro — chegar aqui com código em uso é bug.
+  if (rooms[normalizedCode]) {
+    throw new Error(`Sala ${normalizedCode} já existe — criar não sobrescreve (R.2).`);
+  }
   const gmUserPeerId = sanitizeText(gmPeerId, 64) || "gm_" + Date.now().toString(36);
   const safeGmHandle = sanitizeText(gmHandle, 30) || "Mestre de Jogo";
   const gmSheet = generateRandomNpc();
