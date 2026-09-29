@@ -77,8 +77,9 @@ flowchart TB
    ainda não passa por ela** — continua com try/catch apenas, e é item da Fase J.
 2. **O autor de toda ação é derivado do `sessionToken`**, nunca de um campo do corpo. *Revisão
    pós-D (29/09/2026): a **emissão** do token é a outra metade da regra — o `join` entregava sessão a
-   quem apresentasse um `peerId` que o próprio estado da sala publica (SEC-07, R.1 do plano). A seta
-   `SPA → API` carrega o token; o que faltava estava antes dela.*
+   quem apresentasse um `peerId` que o próprio estado da sala publica (SEC-07). Fechado na R.1:
+   reivindicar um assento ocupado exige o token vigente dele. A seta `SPA → API` carrega o token; o
+   que faltava estava antes dela.*
 3. **`service_role` e chave de IA não cruzam a fronteira** — vivem só no processo do servidor, jamais
    em variável `VITE_`.
 

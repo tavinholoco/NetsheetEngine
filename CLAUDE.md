@@ -28,7 +28,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 | Arquivo | O que carrega |
 |---|---|
-| `docs/PLANO_MESTRE.md` | Fases, tarefas, checkboxes, índice de achados (33 da auditoria + 11 da revisão pós-D), filtro de necessidade, contrato de custo zero, registro de sessões |
+| `docs/PLANO_MESTRE.md` | Fases, tarefas, checkboxes, índice de achados (33 da auditoria + 12 da revisão pós-D), filtro de necessidade, contrato de custo zero, registro de sessões |
 | `docs/SEGURANCA.md` | Portão de segurança (6 perguntas) e o registro por fase |
 | `docs/ARQUITETURA.md` | Diagramas Mermaid — contêineres, fronteiras de confiança, pipeline de dano, máquina de ferimento |
 | `docs/adr/` | Decisões arquiteturais com histórico de revisão. **Leia antes de reabrir uma decisão.** |
@@ -70,7 +70,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 522 testes ao fechar a Fase D (ver "Linha de base atual" no plano)
+npx vitest run            # 565 testes depois das R.1–R.6 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 6 testes, sobe o servidor de produção
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada

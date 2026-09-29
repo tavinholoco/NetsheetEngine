@@ -71,10 +71,10 @@ regras que ele expressa:
 1. **Nada que venha do navegador é confiável** — nem a ficha, nem o `peerId`, nem o `woundLevel`, nem
    o binário Yjs. O servidor valida no limite.
 2. **O autor de toda ação é derivado do `sessionToken`**, nunca de um campo do corpo. Um `peerId`
-   livre na requisição não autentica nada. **⚠️ Revisão pós-D (29/09/2026):** a regra vale para as
+   livre na requisição não autentica nada. **Revisão pós-D (29/09/2026):** a regra valia para as
    ações, mas a **emissão** do token tinha o buraco — o `join` com um `peerId` que já está na sala
    entregava sessão nova sem prova de posse (SEC-07). Na prática, o `peerId` público autenticava.
-   Conserto na R.1 do plano.
+   **Fechado na R.1:** reivindicar assento ocupado exige o token vigente dele.
 3. **A `service_role` do Supabase e a chave do provedor de IA nunca cruzam a fronteira** — vivem só
    no processo do servidor, jamais em variável `VITE_`.
 
@@ -329,7 +329,52 @@ estar no ar?*
 
 ### Pendências R — revisão pós-D
 
-*(a preencher na R.14)*
+**29/09/2026 — R.1 a R.6**, publicados num PR só, junto com a revisão que os descreve (o repo é
+público: o texto vai ao ar com o conserto). R.7–R.9 respondem quando entrarem.
+
+1. **Entrada nova?** Três, todas no limite do servidor:
+   - o header `X-Session-Token` no `POST /join` (R.1) — passa pelo mesmo `verifySession` de toda
+     rota, e só serve para provar **aquele** assento naquela sala;
+   - o `X-Forwarded-For`, agora confiado **um salto** em produção (R.5). Com `trust proxy = 1` o
+     Express usa a entrada que o proxy do Render acrescenta; o que o cliente puser à esquerda é
+     ignorado. `TRUST_PROXY=true` é recusado de propósito;
+   - os quadros do WebSocket ganharam teto de tamanho (1 MiB; *awareness* 4 KiB) e de taxa por
+     jogador (R.4). Antes, 100 MiB e sem limite.
+2. **Dado novo sai?** Pouco, e nada de outra pessoa: o `code` estável nas respostas de erro; o
+   `clientIp` do `/api/health`, que devolve a quem pergunta **o próprio** IP; a lista
+   `removedPeerIds` no estado da sala, que só tem `peerId`s — já públicos para quem está na mesa;
+   e dois eventos de log (`ws_rate_limited`, `ws_awareness_too_big`) com sala, `peerId` e tamanho,
+   sem segredo nem conteúdo.
+3. **Autorização nova? Sim — e é a segunda metade da pergunta, que nasceu aqui.** A **emissão** de
+   sessão passou a exigir prova: reivindicar assento ocupado só com o token vigente dele (R.1). A
+   expulsão passou a **revogar** (R.3). O GM não remove a si mesmo. No grid, a posse é a do dono
+   **anterior**, e todo campo além de `x`/`y` é do GM (R.6). Cada uma provada revertendo.
+4. **Jogador convidado hostil?**
+   - **Não consegue mais:** tomar o GM ou o assento de outro (R.1); apagar a mesa pelo `create`
+     (R.2); continuar lendo depois de expulso, nem voltar sozinho pela reconexão (R.3); mandar
+     mensagens sem limite ou quadros gigantes pelo WS (R.4); gastar a cota dos outros jogadores no
+     limitador (R.5); mover ou tomar o token de outro (R.6).
+   - **Continua conseguindo:** ler fichas e chat enquanto estiver na mesa, e entrar de novo por uma
+     aba nova depois de expulso — sem conta, aba nova é outro jogador (**R.11**); assumir o GM pelo
+     *handle* quando o GM sai e ninguém fica online (variante do SEC-07, **ADIAR** com gatilho na R.1);
+     gastar a banda **no ritmo do REST** — menos de 3 h para os 5 GB, em vez de ~35 min (**L.1** e
+     **R.11**).
+   - **Achado deste portão — SEC-13, sala sem teto de assentos.** Cada `join` com `peerId` novo cria
+     um assento, e cada assento abre até 3 sockets; o `join` só tem o limitador de sala (120/min por
+     IP). Dezenas de assentos multiplicam cada reenvio da sala — o mesmo amplificador do SEC-10 por
+     outra porta, e a mesma família da "sala sem teto de NPCs" que o portão da D levou à Fase E. Não
+     reproduzido. Versão 10× menor: teto de assentos por sala (uma mesa real tem até ~8). Vai para o
+     bloco R como **R.16**, antes da primeira sessão em produção.
+5. **Estado novo sem limite?** Nenhum: `removedPeerIds` tem teto de 50 e é saneado no restore; os
+   baldes do limitador do WS vencem com a janela e são podados de forma amortizada (não somem no
+   `close`, senão reconectar zeraria a cota); `ssePeer` e `wsPeer` são `WeakMap` — somem com a
+   conexão.
+6. **Custo por requisição a serviço externo?** Nenhum novo. O saldo é **negativo**: o canal sem
+   limite que gastava a banda do Render em minutos foi fechado.
+
+**E a pergunta que o repo público impõe — o que este PR ensina antes de o conserto estar no ar?**
+Tudo o que descreve, **se** o `master` não tiver o conserto quando o Render voltar (01/10). Por isso o
+PR traz o texto **e** o código juntos, e a recomendação ao dono é mergear antes de 01/10.
 
 ### Fase F — Reestruturação visual
 
@@ -362,12 +407,13 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-04 | Salas, sessões e buckets nunca expiram | B | ✅ fechado 03/09 (B.5) |
 | SEC-05 | Ficha gravada sem validação | B | ✅ fechado 03/09 (B.2) |
 | SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ✅ fechado 03/09 (B.6) — `nanoid` corrigido; `qs`/`express` sem patch 4.x (3 moderadas, não bloqueiam). **`mathjs` saiu da árvore em 25/09 (C.1)**, com o `@dice-roller`; a ALLOWLIST ficou vazia. **Gatilho do `qs` disparou em 29/09:** saiu o `express@4.22.3` (`qs ~6.16.0`) — R.7 |
-| SEC-07 | `join` com `peerId` existente emite sessão sem prova de posse — tomada de GM | R | 🔴 **aberto** — reproduzido em 29/09; R.1 |
-| SEC-08 | `create` com código existente substitui a sala | R | 🟠 **aberto** — reproduzido em 29/09; R.2 |
-| SEC-09 | Expulsão não revoga sessão nem fecha socket | R | 🟡 **aberto** — reproduzido em 29/09; R.3 |
-| SEC-10 | WebSocket sem limitador por mensagem, `maxPayload` de 100 MiB | R | 🟠 **aberto** — R.4 |
-| SEC-11 | Sem `trust proxy`: limitadores contam o IP do proxy | R | 🟡 **aberto** — conferir em produção; R.5 |
-| SEC-12 | Posse de token no grid Yjs conferida contra o dono novo | R | 🟡 **aberto** — lido, não reproduzido; R.6 |
+| SEC-07 | `join` com `peerId` existente emite sessão sem prova de posse — tomada de GM | R | ✅ fechado 29/09 (R.1) — variante do *handle* do GM: ADIAR |
+| SEC-08 | `create` com código existente substitui a sala | R | ✅ fechado 29/09 (R.2) |
+| SEC-09 | Expulsão não revoga sessão nem fecha socket | R | ✅ fechado 29/09 (R.3) — sem conta, aba nova é outro jogador (R.11) |
+| SEC-10 | WebSocket sem limitador por mensagem, `maxPayload` de 100 MiB | R | ✅ fechado 29/09 (R.4) — o ritmo do REST ainda gasta a banda em horas (L.1, R.11) |
+| SEC-11 | Sem `trust proxy`: limitadores contam o IP do proxy | R | ✅ fechado no código 29/09 (R.5) — **conferir no ar** com o `clientIp` do `/api/health` |
+| SEC-12 | Posse de token no grid Yjs conferida contra o dono novo | R | ✅ fechado 29/09 (R.6) — reproduzido antes, com cliente Yjs real |
+| SEC-13 | Sala sem teto de assentos: cada assento abre até 3 sockets e recebe cada reenvio | R | 🟠 **aberto** — achado do portão de 29/09; R.16 |
 
 ---
 
@@ -376,14 +422,14 @@ Atualizar conforme forem fechados. Detalhe completo no
 Registrado para não ser refeito, e para o portão não repetir pergunta já respondida:
 
 - **Sessão por token** (T1.7) — o autor de toda mutação vem do `sessionToken`, e o WebSocket valida
-  no upgrade (close 4401 se inválido). *⚠️ A **emissão** do token por `join` não exigia prova de
-  posse do `peerId` — SEC-07, aberto (R.1).*
+  no upgrade (HTTP 401 se inválido). Desde a R.1 a **emissão** também tem prova: reivindicar um
+  assento ocupado exige o token vigente dele (antes, o `peerId` público bastava — SEC-07).
 - **Autorização de GM sem fallback permissivo** (T1.1) — `checkIsGm` não termina mais em `return true`.
 - **RLS no Supabase** — migrations 0001–0007, com suíte de 56 testes (`scripts/test-rls.mjs`). A
   `rooms` tem RLS ligada e zero policies: só a service role.
 - **Rate limit** — global (600/min), de sala (120/min) e de chat (30/min), com buckets separados por
-  limiter. *⚠️ Só no REST: o WebSocket não tem limitador (SEC-10), e sem `trust proxy` o balde é o
-  IP do proxy (SEC-11) — R.4 e R.5.*
+  limiter, contando o IP real atrás do proxy do Render (`trust proxy`, R.5). O **WebSocket** tem os
+  mesmos tetos por jogador, mais teto de quadro e de sockets (R.4, `server/wsLimits.ts`).
 - **helmet + CSP** em produção, CORS por allowlist via `CORS_ORIGINS`.
 - **gitleaks** no CI, com SARIF na aba Security, e hook de pre-commit opcional.
 - **Rolagens server-authoritative** (T5.4) — o cliente pede, o servidor rola com `crypto.randomInt`.
