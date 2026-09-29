@@ -16,7 +16,9 @@ import { TacticalGridState, TacticalToken } from "../types/multiplayer";
 const META = "meta";
 const TOKENS = "tokens";
 
-const TOKEN_KEYS: (keyof TacticalToken)[] = [
+/** Os campos de token que o doc CRDT carrega. Exportado para a autorização do
+ *  servidor (R.6) comparar TODOS eles — uma lista à mão esqueceu dois. */
+export const TOKEN_KEYS: (keyof TacticalToken)[] = [
   "id",
   "name",
   "type",

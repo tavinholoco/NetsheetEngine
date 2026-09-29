@@ -4,8 +4,8 @@
  * ============================================================
  * Todas as chamadas REST de multiplayer concentradas aqui, com tipos dos
  * payloads. Autenticação por token de sessão (T1.7) com auto-reconexão
- * (T3.3): se o servidor reiniciou e o token expirou (401), re-join com o
- * mesmo peerId e retry automático da ação original.
+ * (T3.3): num 401, re-join e retry automático da ação original. Desde a R.1
+ * (SEC-07) o re-join prova o assento com o token vigente — ver `postJoin`.
  *
  * O `MultiplayerRoom` consome este módulo via namespace — nenhum fetch cru.
  */
@@ -75,29 +75,66 @@ export function hydrateSession(): { peerId: string; sessionToken: string } {
   return { peerId, sessionToken };
 }
 
+/** R.1 — peerId novo: o assento antigo ficou sem prova de posse. */
+function rotatePeerId(): string {
+  const id = generatePeerId();
+  useRoomStore.getState().setPeerId(id);
+  sessionStorage.setItem('cyberpunk_peer_id', id);
+  return id;
+}
+
+/**
+ * Revisão pós-D (R.1 — SEC-07) — `POST /join` provando o assento com o token
+ * vigente, no header `X-Session-Token`. O `peerId` sozinho é público: o
+ * servidor não entrega mais um assento ocupado a quem só o apresenta.
+ *
+ * 409 `seat_taken` quer dizer que a prova falhou — a sessão deste assento se
+ * perdeu (ex.: queda do servidor antes de persistir). O cliente entra como
+ * jogador novo, com outro peerId, uma vez só; o GM remove o assento antigo.
+ */
+export async function postJoin(code: string, handle: string, sheet: CharacterSheet): Promise<JoinResponse> {
+  const send = (peerId: string) => {
+    const token = currentToken();
+    return apiFetch<JoinResponse>('/api/rooms/join', {
+      method: 'POST',
+      headers: token ? { 'X-Session-Token': token } : undefined,
+      body: JSON.stringify({ code, peerId, handle, sheet })
+    });
+  };
+  try {
+    return await send(getPeerId());
+  } catch (e) {
+    if (e instanceof ApiError && e.code === 'seat_taken') return send(rotatePeerId());
+    throw e;
+  }
+}
+
 let reconnectInFlight: Promise<boolean> | null = null;
 
 /**
- * Fase 3 (T3.3) — re-join automático com o MESMO peerId após o servidor
- * reiniciar (o token de sessão morre com o processo). O servidor reconhece a
- * reconexão e preserva a ficha persistida; aqui só trocamos o token novo.
+ * Fase 3 (T3.3) — re-join automático após um 401. Desde a R.1 o `join` prova
+ * o assento com o token vigente; se ele não vale mais, o `postJoin` entra como
+ * jogador novo. O servidor preserva a ficha persistida de quem prova o assento.
  */
 export async function reconnectSession(): Promise<boolean> {
   if (reconnectInFlight) return reconnectInFlight;
   const attempt = (async () => {
     try {
-      const { roomCode, peerId } = useRoomStore.getState();
-      const id = peerId || getPeerId();
+      const { roomCode } = useRoomStore.getState();
       const { sheet, user } = useSheetStore.getState();
       const handle = user?.displayName || sheet.handle || 'Edgerunner';
-      const { room, sessionToken } = await apiFetch<JoinResponse>('/api/rooms/join', {
-        method: 'POST',
-        body: JSON.stringify({ code: roomCode, peerId: id, handle, sheet })
-      });
+      const { room, sessionToken } = await postJoin(roomCode, handle, sheet);
       persistSession(sessionToken, room);
       useRoomStore.getState().setErrorMsg('');
       return true;
-    } catch {
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'removed_by_gm') {
+        // R.3 — o GM removeu este jogador: volta ao lobby, sem insistir.
+        sessionStorage.removeItem('cyberpunk_session_token');
+        useRoomStore.getState().resetRoom();
+        useRoomStore.getState().setErrorMsg('O Mestre removeu você desta mesa.');
+        return false;
+      }
       useRoomStore
         .getState()
         .setErrorMsg('Sessão expirada e reconexão falhou — a sala pode ter sido encerrada. Saia e entre novamente.');
@@ -153,12 +190,9 @@ export async function createRoom(input: { code: string; name: string; gmHandle: 
   return res;
 }
 
-/** POST /api/rooms/join — entra numa mesa existente. */
+/** POST /api/rooms/join — entra numa mesa existente (ou volta ao próprio assento, R.1). */
 export async function joinRoom(input: { code: string; handle: string; sheet: CharacterSheet }): Promise<JoinResponse> {
-  const res = await apiFetch<JoinResponse>('/api/rooms/join', {
-    method: 'POST',
-    body: JSON.stringify({ ...input, peerId: getPeerId() })
-  });
+  const res = await postJoin(input.code, input.handle, input.sheet);
   persistSession(res.sessionToken, res.room, input.code);
   return res;
 }

@@ -51,6 +51,8 @@ sessão e manda ler o plano antes de propor trabalho.
       trabalho real.)*
 - **3.** `git log --oneline -15` e `git tag -l` — as tags fecham as fases de construção
       (`v0.4.0` na A, `v0.4.1` na B, `v0.4.2` na C, `v0.4.3` na D, `v0.4.4` na F, `v0.5.0` na M).
+      **A tag e o `version` do `package.json` andam juntos** — o `/api/health` publica o `version`
+      *(regra da revisão pós-D: ele ficou em 0.4.0 enquanto as tags chegavam a `v0.4.3`)*.
       Se o último commit não corresponde ao último checkbox marcado, **alguém parou no meio**:
       reconcilie antes de escrever código.
 - **3b.** **Conferir o CI do `master` e o keepalive** — `gh run list --repo tavinholoco/NetsheetEngine
@@ -166,6 +168,74 @@ descrição — e é ali que uma premissa velha vira trabalho errado.
 
 ---
 
+## 🔬 REVISÃO PÓS-D (29/09/2026)
+
+Pedida pelo dono depois do merge da Fase D: rever as fases que faltam, achar inconsistências e
+pesquisar melhorias. **Mesmo método da auditoria de 03/09 — medir, não ler.** E o mesmo resultado de
+classe: as afirmações sobre **regra de jogo** se sustentaram; as sobre **configuração** e sobre
+**quem ganha sessão na mesa** não.
+
+Linha de base conferida antes de tudo: `master` em `55a0acd`, CI e keepalive verdes, `tsc` 0 erros,
+**522/522** testes em 26 arquivos.
+
+### Premissas que caíram
+
+| Onde | O plano dizia | O real | Fonte |
+|---|---|---|---|
+| **Decisão 4** | "O free tier já faz backup diário automático" | **Não faz.** O Supabase só faz backup automático dos planos Pro, Team e Enterprise, e recomenda que o gratuito exporte com `db dump`. **Hoje o projeto não tem backup nenhum** | [Supabase — backups](https://supabase.com/docs/guides/platform/backups) |
+| **Decisão 3** | público da alpha = convidados do dono | O produto **não tem convite**: `GET /api/rooms` lista toda sala a qualquer visitante, e `POST /join` aceita quem souber o código. O "convidado hostil" do portão é, na prática, **qualquer pessoa com a URL** | `server.ts` |
+| **B.6 / SEC-06** | `qs` sem patch na linha 4.x do Express | **O gatilho disparou:** saiu o `express@4.22.3` (tag `latest-4`), que pede `qs ~6.16.0`, fora da faixa vulnerável (`≤ 6.15.3`). `npm audit fix` fecha as 3 moderadas | `npm view express dist-tags`, `npm audit` |
+| **B.7 → L.6** | decidir o SSE com "meses de mesa" do log `sse_fallback` | O plano Hobby do Render **guarda log por 7 dias**. Sem registro fora do Render, o dado da L.6 some antes de ser lido | [Render — logging](https://render.com/docs/logging) |
+| **Versão do Node** | *(nenhuma — ninguém fixou)* | `engines: ">=20"` e nenhum `.node-version`: o Render resolve faixa sem teto para o **`latest`**, hoje o **Node 26 (Current, não LTS)**. O CI testa o 20 — **fim de vida em 30/04/2026** — e o 22; o dev local roda o 24. A produção roda uma versão que ninguém testa | [Render — Node](https://render.com/docs/node-version), [calendário do Node](https://github.com/nodejs/Release/blob/main/schedule.json) |
+| **L.2** | "Revisar se `motion` paga o próprio peso"; Supabase como "maior contribuinte do 1,3 MB" | O `motion` saiu na ARQ-10 (02/09) e o chunk de entrada é **629 kB** desde a C.1 | `package.json`, linha de base |
+| **F.2** | 5 tokens no `@theme`; 1.722 cores literais | **8** tokens (a auditoria de 03/09 corrigiu o índice, a tabela da F ficou) e **1.731** cores literais | grep em 29/09 |
+| **J** | "gitleaks sobre o histórico completo, não só o HEAD" | **Já é assim:** o job do CI faz checkout com `fetch-depth: 0` e o `gitleaks detect` varre o histórico | `ci.yml` |
+| `package.json` | *(versão acompanha a tag)* | `version` parado em **0.4.0** com a tag em `v0.4.3` — o `/api/health` publica a versão errada | `server.ts:6` |
+| `PRODUCTION_CHECKLIST.md` | *(corrigido na Fase A, junto com o `DEPLOY.md`)* | **Não foi.** Ainda manda ligar **UptimeRobot no `/api/health`** (a regra 3 do custo zero proíbe), "confirmar backups diários automáticos" e diz que o `db-sync` é inerte | o próprio arquivo |
+| `ARQUITETURA.md`, `ci.yml` | "Groq previsto na Fase B"; `db-sync` "INERTE", "0001–0006" | A B não migrou o provedor (ADR 0005); o job nunca foi inerte (A.5) e há 7 migrations | ADR 0005, A.5 |
+
+### Achados novos no código
+
+Os quatro primeiros foram **reproduzidos** com um script contra o `roomManager` (fora do repo). São
+**anteriores à Fase D** — nascem da T1.7 e da T3.3 do plano antigo — e passaram pelo portão da B
+porque o portão pergunta sobre *o que a fase mudou*, e ali mudou quem **usa** a sessão, não quem a
+**recebe**. A pergunta 3 do portão ganhou essa segunda metade.
+
+| ID | Sev. | Achado | Prova |
+|---|---|---|---|
+| SEC-07 | 🔴 | `join` com um `peerId` que já está na sala é tratado como reconexão: **emite token novo e revoga o do dono, sem prova de posse**. Todo `peerId` — inclusive o `gmPeerId` — vai no estado transmitido à mesa | O convidado lê o `gmPeerId`, faz `join` com ele e recebe sessão de GM; o token do GM verdadeiro passa a não valer; `updateRoomSettings` com o token tomado é **permitido** |
+| SEC-08 | 🟠 | `create` com um código que já existe **substitui a sala** — sem sessão e sem conferência. O lobby público entrega os códigos | Sala com GM e jogador → `createRoom` com o mesmo código → jogadores `[peer_hostil]`, GM `peer_hostil`. A persistência grava por cima da linha |
+| SEC-09 | 🟡 | Expulsar jogador (`deleteGeneratedPlayer`) **não revoga a sessão nem fecha o socket**: o expulso reabre o WebSocket e segue recebendo a sala inteira, fichas e chat | Depois da expulsão, `verifySession` ainda devolve o `peerId` dele. A saída voluntária revoga certo |
+| SEC-10 | 🟠 | O WebSocket **não tem limitador por mensagem** — o chat pelo WS escapa do `chatLimiter` de 30/min — e o `maxPayload` é o padrão do `ws`, **100 MiB**. Cada mensagem reenvia a sala inteira a todas as conexões | Com a medição de 26/09 (sala ~48 KB × 5 conexões ≈ 250 KB por mensagem), **10 mensagens/s gastam os 5 GB do workspace em ~35 min** — e a cota estourada desliga NetSheet **e** Newra News até o mês seguinte. Um quadro de 100 MiB leva a instância gratuita perto do teto de memória |
+| SEC-11 | 🟡 | Nenhum `trust proxy`: atrás do proxy do Render o `req.ip` tende a ser o do proxy, e os três limitadores viram **um balde só para todo mundo** | Predito pela doc do Express e por deploys no Render. **Conferir em produção** — número de saltos de proxy é premissa de configuração |
+| SEC-12 | 🟡 | No grid Yjs, a checagem de posse (`mirrorDocToJson`) usa o `peerId` **novo** do token e não compara o campo `peerId` (nem o `icon`): um jogador moveria qualquer token reescrevendo o dono no mesmo update | **Derivado da leitura, não reproduzido** — exige cliente Yjs. Reproduzir com teste antes de consertar. *(Reproduzido na R.6, com cliente Yjs real: pior que o lido — o jogador toma o token de outro jogador)* |
+
+### O que a pesquisa acrescentou às próximas fases
+
+| Tema | Achado | Vai para |
+|---|---|---|
+| Conexão morta no WS | O servidor não manda `ping`: socket que caiu sem aviso fica no `wsClients` recebendo broadcast. O [README do `ws`](https://github.com/websockets/ws#how-to-detect-and-close-broken-connections) recomenda ping/pong com `terminate()` | pista da E |
+| Modelo de IA fixo | `gemini-2.5-flash` está no código. Desde 18/09/2026 o Google [limita o acesso aos modelos 2.5](https://ai.google.dev/gemini-api/docs/deprecations) a quem já os usava — sem data de desligamento | gatilho novo na ADR 0005, pista da E |
+| Acessibilidade dos efeitos | [WCAG 2.2](https://www.w3.org/TR/WCAG22/): animação automática com mais de 5 s precisa de controle para parar (**2.2.2, nível A**); nada pode piscar mais de 3×/s (**2.3.1, A**). Hoje: **0** `prefers-reduced-motion` e **23** usos de `animate-pulse/ping/spin` | F.4.2 |
+| Fontes auto-hospedadas | Os pacotes [`@fontsource`](https://fontsource.org/) das três faces (todas SIL OFL) trazem `woff2` por subconjunto; o Vite os copia para `dist/assets` e o CSP `'self'` continua valendo | F.0 |
+| Erro tratável pelo cliente | A [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (Problem Details, substitui a 7807) é o formato padrão; a versão 10× menor é um `code` estável ao lado do `error` | I, pista da E |
+| Backup de custo zero | O [guia oficial](https://supabase.com/docs/guides/deployment/ci/backups) commita o dump no repositório — e avisa para nunca fazer isso em repo público. **Este repo é público** | R.10 |
+
+### O que isso implica
+
+1. **Um bloco novo antes da Fase E** — as [pendências da revisão pós-D](#-pendências-da-revisão-pós-d--antes-da-fase-e).
+   SEC-07 e 08 são "perde dado", a resposta da pergunta 3 do filtro que justifica interromper; o
+   SEC-10 desliga os dois serviços do workspace por até um mês. **Janela:** o Render volta em 01/10;
+   até lá nada está no ar.
+2. **O repositório é público** (conferido em 29/09), e o `master` não tem proteção de branch. Este
+   plano descreve as falhas com precisão, como sempre fez — por isso o texto que as descreve **vai
+   ao ar junto com o conserto, não antes**. Regra nova do portão: achado de segurança aberto é
+   publicado com a correção.
+3. **As decisões 3 e 4 voltam ao dono** com fato novo — é o "motivo novo" que o `CLAUDE.md` exige
+   para reabrir decisão.
+
+---
+
 ## ⚖️ Decisões tomadas (02/09/2026)
 
 Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo. *(1 a 3 em
@@ -175,8 +245,8 @@ Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem mo
 |---|---|---|---|
 | 1 | A explosão do d10 encadeia? | **Sim, encadeia** | Cliente e PRD já estão certos. Corrigir só o servidor, sem configuração por mesa. |
 | 2 | Fidelidade estrita ou regras de casa? | **Fidelidade estrita ao CP2020** | Nenhuma divergência vira "regra de casa". A Fase C ganha conferência sistemática contra o livro. |
-| 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase L (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. |
-| 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo. **Gatilho:** um incidente real de perda de dado que o backup diário não cobriria |
+| 3 | Quem é o público da alpha? | **Jogadores convidados pelo dono** | SEC-02 cai de crítico para alto. Fase L (performance) fica por último. SEC-01 continua crítico — custo de API não depende de quem joga. **⚠️ Revisão pós-D (29/09):** o produto não impõe o convite — o lobby lista toda sala e o `join` aceita quem souber o código. Quem pode entrar volta ao dono na **R.11** |
+| 4 | Ativar PITR no Supabase (A.5)? | **Não — ADIAR.** PITR exige plano Pro (pago); o dono confirmou que o projeto fica no free tier | Colide com o contrato de custo zero sem sintoma que justifique. ~~O free tier já faz backup diário automático — só falta granularidade de restauração por ponto no tempo.~~ **⚠️ Premissa falsa (revisão pós-D, 29/09):** o plano gratuito **não tem backup automático nenhum** — só Pro, Team e Enterprise ([docs](https://supabase.com/docs/guides/platform/backups)). O "não ao PITR" continua; **como fazer backup** volta ao dono na **R.10** |
 | 5 | Como evitar que o Render publique código antes da migration que ele usa? (P.5) | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa | O Render faz auto-deploy a cada push no `master`, sem esperar o `db-sync`. Regra de processo, custo zero, nada novo para configurar. Ver o passo 5 do ritual de encerramento |
 | 6 | Na cabeça, o dano dobra antes ou depois do BTM? | **Depois — opção A: armadura → BTM (mín. 1) → ×2** | O livro dá a regra e não diz quando; A é a ordem do texto e a das implementações de fãs. B seria mais letal pelo valor do BTM. Pesquisa e números na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d) |
 | 7 | As quatro perguntas da D.0: quem escreve o ferimento na mesa, pontos × nível, token sem ficha, penetração escalonada | **(a)** Na mesa, **só o servidor e o GM** escrevem o ferimento — a sincronia da ficha deixa de levá-lo. **(b)** A ficha **guarda pontos** (0–40), e o nível é derivado; junto nasce o estado **Morto**. **(c)** Token sem ficha **não recebe dano**. **(d)** Penetração escalonada: **ADIAR** | (a) fecha o achado do portão C.14. (b) é fidelidade estrita: o livro conta pontos, e o nível sozinho perde o resto da caixa. Sem migration SQL — a ficha mora no `data` jsonb. (c) e (d) são as versões menores, com gatilho na [conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu). Detalhe na D.0 |
@@ -240,7 +310,7 @@ origem de cada pergunta, em [`SEGURANCA.md`](./SEGURANCA.md).
 |---|---|---|---|
 | 1 | Que **entrada nova** este trabalho aceita? Está validada no limite do servidor? | Tampering | SEC-05 |
 | 2 | Que **dado novo sai**? Quem pode lê-lo, e isso é verificado ou presumido? | Info. Disclosure | SEC-02 |
-| 3 | Que **autorização nova** existe? O autor vem da sessão, nunca do corpo? | Spoofing / EoP | T1.7 |
+| 3 | Que **autorização nova** existe? O autor vem da sessão, nunca do corpo? **E quem recebe a sessão prova o quê?** | Spoofing / EoP | T1.7; a segunda metade, SEC-07 (revisão pós-D) |
 | 4 | O que um **jogador convidado hostil** consegue fazer aqui? | EoP | Decisão 3 |
 | 5 | Que **estado novo cresce sem limite**, e quem recolhe? | DoS | SEC-04 |
 | 6 | Isso adiciona **custo por requisição** a um serviço externo pago? | DoS / financeiro | SEC-01 |
@@ -351,7 +421,7 @@ hora de mesa: **~45–90 MB por hora**, ~0,2–0,4 GB por sessão. O site inteir
 **A regra 4 (site fora do Render) economiza pouco, pelos números:** só as horas de visita e a banda do
 site. Continua valendo, mas não é urgente — fazer quando o produto for publicado.
 
-**Os dois riscos reais — nenhum com sintoma ainda:**
+**Os riscos reais — os dois de uso normal ainda sem sintoma; o de abuso, calculado na revisão pós-D:**
 
 1. **Aba esquecida.** O lobby consulta a lista de salas a cada **8 s**, e a mesa manda heartbeat a
    cada 20 s — **inclusive com a aba em segundo plano** (o navegador desacelera os timers, mas não para
@@ -365,6 +435,15 @@ site. Continua valendo, mas não é urgente — fazer quando o produto for publi
    (broadcast por diferença). **Gatilho para antecipar:** a banda do workspace passar de 2,5 GB num
    mês. Mitigação intermediária de uma linha: compressão por mensagem no WebSocket
    (`perMessageDeflate`) — JSON comprime bem, mas custa CPU e memória no servidor gratuito.
+3. **Abuso pela mesa (SEC-10, revisão pós-D).** O WebSocket não limita mensagens, e cada uma reenvia
+   a sala inteira a todas as conexões. Um participante com um script — e, com o lobby aberto, qualquer
+   visitante é participante — a **10 mensagens/s gasta os 5 GB do workspace em ~35 min**. Não é
+   estimativa de uso, é teto que falta: **FAZER na R.4**, antes da primeira sessão em produção.
+   *(Feito na R.4, 29/09.)* O WebSocket ganhou os tetos do REST — mas os tetos do REST ainda deixam
+   120 reenvios da sala por minuto a um participante hostil: **menos de 3 h para os 5 GB**. O abuso
+   passou de minutos para horas, não para nunca. O que fecha de vez é quem pode entrar (R.11) e o
+   broadcast por diferença (L.1). **Gatilho para antecipar a L.1:** a R.11 manter a mesa aberta a
+   qualquer visitante, ou um `ws_rate_limited` aparecer no log de uma sessão real.
 
 **Medir em vez de estimar:** a partir de 01/10, a página de uso do workspace no painel do Render mostra
 horas e banda por serviço. Conferir depois da primeira sessão de jogo e trocar esta estimativa pelo
@@ -387,7 +466,8 @@ número real.
 
 ## 📊 ÍNDICE DE ACHADOS
 
-33 achados no código. IDs referenciados pelas fases.
+33 achados da auditoria de 02/09 e **12 da [revisão pós-D](#-revisão-pós-d-29092026)** (29/09 — 11 na revisão, 1 no portão das R), no
+fim desta seção. IDs referenciados pelas fases.
 
 ### Segurança (6)
 
@@ -442,11 +522,29 @@ número real.
 | DOC-04 | 🔵 Baixo | Sem tags nem releases | A |
 | DOC-05 | 🔵 Baixo | Plano mestre programado para se autodeletar | A/M |
 
+### Revisão pós-D (12) — 29/09/2026
+
+| ID | Sev. | Achado | Fase |
+|---|---|---|---|
+| SEC-07 | 🔴 Crítico | `join` com `peerId` já presente emite sessão sem prova de posse e revoga a do dono — **tomada de GM** por qualquer um na mesa *(reproduzido)* | ✅ R.1 |
+| SEC-08 | 🟠 Alto | `create` com código existente **substitui a sala** — sem sessão; perde fichas, chat e grid *(reproduzido)* | ✅ R.2 |
+| SEC-10 | 🟠 Alto | WebSocket sem limitador por mensagem e com `maxPayload` de 100 MiB — um participante gasta a banda do workspace | ✅ R.4 |
+| SEC-13 | 🟠 Alto | Sala sem teto de **assentos**: cada `join` novo cria um, cada um abre até 3 sockets e recebe cada reenvio *(achado do portão das R, 29/09 — não reproduzido)* | R.16 |
+| OPS-01 | 🟠 Alto | **Nenhum backup** — a decisão 4 supôs um backup diário que o plano gratuito não tem | R.10 |
+| SEC-09 | 🟡 Médio | Expulsar não revoga a sessão nem fecha o socket — o expulso segue lendo a mesa *(reproduzido)* | ✅ R.3 |
+| SEC-11 | 🟡 Médio | Sem `trust proxy`, os limitadores tendem a ser um balde só atrás do proxy do Render | ✅ R.5 (conferir no ar) |
+| SEC-12 | 🟡 Médio | Posse de token no grid Yjs compara o dono **novo** — jogador move e toma token alheio *(reproduzido na R.6)* | ✅ R.6 |
+| OPS-02 | 🟡 Médio | Node sem versão fixa: produção no `latest` (26, não LTS), CI no 20 (fim de vida) e no 22 | R.8 |
+| DOC-06 | 🟡 Médio | A L.6 depende de meses de log, e o Render Hobby guarda 7 dias | R.12 |
+| DOC-07 | 🟡 Médio | A decisão 3 (só convidados) não é imposta pelo produto: lobby público e `join` aberto | R.11 |
+| OPS-03 | 🔵 Baixo | `version` do `package.json` em 0.4.0 com a tag em `v0.4.3` | R.9 |
+
 ---
 
 ## 🗂️ AS 13 FASES
 
-**Esforço total: 30,5 a 38,5 dias de trabalho concentrado** — quatro a sete meses de calendário para
+**Esforço total: 30,5 a 38,5 dias de trabalho concentrado** *(mais 1,5–2,5 das pendências R, da
+revisão pós-D)* — quatro a sete meses de calendário para
 quem tem outra ocupação. Ponto de corte natural: **fechando A–D o jogo já roda certo**; F entrega a
 identidade visual nova; e as varreduras viram manutenção de fim de semana.
 
@@ -1146,6 +1244,197 @@ cliente e servidor para ela.
 
 > **Ponto de corte:** com A–D fechadas o jogo roda certo. Dá para jogar aqui e tratar o resto como
 > manutenção — com a exceção da F, que é a única fase restante que muda o que o jogador vê.
+> **Ressalva da revisão pós-D (29/09):** "roda certo" vale para as regras. Para jogar **em produção**,
+> as pendências R.1–R.5 abaixo vêm antes — sem elas, qualquer participante toma o GM, apaga a mesa ou
+> gasta a banda do workspace. *(R.1–R.6 feitas em 29/09; a R.16, teto de assentos, ainda vem antes.)*
+
+---
+
+### 🚨 PENDÊNCIAS DA REVISÃO PÓS-D — antes da Fase E
+
+🔨 *(1,5–2,5 dias)* Nasceram da [revisão de 29/09/2026](#-revisão-pós-d-29092026). Mesmo formato das
+pendências operacionais de 25/09: itens com checkbox, fora das 13 fases, que **precedem** a próxima.
+SEC-07 e SEC-08 são **perda de dado** — a resposta da pergunta 3 do filtro que justifica interromper.
+O SEC-10 não perde dado: ele **desliga os dois serviços do workspace até o mês seguinte**, o mesmo
+efeito do incidente de setembro, e o contrato de custo zero existe para impedir isso. **Janela:** o
+Render volta em 01/10/2026; até lá nada está no ar. O ideal é R.1–R.5 no `master` antes da primeira
+sessão de jogo em produção.
+
+**Por que isto não é a Fase J adiantada:** a J procura o que ninguém achou. Aqui os achados já estão
+achados — quatro reproduzidos —, e o filtro manda consertar com teste que reproduz primeiro e
+**provar revertendo**, como na B.
+
+- [x] **R.0** 🔍 **Verificação de premissas** — a própria [revisão pós-D](#-revisão-pós-d-29092026).
+      *(29/09/2026)*
+- [x] **R.1** **SEC-07 — reconexão exige prova de posse.** Hoje o `peerId` faz papel de credencial, e
+      ele é público. O `join` com um `peerId` que já está na sala passa a exigir **o token de sessão
+      vigente daquele `peerId`** (header `X-Session-Token`, o mesmo da B.3); sem ele, `409` e o cliente
+      entra como jogador novo. O `gmPeerId` inclusive.
+      - **Muda contrato documentado** — a pergunta 5 do filtro pede a certeza toda. O
+        [`PROTOCOLO_MULTIPLAYER.md`](./PROTOCOLO_MULTIPLAYER.md) §2 diz que, ao receber 401, o cliente
+        refaz o `join` com o mesmo `peerId`. Desde a B.4 as sessões sobrevivem ao restart, então o 401
+        legítimo para quem está na sala ficou raro — e é justamente o sintoma que o ataque produz.
+        Decidir, com o teste na mão, o que o cliente mostra no 409.
+      - **Caso de borda aceito:** sessão perdida na janela de 2 s do debounce de persistência (crash
+        logo depois do `join`) vira assento novo; o GM remove o antigo.
+      - **Versão maior, ADIAR:** assento vinculado à conta do Supabase (JWT), que também fecharia a
+        porta "sair e voltar curado" da D.9. **Gatilho:** a R.11 decidir que a mesa exige login.
+      - Teste primeiro, com o caso do script de 29/09 (o convidado toma o GM); depois o conserto,
+        **provado revertendo**.
+      - *(29/09/2026 — feito.)* `seatClaimRefusal` no `roomManager` é a regra única: assento ocupado
+        (jogador **ou** `gmPeerId` sem jogador) só com o token vigente dele. O `joinRoom` a aplica e a
+        rota responde **409 `{ code: "seat_taken" }`** — o primeiro `code` estável da API, a versão
+        10× menor da RFC 9457. No cliente, `postJoin` manda o token no `X-Session-Token` e, no 409,
+        entra como jogador novo uma vez só. Protocolo reescrito (§2).
+      - **Testes:** `seat-claim.integration` (9) e `rooms-client` (5). **Provado revertendo:** com o
+        código antigo, 11 dos 14 falham (os 3 que passam são os caminhos legítimos).
+      - **Oito testes antigos reconectavam só com o `peerId`** — a tomada de assento escrita como
+        expectativa, como o teste do `GET /api/rooms/:code` que a B.3 substituiu. Os três da T3.3
+        passaram a provar o assento; e cinco helpers (`damage`, `death-save-turn`, `combat-loop`,
+        `initiative`, `gm-attack`) faziam o GM reentrar sem token — tinham virado no-op silencioso.
+        Um deles escondia um teste **passando pelo motivo errado**: "nem reconectando com uma ficha
+        curada" passava porque a reconexão era recusada, não pela decisão 7a. Agora reconecta com o
+        token e confere que a reconexão aconteceu.
+      - **Variante achada no conserto, ADIAR:** quando o GM sai e ninguém fica online, o `gmPeerId`
+        vira `undefined` e quem entrar com o **handle** do GM (público no lobby) assume o cargo
+        (T1.1/T1.8). Não há prova possível — o assento do GM já não existe —, e mudar isso muda como
+        uma mesa sem GM volta a ter um. **Gatilho:** a R.11 decidir manter o lobby aberto, ou uma mesa
+        ser tomada assim.
+- [x] **R.2** **SEC-08 — `create` não sobrescreve.** Código em uso → `409`, com mensagem que diga
+      para escolher outro. Conferir os testes que reaproveitam o mesmo código de sala entre casos.
+      *(29/09/2026)* A rota responde **409 `{ code: "room_exists" }`** ("Entre nela pelo lobby ou
+      escolha outro código" — a tela de criação já mostra a mensagem do servidor), com o código
+      comparado já normalizado. O `createRoom` **lança** se chegar com código em uso: é defesa para
+      caminho futuro, e chegar lá é bug. Nenhum teste antigo reaproveitava código — conferido: a suíte
+      inteira passou sem ajuste. `create-conflict.integration` (4); **provado revertendo:** 3 dos 4
+      falham com o código antigo (o que passa é o do código livre). Efeito colateral bom: o **próprio
+      GM** também perdia a mesa se clicasse "criar" de novo com o mesmo código.
+- [x] **R.3** **SEC-09 — expulsar revoga.** O `deleteGeneratedPlayer` revoga as sessões do alvo
+      (`revokeSessionsForPeer`, como o `leaveRoom`) e a rota fecha os sockets dele (`closePeerSockets`,
+      como a do `leave`). *Detalhe:* o mapa do SSE não sabe de quem é cada stream — um expulso que
+      estiver no fallback só cai se o `peerId` for guardado junto. Decidir no teste se vale a linha.
+      *(29/09/2026)* **Maior que o descrito:** só revogar criaria uma regressão — no primeiro 401, a
+      reconexão automática do cliente (T3.3) faria um `join` novo com o mesmo `peerId`, e o expulso
+      voltaria em até 20 s (o próximo heartbeat). Então a expulsão faz quatro coisas:
+      - revoga a sessão do expulso;
+      - a rota fecha o WebSocket **e o stream SSE** dele — o `ssePeer` (um `WeakMap`) guarda o dono de
+        cada stream, e valeu a linha: o teste mostrou o stream do expulso **aberto para sempre**;
+      - a sala guarda o `peerId` em `removedPeerIds` (os **50** mais recentes — pergunta 5 do portão;
+        persiste com a sala e é saneado no restore), e o `join` por ele responde **403
+        `removed_by_gm`**; no cliente, a reconexão volta ao lobby com "O Mestre removeu você desta
+        mesa", sem insistir. **Não é banimento:** sem conta, uma aba nova é outro jogador — é a R.11;
+      - o GM **não remove a si mesmo** (ficaria trancado fora da própria mesa): a tela já não
+        oferecia, e o servidor passou a recusar.
+      - `kick.integration` (6, com um servidor HTTP de verdade para ver o stream fechar) + 1 em
+        `rooms-client`. **Provado revertendo:** os 6 do R.3 falham com o código antigo; o de stream
+        **estoura o tempo**, porque o stream do expulso nunca terminava.
+- [x] **R.4** **SEC-10 — o WebSocket ganha os tetos do REST.** `maxPayload` explícito (1 MiB, o mesmo
+      do `express.json`) e limitador **por conexão** para os quadros JSON, com os números do REST (chat
+      30/min; o resto, 120/min). O teste mede o que o contrato de custo precisa: N mensagens acima do
+      teto **não** geram N reenvios da sala.
+      *(29/09/2026)* Os tetos moram em [`server/wsLimits.ts`](../server/wsLimits.ts), com o porquê de
+      cada número. Três mudanças no desenho, achadas ao escrever o teste:
+      - **Por jogador, não por conexão:** conta por conexão se compra abrindo mais sockets. E o
+        número de sockets **por jogador** ganhou teto (3, fecha os mais antigos com `4409`), porque
+        cada socket a mais recebe cada reenvio da sala — outro multiplicador de banda.
+      - **O binário também:** update do grid aceito reenvia a sala inteira (120/min, como o REST), e o
+        *awareness* é repassado a todos com estado livre — **4 KiB** de teto de tamanho e 1.200/min.
+        Antes de qualquer parse, 1.800 quadros/min por jogador (teto de CPU). Os baldes **não** somem
+        quando o socket fecha: somem quando a janela vence — senão reconectar zeraria a cota.
+      - **O cursor do GM ia a cada `mousemove`** (~60/s, sem throttle). Com o teto no servidor, o
+        cursor travaria para o GM legítimo; o cliente passou a mandar no máximo um a cada 60 ms,
+        sempre a última posição (`src/lib/throttle.ts`).
+      - O `makeRateLimiter` do REST passou a usar a mesma conta de janela (`allowInWindow`): uma
+        implementação para os dois transportes. O handler de *upgrade* saiu do `startServer` para
+        `attachRealtime`, para o teste subir o socket de verdade.
+      - `ws-limits.integration` (5, com socket real) + `throttle` (2). **Provado revertendo:**
+        neutralizadas as 4 linhas dos tetos, os 4 testes de socket falham — **100 reenvios para 100
+        mensagens**, quadro de 2 MiB aceito, *awareness* de 10 KB repassado, 5 sockets abertos.
+      - **O que sobra, com número:** com os tetos do REST, um participante hostil ainda reenvia a sala
+        120 vezes por minuto (~250 KB cada) — **menos de 3 h para os 5 GB**, em vez de ~35 min. O
+        teto certo é o ARQ-01 (broadcast por diferença, L.1), e quem entra na mesa é a R.11. Ver o
+        risco 3 do contrato de custo zero.
+- [x] **R.5** **SEC-11 — `trust proxy`.** `app.set("trust proxy", 1)` só em produção (um salto: o
+      proxy do Render). **Verificar no ar**, com uma requisição conhecida e o `req.ip` no log: o
+      número de saltos é premissa de configuração, e premissa de configuração se confere.
+      *(29/09/2026 — o código; a conferência no ar fica para o deploy.)* `resolveTrustProxy`: 1 salto
+      em produção, nenhum fora dela; `TRUST_PROXY` corrige sem deploy de código, e `true` é recusado
+      (confiaria em qualquer `X-Forwarded-For`). **Em vez de log** (que o Render guarda 7 dias), o
+      `/api/health` devolve a quem pergunta o **próprio** IP como o servidor o enxerga (`clientIp`) —
+      a verificação no ar é uma requisição, e está no passo 1 da
+      [verificação pós-deploy](./DEPLOY.md#verificação-pós-deploy). `trust-proxy.integration` (5).
+      **Provado revertendo** a linha do `app.set`: o jogador de outro IP levava **429 pelo chat do
+      GM** (um balde só) e o health mostrava o IP do "proxy". **Pendente no ar:** o `clientIp` bater
+      com o IP público de quem pergunta, no deploy de 01/10.
+- [x] **R.6** **SEC-12 — posse no grid.** Reproduzir com teste (update Yjs que reescreve o `peerId`
+      de um token alheio e o move). Se reproduzir: comparar com o dono **anterior** e proteger `peerId`
+      e `icon`. Anotar na [ADR 0002](./adr/0002-yjs-websockets.md) como evidência — a autorização por
+      diff é o custo que a revisão de 02/09 apontou no CRDT — **sem reabri-la**: o gatilho dela é bug de
+      convergência, e isto é de autorização.
+      *(29/09/2026)* **Reproduziu**, com um cliente Yjs de verdade sobre o WebSocket: o jogador levou
+      o NPC para (0,0) tomando o dono dele, e **roubou o token de outro jogador** (`peer_kaze` →
+      `peer_vex`). A causa é de classe — a checagem enumerava à mão os campos protegidos e esqueceu
+      dois. O conserto compara **todo** campo que o doc carrega, menos `x`/`y`, pela mesma lista do
+      `gridDoc` (`TOKEN_KEYS`, agora exportada): campo novo nasce protegido. E a posse é a do dono
+      **anterior**. Conferido que o `deriveGridFromDoc` não converte tipo (não há falso positivo que
+      reverta movimento legítimo). `grid-ownership.integration` (5). **Provado revertendo:** com a
+      checagem antiga, 4 dos 5 falham (o que passa é mover o próprio token). Nota na ADR 0002 atualizada.
+- [ ] **R.7** **SEC-06 — o gatilho da B.6 disparou.** `npm audit fix` leva a `express@4.22.3` e
+      `qs@6.16.0`. Esperado: `npm audit --omit=dev` com **0** vulnerabilidades. Atualizar a linha do
+      SEC-06 em [`SEGURANCA.md`](./SEGURANCA.md#estado-dos-achados-de-segurança) e a linha de base.
+- [ ] **R.8** **OPS-02 — fixar o Node.** `.node-version` com `24` (LTS; manutenção a partir de
+      20/10/2026, fim de vida em 30/04/2028), `engines` com teto (`">=24 <25"`), e o CI — a matriz e o
+      job de E2E — no 24. O 20 está em fim de vida, e o 22 não é o que roda em produção. **Conferir no
+      log do deploy de 01/10** qual versão o Render vinha usando.
+- [ ] **R.9** **OPS-03 — versão com a tag.** `package.json` → `0.4.3`. A regra entrou no passo 3 do
+      ritual de abertura.
+- [ ] **R.10** 🧑‍⚖️ **Decisão do dono — backup (reabre a decisão 4, OPS-01).** Em ordem de tamanho:
+      1. *(recomendada — a versão 10× menor)* **Dump manual** com o CLI já logado
+         (`npx supabase db dump --linked`, esquema e `--data-only`), guardado **fora do repositório**,
+         mensal e antes de toda migration. É o que a doc do Supabase recomenda ao plano gratuito.
+      2. Workflow agendado com o dump **cifrado** como artefato. O guia oficial commita o dump no
+         repositório — **proibido aqui: o repo é público**, e artefato de repo público também se baixa.
+         Exige cifra e um secret novo.
+      3. Plano Pro — colide com o custo zero.
+      A K.1 (export da ficha em JSON) é o backup que o **jogador** controla — complementa, não substitui.
+- [ ] **R.11** 🧑‍⚖️ **Decisão do dono — quem pode entrar numa mesa (DOC-07; o alcance da decisão 3).**
+      Hoje o lobby lista toda sala a qualquer visitante, e o `join` aceita quem souber o código.
+      1. **Manter aberto** e assumir o modelo de ameaça real, "qualquer pessoa com a URL". R.1–R.4
+         impedem que ela *tome* a mesa; ela continua *lendo* fichas e chat.
+      2. *(recomendada)* **Sala fora do lobby** — o lobby para de listar; entra-se pelo código ou pelo
+         link `/room/CÓDIGO`, que o GM manda aos convidados. É a decisão 3 imposta sem conta nova.
+         Exige código difícil de adivinhar: hoje o GM escolhe (ex.: `NC-2020`), e o servidor
+         acrescentaria um sufixo aleatório.
+      3. **Mesa exige login** (JWT do Supabase no `join`, como a IA já exige). O mais forte, e abre a
+         versão maior da R.1.
+- [x] **R.12** **DOC-06 — a L.6 precisa de outra fonte de dado.** Com 7 dias de retenção, "meses de
+      log" não existe. Versão 10× menor: depois de cada sessão de jogo em produção, buscar
+      `sse_fallback` no log do Render (dentro dos 7 dias) e anotar a contagem numa tabela **Registro de
+      sessões**, no fim deste plano. É o mesmo passo que troca a estimativa de banda pelo número real.
+      *(29/09/2026 — a [tabela](#registro-de-sessões) existe; a L.6 aponta para ela.)*
+- [ ] **R.13** *(proposta — decisão do dono)* **Encolher este plano.** Sintoma observado nesta
+      revisão: com ~1.700 linhas o arquivo **não cabe numa leitura** da ferramenta do Claude (passa de
+      25 mil tokens) e foi lido em quatro pedaços — sessão fria que lê em pedaços pula coisa. Versão
+      10× menor: mover o detalhe das fases fechadas (A–D e as pendências P) **verbatim** para
+      `docs/historico/FASES_A-D.md`, deixando aqui uma linha por fase com o link. PR próprio, só de
+      movimento de texto, revisável com `git diff --color-moved`.
+- [ ] **R.14** 🔒 **Portão de segurança** — o bloco muda autorização (R.1, R.3, R.6) e entrada (R.4):
+      as seis perguntas em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). E a pergunta que o repo
+      público impõe: **o que este PR ensina a quem lê o código antes de o conserto estar no ar?**
+      *(29/09/2026 — respondido para R.1–R.6, no [registro](./SEGURANCA.md#pendências-r--revisão-pós-d).
+      Achado do portão: **SEC-13**, virou a R.16. O item fecha quando R.7–R.9 e a R.16 responderem.)*
+- [ ] **R.15** 🧠 **Estado durável e PRs.** Ordem: consertos de segurança (R.1–R.6) **junto com** o
+      texto que os descreve, nunca depois dele; dependências, Node e versão (R.7–R.9) podem ir no mesmo
+      PR; a R.13 em PR próprio. Depois do merge, `master` verde e a verificação pós-deploy de 01/10.
+      *(29/09/2026 — R.0–R.6 e R.12 publicados juntos, a pedido do dono: um commit por item, cada um
+      com o teste que reproduz e a prova revertendo. R.7–R.11, R.13 e R.16 ficam para o próximo PR.)*
+- [ ] **R.16** **SEC-13 — teto de assentos por sala** *(achado do portão das R, 29/09/2026)*. Cada
+      `join` com `peerId` novo cria um assento, cada assento abre até 3 sockets (R.4), e o `join` só
+      tem o limitador de sala (120/min por IP): dezenas de assentos multiplicam cada reenvio da sala —
+      o amplificador do SEC-10 por outra porta, e a mesma família da "sala sem teto de NPCs" (pista da
+      E). **Reproduzir primeiro.** Versão 10× menor: teto de assentos por sala (uma mesa real tem até
+      ~8; 12 dá folga), `409` com código estável acima dele. Antes da primeira sessão em produção.
+- [ ] ✅ **Pendências da revisão pós-D resolvidas em:** ____/____/______
 
 ---
 
@@ -1171,6 +1460,23 @@ Escopo: `server.ts`, `server/roomManager.ts`, `server/roomPersistence.ts`, `serv
   — mesma classificação por substring, agora em dois lugares.
 - Mais de dez timestamps do chat montados à mão no `roomManager`; a D criou o `chatTime` e o
   `pushSystemMessage`, e só o código da própria fase passou a usá-los.
+- *Da revisão pós-D (29/09/2026) — o que não virou pendência R:*
+  - **Conexão morta no WebSocket.** O servidor não manda `ping`; socket que caiu sem aviso fica no
+    `wsClients` recebendo broadcast até o TCP desistir. O
+    [README do `ws`](https://github.com/websockets/ws#how-to-detect-and-close-broken-connections)
+    recomenda ping/pong a cada ~30 s com `terminate()` de quem não responde. Sintoma a procurar:
+    jogador "online" que já fechou a aba.
+  - **`updateTacticalGrid` grava o `gridState` como veio** (`room.tacticalGrid = gridState`) — a
+    mesma classe do `updateInitiative` que a D.4 fechou. Só o GM chega lá.
+  - **O lobby (`GET /api/rooms`) só passa pelo limitador global** — relevante se a R.11 mantiver a
+    lista.
+  - **O modelo de IA está fixo no código** (`gemini-2.5-flash`). Desde 18/09/2026 o Google limita o
+    acesso aos modelos 2.5 a quem já os usava, sem data de desligamento
+    ([descontinuações](https://ai.google.dev/gemini-api/docs/deprecations)). Ler o nome do modelo de
+    uma variável de ambiente é uma linha — gatilho na [ADR 0005](./adr/0005-provedor-de-ia.md).
+  - **Código de erro estável** para a classificação por substring: a versão 10× menor da
+    [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) é um campo `code` ao lado do `error` — o
+    status passa a sair do `code`, e a mensagem pode mudar à vontade. Liga com a Fase I.
 
 **O que a varredura pergunta:** todo caminho de erro devolve o status certo e uma mensagem tratável?
 Existe estado que cresce sem limite? Que suposição quebra se duas requisições chegarem juntas?
@@ -1225,6 +1531,13 @@ estratégia, portanto, é **reconstruir a linguagem com faces livres**, não cop
       - Solução: **auto-hospedar** (`@fontsource/*` ou `public/fonts/` com `@font-face` local).
         Mantém o CSP apertado e é o mesmo mecanismo que as fontes novas vão usar.
       - Verificar com `NODE_ENV=production` e helmet ativo. É a única forma de confirmar.
+      - **Premissa conferida na revisão pós-D (29/09/2026):** o `@import` segue na linha 1 do
+        `index.css` e o CSP é o mesmo — o bug está de pé. As três faces têm pacote
+        [`@fontsource`](https://fontsource.org/) (SIL OFL) com `woff2` por subconjunto; o subconjunto
+        `latin` cobre os acentos do português, e o Vite copia os arquivos para `dist/assets`, servidos
+        pelo mesmo origin. **A F não tinha item `.0` de verificação** (o `CLAUDE.md` pede um em toda
+        fase de construção): este F.0 passa a abrir com a conferência das premissas da F.1–F.4 antes
+        do conserto.
 
 #### F.1 — O sistema tipográfico 2020 *(1 dia)*
 
@@ -1258,9 +1571,9 @@ O sistema de design **já existe e nunca foi conectado**. Medido no repositório
 
 | Medida | Valor |
 |---|---|
-| Ocorrências de cor literal em `.tsx` | **1.722** |
+| Ocorrências de cor literal em `.tsx` | **1.722** *(1.731 em 29/09)* |
 | Combinações distintas de cor | **107** |
-| Tokens de cor no `@theme` do `index.css` | 5 |
+| Tokens de cor no `@theme` do `index.css` | **8** *(a tabela dizia 5; corrigido no índice em 03/09 e aqui em 29/09)* |
 | **Componentes que os usam** | **0** |
 | Animações de identidade definidas (`scanline`, `glitch`) | 2 |
 | **Componentes que as usam** | **0** |
@@ -1314,6 +1627,15 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
 - [ ] **F.4.2** **Acessibilidade — não negociável.** Efeitos oitentistas destroem legibilidade com
       facilidade: conferir contraste com a paleta nova nos dois modos, foco visível, ordem de
       tabulação nos modais, e **respeitar `prefers-reduced-motion`** em scanline, glitch e pulse.
+      *Critérios concretos, do [WCAG 2.2](https://www.w3.org/TR/WCAG22/) (revisão pós-D, 29/09):*
+      - **2.2.2 Pausar, parar, ocultar (nível A)** — animação automática com mais de 5 s, ao lado de
+        outro conteúdo, precisa de meio de parar. O `scanline` é loop infinito de 8 s: ou tem controle,
+        ou não roda em tela de leitura.
+      - **2.3.1 Três flashes (nível A)** — o `glitch` não pode piscar mais de 3 vezes por segundo.
+      - **1.4.3** (texto, 4,5:1) e **1.4.11** (borda e ícone, 3:1) — os dois de nível AA.
+      - Medido em 29/09: **0** ocorrências de `prefers-reduced-motion` no CSS e **23** usos de
+        `animate-pulse/ping/spin` em `.tsx` — a preferência vale para eles também, não só para os
+        efeitos novos.
 - [ ] **F.4.3** Conferir o peso das fontes auto-hospedadas no bundle. Cada face adicionada é payload:
       se `Orbitron` só aparece em títulos, carregar **apenas os pesos usados**, com `font-display: swap`.
 - [ ] **F.4.4** Verificar com `NODE_ENV=production` e helmet ativo. Fecha o F.0.
@@ -1348,8 +1670,13 @@ Fase F para não varrer código que acabou de ser reestilizado.
 - ~~`StatBlock.handleSet` altera `stats` sem tocar em `currentStats`; `handleChange` aplica um
   `Math.min` difícil de justificar.~~ *Resolvida na C.6: o `currentStats` virou derivado e o
   `StatBlock` parou de escrevê-lo.*
-- 16 `console.*` sobrevivendo ao logger estruturado. *(ARQ-07, parte 1)*
+- 16 `console.*` sobrevivendo ao logger estruturado. *(ARQ-07, parte 1)* *(contados em 29/09: 12 no
+  cliente, 3 dentro do próprio `server/logger.ts` — que são o logger — e 1 num comentário do
+  `server.ts`. O alvo real são os 12)*
 - Candidatos a refactor: `MultiplayerRoom` 944 (1.031 depois da Fase D), `FriendsList` 723, `CyberpunkMenu` 608. *(ARQ-05)*
+- *Conferido na revisão pós-D (29/09/2026):* o `syncSheetStore` segue no corpo do render
+  (`App.tsx:68`) e o `createBlankCharacterSheet` segue em `useCharacterSheet.ts` — as pistas valem.
+  **Depois da R.1** o cliente ganha um estado novo (o `409` do `join`); a G confere o que a tela mostra.
 
 **O que a varredura pergunta:** que estado existe em dois lugares e pode divergir? O que a UI faz
 quando a rede falha, o token expira ou a resposta demora? Dá para operar a ficha só com teclado?
@@ -1379,6 +1706,13 @@ uso real.
 - A habilidade especial **não é rolável na mesa**: o tipo `skill` procura em `sheet.skills`, e ela
   mora em `specialAbilityName`. Na ficha funciona. *(visto na C.8, 25/09/2026 — sem sintoma de mesa
   ainda: ninguém pediu)*
+- *Da revisão pós-D (29/09/2026):*
+  - **A reconexão muda de contrato na R.1** (o `join` com `peerId` existente passa a exigir o
+    token). A H confere o fluxo 401 → `join` com rede ruim, servidor reiniciado e duas abas.
+  - **O stream SSE só confere o token na abertura** — sessão revogada depois (expulsão, R.3) não
+    derruba um stream já aberto.
+  - **A autorização por diff do grid já teve um buraco** (SEC-12, R.6). Evidência para a
+    [ADR 0002](./adr/0002-yjs-websockets.md) — o gatilho de reabrir continua sendo bug de convergência.
 
 **Como varrer:** sessão real com 3+ abas, rede estrangulada, refresh no meio do combate, servidor
 reiniciado com a mesa aberta. Não é teste automatizado — é meia hora quebrando de propósito com o log
@@ -1400,7 +1734,10 @@ olha, porque cada lado parece correto sozinho.
 - Contratos de rota escritos duas vezes à mão: conferir se cada endpoint tem tipo compartilhado de
   request e response.
 - Erros do servidor são strings em português (`{ error: "Acesso Negado! ..." }`) — o cliente decide
-  comportamento a partir de texto? Códigos estáveis resolveriam.
+  comportamento a partir de texto? Códigos estáveis resolveriam. *Referência (revisão pós-D):* o
+  formato padrão é a [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`type`, `title`, `status`,
+  `detail`, em `application/problem+json`). Pelo filtro, a candidata é a versão 10× menor — um `code`
+  estável ao lado do `error` que já existe — e a RFC inteira só com sintoma que o `code` não resolva.
 - O que o usuário vê quando o token expira no meio da sessão (401)?
 - `apiFetch` / `authedFetch`: têm timeout? retry? tratam corpo não-JSON?
 - `RollResult` montado em dois lugares com campos ligeiramente diferentes.
@@ -1429,16 +1766,29 @@ sistematicamente, e depois de todo o código novo de C, D e F ter entrado.
   protocolo Yjs — **o binário Yjs é entrada de usuário e hoje só tem try/catch**.
 - Revisar o CSP: `connect-src https:` e `img-src https:` são amplos; apertar para os origins reais.
 - Re-rodar as 56 de RLS e conferir as políticas de storage de avatar.
-- `npm audit` e `gitleaks` sobre o **histórico completo**, não só o HEAD.
+- `npm audit` e `gitleaks` sobre o **histórico completo**, não só o HEAD. *(Conferido na revisão
+  pós-D: o gitleaks do CI **já** varre o histórico — `fetch-depth: 0`. Resta confirmar que a
+  allowlist do `.gitleaks.toml` não esconde nada além da anon key.)*
+- **O repositório é público e o `master` não tem proteção de branch** (conferido em 29/09/2026). O
+  gatilho da A.10 continua o mesmo — repo público não dá push a ninguém, e workflow disparado por fork
+  não recebe secret —, mas a pergunta 2 do portão pesa mais: código, ledgers e este plano são lidos
+  por qualquer um. Daí a regra da revisão pós-D: **achado aberto vai ao ar junto com o conserto**.
+- **Actions fixadas por tag, não por SHA** (`@v4`, `@v1`), e o `supabase/setup-cli` instala
+  `version: latest`. O [guia de hardening do GitHub](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions)
+  recomenda SHA para action de terceiro. **ADIAR** — gatilho: uma action usada aqui aparecer num
+  incidente de cadeia de suprimento, ou o CLI `latest` quebrar o `db-sync`.
 - Conferir que nenhum segredo entrou no bundle depois das mudanças de B (transformar o teste da T10.7
   em script).
 - **Da D.9 (28/09/2026) — sair e voltar "curado":** o `leaveRoom` apaga o registro do jogador, e a
   volta é um join novo, que aceita o ferimento da ficha do cliente. A decisão 7a fechou a sincronia e
   a reconexão, não essa porta. **Gatilho:** um jogador aparecer inteiro depois de sair no meio de uma
-  luta, ou a mesa ter público fora dos convidados do dono.
+  luta, ou a mesa ter público fora dos convidados do dono. *(Revisão pós-D: o segundo gatilho já vale
+  enquanto o lobby for aberto — ver R.11; a versão maior da R.1, assento por conta, fecha esta porta.)*
 
 **O que a varredura pergunta:** se um jogador convidado virar hostil, o que ele consegue fazer? (é o
-modelo de ameaça real da decisão 3) Que dado sai do servidor para quem não deveria vê-lo?
+modelo de ameaça real da decisão 3) Que dado sai do servidor para quem não deveria vê-lo? **E quem
+recebe credencial, provando o quê?** — a pergunta que a revisão pós-D mostrou faltar: o SEC-07 viveu
+desde a T1.7 porque todos perguntavam de onde vinha o autor, e ninguém, quem ganhava o token.
 
 - [ ] ✅ **Fase J concluída em:** ____/____/______
 
@@ -1449,6 +1799,19 @@ modelo de ameaça real da decisão 3) Que dado sai do servidor para quem não de
 A Fase 11 do plano antigo, reordenada por retorno: export/import primeiro (dá confiança para usar de
 verdade), netrunning por último (é meio jogo à parte).
 
+- [ ] **K.0** 🔍 **Verificação de premissas** — *(acrescentado na revisão pós-D, 29/09/2026: o
+      `CLAUDE.md` manda toda fase de construção abrir com um `.0`, e a K não tinha)*. Já sabido:
+      - **A K.3 foi em boa parte entregue** pela C (efeito do ferimento em toda rolagem) e pela D
+        (pontos, stun e death save automáticos, estabilização, perda de membro como aviso). Medir o que
+        sobra antes de estimar — pode não sobrar item.
+      - **K.7 continua valendo:** `Social` segue em INT **e** em EMP (`cyberpunkData.ts`), e o `Walk`
+        segue no `StatBlock`.
+      - **A K.1 também é backup** — o que o jogador controla, fora do banco (R.10).
+      - **K.6 é a regra que fecha o "trapaceiro plausível"** do portão da B (BODY 15, perícias em 10):
+        sem orçamento de criação, a ficha grampeada ainda é válida.
+      - Toda regra nova começa na tabela e na [conferência](./CONFERENCIA_CP2020.md#o-que-fica-para-a-fase-k),
+        com duas fontes — o cuidado com Cyberpunk RED vale em dobro para netrunning (K.5), onde o RED
+        mudou quase tudo.
 - [ ] **K.1** *(era T11.5)* Export/import de ficha (JSON + impressão em PDF) — reaproveita o validador
       de `src/rules/sheetSchema.ts`.
 - [ ] **K.2** *(era T11.1)* Inventário, peso e EV: Carry (BODY×10 kg), Lift (BODY×40 kg), encumbrance
@@ -1472,13 +1835,21 @@ verdade), netrunning por último (é meio jogo à parte).
 Com jogadores convidados (decisão 3), é a fase que mais pode esperar — e a primeira a antecipar se o
 público mudar.
 
+- [ ] **L.0** 🔍 **Verificação de premissas** — *(acrescentado na revisão pós-D, 29/09/2026)*. Já
+      sabido: a L.2 falava de um bundle que não existe mais (ver a nota nela); a L.6 perdeu a fonte de
+      dado que supunha (ver a nota nela); e a **R.4 põe teto no abuso** do broadcast — a L.1 fica com o
+      custo do **uso normal**, e deve ser decidida com os números do Registro de sessões (R.12), não
+      com a estimativa de 26/09.
 - [ ] **L.1** Broadcast por delta (`chat:new`, `player:health`, `initiative:set`); estado completo só
       no join e na reconexão. *(ARQ-01)*
 - [ ] **L.2** `manualChunks` separando **o Supabase**, que está no chunk de entrada e é carregado até
       para quem só quer rolar dados — é o maior contribuinte identificado do 1,3 MB. **Não** investir em
       lazy-loading do Yjs: a [ADR 0002](./adr/0002-yjs-websockets.md) o deixou sob observação, e não vale
-      otimizar o carregamento de algo que pode sair inteiro. Revisar se
-      `motion` paga o próprio peso. *(ARQ-04)*
+      otimizar o carregamento de algo que pode sair inteiro. ~~Revisar se
+      `motion` paga o próprio peso.~~ *(ARQ-04)*
+      *Premissa corrigida na revisão pós-D (29/09):* o `motion` saiu na ARQ-10 (02/09), e o chunk de
+      entrada é **629 kB / 186 kB gzip** desde que a C.1 tirou o `mathjs` — não 1,3 MB. Medir o que o
+      Supabase pesa hoje antes de separar; se o ganho não pagar o `manualChunks`, a L.2 vira DESCARTAR.
 - [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que E e G–J mapearam. *(ARQ-05)*
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [ ] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
@@ -1486,6 +1857,9 @@ público mudar.
 - [ ] **L.6** **Decidir o fallback SSE com o dado da B.7.** Ninguém caiu para SSE em meses de uso? Remove
       o endpoint, o mapa `sseClients`, o caminho duplo do broadcast e o `EventSource` do cliente. Alguém
       caiu? Mantém, e a dúvida está encerrada com evidência em vez de opinião.
+      *Premissa corrigida na revisão pós-D (29/09):* o Render Hobby **guarda log por 7 dias** — "meses
+      de log" não existe. O dado vem do **Registro de sessões** (R.12), preenchido depois de cada
+      sessão. Poucas sessões registradas = evidência fraca: dizer isso ao decidir.
 - [ ] **L.7** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] **L.8** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase L concluída em:** ____/____/______
@@ -1494,6 +1868,10 @@ público mudar.
 
 ### FASE M — VALIDAÇÃO E ENCERRAMENTO 🔨 *(1 dia)*
 
+- [ ] **M.0** 🔍 **Verificação de premissas** — *(acrescentado na revisão pós-D, 29/09/2026)*. Já
+      sabido: as 56 de RLS **não rodam desde a Fase B** (Supabase local desligado na C e na D); o
+      backup (R.10) precisa ter sido **restaurado ao menos uma vez** num Supabase local para contar
+      como backup; e a M.3 revisa também os ADIAR das ADRs e da conferência, não só os dos ledgers.
 - [ ] **M.1** Suíte completa: `tsc --noEmit`, build, unit, integração, E2E, RLS, `npm audit`.
       *(é a T12.2 do plano antigo)*
 - [ ] **M.2** **Uma sessão de jogo real**, 2+ pessoas, do zero ao combate. É o teste que nenhuma suíte
@@ -1516,6 +1894,7 @@ público mudar.
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
+| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.6 e R.12 feitos; falta R.7–R.11, R.13–R.16 | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
@@ -1530,13 +1909,14 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a Fase D (28/09/2026) |
+| Verificação | Depois das R.1–R.6 (29/09/2026) |
 |---|---|
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **522** testes, 26 arquivos *(394 na abertura da D)* |
+| `npx vitest run` | **565** testes, 34 arquivos *(522 ao fechar a D; +43 das R.1–R.6, 8 arquivos novos)* |
 | `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
+| `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
-| `npm run audit:ci` | passa, **ALLOWLIST vazia** (3 moderadas do `qs`, não bloqueiam) |
+| `npm run audit:ci` | passa, **ALLOWLIST vazia** (3 moderadas do `qs`, não bloqueiam — **a R.7 leva a 0**: o `express@4.22.3` saiu) |
 | Chunk de entrada | 629 kB / 186 kB gzip |
 | Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 
@@ -1548,6 +1928,11 @@ Renovar até 22/10 — passo a passo no P.2.
 o do commit mais recente do `master` — se não for, *Manual Deploy → Deploy latest commit* — e rodar a
 [verificação pós-deploy](./DEPLOY.md#verificação-pós-deploy) contra
 `https://netsheetengine.onrender.com`. Uma requisição por passo; **nada de monitor** (regra 3).
+*Acrescentado na revisão pós-D:* no log desse deploy, anotar **qual versão do Node** o Render usou
+(OPS-02, R.8). E, se as R.1–R.5 ainda não estiverem no `master`, **não abrir mesa em produção** —
+o site pode voltar, a mesa espera. *(29/09: R.1–R.6 estão no PR da revisão; com ele mergeado, o passo
+novo é conferir o `clientIp` do `/api/health` contra o seu IP público — R.5. A R.16, teto de assentos,
+ainda falta antes da primeira sessão.)*
 
 **Avisos de descontinuação no log do CI** (vistos no merge da Fase C, 26/09/2026). Hoje são só aviso —
 o run está verde. **ADIAR**, cada um com gatilho datado; o passo 3b do ritual de abertura pega o
@@ -1558,3 +1943,14 @@ vermelho se algum virar erro antes:
 | `ubuntu-latest` passa a ser Ubuntu 26 | os 4 jobs do `ci.yml` e o `keepalive.yml` | **A partir de 19/10/2026** — conferir o primeiro run depois dessa data |
 | CodeQL Action v3 descontinuada | `github/codeql-action/upload-sarif@v3` (gitleaks) | **Dezembro de 2026** — trocar por `@v4` antes |
 | Actions em Node 20 forçadas a rodar em Node 24 | `actions/checkout@v4`, `supabase/setup-cli@v1` | Um run falhar por isso, ou sair versão nova das duas |
+| **Node 20 na matriz do `validate`** *(revisão pós-D)* | `ci.yml` — o runtime do **projeto**, não das actions | **Disparado:** fim de vida em 30/04/2026. Sai na R.8 |
+
+### Registro de sessões
+
+*(Criado na revisão pós-D — R.12.)* Uma linha por sessão de jogo **em produção**, preenchida em até
+7 dias (a retenção do log do Render Hobby). É a fonte de dado da L.6 e o número real que substitui a
+estimativa do [contrato de custo zero](#-contrato-de-custo-zero).
+
+| Data | Jogadores × horas | `sse_fallback` no log | Horas e banda do NetSheet no painel do Render | Observação |
+|---|---|---|---|---|
+| — | — | — | — | *nenhuma sessão em produção ainda* |

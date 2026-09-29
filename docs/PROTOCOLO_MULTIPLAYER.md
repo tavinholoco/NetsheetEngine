@@ -61,9 +61,17 @@ enviado no corpo (anti-impersonificação).
 - Token inválido/expirado → REST responde **401** `{ error: "Sessão inválida ou expirada..." }`; o
   WS rejeita o handshake com **HTTP 401** (socket destruído).
 - **1 sessão ativa por jogador**: re-join revoga os tokens antigos do mesmo `peerId`.
-- **Reconexão (T3.3)**: ao receber 401, o cliente refaz `POST /join` com o **mesmo `peerId`** e
-  re-tenta a ação original. O servidor reconhece a reconexão, preserva a ficha persistida
-  (last-write-wins por `updatedAt`) e emite um token novo — sem duplicar o jogador.
+- **Voltar a um assento ocupado exige prova (R.1 — SEC-07, 29/09/2026).** Um `join` com um `peerId`
+  que já está na sala — ou que é o `gmPeerId` — só é aceito com o **token vigente daquele assento** no
+  header `X-Session-Token`. Sem ele: **409** `{ error, code: "seat_taken" }`. O `peerId` é público (vai
+  no estado da sala), então não prova nada sozinho. *Até a R.1, o servidor aceitava o `peerId` como
+  prova, e um convidado virava GM fazendo `join` com o `gmPeerId`.*
+- **Reconexão (T3.3)**: ao receber 401, o cliente refaz `POST /join` mandando o token que tem
+  (`postJoin` em `src/api/rooms.ts`) e re-tenta a ação original. Com a prova, o servidor reconhece a
+  reconexão, preserva a ficha persistida (last-write-wins por `updatedAt`; o ferimento é sempre o do
+  servidor — decisão 7a) e emite um token novo, sem duplicar o jogador. Se vier **409** `seat_taken`,
+  a sessão daquele assento se perdeu: o cliente entra como jogador novo, com outro `peerId`, **uma vez
+  só**, e o GM remove o assento antigo.
 
 ---
 
@@ -75,10 +83,10 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 
 | Método | Rota | Corpo | Resposta |
 |---|---|---|---|
-| `GET` | `/api/health` | — | `{ status: "online", system }` |
+| `GET` | `/api/health` | — | `{ status: "online", system, version, …, clientIp }` — `clientIp` é o IP **do próprio chamador** como os limitadores o veem (R.5) |
 | `GET` | `/api/rooms` | — | Lista `{ code, name, gmHandle, playersCount }[]` das salas ativas |
-| `POST` | `/api/rooms/create` | `{ code, name, gmHandle, gmPeerId }` | `{ room, sessionToken }` |
-| `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` | `{ room, sessionToken }` |
+| `POST` | `/api/rooms/create` | `{ code, name, gmHandle, gmPeerId }` | `{ room, sessionToken }` · **409** `room_exists` se o código já é de uma mesa (R.2 — antes, a mesa era apagada) |
+| `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` + header `X-Session-Token` para voltar ao próprio assento (R.1) | `{ room, sessionToken }` · **409** `seat_taken` se o assento é de outro |
 | `GET` | `/api/rooms/:code` | — | **Sem token:** recorte público `{ code, name, gmHandle, playersCount }`. **Com `X-Session-Token` válido:** `GameRoom` completo. **Token inválido:** 401. (404 se não existe) |
 
 > Validações do `code`: 2–12 caracteres alfanuméricos ou hífen, normalizado para maiúsculas
@@ -107,7 +115,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `POST` | `/api/rooms/:code/tactical-grid` | **GM** (ou Yjs) | `{ gridState }` | `GameRoom` |
 | `POST` | `/api/rooms/:code/npcs/generate` | **GM** | `{ archetypeId? }` | `GameRoom` |
 | `POST` | `/api/rooms/:code/players/generate` | **GM** | `{}` | `GameRoom` |
-| `POST` | `/api/rooms/:code/players/:targetPeerId/delete` | **GM** | `{}` | `GameRoom` |
+| `POST` | `/api/rooms/:code/players/:targetPeerId/delete` | **GM** | `{}` | `GameRoom` — revoga a sessão do removido e fecha o WS **e** o SSE dele; o `join` pelo mesmo `peerId` passa a responder **403** `removed_by_gm` (R.3). O GM não remove a si mesmo (403) |
 | `POST` | `/api/rooms/:code/npcs/:npcId/delete` | **GM** | `{}` | `GameRoom` |
 | `POST` | `/api/rooms/:code/npcs/:npcId/health` | **GM** | `{ woundLevel }` | `GameRoom` |
 | `POST` | `/api/rooms/:code/settings` | **GM** | `{ locationName?, combatModifier?, modifierReason? }` | `GameRoom` |
@@ -120,10 +128,16 @@ normal. Rolagens só existem via `roll`/`/roll`, com RNG e bônus derivados da f
 
 - **400** — validação de entrada (código inválido, corpo malformado, tipo de rolagem inválido)
 - **401** — token ausente/inválido/expirado
-- **403** — ação negada (não é GM, não é membro)
+- **403** — ação negada (não é GM, não é membro); `removed_by_gm` no `join` de quem o GM removeu
 - **404** — sala/jogador não encontrado
+- **409** — conflito: `seat_taken` (assento de outro, sem o token dele — R.1) ou `room_exists`
+  (código em uso — R.2)
 - **413** — payload acima de 1 MB
-- **429** — rate limit
+- **429** — rate limit (por IP; atrás do proxy do Render o IP vem do `X-Forwarded-For` — R.5)
+
+**Código estável (R.1):** as respostas novas trazem `{ error, code }`. O cliente decide pelo `code`
+(`ApiError.code`), nunca pelo texto de `error`, que pode mudar. É a versão menor da RFC 9457 que a
+Fase I avalia estender às outras respostas.
 
 ---
 
@@ -138,8 +152,28 @@ ws(s)://<host>/ws/rooms/:code?token=<sessionToken>
    - **Inválido** → responde `HTTP/1.1 401 Unauthorized` e destrói o socket.
 3. **Conectado** → o servidor envia imediatamente o **estado inicial** (sala inteira em JSON).
 
-**Close codes:** `4400–4499` = fechamento permanente (ex.: `4400` sessão encerrada no leave) —
-o cliente **não** reconecta com o mesmo token; ele refaz o re-join (T3.3).
+**Close codes:** `4400–4499` = fechamento permanente (ex.: `4400` sessão encerrada no leave ou na
+expulsão; `4409` conexão substituída — o jogador abriu mais de 3 sockets, R.4). `1009` = quadro
+acima de 1 MiB (R.4). *Nota da revisão pós-D:* o cliente hoje **não** olha o código — reconecta em
+~3 s depois de qualquer fechamento, e o 401 do handshake o leva ao SSE e ao re-join (T3.3). É pista
+da Fase H.
+
+**Tetos (R.4 — SEC-10), por jogador (sala + `peerId`), em janela de 60 s** — os números estão em
+`server/wsLimits.ts`, com o porquê de cada um:
+
+| O quê | Teto | Equivalente no REST |
+|---|---|---|
+| Tamanho de quadro | 1 MiB (`maxPayload`) | `express.json` de 1 MB |
+| Qualquer quadro, antes do parse | 1.800 | limitador global (600/min por IP) |
+| `message` (chat) | 30 | `chatLimiter` |
+| `roll` e `initiative` | 120, juntos | `roomLimiter` |
+| Update do grid Yjs (`messageSync`) | 120 | — (cada update aceito reenvia a sala) |
+| Awareness | 1.200, e até **4 KiB** por quadro | — (o cursor do GM sai no máximo a cada 60 ms) |
+| Sockets abertos | 3 por jogador (fecha os mais antigos com `4409`) | — (cada socket recebe cada reenvio) |
+
+Quadro acima do teto é **descartado**; no chat e nas ações, o autor recebe um
+`{ type: "error" }` **uma vez por janela**, e o servidor loga `ws_rate_limited`. A cota não zera ao
+reconectar.
 
 **Discriminador texto vs binário:** frames de texto podem chegar como `string` **ou** `Buffer`
 (dependendo da versão do `ws` — no `ws@8.21.1` texto chega como `Buffer`). O servidor usa o flag
@@ -171,7 +205,7 @@ Qualquer outro `type` ou JSON inválido é ignorado silenciosamente. Tipos de ro
 | Mensagem | Formato | Quando |
 |---|---|---|
 | **Broadcast de sala** | `GameRoom` inteiro em JSON | Após **qualquer** mutação (chat, roll, grid, iniciativa, join/leave, presença) |
-| **Erro pontual** | `{ type: "error", error: string }` | Ex.: mensagem vazia (vai só ao autor) |
+| **Erro pontual** | `{ type: "error", error: string }` | Ex.: mensagem vazia; teto de chat ou de ações estourado, uma vez por janela (R.4). Vai só ao autor |
 | **Erro de rolagem** | `{ type: "roll-error", error: string }` | Ex.: perícia inexistente, tipo inválido (vai só ao autor) |
 
 > O cliente (`handlePayload`) reconhece `error`/`roll-error` pelo campo `type` e exibe no banner;
@@ -217,6 +251,8 @@ GET /api/rooms/:code/stream?token=<sessionToken>   (EventSource)
 - Envia o **estado inicial** imediatamente e depois cada broadcast como `data: <room JSON>\n\n`.
 - Keep-alive: `: ping\n\n` a cada **15s** (atravessa proxies).
 - Cada conexão re-sincroniza o estado completo → reconexão do EventSource é segura.
+- **O stream é encerrado** quando o dono sai da mesa ou é removido pelo GM (R.3): o token só é
+  conferido na abertura, então o servidor guarda de quem é cada stream (`ssePeer`) para fechá-lo.
 - O payload é **idêntico** ao do WebSocket (mesma função `broadcastRoomUpdate`).
 
 ---
@@ -251,7 +287,10 @@ O **JSON `room.tacticalGrid` continua a verdade durável** (decisão T5.1/T3.5):
 
 - **doc → JSON** (`mirrorDocToJson`): após update de cliente. Permissões:
   - **GM**: pode tudo (meta, adicionar/remover tokens, qualquer campo).
-  - **Jogador**: só pode mudar `x`/`y` do **próprio token** (`token.peerId === autor`).
+  - **Jogador**: só pode mudar `x`/`y` do **próprio token** — o dono é o de **antes** da mudança, e
+    todo outro campo que o doc carrega (`TOKEN_KEYS`, inclusive `peerId` e `icon`) é imutável para
+    ele. *Até a R.6 a checagem olhava o dono depois da mudança e uma lista de campos escrita à mão:
+    reescrevendo o dono, o jogador movia e tomava o token de outro (SEC-12).*
   - Mutação não autorizada → **revertida no doc** (`writeGridToDoc(doc, prev, "server")`); o update
     original **não** é propagado aos outros clientes (o revert é, sincronamente).
 - **JSON → doc** (`seedDocFromJson`): roda em todo `broadcastRoomUpdate` — mutações REST

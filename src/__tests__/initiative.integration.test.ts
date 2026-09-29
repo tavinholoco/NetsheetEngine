@@ -71,8 +71,8 @@ let seq = 0;
 /** Mesa: GM `gm_1`, Vex (Netrunner, REF 8) e Kaze (Solo, REF 8, Combat Sense 2). */
 function mesa(): string {
   const code = `TIN-${Date.now().toString(36).slice(-4)}-${++seq}`.toUpperCase();
-  createRoom(code, 'Mesa', 'Mestre', 'gm_1');
-  joinRoom(code, 'gm_1', 'Mestre', { ...FICHA, handle: 'Mestre' });
+  const gm = createRoom(code, 'Mesa', 'Mestre', 'gm_1');
+  joinRoom(code, 'gm_1', 'Mestre', { ...FICHA, handle: 'Mestre' }, gm.sessionToken); // R.1: com o token do assento
   joinRoom(code, 'p1', 'Vex', FICHA);
   joinRoom(code, 'p2', 'Kaze', SOLO);
   return code;

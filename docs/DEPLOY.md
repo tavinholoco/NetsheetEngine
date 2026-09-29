@@ -29,6 +29,7 @@ Cliente (React) ──►  Express + WebSocket (dist/server.cjs)  ──►  Sup
 | `HOST` | runtime | Obrigatório `0.0.0.0` em containers (default já é esse) |
 | `ROOM_OFFLINE_TIMEOUT_MS` | runtime | Opcional — timeout de `isOnline` da mesa (T3.4). Padrão 60 s |
 | `ROOM_ABANDONED_TIMEOUT_MS` | runtime | Opcional — janela de abandono: o coletor encerra a mesa após este tempo sem ninguém ativo (B.5). Padrão 24 h. **Diminuir com cuidado — o delete é irreversível** |
+| `TRUST_PROXY` | runtime | Opcional (R.5) — em quantos proxies confiar para achar o IP do jogador. **Padrão: `1` em produção** (o proxy do Render), nenhum fora dela. Aceita número de saltos, `false` ou lista de endereços/sub-redes; `true` é recusado (deixaria o cliente escolher o próprio IP). Só mexer se a verificação pós-deploy mostrar o IP errado |
 
 > **NUNCA** commite valores reais: o CI roda **gitleaks** e bloqueia o push.
 
@@ -46,9 +47,14 @@ payload é rico para monitoramento:
   "uptime": 48213,             // segundos desde o boot do processo
   "timestamp": "2026-08-10T…Z",
   "env": "production",
-  "rooms": { "active": 3, "players": 7 }  // salas/jogadores na memória
+  "rooms": { "active": 3, "players": 7 },  // salas/jogadores na memória
+  "clientIp": "203.0.113.10"   // R.5 — o SEU IP, como os limitadores o enxergam
 }
 ```
+
+O `clientIp` devolve a quem pergunta o próprio IP — nunca o de outra pessoa. Serve para conferir o
+`trust proxy` (R.5): se ele vier como um endereço interno do Render em vez do seu, os limitadores
+estão contando todo mundo no mesmo balde.
 
 Já configurado no `HEALTHCHECK` do Dockerfile e nas plataformas. Rotas
 `/api/*` desconhecidas respondem **JSON 404** (não HTML da SPA) — seguro para
@@ -244,7 +250,8 @@ BASE_URL=https://netsheet.app node scripts/test-ws-e2e.mjs
 ## Verificação pós-deploy
 
 ```bash
-# 1. Healthcheck
+# 1. Healthcheck — e o `clientIp` tem de ser o seu IP público (R.5, trust proxy).
+#    Compare com: curl -s https://api.ipify.org
 curl -s https://SEU-DOMINIO/api/health
 
 # 2. SPA carrega (deve vir o index.html com o título do produto)

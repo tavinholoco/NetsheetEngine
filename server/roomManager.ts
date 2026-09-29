@@ -266,6 +266,13 @@ function checkIsGm(room: GameRoom, requesterPeerId: string): boolean {
 
 export function createRoom(code: string, roomName: string, gmHandle: string, gmPeerId?: string): { room: GameRoom; sessionToken: string } {
   const normalizedCode = code.trim().toUpperCase();
+  // R.2 (SEC-08) — criar nunca sobrescreve. Antes, `rooms[code] = novaSala`
+  // apagava a mesa de quem já estava nela, e qualquer um tinha o código pelo
+  // lobby. A rota responde 409 antes de chegar aqui; isto é a defesa para
+  // qualquer caminho futuro — chegar aqui com código em uso é bug.
+  if (rooms[normalizedCode]) {
+    throw new Error(`Sala ${normalizedCode} já existe — criar não sobrescreve (R.2).`);
+  }
   const gmUserPeerId = sanitizeText(gmPeerId, 64) || "gm_" + Date.now().toString(36);
   const safeGmHandle = sanitizeText(gmHandle, 30) || "Mestre de Jogo";
   const gmSheet = generateRandomNpc();
@@ -344,6 +351,12 @@ export function restoreRoom(room: GameRoom): boolean {
   }
   if (!Array.isArray(room.tacticalGrid.tokens)) room.tacticalGrid.tokens = [];
   if (!room.npcs || typeof room.npcs !== "object") room.npcs = {};
+  // R.3 — a lista de removidos vem do banco: só strings, com o mesmo teto.
+  if (room.removedPeerIds !== undefined) {
+    room.removedPeerIds = Array.isArray(room.removedPeerIds)
+      ? room.removedPeerIds.filter((p): p is string => typeof p === "string" && p.length > 0).slice(-MAX_REMOVED_PEERS)
+      : undefined;
+  }
 
   for (const player of Object.values(room.players)) {
     if (player) player.isOnline = false;
@@ -398,6 +411,33 @@ function manualWoundLevel(woundLevel: unknown): number {
   return Number.isFinite(n) ? Math.max(0, Math.min(10, n)) : 0;
 }
 
+/**
+ * Revisão pós-D (R.1 — SEC-07) — reivindicar um assento ocupado exige prova.
+ *
+ * Até aqui, o `join` com um `peerId` que já estava na sala era aceito como
+ * reconexão e emitia sessão nova, revogando a do dono. O `peerId` é público
+ * (vai no estado da sala), então funcionava como credencial: um convidado
+ * lia o `gmPeerId` e virava o Mestre. A prova é o token vigente daquele
+ * assento — o mesmo que o cliente já guarda para agir na mesa.
+ *
+ * "Ocupado" inclui o `gmPeerId` sem jogador (o GM removeu a própria ficha):
+ * quem chegasse com ele viraria GM pelo `checkIsGm`.
+ *
+ * Devolve a mensagem de recusa, ou `null` se o `join` pode seguir. É a única
+ * regra: o `joinRoom` a aplica (defesa em todo caminho que emite sessão) e a
+ * rota a consulta antes, para responder 409 em vez de 404.
+ */
+export function seatClaimRefusal(code: string, peerId: string, proofToken?: string): string | null {
+  const room = getRoom(code);
+  if (!room) return null;
+  const safePeerId = sanitizeText(peerId, 64);
+  if (!safePeerId) return null;
+  const seatTaken = !!room.players[safePeerId] || room.gmPeerId === safePeerId;
+  if (!seatTaken) return null;
+  if (typeof proofToken === "string" && verifySession(room.code, proofToken) === safePeerId) return null;
+  return "Este assento já está ocupado na mesa. Entre como um novo jogador.";
+}
+
 function pickSheet(clientSheet: CharacterSheet, persistedSheet: CharacterSheet | undefined): CharacterSheet {
   if (!isUsableSheet(clientSheet)) return persistedSheet ?? clientSheet;
   if (!persistedSheet) return clientSheet;
@@ -406,12 +446,22 @@ function pickSheet(clientSheet: CharacterSheet, persistedSheet: CharacterSheet |
   return clientTs >= persistedTs ? clientSheet : persistedSheet;
 }
 
-export function joinRoom(code: string, peerId: string, handle: string, sheet: CharacterSheet): { room: GameRoom; sessionToken: string } | null {
+export function joinRoom(
+  code: string,
+  peerId: string,
+  handle: string,
+  sheet: CharacterSheet,
+  proofToken?: string
+): { room: GameRoom; sessionToken: string } | null {
   const room = getRoom(code);
   if (!room) return null;
 
   const safePeerId = sanitizeText(peerId, 64);
   if (!safePeerId) return null;
+  // R.3 (SEC-09) — quem o GM removeu não volta pelo mesmo peerId.
+  if (wasRemovedByGm(room.code, safePeerId)) return null;
+  // R.1 (SEC-07) — assento ocupado só com o token vigente dele.
+  if (seatClaimRefusal(room.code, safePeerId, proofToken)) return null;
 
   // B.2 (SEC-05) — a ficha do join é a primeira coisa que o servidor grava a
   // partir do navegador. Sem isto, atributos e woundLevel entravam verbatim.
@@ -768,7 +818,7 @@ export function deleteGeneratedPlayer(
   code: string,
   requesterPeerId: string,
   targetPeerId: string
-): { room: GameRoom | null; error?: string } {
+): { room: GameRoom | null; error?: string; removedPeerId?: string } {
   const room = getRoom(code);
   if (!room) return { room: null, error: "Sala não encontrada" };
 
@@ -776,6 +826,7 @@ export function deleteGeneratedPlayer(
     return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode remover Edgerunners." };
   }
 
+  let removedPeerId: string | undefined;
   if (room.players) {
     const targetKey = Object.keys(room.players).find(
       key => key === targetPeerId ||
@@ -783,12 +834,27 @@ export function deleteGeneratedPlayer(
              room.players[key].sheet?.id === targetPeerId
     );
 
+    // R.3 — desde que remover revoga e barra a volta, o GM se removendo ficaria
+    // trancado fora da própria mesa. A tela já não oferece; o servidor recusa.
+    if (targetKey && targetKey === requesterPeerId) {
+      return { room: null, error: "Acesso Negado! O Mestre não remove a si mesmo — use Sair." };
+    }
+
     if (targetKey && room.players[targetKey]) {
       const playerObj = room.players[targetKey];
       const handle = playerObj.handle;
       const actualPeerId = playerObj.peerId || targetKey;
 
       delete room.players[targetKey];
+
+      // R.3 (SEC-09) — remover tira o ACESSO, não só o assento. Antes o
+      // expulso seguia com sessão: reabria o socket e lia a mesa inteira. E a
+      // sala lembra quem saiu assim, senão a reconexão automática do cliente
+      // (401 → join) o traria de volta em segundos. A rota fecha os sockets.
+      revokeSessionsForPeer(room.code, actualPeerId);
+      if (targetKey !== actualPeerId) revokeSessionsForPeer(room.code, targetKey);
+      rememberRemoved(room, actualPeerId);
+      removedPeerId = actualPeerId;
 
       if (room.tacticalGrid) {
         room.tacticalGrid.tokens = room.tacticalGrid.tokens.filter(
@@ -814,7 +880,29 @@ export function deleteGeneratedPlayer(
     }
   }
 
-  return { room };
+  return { room, removedPeerId };
+}
+
+/** R.3 — teto da lista de removidos: é estado persistido e transmitido (pergunta 5 do portão). */
+const MAX_REMOVED_PEERS = 50;
+
+/** Guarda quem o GM removeu, sem repetir, ficando com os mais recentes. */
+function rememberRemoved(room: GameRoom, peerId: string): void {
+  const list = (room.removedPeerIds ?? []).filter((p) => p !== peerId);
+  list.push(peerId);
+  room.removedPeerIds = list.slice(-MAX_REMOVED_PEERS);
+}
+
+/**
+ * R.3 (SEC-09) — o GM removeu este peerId da sala? O `join` por ele é recusado
+ * (a rota responde 403 `removed_by_gm`). Sem isto, a reconexão automática do
+ * cliente desfazia a expulsão. Não é banimento: sem conta, uma aba nova é
+ * outro jogador — quem decide se a mesa exige identidade é a R.11.
+ */
+export function wasRemovedByGm(code: string, peerId: string): boolean {
+  const room = getRoom(code);
+  const safePeerId = sanitizeText(peerId, 64);
+  return !!room && !!safePeerId && (room.removedPeerIds ?? []).includes(safePeerId);
 }
 
 // GM Power: Update NPC Wound Level

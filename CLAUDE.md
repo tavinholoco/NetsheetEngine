@@ -9,7 +9,9 @@
 0. **Atualize o `master` local antes de ler qualquer coisa:** `git fetch --all --prune --tags` e
    `git merge --ff-only origin/master`. Os PRs são mergeados pelo dono no GitHub; sem isso você lê um
    plano velho. *(A sessão de 25/09 abriu com o `master` 14 commits atrás.)*
-1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M).
+1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M),
+   mais blocos de pendências fora das fases (P em 25/09; **R**, da revisão pós-D de 29/09) que
+   precedem a fase seguinte. O arquivo passa de uma leitura só: leia em partes, e não pule nenhuma.
 2. Ache o **primeiro item `[ ]` não marcado**. É de onde o trabalho continua.
 3. Rode `git log --oneline -15` e `git tag -l` — as tags marcam o fim de cada fase de construção.
 4. **Confira o CI do `master` e o keepalive** (`gh run list --branch master --limit 3` e
@@ -26,7 +28,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 | Arquivo | O que carrega |
 |---|---|
-| `docs/PLANO_MESTRE.md` | Fases, tarefas, checkboxes, índice de 33 achados, filtro de necessidade, contrato de custo zero |
+| `docs/PLANO_MESTRE.md` | Fases, tarefas, checkboxes, índice de achados (33 da auditoria + 12 da revisão pós-D), filtro de necessidade, contrato de custo zero, registro de sessões |
 | `docs/SEGURANCA.md` | Portão de segurança (6 perguntas) e o registro por fase |
 | `docs/ARQUITETURA.md` | Diagramas Mermaid — contêineres, fronteiras de confiança, pipeline de dano, máquina de ferimento |
 | `docs/adr/` | Decisões arquiteturais com histórico de revisão. **Leia antes de reabrir uma decisão.** |
@@ -54,11 +56,11 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 |---|---|
 | Explosão do d10 | **Encadeia.** O cliente e o PRD estão certos; corrigir o servidor |
 | Regras | **Fidelidade estrita** ao Cyberpunk 2020 |
-| Público da alpha | **Jogadores convidados pelo dono** — é o modelo de ameaça real |
+| Público da alpha | **Jogadores convidados pelo dono** — é o modelo de ameaça real. ⚠️ *29/09: o produto ainda não impõe isso (lobby lista toda sala, `join` aberto); quem pode entrar volta ao dono na R.11* |
 | Identidade visual | **Cyberpunk 2020** (mesa de 1988) — *não* 2077 nem RED. Ver ADR 0006 |
 | Provedor de IA | **Groq primário, Gemini fallback — decidido, NÃO implementado.** A B.1 trancou o endpoint mantendo o Gemini; a migração ainda não tem fase dona. Ver ADR 0005 |
 | Yjs / CRDT do grid | **Mantido sob observação**, com gatilho para reabrir. Ver ADR 0002 |
-| PITR do Supabase | **Não** — exige plano pago. O backup diário gratuito basta (decisão 4 do plano) |
+| PITR do Supabase | **Não** — exige plano pago (decisão 4). ⚠️ *29/09: a premissa "o backup diário gratuito basta" era falsa — o plano gratuito **não tem backup automático**. Como fazer backup é a R.10, decisão do dono* |
 | Vulnerabilidades sem correção | **Exceção nomeada, com motivo e gatilho** em `scripts/audit-ci.mjs` — nunca baixar o nível do portão |
 | Dano na cabeça | **Armadura → BTM (mín. 1) → ×2** — o livro não diz quando dobrar; decisão 6 do plano (26/09/2026) |
 | Ferimento na mesa | **Pontos (0–40) na ficha, nível derivado; só servidor e GM escrevem na mesa.** Token sem ficha não recebe dano; penetração escalonada ADIAR — decisão 7 (28/09/2026) |
@@ -68,7 +70,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 522 testes ao fechar a Fase D (ver "Linha de base atual" no plano)
+npx vitest run            # 565 testes depois das R.1–R.6 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 6 testes, sobe o servidor de produção
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
@@ -97,7 +99,14 @@ node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
 - **Verifique a premissa antes de executar um item.** A auditoria de 03/09 mostrou que as afirmações
   do plano sobre *código* se sustentam, e as sobre *estado de configuração* não (secrets, planos
   pagos, tokens). Na Fase B, a verificação prévia (B.0) mudou o tamanho de quatro dos seis itens.
-  Toda fase de construção começa com um item `.0` de verificação.
+  Toda fase de construção começa com um item `.0` de verificação. **A revisão pós-D (29/09) repetiu o
+  padrão:** caíram o backup "gratuito" (não existe), a versão do Node (nunca fixada — produção no
+  `latest`) e a retenção de log (7 dias, não meses).
+- **O repositório é público** e o `master` não tem proteção de branch (conferido em 29/09). Achado de
+  segurança **aberto** é publicado no repo **junto com o conserto**, nunca antes. E backup de banco
+  nunca vai para o repositório.
+- **Emitir sessão também é autorização.** O SEC-07 viveu desde a T1.7 porque todos conferiam de onde
+  vinha o autor da ação, e ninguém quem recebia o token. É a segunda metade da pergunta 3 do portão.
 - **Migration e código que a usa nunca vão no mesmo merge** (decisão 5): o Render faz auto-deploy
   independente do `db-sync`, e em 24/09 o código subiu antes da migration.
 - **O token do CI expira.** Ele tem validade de 30 dias e vence por volta de **25/10/2026**; renovar

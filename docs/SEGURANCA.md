@@ -30,7 +30,8 @@ segunda não substitui a primeira.
 
 ## O portão de segurança
 
-Seis perguntas. Aplicadas **ao fechar cada fase de construção** (A, B, C, D, F, K, L, M), sobre o que
+Seis perguntas. Aplicadas **ao fechar cada fase de construção** (A, B, C, D, F, K, L, M — e todo
+bloco de pendências que mude código, como o R da revisão pós-D), sobre o que
 *aquela fase* mudou — nunca sobre o sistema inteiro. Timebox: 30 minutos.
 
 Cada pergunta mapeia uma categoria STRIDE e nasceu de um achado real deste repositório.
@@ -39,7 +40,7 @@ Cada pergunta mapeia uma categoria STRIDE e nasceu de um achado real deste repos
 |---|---|---|---|
 | **1** | Que **entrada nova** este trabalho aceita? Está validada no limite do servidor — tipo, faixa, tamanho, campos desconhecidos descartados? | Tampering | SEC-05 — a ficha era gravada verbatim, e o RNG autoritativo ficava sem efeito |
 | **2** | Que **dado novo sai** do servidor? Quem pode lê-lo, e isso é **verificado** ou só presumido? | Information Disclosure | SEC-02 — a escrita era protegida por sessão, a leitura não |
-| **3** | Que **autorização nova** existe? O autor da ação é derivado da **sessão**, nunca do corpo da requisição? | Spoofing / Elevation of Privilege | T1.7 e o `checkIsGm` que terminava em `return true` |
+| **3** | Que **autorização nova** existe? O autor da ação é derivado da **sessão**, nunca do corpo da requisição? **E quem recebe a sessão prova o quê?** — emitir credencial também é autorização | Spoofing / Elevation of Privilege | T1.7 e o `checkIsGm` que terminava em `return true`; a segunda metade nasceu do SEC-07 (revisão pós-D, 29/09/2026) |
 | **4** | O que um **jogador convidado que virasse hostil** consegue fazer aqui? | Elevation of Privilege | Decisão 3 — este é o modelo de ameaça real do produto |
 | **5** | Que **estado novo cresce sem limite**, e quem o recolhe? | Denial of Service | SEC-04 — salas, sessões e buckets do rate limiter nunca expiram |
 | **6** | Isso adiciona **custo por requisição** a um serviço externo pago? | DoS / financeiro | SEC-01 — endpoint aberto na chave do dono |
@@ -70,7 +71,10 @@ regras que ele expressa:
 1. **Nada que venha do navegador é confiável** — nem a ficha, nem o `peerId`, nem o `woundLevel`, nem
    o binário Yjs. O servidor valida no limite.
 2. **O autor de toda ação é derivado do `sessionToken`**, nunca de um campo do corpo. Um `peerId`
-   livre na requisição não autentica nada.
+   livre na requisição não autentica nada. **Revisão pós-D (29/09/2026):** a regra valia para as
+   ações, mas a **emissão** do token tinha o buraco — o `join` com um `peerId` que já está na sala
+   entregava sessão nova sem prova de posse (SEC-07). Na prática, o `peerId` público autenticava.
+   **Fechado na R.1:** reivindicar assento ocupado exige o token vigente dele.
 3. **A `service_role` do Supabase e a chave do provedor de IA nunca cruzam a fronteira** — vivem só
    no processo do servidor, jamais em variável `VITE_`.
 
@@ -296,6 +300,82 @@ fase que mais mexeu em quem escreve o quê desde a B.
 **O que o portão achou:** a porta lateral do item 4 (sair e voltar), levada à Fase J com gatilho; e
 a falta de teto de NPCs, que vira pista da Fase E. **O achado da C.14 está fechado.**
 
+### Revisão pós-D — o que o portão não pegou
+
+**29/09/2026.** Não é portão de fase: é o registro de seis achados que **escaparam** aos portões da A
+à D, achados numa revisão pedida pelo dono. Detalhe e provas na
+[revisão pós-D do plano](./PLANO_MESTRE.md#-revisão-pós-d-29092026); consertos nas pendências R.
+
+**Por que escaparam.** O portão pergunta sobre *o que a fase mudou*. O SEC-07, o SEC-08 e o SEC-09
+nasceram antes dele (T1.7 e T3.3, no plano antigo). A Fase B **passou perto**: a B.3 exigiu sessão
+para ler a sala, e o portão dela registrou "agora precisa de sessão **daquela** sala" — sem perguntar
+**como** alguém consegue essa sessão. A resposta era: fazendo `join` com um `peerId` que o estado da
+sala entrega a todos. A pergunta 3 ganhou a segunda metade — *quem recebe a sessão prova o quê?* — e a
+Fase J passa a fazê-la para toda credencial.
+
+| ID | Pergunta do portão que teria pegado | Por quê |
+|---|---|---|
+| SEC-07 | 3 (a nova metade) | A sessão era emitida por `join` a quem apresentasse um `peerId` público |
+| SEC-08 | 4 | "O que um hostil faz aqui?" — `create` sem sessão, com código tirado do lobby |
+| SEC-09 | 2 | "Quem pode ler?" — o expulso continuava com sessão e socket |
+| SEC-10 | 5 e 6 | Estado sem teto (tamanho de quadro) e custo por requisição (banda do Render por mensagem) |
+| SEC-11 | 5 | Os limitadores existiam, mas contavam o IP do proxy |
+| SEC-12 | 3 | A posse do token era conferida contra o dono **depois** da mudança |
+
+**Uma consequência de processo:** o repositório é **público** (conferido em 29/09). A partir desta
+revisão, **achado aberto é publicado junto com o conserto**, e o portão ganha uma pergunta de
+fechamento para PR de segurança: *o que este texto ensina a quem lê o código antes de o conserto
+estar no ar?*
+
+### Pendências R — revisão pós-D
+
+**29/09/2026 — R.1 a R.6**, publicados num PR só, junto com a revisão que os descreve (o repo é
+público: o texto vai ao ar com o conserto). R.7–R.9 respondem quando entrarem.
+
+1. **Entrada nova?** Três, todas no limite do servidor:
+   - o header `X-Session-Token` no `POST /join` (R.1) — passa pelo mesmo `verifySession` de toda
+     rota, e só serve para provar **aquele** assento naquela sala;
+   - o `X-Forwarded-For`, agora confiado **um salto** em produção (R.5). Com `trust proxy = 1` o
+     Express usa a entrada que o proxy do Render acrescenta; o que o cliente puser à esquerda é
+     ignorado. `TRUST_PROXY=true` é recusado de propósito;
+   - os quadros do WebSocket ganharam teto de tamanho (1 MiB; *awareness* 4 KiB) e de taxa por
+     jogador (R.4). Antes, 100 MiB e sem limite.
+2. **Dado novo sai?** Pouco, e nada de outra pessoa: o `code` estável nas respostas de erro; o
+   `clientIp` do `/api/health`, que devolve a quem pergunta **o próprio** IP; a lista
+   `removedPeerIds` no estado da sala, que só tem `peerId`s — já públicos para quem está na mesa;
+   e dois eventos de log (`ws_rate_limited`, `ws_awareness_too_big`) com sala, `peerId` e tamanho,
+   sem segredo nem conteúdo.
+3. **Autorização nova? Sim — e é a segunda metade da pergunta, que nasceu aqui.** A **emissão** de
+   sessão passou a exigir prova: reivindicar assento ocupado só com o token vigente dele (R.1). A
+   expulsão passou a **revogar** (R.3). O GM não remove a si mesmo. No grid, a posse é a do dono
+   **anterior**, e todo campo além de `x`/`y` é do GM (R.6). Cada uma provada revertendo.
+4. **Jogador convidado hostil?**
+   - **Não consegue mais:** tomar o GM ou o assento de outro (R.1); apagar a mesa pelo `create`
+     (R.2); continuar lendo depois de expulso, nem voltar sozinho pela reconexão (R.3); mandar
+     mensagens sem limite ou quadros gigantes pelo WS (R.4); gastar a cota dos outros jogadores no
+     limitador (R.5); mover ou tomar o token de outro (R.6).
+   - **Continua conseguindo:** ler fichas e chat enquanto estiver na mesa, e entrar de novo por uma
+     aba nova depois de expulso — sem conta, aba nova é outro jogador (**R.11**); assumir o GM pelo
+     *handle* quando o GM sai e ninguém fica online (variante do SEC-07, **ADIAR** com gatilho na R.1);
+     gastar a banda **no ritmo do REST** — menos de 3 h para os 5 GB, em vez de ~35 min (**L.1** e
+     **R.11**).
+   - **Achado deste portão — SEC-13, sala sem teto de assentos.** Cada `join` com `peerId` novo cria
+     um assento, e cada assento abre até 3 sockets; o `join` só tem o limitador de sala (120/min por
+     IP). Dezenas de assentos multiplicam cada reenvio da sala — o mesmo amplificador do SEC-10 por
+     outra porta, e a mesma família da "sala sem teto de NPCs" que o portão da D levou à Fase E. Não
+     reproduzido. Versão 10× menor: teto de assentos por sala (uma mesa real tem até ~8). Vai para o
+     bloco R como **R.16**, antes da primeira sessão em produção.
+5. **Estado novo sem limite?** Nenhum: `removedPeerIds` tem teto de 50 e é saneado no restore; os
+   baldes do limitador do WS vencem com a janela e são podados de forma amortizada (não somem no
+   `close`, senão reconectar zeraria a cota); `ssePeer` e `wsPeer` são `WeakMap` — somem com a
+   conexão.
+6. **Custo por requisição a serviço externo?** Nenhum novo. O saldo é **negativo**: o canal sem
+   limite que gastava a banda do Render em minutos foi fechado.
+
+**E a pergunta que o repo público impõe — o que este PR ensina antes de o conserto estar no ar?**
+Tudo o que descreve, **se** o `master` não tiver o conserto quando o Render voltar (01/10). Por isso o
+PR traz o texto **e** o código juntos, e a recomendação ao dono é mergear antes de 01/10.
+
 ### Fase F — Reestruturação visual
 
 *(a preencher)*
@@ -326,7 +406,14 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-03 | Sessões só em memória — restart derruba as mesas | B | ✅ fechado 03/09 (B.4) |
 | SEC-04 | Salas, sessões e buckets nunca expiram | B | ✅ fechado 03/09 (B.5) |
 | SEC-05 | Ficha gravada sem validação | B | ✅ fechado 03/09 (B.2) |
-| SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ✅ fechado 03/09 (B.6) — `nanoid` corrigido; `qs`/`express` sem patch 4.x (3 moderadas, não bloqueiam). **`mathjs` saiu da árvore em 25/09 (C.1)**, com o `@dice-roller`; a ALLOWLIST ficou vazia |
+| SEC-06 | 6 vulnerabilidades em dependências de produção — **três pacotes**: `qs`, `mathjs`, `nanoid` | B | ✅ fechado 03/09 (B.6) — `nanoid` corrigido; `qs`/`express` sem patch 4.x (3 moderadas, não bloqueiam). **`mathjs` saiu da árvore em 25/09 (C.1)**, com o `@dice-roller`; a ALLOWLIST ficou vazia. **Gatilho do `qs` disparou em 29/09:** saiu o `express@4.22.3` (`qs ~6.16.0`) — R.7 |
+| SEC-07 | `join` com `peerId` existente emite sessão sem prova de posse — tomada de GM | R | ✅ fechado 29/09 (R.1) — variante do *handle* do GM: ADIAR |
+| SEC-08 | `create` com código existente substitui a sala | R | ✅ fechado 29/09 (R.2) |
+| SEC-09 | Expulsão não revoga sessão nem fecha socket | R | ✅ fechado 29/09 (R.3) — sem conta, aba nova é outro jogador (R.11) |
+| SEC-10 | WebSocket sem limitador por mensagem, `maxPayload` de 100 MiB | R | ✅ fechado 29/09 (R.4) — o ritmo do REST ainda gasta a banda em horas (L.1, R.11) |
+| SEC-11 | Sem `trust proxy`: limitadores contam o IP do proxy | R | ✅ fechado no código 29/09 (R.5) — **conferir no ar** com o `clientIp` do `/api/health` |
+| SEC-12 | Posse de token no grid Yjs conferida contra o dono novo | R | ✅ fechado 29/09 (R.6) — reproduzido antes, com cliente Yjs real |
+| SEC-13 | Sala sem teto de assentos: cada assento abre até 3 sockets e recebe cada reenvio | R | 🟠 **aberto** — achado do portão de 29/09; R.16 |
 
 ---
 
@@ -335,12 +422,14 @@ Atualizar conforme forem fechados. Detalhe completo no
 Registrado para não ser refeito, e para o portão não repetir pergunta já respondida:
 
 - **Sessão por token** (T1.7) — o autor de toda mutação vem do `sessionToken`, e o WebSocket valida
-  no upgrade (close 4401 se inválido).
+  no upgrade (HTTP 401 se inválido). Desde a R.1 a **emissão** também tem prova: reivindicar um
+  assento ocupado exige o token vigente dele (antes, o `peerId` público bastava — SEC-07).
 - **Autorização de GM sem fallback permissivo** (T1.1) — `checkIsGm` não termina mais em `return true`.
 - **RLS no Supabase** — migrations 0001–0007, com suíte de 56 testes (`scripts/test-rls.mjs`). A
   `rooms` tem RLS ligada e zero policies: só a service role.
 - **Rate limit** — global (600/min), de sala (120/min) e de chat (30/min), com buckets separados por
-  limiter.
+  limiter, contando o IP real atrás do proxy do Render (`trust proxy`, R.5). O **WebSocket** tem os
+  mesmos tetos por jogador, mais teto de quadro e de sockets (R.4, `server/wsLimits.ts`).
 - **helmet + CSP** em produção, CORS por allowlist via `CORS_ORIGINS`.
 - **gitleaks** no CI, com SARIF na aba Security, e hook de pre-commit opcional.
 - **Rolagens server-authoritative** (T5.4) — o cliente pede, o servidor rola com `crypto.randomInt`.

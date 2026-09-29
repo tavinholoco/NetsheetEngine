@@ -13,8 +13,10 @@ import * as roomsApi from '../api/rooms';
  *
  * T7.4 — se houver sessão persistida (peerId + token no sessionStorage de uma
  * sessão anterior), faz o RE-JOIN automático ao carregar: o servidor (T3.3)
- * reconhece o peerId e restaura a ficha persistida, e o WebSocket reconecta
- * sem nenhum clique. Visitante sem sessão cai no lobby com o código preenchido.
+ * reconhece o assento — pelo token da sessão, que o `postJoin` manda desde a
+ * R.1; o peerId sozinho não basta — e restaura a ficha persistida, e o
+ * WebSocket reconecta sem nenhum clique. Visitante sem sessão cai no lobby com
+ * o código preenchido.
  */
 export interface RoomPageProps {
   onOpenAuthModal: () => void;

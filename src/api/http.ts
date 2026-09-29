@@ -15,11 +15,15 @@ import { apiUrl } from './base';
 
 export class ApiError extends Error {
   readonly status: number;
+  /** Código estável do servidor (ex.: `seat_taken`), quando ele manda. O
+   *  cliente decide por ele, nunca pelo texto da mensagem (pista da Fase I). */
+  readonly code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -38,7 +42,11 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   const data: any = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new ApiError(res.status, typeof data?.error === 'string' ? data.error : `Erro ${res.status}`);
+    throw new ApiError(
+      res.status,
+      typeof data?.error === 'string' ? data.error : `Erro ${res.status}`,
+      typeof data?.code === 'string' ? data.code : undefined
+    );
   }
   return data as T;
 }

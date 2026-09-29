@@ -17,11 +17,13 @@ import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
 import * as syncProtocol from "y-protocols/sync";
 import * as awarenessProtocol from "y-protocols/awareness";
-import { deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
+import { TOKEN_KEYS, deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
 // Fase B (B.1 — SEC-01) — o Netrunner IA passa a exigir identidade verificada,
 // e a instrução do modelo passa a ser código do servidor, não entrada do cliente.
 import { bearerFromHeader, isAuthVerificationConfigured, verifySupabaseJwt } from "./server/supabaseAuth.js";
 import { MAX_PROMPT_CHARS, NETRUNNER_SYSTEM_PROMPT } from "./server/aiPrompt.js";
+// Revisão pós-D (R.4 — SEC-10) — os tetos do WebSocket, que não tinha nenhum.
+import { WS_LIMITS, WsRateLimiter, allowInWindow, type WsBudget } from "./server/wsLimits.js";
 import {
   createRoom,
   getRoom,
@@ -46,6 +48,8 @@ import {
   resolveGmAttack,
   setStabilized,
   rollDiceForPlayer,
+  seatClaimRefusal,
+  wasRemovedByGm,
   verifySession,
   sanitizeText,
   isValidRoomCode,
@@ -79,6 +83,29 @@ export const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
 
+/**
+ * Revisão pós-D (R.5 — SEC-11) — em quantos proxies confiar para achar o IP
+ * de quem joga. Os limitadores contam por `req.ip`; atrás do proxy do Render,
+ * sem isto, o `req.ip` é o do proxy para todo mundo e os limitadores viram um
+ * balde só.
+ *
+ * Produção: 1 salto (o proxy do Render). Fora dela: nenhum — sem proxy na
+ * frente, confiar no `X-Forwarded-For` deixaria o cliente escolher o próprio
+ * IP. `TRUST_PROXY` corrige sem deploy de código: número de saltos, `false`,
+ * ou lista de endereços/sub-redes. `true` é recusado de propósito — confiaria
+ * em qualquer `X-Forwarded-For`, e burlar o limitador seria trocar um header.
+ */
+export function resolveTrustProxy(env: NodeJS.ProcessEnv): boolean | number | string {
+  const fallback = env.NODE_ENV === "production" ? 1 : false;
+  const raw = (env.TRUST_PROXY || "").trim();
+  if (!raw || raw === "true") return fallback;
+  if (raw === "false") return false;
+  const hops = Number(raw);
+  if (Number.isInteger(hops) && hops >= 0) return hops;
+  return raw;
+}
+app.set("trust proxy", resolveTrustProxy(process.env));
+
 // T1.4 — limite de payload (fichas de personagem cabem folgadamente em 1MB)
 app.use(express.json({ limit: "1mb" }));
 
@@ -109,8 +136,9 @@ app.use("/api", (req, res, next) => {
 });
 
 // T10.6 — rate limit GLOBAL da API (anti-flood por IP), além dos limiters
-// específicos de mesa (roomLimiter/chatLimiter). O /api/health é isento:
-// uptime bots externos (T10.4) não podem ser bloqueados.
+// específicos de mesa (roomLimiter/chatLimiter). O /api/health é isento: é o
+// health check do Render. (Uptime bot externo, NÃO — regra 3 do contrato de
+// custo zero; a justificativa original da T10.4 era essa.)
 const apiLimiter = makeRateLimiter(600, 60_000); // 600 req/min por IP
 app.use("/api", (req, res, next) => {
   // req.path aqui é relativo ao mount "/api" — usar originalUrl para o health.
@@ -187,13 +215,8 @@ function makeRateLimiter(maxRequests: number, windowMs: number) {
       pruneExpiredBuckets(buckets, now);
     }
 
-    const bucket = buckets.get(ip);
-    if (!bucket || bucket.resetAt <= now) {
-      buckets.set(ip, { count: 1, resetAt: now + windowMs });
-      return next();
-    }
-    bucket.count += 1;
-    if (bucket.count > maxRequests) {
+    // A mesma janela fixa do WebSocket (R.4) — uma conta só para os dois transportes.
+    if (!allowInWindow(buckets, ip, maxRequests, windowMs, now)) {
       return res.status(429).json({ error: "Muitas requisições. Aguarde um instante." });
     }
     next();
@@ -264,21 +287,43 @@ function respondWithResult(res: express.Response, result: { room: { code: string
 
 // SSE Active Connections Map: roomCode -> Set<Response>
 const sseClients: Record<string, Set<Response>> = {};
+// R.3 (SEC-09) — de quem é cada stream. O token só é conferido na abertura;
+// sem saber o dono, um stream de quem foi removido seguia recebendo a sala.
+const ssePeer = new WeakMap<Response, string>();
 
 // Fase 5 (T5.2) — WebSocket Active Connections Map: roomCode -> Set<WebSocket>
 const wsClients: Record<string, Set<WebSocket>> = {};
+// De quem é cada socket — o autor vem da sessão validada no upgrade. Era um
+// campo `_peerId` pendurado no objeto com `as any`; o mesmo mapa do SSE (R.3).
+const wsPeer = new WeakMap<WebSocket, string>();
 
-// Fase 5 (T5.2) — fecha os sockets WS de um peer (ex.: ao sair da mesa via REST)
+// Fase 5 (T5.2) — fecha as conexões de um peer (sair da mesa ou ser removido
+// pelo GM). Desde a R.3, as duas: WebSocket e stream SSE.
 function closePeerSockets(code: string, peerId: string): void {
-  const sockets = wsClients[code.toUpperCase()];
-  if (!sockets) return;
-  for (const ws of sockets) {
-    if ((ws as any)._peerId === peerId) {
-      ws.close(4400, "Sessão encerrada");
-      sockets.delete(ws);
+  const key = code.toUpperCase();
+  const sockets = wsClients[key];
+  if (sockets) {
+    for (const ws of sockets) {
+      if (wsPeer.get(ws) === peerId) {
+        ws.close(4400, "Sessão encerrada");
+        sockets.delete(ws);
+      }
+    }
+    if (sockets.size === 0) delete wsClients[key];
+  }
+  const streams = sseClients[key];
+  if (streams) {
+    for (const res of streams) {
+      if (ssePeer.get(res) === peerId) {
+        streams.delete(res);
+        try {
+          res.end();
+        } catch {
+          /* conexão já fechada */
+        }
+      }
     }
   }
-  if (sockets.size === 0) delete wsClients[code.toUpperCase()];
 }
 
 function broadcastRoomUpdate(code: string) {
@@ -402,6 +447,14 @@ app.post("/api/rooms/create", roomLimiter, (req, res) => {
   if (typeof code !== "string" || !isValidRoomCode(code)) {
     return res.status(400).json({ error: "Código de sala inválido. Use 2–12 caracteres alfanuméricos ou hífen (ex.: NC-2020)." });
   }
+  // R.2 (SEC-08) — código em uso é outra mesa, com gente dentro: nunca
+  // sobrescrever. Antes, qualquer um apagava a mesa com o código do lobby.
+  if (getRoom(code)) {
+    return res.status(409).json({
+      error: `Já existe uma mesa com o código ${code.trim().toUpperCase()}. Entre nela pelo lobby ou escolha outro código.`,
+      code: "room_exists"
+    });
+  }
   const result = createRoom(code, name, gmHandle, gmPeerId);
   broadcastRoomUpdate(result.room.code);
   res.json({ room: result.room, sessionToken: result.sessionToken });
@@ -419,7 +472,20 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
     return res.status(400).json({ error: "Ficha de personagem inválida." });
   }
-  const result = joinRoom(code, peerId, handle, sheet);
+  // R.1 (SEC-07) — voltar a um assento ocupado exige o token vigente dele, no
+  // mesmo header da leitura autenticada (B.3). O `peerId` sozinho é público.
+  // `code` estável: o cliente decide por ele, não pelo texto (pista da Fase I).
+  // R.3 (SEC-09) — quem o GM removeu não volta pelo mesmo peerId; sem isto, a
+  // reconexão automática do cliente desfazia a expulsão em segundos.
+  if (wasRemovedByGm(code, peerId)) {
+    return res.status(403).json({ error: "O Mestre removeu você desta mesa.", code: "removed_by_gm" });
+  }
+  const proofToken = (req.get("X-Session-Token") || "").trim() || undefined;
+  const refusal = seatClaimRefusal(code, peerId, proofToken);
+  if (refusal) {
+    return res.status(409).json({ error: refusal, code: "seat_taken" });
+  }
+  const result = joinRoom(code, peerId, handle, sheet, proofToken);
   if (!result) {
     return res.status(404).json({ error: "Room not found" });
   }
@@ -525,6 +591,8 @@ app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res
     return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const result = deleteGeneratedPlayer(req.params.code, requesterPeerId, req.params.targetPeerId);
+  // R.3 (SEC-09) — a sessão já foi revogada; fecha o que ele ainda tem aberto.
+  if (result.room && result.removedPeerId) closePeerSockets(req.params.code, result.removedPeerId);
   return respondWithResult(res, result);
 });
 
@@ -746,6 +814,7 @@ app.get("/api/rooms/:code/stream", (req, res) => {
     sseClients[code] = new Set();
   }
   sseClients[code].add(res);
+  ssePeer.set(res, peerId);
 
   // Send initial state immediately
   res.write(`data: ${JSON.stringify(room)}\n\n`);
@@ -770,16 +839,38 @@ app.get("/api/rooms/:code/stream", (req, res) => {
 // FASE 5 (T5.2) — WEBSOCKET: /ws/rooms/:code
 // ==========================================
 // Transporte base do multiplayer. Handshake autenticado pelo token de sessão
-// (T1.7) via query param `?token=`; close 4401 se a sessão for inválida
-// (código na faixa 4400–4499 = permanente, o cliente não tenta reconectar
-// com o mesmo token — alinhado com a T3.3).
+// (T1.7) via query param `?token=`; sessão inválida responde HTTP 401 no
+// próprio handshake (não há socket para um close code). Os fechamentos
+// 4400–4499 são permanentes (4400 saída/expulsão, 4409 socket substituído —
+// R.4), mas o cliente ainda não olha o código: reconecta e cai no re-join
+// (T3.3). Pista da Fase H.
 // Mensagens do cliente (JSON):
 //   { type: "message", text?, rollResult? }  → postChatMessage (broadcast)
 //   { type: "heartbeat" }                    → touchPlayer (sem broadcast)
 //   { type: "initiative", action?, initiativeList? } → nextTurn/updateInitiative
 // O broadcast (room inteiro em JSON) é o MESMO do SSE — o cliente usa WS ou
 // cai para SSE automaticamente.
-const wss = new WebSocketServer({ noServer: true });
+// R.4 (SEC-10) — o `maxPayload` era o padrão do `ws` (100 MiB); agora é o
+// mesmo teto do REST. Quadro maior fecha o socket com 1009.
+const wss = new WebSocketServer({ noServer: true, maxPayload: WS_LIMITS.maxPayloadBytes });
+// R.4 (SEC-10) — contas por jogador para os quadros do WS. Ver server/wsLimits.
+const wsLimiter = new WsRateLimiter();
+
+/**
+ * R.4 — `false` se o jogador estourou o orçamento. Na primeira vez em cada
+ * janela, registra no log (sinal de abuso para o Registro de sessões) e, se
+ * houver `aviso`, conta ao autor — uma vez só, porque o aviso também é banda.
+ */
+function wsAllow(ws: WebSocket, code: string, peerId: string, budget: WsBudget, aviso?: string): boolean {
+  if (wsLimiter.allow(code, peerId, budget)) return true;
+  if (wsLimiter.justExceeded(code, peerId, budget)) {
+    logger.warn("ws_rate_limited", { room: code, peerId, budget });
+    if (aviso && ws.readyState === WebSocket.OPEN) {
+      try { ws.send(JSON.stringify({ type: "error", error: aviso })); } catch { /* ignore */ }
+    }
+  }
+  return false;
+}
 
 // ==========================================
 // FASE 5 (T5.3) — GRID CRDT (Yjs) POR SALA
@@ -916,7 +1007,7 @@ function mirrorDocToJson(code: string, originWs: WebSocket): boolean {
   const next = deriveGridFromDoc(entry.doc);
   if (JSON.stringify(prev) === JSON.stringify(next)) return true;
 
-  const originPeerId = (originWs as any)._peerId as string | undefined;
+  const originPeerId = wsPeer.get(originWs);
   const isGm = room.gmPeerId === originPeerId;
   const prevById = new Map(prev.tokens.map((t) => [t.id, t]));
   const nextIds = new Set(next.tokens.map((t) => t.id));
@@ -931,22 +1022,18 @@ function mirrorDocToJson(code: string, originWs: WebSocket): boolean {
     for (const t of next.tokens) if (!prevById.has(t.id)) { allowed = false; break; }
     if (allowed) for (const id of prevById.keys()) if (!nextIds.has(id)) { allowed = false; break; }
   }
-  // Tokens alterados: jogador só pode mudar x/y do PRÓPRIO token
+  // Tokens alterados: jogador só pode mudar x/y do PRÓPRIO token.
+  // R.6 (SEC-12) — duas correções. (1) O dono é o de ANTES da mudança: a
+  // checagem olhava o `peerId` novo, e o jogador reescrevia o dono e movia no
+  // mesmo update. (2) Todo campo que o doc carrega, menos x/y, é imutável para
+  // o jogador — a lista escrita à mão tinha esquecido `peerId` e `icon`.
   if (allowed && !isGm) {
     for (const t of next.tokens) {
       const p = prevById.get(t.id);
       if (!p) continue;
       const posChanged = p.x !== t.x || p.y !== t.y;
-      const otherChanged =
-        p.name !== t.name ||
-        p.type !== t.type ||
-        p.hp !== t.hp ||
-        p.maxHp !== t.maxHp ||
-        p.spCover !== t.spCover ||
-        p.status !== t.status ||
-        p.color !== t.color ||
-        p.role !== t.role;
-      if (posChanged && t.peerId !== originPeerId) { allowed = false; break; }
+      const otherChanged = TOKEN_KEYS.some((k) => k !== "x" && k !== "y" && p[k] !== t[k]);
+      if (posChanged && p.peerId !== originPeerId) { allowed = false; break; }
       if (otherChanged) { allowed = false; break; }
     }
   }
@@ -1029,9 +1116,18 @@ interface WsConnMeta {
 
 wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMeta) => {
   const { code, peerId } = meta;
-  (ws as any)._peerId = peerId;
+  wsPeer.set(ws, peerId);
   if (!wsClients[code]) wsClients[code] = new Set();
   wsClients[code].add(ws);
+
+  // R.4 (SEC-10) — cada socket recebe cada reenvio da sala: sockets demais do
+  // mesmo jogador multiplicam a banda. Fecha os mais antigos (o Set guarda a
+  // ordem de entrada) — uma aba recarregando convive com a anterior.
+  const doPeer = [...wsClients[code]].filter((s) => wsPeer.get(s) === peerId);
+  for (const velho of doPeer.slice(0, Math.max(0, doPeer.length - WS_LIMITS.maxSocketsPerPeer))) {
+    wsClients[code].delete(velho);
+    velho.close(4409, "Conexão substituída por uma mais nova");
+  }
 
   // Estado inicial imediato (mesmo comportamento do SSE)
   const room = getRoom(code);
@@ -1040,6 +1136,8 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
   }
 
   ws.on("message", (raw: any, isBinary: boolean) => {
+    // R.4 — teto de quadros antes de qualquer parse (CPU).
+    if (!wsAllow(ws, code, peerId, "frame")) return;
     // Texto → protocolo JSON existente; binário → Yjs (grid CRDT / awareness)
     // NOTA: frames de texto podem chegar como string OU Buffer conforme a
     // versão do ws — o discriminador confiável é o flag `isBinary`, não o
@@ -1059,6 +1157,8 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           // Chat — handle/role derivados do servidor (anti-spoofing).
           // T5.4: rolagens NÃO vêm por aqui (rollResult do cliente é ignorado
           // — só o tipo "roll" gera dado, no servidor).
+          // R.4 — o mesmo teto do `chatLimiter` do REST, que o WS não tinha.
+          if (!wsAllow(ws, code, peerId, "chat", "Muitas mensagens. Aguarde um instante.")) break;
           const result = postChatMessage(code, peerId, msg.text);
           if (result.room) broadcastRoomUpdate(code);
           else if (result.error) {
@@ -1071,6 +1171,8 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
         }
         case "roll": {
           // Fase 5 (T5.4) — RNG server-authoritative
+          // R.4 — rolagem e iniciativa dividem o teto do `roomLimiter` do REST.
+          if (!wsAllow(ws, code, peerId, "action", "Muitas ações. Aguarde um instante.")) break;
           const result = rollDiceForPlayer(code, peerId, { kind: msg.kind, skillName: msg.skillName });
           if (result.room) broadcastRoomUpdate(code);
           else if (ws.readyState === WebSocket.OPEN) {
@@ -1084,6 +1186,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           break;
         }
         case "initiative": {
+          if (!wsAllow(ws, code, peerId, "action", "Muitas ações. Aguarde um instante.")) break;
           const result =
             msg.action === "next"
               ? nextTurn(code, peerId)
@@ -1103,6 +1206,24 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
 
     // Binário → Yjs (lida com mensagens fragmentadas ws como Buffer[])
     const bin = Array.isArray(raw) ? Buffer.concat(raw) : (Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer));
+    // R.4 — o tipo do quadro decide o orçamento. Update do grid aceito reenvia
+    // a sala inteira; awareness é repassado a todos — e o estado dele é livre,
+    // então o tamanho também tem teto.
+    let kind: number;
+    try {
+      kind = decoding.readVarUint(decoding.createDecoder(new Uint8Array(bin)));
+    } catch {
+      return;
+    }
+    if (kind === messageAwareness) {
+      if (bin.byteLength > WS_LIMITS.maxAwarenessBytes) {
+        logger.warn("ws_awareness_too_big", { room: code, peerId, bytes: bin.byteLength });
+        return;
+      }
+      if (!wsAllow(ws, code, peerId, "awareness")) return;
+    } else if (!wsAllow(ws, code, peerId, "sync")) {
+      return;
+    }
     try {
       handleYjsBinary(code, ws, bin);
     } catch (e) {
@@ -1127,10 +1248,11 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
 });
 
 
-// T10.4 — healthcheck enriquecido para uptime bots: versão do build, uptime
-// do processo e contagem de salas/jogadores ativos. Sempre 200 quando vivo
-// (sem rate limit — bots externos não podem ser bloqueados por IP).
-app.get("/api/health", (_req, res) => {
+// T10.4 — healthcheck enriquecido: versão do build, uptime do processo e
+// contagem de salas/jogadores ativos. Sempre 200 quando vivo, sem rate limit
+// (o health check do Render passa por aqui). Nada de uptime bot no plano
+// gratuito — regra 3 do contrato de custo zero.
+app.get("/api/health", (req, res) => {
   const activeRooms = getAllActiveRooms();
   const playersActive = activeRooms.reduce((acc, r) => acc + r.playersCount, 0);
   res.json({
@@ -1140,7 +1262,11 @@ app.get("/api/health", (_req, res) => {
     uptime: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || "development",
-    rooms: { active: activeRooms.length, players: playersActive }
+    rooms: { active: activeRooms.length, players: playersActive },
+    // R.5 (SEC-11) — o IP que os limitadores enxergam para QUEM PERGUNTA (o
+    // próprio, nunca o de outro). Se for o do proxy do Render e não o seu, o
+    // `trust proxy` está errado: é a verificação no ar numa requisição só.
+    clientIp: req.ip
   });
 });
 
@@ -1232,7 +1358,20 @@ async function startServer() {
 
   // Fase 5 (T5.2) — servidor HTTP explícito para anexar o WebSocket ao upgrade
   const server = http.createServer(app);
+  attachRealtime(server);
 
+  server.listen(PORT, HOST, () => {
+    logger.info("server_started", { host: HOST, port: PORT, env: process.env.NODE_ENV || "development", version: APP_VERSION });
+  });
+}
+
+/**
+ * Liga o WebSocket da mesa ao `upgrade` de um servidor HTTP. Separado do
+ * `startServer` na R.4 para os testes subirem o transporte real sem o resto
+ * (restore do banco, watchers, Vite) — os tetos do WS só se testam de verdade
+ * com um socket de verdade.
+ */
+export function attachRealtime(server: http.Server): void {
   // Upgrade handshake: /ws/rooms/:code?token=<sessão T1.7>
   server.on("upgrade", (req, socket, head) => {
     let url: URL;
@@ -1251,7 +1390,7 @@ async function startServer() {
     const token = url.searchParams.get("token") || "";
     const peerId = verifySession(code, token);
     if (!peerId) {
-      // Sessão inválida/expirada — rejeita de forma permanente (close 4401)
+      // Sessão inválida/expirada — HTTP 401 no handshake
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
       return;
@@ -1265,10 +1404,6 @@ async function startServer() {
       // Socket pode fechar entre o handshake e o upgrade (cliente desistiu)
       socket.destroy();
     }
-  });
-
-  server.listen(PORT, HOST, () => {
-    logger.info("server_started", { host: HOST, port: PORT, env: process.env.NODE_ENV || "development", version: APP_VERSION });
   });
 }
 
