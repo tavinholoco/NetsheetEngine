@@ -136,8 +136,9 @@ app.use("/api", (req, res, next) => {
 });
 
 // T10.6 — rate limit GLOBAL da API (anti-flood por IP), além dos limiters
-// específicos de mesa (roomLimiter/chatLimiter). O /api/health é isento:
-// uptime bots externos (T10.4) não podem ser bloqueados.
+// específicos de mesa (roomLimiter/chatLimiter). O /api/health é isento: é o
+// health check do Render. (Uptime bot externo, NÃO — regra 3 do contrato de
+// custo zero; a justificativa original da T10.4 era essa.)
 const apiLimiter = makeRateLimiter(600, 60_000); // 600 req/min por IP
 app.use("/api", (req, res, next) => {
   // req.path aqui é relativo ao mount "/api" — usar originalUrl para o health.
@@ -292,6 +293,9 @@ const ssePeer = new WeakMap<Response, string>();
 
 // Fase 5 (T5.2) — WebSocket Active Connections Map: roomCode -> Set<WebSocket>
 const wsClients: Record<string, Set<WebSocket>> = {};
+// De quem é cada socket — o autor vem da sessão validada no upgrade. Era um
+// campo `_peerId` pendurado no objeto com `as any`; o mesmo mapa do SSE (R.3).
+const wsPeer = new WeakMap<WebSocket, string>();
 
 // Fase 5 (T5.2) — fecha as conexões de um peer (sair da mesa ou ser removido
 // pelo GM). Desde a R.3, as duas: WebSocket e stream SSE.
@@ -300,7 +304,7 @@ function closePeerSockets(code: string, peerId: string): void {
   const sockets = wsClients[key];
   if (sockets) {
     for (const ws of sockets) {
-      if ((ws as any)._peerId === peerId) {
+      if (wsPeer.get(ws) === peerId) {
         ws.close(4400, "Sessão encerrada");
         sockets.delete(ws);
       }
@@ -835,9 +839,11 @@ app.get("/api/rooms/:code/stream", (req, res) => {
 // FASE 5 (T5.2) — WEBSOCKET: /ws/rooms/:code
 // ==========================================
 // Transporte base do multiplayer. Handshake autenticado pelo token de sessão
-// (T1.7) via query param `?token=`; close 4401 se a sessão for inválida
-// (código na faixa 4400–4499 = permanente, o cliente não tenta reconectar
-// com o mesmo token — alinhado com a T3.3).
+// (T1.7) via query param `?token=`; sessão inválida responde HTTP 401 no
+// próprio handshake (não há socket para um close code). Os fechamentos
+// 4400–4499 são permanentes (4400 saída/expulsão, 4409 socket substituído —
+// R.4), mas o cliente ainda não olha o código: reconecta e cai no re-join
+// (T3.3). Pista da Fase H.
 // Mensagens do cliente (JSON):
 //   { type: "message", text?, rollResult? }  → postChatMessage (broadcast)
 //   { type: "heartbeat" }                    → touchPlayer (sem broadcast)
@@ -1001,7 +1007,7 @@ function mirrorDocToJson(code: string, originWs: WebSocket): boolean {
   const next = deriveGridFromDoc(entry.doc);
   if (JSON.stringify(prev) === JSON.stringify(next)) return true;
 
-  const originPeerId = (originWs as any)._peerId as string | undefined;
+  const originPeerId = wsPeer.get(originWs);
   const isGm = room.gmPeerId === originPeerId;
   const prevById = new Map(prev.tokens.map((t) => [t.id, t]));
   const nextIds = new Set(next.tokens.map((t) => t.id));
@@ -1110,14 +1116,14 @@ interface WsConnMeta {
 
 wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMeta) => {
   const { code, peerId } = meta;
-  (ws as any)._peerId = peerId;
+  wsPeer.set(ws, peerId);
   if (!wsClients[code]) wsClients[code] = new Set();
   wsClients[code].add(ws);
 
   // R.4 (SEC-10) — cada socket recebe cada reenvio da sala: sockets demais do
   // mesmo jogador multiplicam a banda. Fecha os mais antigos (o Set guarda a
   // ordem de entrada) — uma aba recarregando convive com a anterior.
-  const doPeer = [...wsClients[code]].filter((s) => (s as any)._peerId === peerId);
+  const doPeer = [...wsClients[code]].filter((s) => wsPeer.get(s) === peerId);
   for (const velho of doPeer.slice(0, Math.max(0, doPeer.length - WS_LIMITS.maxSocketsPerPeer))) {
     wsClients[code].delete(velho);
     velho.close(4409, "Conexão substituída por uma mais nova");
@@ -1242,9 +1248,10 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
 });
 
 
-// T10.4 — healthcheck enriquecido para uptime bots: versão do build, uptime
-// do processo e contagem de salas/jogadores ativos. Sempre 200 quando vivo
-// (sem rate limit — bots externos não podem ser bloqueados por IP).
+// T10.4 — healthcheck enriquecido: versão do build, uptime do processo e
+// contagem de salas/jogadores ativos. Sempre 200 quando vivo, sem rate limit
+// (o health check do Render passa por aqui). Nada de uptime bot no plano
+// gratuito — regra 3 do contrato de custo zero.
 app.get("/api/health", (req, res) => {
   const activeRooms = getAllActiveRooms();
   const playersActive = activeRooms.reduce((acc, r) => acc + r.playersCount, 0);
@@ -1383,7 +1390,7 @@ export function attachRealtime(server: http.Server): void {
     const token = url.searchParams.get("token") || "";
     const peerId = verifySession(code, token);
     if (!peerId) {
-      // Sessão inválida/expirada — rejeita de forma permanente (close 4401)
+      // Sessão inválida/expirada — HTTP 401 no handshake
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
       return;
