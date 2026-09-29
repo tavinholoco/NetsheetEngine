@@ -529,15 +529,15 @@ fim desta seção. IDs referenciados pelas fases.
 | SEC-07 | 🔴 Crítico | `join` com `peerId` já presente emite sessão sem prova de posse e revoga a do dono — **tomada de GM** por qualquer um na mesa *(reproduzido)* | ✅ R.1 |
 | SEC-08 | 🟠 Alto | `create` com código existente **substitui a sala** — sem sessão; perde fichas, chat e grid *(reproduzido)* | ✅ R.2 |
 | SEC-10 | 🟠 Alto | WebSocket sem limitador por mensagem e com `maxPayload` de 100 MiB — um participante gasta a banda do workspace | ✅ R.4 |
-| SEC-13 | 🟠 Alto | Sala sem teto de **assentos**: cada `join` novo cria um, cada um abre até 3 sockets e recebe cada reenvio *(achado do portão das R, 29/09 — não reproduzido)* | R.16 |
+| SEC-13 | 🟠 Alto | Sala sem teto de **assentos**: cada `join` novo cria um, cada um abre até 3 sockets e recebe cada reenvio *(achado do portão das R, 29/09 — reproduzido na R.16: 101 assentos para 100 joins)* | ✅ R.16 |
 | OPS-01 | 🟠 Alto | **Nenhum backup** — a decisão 4 supôs um backup diário que o plano gratuito não tem | R.10 |
 | SEC-09 | 🟡 Médio | Expulsar não revoga a sessão nem fecha o socket — o expulso segue lendo a mesa *(reproduzido)* | ✅ R.3 |
 | SEC-11 | 🟡 Médio | Sem `trust proxy`, os limitadores tendem a ser um balde só atrás do proxy do Render | ✅ R.5 (conferir no ar) |
 | SEC-12 | 🟡 Médio | Posse de token no grid Yjs compara o dono **novo** — jogador move e toma token alheio *(reproduzido na R.6)* | ✅ R.6 |
-| OPS-02 | 🟡 Médio | Node sem versão fixa: produção no `latest` (26, não LTS), CI no 20 (fim de vida) e no 22 | R.8 |
-| DOC-06 | 🟡 Médio | A L.6 depende de meses de log, e o Render Hobby guarda 7 dias | R.12 |
+| OPS-02 | 🟡 Médio | Node sem versão fixa: produção no `latest` (26, não LTS), CI no 20 (fim de vida) e no 22 | ✅ R.8 (conferir no log de 01/10) |
+| DOC-06 | 🟡 Médio | A L.6 depende de meses de log, e o Render Hobby guarda 7 dias | ✅ R.12 |
 | DOC-07 | 🟡 Médio | A decisão 3 (só convidados) não é imposta pelo produto: lobby público e `join` aberto | R.11 |
-| OPS-03 | 🔵 Baixo | `version` do `package.json` em 0.4.0 com a tag em `v0.4.3` | R.9 |
+| OPS-03 | 🔵 Baixo | `version` do `package.json` em 0.4.0 com a tag em `v0.4.3` | ✅ R.9 |
 
 ---
 
@@ -1246,7 +1246,8 @@ cliente e servidor para ela.
 > manutenção — com a exceção da F, que é a única fase restante que muda o que o jogador vê.
 > **Ressalva da revisão pós-D (29/09):** "roda certo" vale para as regras. Para jogar **em produção**,
 > as pendências R.1–R.5 abaixo vêm antes — sem elas, qualquer participante toma o GM, apaga a mesa ou
-> gasta a banda do workspace. *(R.1–R.6 feitas em 29/09; a R.16, teto de assentos, ainda vem antes.)*
+> gasta a banda do workspace. *(R.1–R.6 e a R.16, teto de assentos, feitas em 29/09. O que resta antes
+> de abrir a mesa ao público é a decisão R.11 — quem pode entrar.)*
 
 ---
 
@@ -1379,15 +1380,32 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       **anterior**. Conferido que o `deriveGridFromDoc` não converte tipo (não há falso positivo que
       reverta movimento legítimo). `grid-ownership.integration` (5). **Provado revertendo:** com a
       checagem antiga, 4 dos 5 falham (o que passa é mover o próprio token). Nota na ADR 0002 atualizada.
-- [ ] **R.7** **SEC-06 — o gatilho da B.6 disparou.** `npm audit fix` leva a `express@4.22.3` e
+- [x] **R.7** **SEC-06 — o gatilho da B.6 disparou.** `npm audit fix` leva a `express@4.22.3` e
       `qs@6.16.0`. Esperado: `npm audit --omit=dev` com **0** vulnerabilidades. Atualizar a linha do
       SEC-06 em [`SEGURANCA.md`](./SEGURANCA.md#estado-dos-achados-de-segurança) e a linha de base.
-- [ ] **R.8** **OPS-02 — fixar o Node.** `.node-version` com `24` (LTS; manutenção a partir de
+      *(29/09/2026)* Só o `package-lock.json` mudou (a faixa `^4.21.2` do `package.json` já aceitava
+      a 4.22.3). Produção: `express` 4.22.2 → **4.22.3**, `body-parser` 1.20.6 → **1.20.8**, `qs`
+      6.15.3 → **6.16.0**. Desenvolvimento, de carona: `undici` 7.30.0 (via `jsdom`, também moderada) e
+      `vitest` 4.1.11 — patches. `npm audit`: **0** em produção e 0 no total (eram 3 e 6).
+      **Armadilha achada:** o `npm audit fix` atualizou o lock mas **não** o `node_modules` — a suíte
+      rodou verde contra o `express` antigo, sem provar nada. Com `npm ci` (o que o CI faz), as versões
+      novas entraram e a suíte passou de novo: 571/571, com o `vitest` 4.1.11.
+- [x] **R.8** **OPS-02 — fixar o Node.** `.node-version` com `24` (LTS; manutenção a partir de
       20/10/2026, fim de vida em 30/04/2028), `engines` com teto (`">=24 <25"`), e o CI — a matriz e o
       job de E2E — no 24. O 20 está em fim de vida, e o 22 não é o que roda em produção. **Conferir no
       log do deploy de 01/10** qual versão o Render vinha usando.
-- [ ] **R.9** **OPS-03 — versão com a tag.** `package.json` → `0.4.3`. A regra entrou no passo 3 do
+      *(29/09/2026)* Um lugar só decide: o CI deixou de ter matriz e lê o **mesmo** `.node-version`
+      que o Render (`node-version-file`), nos jobs `validate` e `e2e`. O `DEPLOY.md` avisa para **não**
+      definir `NODE_VERSION` no painel, que passaria por cima do arquivo. `npm ci` local (Node 24.14)
+      sem aviso de `engines`. Não há teste automatizado possível do que o Render escolhe: **a prova é o
+      log do deploy** — em 01/10, o primeiro deploy deve dizer Node 24.x. *O `@types/node` segue no
+      ^22: tipos mais velhos que o runtime não quebram nada; sobe quando algo do 24 fizer falta.*
+- [x] **R.9** **OPS-03 — versão com a tag.** `package.json` → `0.4.3`. A regra entrou no passo 3 do
       ritual de abertura.
+      *(29/09/2026)* `npm version 0.4.3 --no-git-tag-version` (o `package.json` e as duas linhas da
+      raiz do lock; nenhuma tag criada). **Visto no build de produção:** o `/api/health` responde
+      `"version":"0.4.3"`. O bloco R não ganha tag própria — o plano reserva a `v0.4.4` para a F, e
+      renumerar tags é decisão do dono.
 - [ ] **R.10** 🧑‍⚖️ **Decisão do dono — backup (reabre a decisão 4, OPS-01).** Em ordem de tamanho:
       1. *(recomendada — a versão 10× menor)* **Dump manual** com o CLI já logado
          (`npx supabase db dump --linked`, esquema e `--data-only`), guardado **fora do repositório**,
@@ -1418,22 +1436,35 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       10× menor: mover o detalhe das fases fechadas (A–D e as pendências P) **verbatim** para
       `docs/historico/FASES_A-D.md`, deixando aqui uma linha por fase com o link. PR próprio, só de
       movimento de texto, revisável com `git diff --color-moved`.
-- [ ] **R.14** 🔒 **Portão de segurança** — o bloco muda autorização (R.1, R.3, R.6) e entrada (R.4):
+- [x] **R.14** 🔒 **Portão de segurança** — o bloco muda autorização (R.1, R.3, R.6) e entrada (R.4):
       as seis perguntas em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). E a pergunta que o repo
       público impõe: **o que este PR ensina a quem lê o código antes de o conserto estar no ar?**
       *(29/09/2026 — respondido para R.1–R.6, no [registro](./SEGURANCA.md#pendências-r--revisão-pós-d).
       Achado do portão: **SEC-13**, virou a R.16. O item fecha quando R.7–R.9 e a R.16 responderem.)*
+      *(29/09/2026 — R.16, R.7, R.8 e R.9 responderam no mesmo registro; nenhum achado novo. R.10,
+      R.11 e R.13 são decisão e documentação — o portão pergunta de novo se virarem código.)*
 - [ ] **R.15** 🧠 **Estado durável e PRs.** Ordem: consertos de segurança (R.1–R.6) **junto com** o
       texto que os descreve, nunca depois dele; dependências, Node e versão (R.7–R.9) podem ir no mesmo
       PR; a R.13 em PR próprio. Depois do merge, `master` verde e a verificação pós-deploy de 01/10.
       *(29/09/2026 — R.0–R.6 e R.12 publicados juntos, a pedido do dono: um commit por item, cada um
       com o teste que reproduz e a prova revertendo. R.7–R.11, R.13 e R.16 ficam para o próximo PR.)*
-- [ ] **R.16** **SEC-13 — teto de assentos por sala** *(achado do portão das R, 29/09/2026)*. Cada
+      *(29/09/2026 — PR #14 mergeado; CI do `master` verde nos 5 jobs, e o `db-sync` conectou: "Remote
+      database is up to date", como esperado sem migration. R.16, R.7, R.8 e R.9 no PR seguinte, um
+      commit por item. Fica aberto o que é do dono: R.10, R.11 e R.13.)*
+- [x] **R.16** **SEC-13 — teto de assentos por sala** *(achado do portão das R, 29/09/2026)*. Cada
       `join` com `peerId` novo cria um assento, cada assento abre até 3 sockets (R.4), e o `join` só
       tem o limitador de sala (120/min por IP): dezenas de assentos multiplicam cada reenvio da sala —
       o amplificador do SEC-10 por outra porta, e a mesma família da "sala sem teto de NPCs" (pista da
       E). **Reproduzir primeiro.** Versão 10× menor: teto de assentos por sala (uma mesa real tem até
       ~8; 12 dá folga), `409` com código estável acima dele. Antes da primeira sessão em produção.
+      *(29/09/2026)* **Reproduzido:** 100 `join`s criaram 101 assentos, e o GM gerou 41 fichas sem
+      parar. `MAX_SEATS_PER_ROOM = 16` — **não 12**: o teto conta **todo** assento (GM, jogadores e
+      fichas geradas pelo GM), porque contar só os "humanos" pelo prefixo do `peerId` seria contornável
+      (ele vem do cliente; bastaria entrar como `edgerunner_x`). 16 cabe GM, uma mesa cheia e fichas
+      pré-geradas. Acima do teto: `join` de assento novo → **409 `room_full`**; quem já tem assento
+      sempre volta ao seu; gerar ficha → recusado com "A mesa está cheia". Teto máximo de sockets por
+      sala: 48. `seat-cap.integration` (6). **Provado revertendo** as 2 linhas do teto: 4 falham. As
+      **fichas de NPC** (`room.npcs`) continuam sem teto — é a pista da E, e NPC não abre socket.
 - [ ] ✅ **Pendências da revisão pós-D resolvidas em:** ____/____/______
 
 ---
@@ -1894,7 +1925,7 @@ público mudar.
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
-| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.6 e R.12 feitos; falta R.7–R.11, R.13–R.16 | — |
+| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.9, R.12, R.14 e R.16 feitos; faltam as decisões do dono (R.10, R.11, R.13) e o R.15 | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
@@ -1909,14 +1940,15 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Depois das R.1–R.6 (29/09/2026) |
+| Verificação | Depois das R.1–R.9 e R.16 (29/09/2026) |
 |---|---|
+| Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **565** testes, 34 arquivos *(522 ao fechar a D; +43 das R.1–R.6, 8 arquivos novos)* |
+| `npx vitest run` | **571** testes, 35 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
-| `npm run audit:ci` | passa, **ALLOWLIST vazia** (3 moderadas do `qs`, não bloqueiam — **a R.7 leva a 0**: o `express@4.22.3` saiu) |
+| `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`) |
 | Chunk de entrada | 629 kB / 186 kB gzip |
 | Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 
@@ -1931,8 +1963,8 @@ o do commit mais recente do `master` — se não for, *Manual Deploy → Deploy 
 *Acrescentado na revisão pós-D:* no log desse deploy, anotar **qual versão do Node** o Render usou
 (OPS-02, R.8). E, se as R.1–R.5 ainda não estiverem no `master`, **não abrir mesa em produção** —
 o site pode voltar, a mesa espera. *(29/09: R.1–R.6 estão no PR da revisão; com ele mergeado, o passo
-novo é conferir o `clientIp` do `/api/health` contra o seu IP público — R.5. A R.16, teto de assentos,
-ainda falta antes da primeira sessão.)*
+novo é conferir o `clientIp` do `/api/health` contra o seu IP público — R.5. Com o PR seguinte, o
+log do deploy deve dizer **Node 24.x** (R.8) e o health, `"version":"0.4.3"` (R.9).)*
 
 **Avisos de descontinuação no log do CI** (vistos no merge da Fase C, 26/09/2026). Hoje são só aviso —
 o run está verde. **ADIAR**, cada um com gatilho datado; o passo 3b do ritual de abertura pega o
@@ -1943,7 +1975,7 @@ vermelho se algum virar erro antes:
 | `ubuntu-latest` passa a ser Ubuntu 26 | os 4 jobs do `ci.yml` e o `keepalive.yml` | **A partir de 19/10/2026** — conferir o primeiro run depois dessa data |
 | CodeQL Action v3 descontinuada | `github/codeql-action/upload-sarif@v3` (gitleaks) | **Dezembro de 2026** — trocar por `@v4` antes |
 | Actions em Node 20 forçadas a rodar em Node 24 | `actions/checkout@v4`, `supabase/setup-cli@v1` | Um run falhar por isso, ou sair versão nova das duas |
-| **Node 20 na matriz do `validate`** *(revisão pós-D)* | `ci.yml` — o runtime do **projeto**, não das actions | **Disparado:** fim de vida em 30/04/2026. Sai na R.8 |
+| **Node 20 na matriz do `validate`** *(revisão pós-D)* | `ci.yml` — o runtime do **projeto**, não das actions | ✅ **Resolvido na R.8 (29/09):** o CI lê o `.node-version` (24), o mesmo arquivo do Render |
 
 ### Registro de sessões
 

@@ -86,7 +86,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `GET` | `/api/health` | — | `{ status: "online", system, version, …, clientIp }` — `clientIp` é o IP **do próprio chamador** como os limitadores o veem (R.5) |
 | `GET` | `/api/rooms` | — | Lista `{ code, name, gmHandle, playersCount }[]` das salas ativas |
 | `POST` | `/api/rooms/create` | `{ code, name, gmHandle, gmPeerId }` | `{ room, sessionToken }` · **409** `room_exists` se o código já é de uma mesa (R.2 — antes, a mesa era apagada) |
-| `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` + header `X-Session-Token` para voltar ao próprio assento (R.1) | `{ room, sessionToken }` · **409** `seat_taken` se o assento é de outro |
+| `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` + header `X-Session-Token` para voltar ao próprio assento (R.1) | `{ room, sessionToken }` · **409** `seat_taken` se o assento é de outro · **409** `room_full` se a sala já tem 16 assentos (R.16 — quem já tem assento sempre volta) · **403** `removed_by_gm` (R.3) |
 | `GET` | `/api/rooms/:code` | — | **Sem token:** recorte público `{ code, name, gmHandle, playersCount }`. **Com `X-Session-Token` válido:** `GameRoom` completo. **Token inválido:** 401. (404 se não existe) |
 
 > Validações do `code`: 2–12 caracteres alfanuméricos ou hífen, normalizado para maiúsculas
@@ -114,7 +114,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `POST` | `/api/rooms/:code/player-health` | **GM** | `{ targetPeerId, woundLevel }` | `GameRoom` (nível vira o mínimo da caixa em pontos) |
 | `POST` | `/api/rooms/:code/tactical-grid` | **GM** (ou Yjs) | `{ gridState }` | `GameRoom` |
 | `POST` | `/api/rooms/:code/npcs/generate` | **GM** | `{ archetypeId? }` | `GameRoom` |
-| `POST` | `/api/rooms/:code/players/generate` | **GM** | `{}` | `GameRoom` |
+| `POST` | `/api/rooms/:code/players/generate` | **GM** | `{}` | `GameRoom` — a ficha gerada ocupa assento; com a sala cheia (16), recusado (R.16) |
 | `POST` | `/api/rooms/:code/players/:targetPeerId/delete` | **GM** | `{}` | `GameRoom` — revoga a sessão do removido e fecha o WS **e** o SSE dele; o `join` pelo mesmo `peerId` passa a responder **403** `removed_by_gm` (R.3). O GM não remove a si mesmo (403) |
 | `POST` | `/api/rooms/:code/npcs/:npcId/delete` | **GM** | `{}` | `GameRoom` |
 | `POST` | `/api/rooms/:code/npcs/:npcId/health` | **GM** | `{ woundLevel }` | `GameRoom` |
@@ -130,8 +130,8 @@ normal. Rolagens só existem via `roll`/`/roll`, com RNG e bônus derivados da f
 - **401** — token ausente/inválido/expirado
 - **403** — ação negada (não é GM, não é membro); `removed_by_gm` no `join` de quem o GM removeu
 - **404** — sala/jogador não encontrado
-- **409** — conflito: `seat_taken` (assento de outro, sem o token dele — R.1) ou `room_exists`
-  (código em uso — R.2)
+- **409** — conflito: `seat_taken` (assento de outro, sem o token dele — R.1), `room_exists`
+  (código em uso — R.2) ou `room_full` (16 assentos — R.16)
 - **413** — payload acima de 1 MB
 - **429** — rate limit (por IP; atrás do proxy do Render o IP vem do `X-Forwarded-For` — R.5)
 

@@ -70,7 +70,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 565 testes depois das R.1–R.6 (ver "Linha de base atual" no plano)
+npx vitest run            # 571 testes depois das R.1–R.9 e R.16 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 6 testes, sobe o servidor de produção
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
@@ -105,6 +105,8 @@ node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
 - **O repositório é público** e o `master` não tem proteção de branch (conferido em 29/09). Achado de
   segurança **aberto** é publicado no repo **junto com o conserto**, nunca antes. E backup de banco
   nunca vai para o repositório.
+- **Node 24, no `.node-version`** (R.8) — o mesmo arquivo para o Render e o CI. Trocar de versão é
+  mudar esse arquivo; `NODE_VERSION` no painel do Render passaria por cima dele em silêncio.
 - **Emitir sessão também é autorização.** O SEC-07 viveu desde a T1.7 porque todos conferiam de onde
   vinha o autor da ação, e ninguém quem recebia o token. É a segunda metade da pergunta 3 do portão.
 - **Migration e código que a usa nunca vão no mesmo merge** (decisão 5): o Render faz auto-deploy

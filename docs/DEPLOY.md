@@ -43,7 +43,7 @@ payload é rico para monitoramento:
 {
   "status": "online",
   "system": "NETSHEET ENGINE — Cyberpunk 2020 Multiplayer API",
-  "version": "0.4.0",          // versão do build (do package.json)
+  "version": "0.4.3",          // versão do build (do package.json) — anda junto com a tag (R.9)
   "uptime": 48213,             // segundos desde o boot do processo
   "timestamp": "2026-08-10T…Z",
   "env": "production",
@@ -122,6 +122,12 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
 > em 30–50 s; suspenso não sobe com requisição nenhuma): o workspace **estourou as 750 h de setembro**,
 > por instâncias do Newra News criadas sem querer (erro operacional do dono, já corrigido lá). **Volta em 01/10/2026** — o que conferir nesse dia está na seção de
 > operação do [plano](./PLANO_MESTRE.md#linha-de-base-atual). O produto ainda não foi publicado.
+
+> **Versão do Node: o arquivo [`.node-version`](../.node-version) (24, LTS).** O Render o lê antes do
+> `engines` do `package.json`, e o CI usa o mesmo arquivo (`node-version-file`). *Até a R.8 não havia
+> versão fixada: `engines: ">=20"` sem teto, que o Render resolve para o `latest` — em setembro de
+> 2026, o Node 26, que não é LTS e que o CI nunca testou.* Trocar de versão é mudar esse arquivo, e só
+> ele. **Não** definir `NODE_VERSION` no painel: ela passaria por cima do arquivo, em silêncio.
 
 1. Em [render.com](https://render.com): **New → Blueprint** e selecione o repo
    (detecta `render.yaml`).

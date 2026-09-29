@@ -68,18 +68,18 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [20, 22]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node ${{ matrix.node-version }}
+      # R.8 (OPS-02) — a versão do Node mora no `.node-version`, o mesmo arquivo
+      # que o Render lê. Antes: matriz 20/22 aqui (o 20 em fim de vida desde
+      # 30/04/2026) e `engines: ">=20"` sem teto, que o Render resolvia para o
+      # `latest` — a produção rodava uma versão que o CI nunca testou.
+      - name: Setup Node (versão do .node-version)
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version-file: .node-version
           cache: npm
 
       - name: Instalar dependências
@@ -136,10 +136,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node 22
+      - name: Setup Node (versão do .node-version)
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: npm
 
       - name: Instalar dependências

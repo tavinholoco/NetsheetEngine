@@ -1,10 +1,10 @@
 {
   "name": "cyberpunk-2020-suite",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.3",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=24 <25"
   },
   "scripts": {
     "dev": "tsx server.ts",
