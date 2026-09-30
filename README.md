@@ -53,6 +53,8 @@ Quatro documentos vivos sustentam o plano e são atualizados pelas fases que mud
 - [`docs/BACKUP.md`](./docs/BACKUP.md) — o backup manual do banco (`npm run backup:db`): quando, o que
   fica de fora, onde guardar e como restaurar.
 
+O detalhe das fases já fechadas do plano (A–D) mora em [`docs/historico/`](./docs/historico/).
+
 Fases 0–10 do plano antigo concluídas: fundação, segurança, migração Firebase → Supabase, multiplayer
 (persistência, estado global, tempo real com WebSockets/Yjs), motor de dados FNFF, roteamento, PRD,
 testes e deploy/CI-CD/hardening. Nada disso foi desfeito — o plano novo continua a partir daí, na

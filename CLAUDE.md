@@ -12,6 +12,8 @@
 1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M),
    mais blocos de pendências fora das fases (P em 25/09; **R**, da revisão pós-D de 29/09) que
    precedem a fase seguinte. O arquivo passa de uma leitura só: leia em partes, e não pule nenhuma.
+   O detalhe das fases fechadas (A–D e P) mora em [`docs/historico/`](./docs/historico/) desde a R.13
+   — só abra quando precisar do porquê de algo já feito.
 2. Ache o **primeiro item `[ ]` não marcado**. É de onde o trabalho continua.
 3. Rode `git log --oneline -15` e `git tag -l` — as tags marcam o fim de cada fase de construção.
 4. **Confira o CI do `master` e o keepalive** (`gh run list --branch master --limit 3` e
@@ -31,6 +33,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | `docs/PLANO_MESTRE.md` | Fases, tarefas, checkboxes, índice de achados (33 da auditoria + 12 da revisão pós-D), filtro de necessidade, contrato de custo zero, registro de sessões |
 | `docs/SEGURANCA.md` | Portão de segurança (6 perguntas) e o registro por fase |
 | `docs/BACKUP.md` | Runbook do backup manual (decisão 8), o registro de cada dump e o contorno do Docker que não sobe |
+| `docs/historico/` | O detalhe das fases fechadas, movido do plano sem mudar o texto (R.13). Consulta, não estado |
 | `docs/ARQUITETURA.md` | Diagramas Mermaid — contêineres, fronteiras de confiança, pipeline de dano, máquina de ferimento |
 | `docs/adr/` | Decisões arquiteturais com histórico de revisão. **Leia antes de reabrir uma decisão.** |
 | `docs/varreduras/` | Ledgers das varreduras (Fases E, G–J) com veredictos FAZER/ADIAR/DESCARTAR |
