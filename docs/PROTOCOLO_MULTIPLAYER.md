@@ -85,8 +85,8 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 |---|---|---|---|
 | `GET` | `/api/health` | — | `{ status: "online", system, version, …, clientIp }` — `clientIp` é o IP **do próprio chamador** como os limitadores o veem (R.5) |
 | ~~`GET`~~ | ~~`/api/rooms`~~ | — | **Saiu na R.11 (29/09/2026)** — listava o código de toda sala a qualquer visitante. A sala se acha pelo código-convite (`NC-2020-K7Q9XD`, prefixo do GM + sufixo aleatório do cliente) ou pelo link `/room/CÓDIGO` |
-| `POST` | `/api/rooms/create` | `{ code, name, gmHandle, gmPeerId }` | `{ room, sessionToken }` · **409** `room_exists` se o código já é de uma mesa (R.2 — antes, a mesa era apagada) |
-| `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` + header `X-Session-Token` para voltar ao próprio assento (R.1) | `{ room, sessionToken }` · **409** `seat_taken` se o assento é de outro · **409** `room_full` se a sala já tem 16 assentos (R.16 — quem já tem assento sempre volta) · **403** `removed_by_gm` (R.3) |
+| `POST` | `/api/rooms/create` | `{ code, name, gmHandle, gmPeerId }` | `{ room, sessionToken }` · **409** `room_exists` se o código já é de uma mesa (R.2 — antes, a mesa era apagada) · **503** `rooms_full` se o servidor já tem o máximo de salas abertas (E.03 — `MAX_ROOMS`, padrão 30) |
+| `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` + header `X-Session-Token` para voltar ao próprio assento (R.1) | `{ room, sessionToken }` · **409** `seat_taken` se o assento é de outro · **409** `room_full` se a sala já tem 16 assentos (R.16 — quem já tem assento sempre volta) · **403** `removed_by_gm` (R.3) · **413** `sheet_too_large` se a ficha saneada passa de 64 KB (E.03) |
 | `GET` | `/api/rooms/:code` | — | **Sem token:** recorte público `{ code, name, gmHandle, playersCount }`. **Com `X-Session-Token` válido:** `GameRoom` completo. **Token inválido:** 401. (404 se não existe) |
 
 > Validações do `code`: 2–24 caracteres alfanuméricos ou hífen (eram 12 até a R.11), normalizado para
@@ -103,7 +103,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 
 | Método | Rota | Permissão | Corpo | Resposta |
 |---|---|---|---|---|
-| `POST` | `/api/rooms/:code/sheet` | qualquer membro | `{ sheet }` | `GameRoom` (ficha sincronizada; **o ferimento do cliente é ignorado** — D.1) |
+| `POST` | `/api/rooms/:code/sheet` | qualquer membro | `{ sheet }` | `GameRoom` (ficha sincronizada; **o ferimento do cliente é ignorado** — D.1) · **413** `sheet_too_large` acima de 64 KB (E.03) |
 | `POST` | `/api/rooms/:code/message` | qualquer membro | `{ text }` | `GameRoom` (chat atualizado) |
 | `POST` | `/api/rooms/:code/roll` | qualquer membro | `{ kind, skillName? }` | `{ room, roll }` (RNG no servidor) |
 | `POST` | `/api/rooms/:code/heartbeat` | qualquer membro | `{}` | `{ success, isOnline }` (sem broadcast) |
@@ -112,8 +112,8 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `POST` | `/api/rooms/:code/stabilize` | **GM** | `{ targetId, stabilized }` | `GameRoom` (D.5 — só em Mortal; fora dele → 400) |
 | `POST` | `/api/rooms/:code/damage` | **GM** | `{ targetId, raw, location }` | `GameRoom` (conta do livro, death save em Mortal e stun save no chat — D.1/D.5; token sem ficha → 400) |
 | `POST` | `/api/rooms/:code/player-health` | **GM** | `{ targetPeerId, woundLevel }` | `GameRoom` (nível vira o mínimo da caixa em pontos) |
-| `POST` | `/api/rooms/:code/tactical-grid` | **GM** (ou Yjs) | `{ gridState }` | `GameRoom` |
-| `POST` | `/api/rooms/:code/npcs/generate` | **GM** | `{ archetypeId? }` | `GameRoom` |
+| `POST` | `/api/rooms/:code/tactical-grid` | **GM** (ou Yjs) | `{ gridState }` | `GameRoom` · **400** `invalid_grid` se a forma não confere (E.02 — até 200 tokens, lado de 1 a 32, só os campos de token; a mesma regra reverte o update Yjs malformado, de qualquer um) |
+| `POST` | `/api/rooms/:code/npcs/generate` | **GM** | `{ archetypeId? }` | `GameRoom` · **409** `npcs_full` com 32 NPCs na sala (E.03) |
 | `POST` | `/api/rooms/:code/players/generate` | **GM** | `{}` | `GameRoom` — a ficha gerada ocupa assento; com a sala cheia (16), recusado (R.16) |
 | `POST` | `/api/rooms/:code/players/:targetPeerId/delete` | **GM** | `{}` | `GameRoom` — revoga a sessão do removido e fecha o WS **e** o SSE dele; o `join` pelo mesmo `peerId` passa a responder **403** `removed_by_gm` (R.3). O GM não remove a si mesmo (403) |
 | `POST` | `/api/rooms/:code/npcs/:npcId/delete` | **GM** | `{}` | `GameRoom` |
@@ -147,7 +147,8 @@ Fase I avalia estender às outras respostas.
 ws(s)://<host>/ws/rooms/:code?token=<sessionToken>
 ```
 
-1. O servidor intercepta o upgrade HTTP em `/ws/rooms/:code` (regex `[A-Z0-9-]{2,12}`).
+1. O servidor intercepta o upgrade HTTP em `/ws/rooms/:code` (regex `[A-Za-z0-9-]+`; o tamanho
+   quem confere é a sessão — só existe token para sala que existe).
 2. `verifySession(code, token)` resolve o `peerId` do autor.
    - **Inválido** → responde `HTTP/1.1 401 Unauthorized` e destrói o socket.
 3. **Conectado** → o servidor envia imediatamente o **estado inicial** (sala inteira em JSON).
@@ -170,6 +171,7 @@ da Fase H.
 | Update do grid Yjs (`messageSync`) | 120 | — (cada update aceito reenvia a sala) |
 | Awareness | 1.200, e até **4 KiB** por quadro | — (o cursor do GM sai no máximo a cada 60 ms) |
 | Sockets abertos | 3 por jogador (fecha os mais antigos com `4409`) | — (cada socket recebe cada reenvio) |
+| Reenvios esperando num socket que **não lê** *(E.03)* | 1 MiB (`maxBufferedBytes`): acima disso o socket é derrubado (`terminate`, sem código — o aperto de mão também ficaria preso) e o log registra `slow_consumer_closed`. O cliente reconecta sozinho | o stream SSE, com o mesmo teto |
 
 Quadro acima do teto é **descartado**; no chat e nas ações, o autor recebe um
 `{ type: "error" }` **uma vez por janela**, e o servidor loga `ws_rate_limited`. A cota não zera ao

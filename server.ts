@@ -17,7 +17,7 @@ import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
 import * as syncProtocol from "y-protocols/sync";
 import * as awarenessProtocol from "y-protocols/awareness";
-import { TOKEN_KEYS, deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
+import { TOKEN_KEYS, deriveGridFromDoc, docTokensProblem, gridChangeProblem, writeGridToDoc } from "./src/lib/gridDoc.js";
 // Fase B (B.1 — SEC-01) — o Netrunner IA passa a exigir identidade verificada,
 // e a instrução do modelo passa a ser código do servidor, não entrada do cliente.
 import { bearerFromHeader, isAuthVerificationConfigured, verifySupabaseJwt } from "./server/supabaseAuth.js";
@@ -52,6 +52,12 @@ import {
   wasRemovedByGm,
   roomIsFullFor,
   MAX_SEATS_PER_ROOM,
+  roomsAtCapacity,
+  MAX_ROOMS,
+  roomNpcsFull,
+  MAX_NPCS_PER_ROOM,
+  sheetTooLarge,
+  MAX_SHEET_BYTES,
   verifySession,
   sanitizeText,
   isValidRoomCode,
@@ -243,6 +249,8 @@ const aiLimiter = makeRateLimiter(10, 60_000);
 // 401), então a redação pode mudar sem quebrar ninguém.
 const ERR_SESSAO_MESA = "Sessão inválida ou expirada. Reconecte-se à mesa.";
 const ERR_SESSAO_CONTA = "Sessão inválida ou expirada. Entre novamente.";
+// E.03 (SEC-15) — a mesma recusa no join e na sincronia da ficha.
+const ERR_FICHA_GRANDE = { error: `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`, code: "sheet_too_large" };
 
 // T1.7 — autor do request é derivado do token de sessão, nunca do peerId livre
 function getSessionPeerId(req: express.Request, code: string): string | null {
@@ -335,7 +343,17 @@ function broadcastRoomUpdate(code: string) {
   queueRoomPersist(code);
   // Fase 5 (T5.3) — espelha JSON → doc Yjs quando o grid mudou por REST
   // (joinRoom, generateNpc, etc.) para os clientes CRDT convergirem.
-  seedDocFromJson(code);
+  // E.02 (SEC-14) — o espelho NUNCA lança daqui. Esta função roda dentro das
+  // rotas e do vigia de presença (um `setInterval`): um grid que o espelho não
+  // entendia travava a sala e, pelo vigia, derrubava o processo inteiro. O JSON
+  // é a verdade durável (T5.1): se o espelho falhar, o doc é descartado e
+  // renasce do JSON na próxima mensagem Yjs.
+  try {
+    seedDocFromJson(code);
+  } catch (e) {
+    logger.error("yjs_seed_failed", { room: code.toUpperCase(), message: (e as Error)?.message || String(e) });
+    destroyRoomYjs(code);
+  }
   const payload = JSON.stringify(room);
 
   // SSE (fallback) — mesmo payload JSON
@@ -343,6 +361,13 @@ function broadcastRoomUpdate(code: string) {
   if (clients && clients.size > 0) {
     const ssePayload = `data: ${payload}\n\n`;
     clients.forEach(res => {
+      // E.03 (SEC-15) — stream que não lê não acumula reenvios na memória.
+      if (res.writableLength > WS_LIMITS.maxBufferedBytes) {
+        logger.warn("slow_consumer_closed", { room: code.toUpperCase(), peerId: ssePeer.get(res), transport: "sse", bytes: res.writableLength });
+        clients.delete(res);
+        try { res.end(); } catch { /* já fechado */ }
+        return;
+      }
       try {
         res.write(ssePayload);
         if (typeof (res as any).flush === 'function') {
@@ -359,6 +384,15 @@ function broadcastRoomUpdate(code: string) {
   if (sockets && sockets.size > 0) {
     for (const ws of sockets) {
       if (ws.readyState === WebSocket.OPEN) {
+        // E.03 (SEC-15) — socket que não lê é fechado, em vez de o servidor
+        // guardar cada reenvio da sala para ele. `terminate`, não `close`: o
+        // aperto de mão de fechamento também ficaria preso no buffer.
+        if (ws.bufferedAmount > WS_LIMITS.maxBufferedBytes) {
+          logger.warn("slow_consumer_closed", { room: code.toUpperCase(), peerId: wsPeer.get(ws), transport: "ws", bytes: ws.bufferedAmount });
+          sockets.delete(ws);
+          ws.terminate();
+          continue;
+        }
         try {
           ws.send(payload);
         } catch (e) {
@@ -458,6 +492,15 @@ app.post("/api/rooms/create", roomLimiter, (req, res) => {
       code: "room_exists"
     });
   }
+  // E.03 (SEC-15) — salas abertas têm teto: criar não exige login no servidor,
+  // e cada sala é memória na instância de 512 MB e uma linha no banco.
+  if (roomsAtCapacity()) {
+    logger.warn("rooms_full", { max: MAX_ROOMS });
+    return res.status(503).json({
+      error: `O servidor está com o máximo de mesas abertas (${MAX_ROOMS}). Tente de novo mais tarde.`,
+      code: "rooms_full"
+    });
+  }
   const result = createRoom(code, name, gmHandle, gmPeerId);
   broadcastRoomUpdate(result.room.code);
   res.json({ room: result.room, sessionToken: result.sessionToken });
@@ -474,6 +517,10 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   }
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
     return res.status(400).json({ error: "Ficha de personagem inválida." });
+  }
+  // E.03 (SEC-15) — a ficha vai em todo reenvio da sala, a cada socket.
+  if (sheetTooLarge(sheet)) {
+    return res.status(413).json(ERR_FICHA_GRANDE);
   }
   // R.1 (SEC-07) — voltar a um assento ocupado exige o token vigente dele, no
   // mesmo header da leitura autenticada (B.3). O `peerId` sozinho é público.
@@ -537,6 +584,9 @@ app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
     return res.status(400).json({ error: "Ficha inválida." });
   }
+  if (sheetTooLarge(sheet)) {
+    return res.status(413).json(ERR_FICHA_GRANDE);
+  }
   const result = updatePlayerSheet(req.params.code, peerId, sheet);
   if (result.error || !result.room) {
     return res.status(404).json({ error: result.error || "Room or player not found" });
@@ -570,6 +620,10 @@ app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
     return res.status(400).json({ error: "gridState são obrigatórios" });
   }
   const result = updateTacticalGrid(req.params.code, requesterPeerId, gridState);
+  // E.02 (SEC-14) — grid malformado é entrada inválida (400), não recusa de permissão.
+  if (!result.room && result.code === "invalid_grid") {
+    return res.status(400).json({ error: result.error, code: result.code });
+  }
   return respondWithResult(res, result);
 });
 
@@ -580,6 +634,13 @@ app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
     return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { archetypeId } = req.body ?? {};
+  // E.03 (SEC-15) — teto de NPCs: 409 com código, como a sala cheia (R.16).
+  if (roomNpcsFull(req.params.code)) {
+    return res.status(409).json({
+      error: `A mesa já tem ${MAX_NPCS_PER_ROOM} NPCs. Remova algum para gerar outro.`,
+      code: "npcs_full"
+    });
+  }
   const result = generateRoomNpc(req.params.code, requesterPeerId, archetypeId);
   return respondWithResult(res, result);
 });
@@ -1014,10 +1075,21 @@ function mirrorDocToJson(code: string, originWs: WebSocket): boolean {
   if (!entry || !room) return true;
   const prev = room.tacticalGrid;
   if (!prev) return true;
-  const next = deriveGridFromDoc(entry.doc);
-  if (JSON.stringify(prev) === JSON.stringify(next)) return true;
-
   const originPeerId = wsPeer.get(originWs);
+  // E.02 (SEC-14) — a FORMA antes da permissão, e para todo mundo, GM
+  // inclusive: validar forma não é autorização. Um item que não é token no
+  // array (o `deriveGridFromDoc` o ignora, então a comparação abaixo não o
+  // veria) ou um token malformado são revertidos — o revert apaga o lixo.
+  const junk = docTokensProblem(entry.doc);
+  const next = deriveGridFromDoc(entry.doc);
+  if (!junk && JSON.stringify(prev) === JSON.stringify(next)) return true;
+  const shapeProblem = junk ?? gridChangeProblem(prev, next);
+  if (shapeProblem) {
+    logger.warn("grid_update_rejected", { room: key, peerId: originPeerId, reason: shapeProblem.slice(0, 120) });
+    writeGridToDoc(entry.doc, prev, "server");
+    return false;
+  }
+
   const isGm = room.gmPeerId === originPeerId;
   const prevById = new Map(prev.tokens.map((t) => [t.id, t]));
   const nextIds = new Set(next.tokens.map((t) => t.id));
@@ -1297,13 +1369,28 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 // Iniciado dentro do startServer (após o restore) — no topo do módulo um
 // re-evaluate (watch/HMR) vazaria interval sem cleanup.
 let presenceWatcher: NodeJS.Timeout | null = null;
-function startPresenceWatcher(): void {
-  presenceWatcher = setInterval(() => {
-    const changedCodes = markStalePlayersOffline();
-    for (const code of changedCodes) {
+
+/**
+ * Uma volta do vigia de presença. Exportada para teste (E.02).
+ *
+ * E.02 (SEC-14) — o que roda num `setInterval` não pode lançar: exceção num
+ * timer é exceção não tratada, e o Node derruba o PROCESSO — todas as mesas
+ * juntas, por causa de uma. Era o que acontecia com um grid malformado. O
+ * `broadcastRoomUpdate` já não deixa o espelho Yjs escapar; o `try` por sala
+ * aqui é a segunda camada, para o que vier depois.
+ */
+export function runPresenceSweep(): void {
+  for (const code of markStalePlayersOffline()) {
+    try {
       broadcastRoomUpdate(code); // já faz queueRoomPersist (T3.1)
+    } catch (e) {
+      logger.error("room_sweep_failed", { room: code, message: (e as Error)?.message || String(e) });
     }
-  }, Math.min(15_000, Math.max(2_000, ROOM_OFFLINE_TIMEOUT_MS / 2)));
+  }
+}
+
+function startPresenceWatcher(): void {
+  presenceWatcher = setInterval(runPresenceSweep, Math.min(15_000, Math.max(2_000, ROOM_OFFLINE_TIMEOUT_MS / 2)));
 }
 
 // Fase B (B.5 — SEC-04) — coletor de salas abandonadas. Implementa a
@@ -1330,7 +1417,10 @@ function startRoomCollector(): void {
         destroyRoomYjs(code);
         await deleteRoomPersisted(code);
       }
-    })();
+    })().catch((e) => {
+      // E.02 — mesma regra do vigia: timer não derruba o processo.
+      logger.error("room_collect_failed", { message: (e as Error)?.message || String(e) });
+    });
   }, ROOM_COLLECT_INTERVAL_MS);
 }
 

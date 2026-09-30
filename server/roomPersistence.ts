@@ -16,7 +16,7 @@
 // ============================================================
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { exportRoomSessions, getRoom, restoreRoom, restoreRoomSessions } from "./roomManager.js";
+import { exportRoomSessions, getRoom, isRoomAbandoned, restoreRoom, restoreRoomSessions } from "./roomManager.js";
 import type { GameRoom } from "../src/types/multiplayer.js";
 import { logger } from "./logger.js";
 
@@ -120,10 +120,25 @@ export async function restoreRoomsFromDb(): Promise<number> {
   }
   let restored = 0;
   let sessionsRestored = 0;
+  let abandoned = 0;
+  let skipped = 0;
   for (const row of data ?? []) {
     const state = row.room_state as unknown;
     if (typeof state === "object" && state !== null) {
-      restoreRoom(state as GameRoom);
+      // E.03 (SEC-15) — sala abandonada não volta: o coletor só roda 15 min
+      // depois do boot, e o restore trazia tudo de volta antes dele. A linha
+      // sai do banco, como o coletor faria.
+      if (isRoomAbandoned(state as GameRoom)) {
+        abandoned += 1;
+        await deleteRoomPersisted(String(row.code));
+        continue;
+      }
+      // E.03 — e o que não cabe no teto de salas fica no banco, fora da
+      // memória (as mais recentes vêm primeiro, pela ordem da consulta).
+      if (!restoreRoom(state as GameRoom)) {
+        skipped += 1;
+        continue;
+      }
       restored += 1;
       // B.4 (SEC-03) — repõe as sessões DEPOIS da sala existir. Linha gravada
       // antes da migration 0007 vem sem a coluna: `undefined` é tratado como
@@ -132,7 +147,7 @@ export async function restoreRoomsFromDb(): Promise<number> {
       sessionsRestored += restoreRoomSessions((state as GameRoom).code, row.sessions);
     }
   }
-  logger.info("persistence_restored", { count: restored, sessions: sessionsRestored });
+  logger.info("persistence_restored", { count: restored, sessions: sessionsRestored, abandoned, skipped });
   return restored;
 }
 

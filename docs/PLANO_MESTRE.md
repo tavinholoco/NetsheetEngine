@@ -500,8 +500,8 @@ número real.
 
 ## 📊 ÍNDICE DE ACHADOS
 
-33 achados da auditoria de 02/09 e **12 da [revisão pós-D](#-revisão-pós-d-29092026)** (29/09 — 11 na revisão, 1 no portão das R), no
-fim desta seção. IDs referenciados pelas fases.
+33 achados da auditoria de 02/09, **12 da [revisão pós-D](#-revisão-pós-d-29092026)** (29/09 — 11 na revisão, 1 no portão das R) e
+**2 da Fase E** (30/09), no fim desta seção. IDs referenciados pelas fases.
 
 ### Segurança (6)
 
@@ -572,6 +572,16 @@ fim desta seção. IDs referenciados pelas fases.
 | DOC-06 | 🟡 Médio | A L.6 depende de meses de log, e o Render Hobby guarda 7 dias | ✅ R.12 |
 | DOC-07 | 🟡 Médio | A decisão 3 (só convidados) não é imposta pelo produto: lobby público e `join` aberto | ✅ R.11 |
 | OPS-03 | 🔵 Baixo | `version` do `package.json` em 0.4.0 com a tag em `v0.4.3` | ✅ R.9 |
+
+### Fase E (2) — 30/09/2026
+
+Achados da [varredura do backend](./varreduras/E-backend.md), **reproduzidos** e consertados num PR
+próprio antes do ledger — detalhe e portão em [`SEGURANCA.md`](./SEGURANCA.md#fase-e--varredura-backend).
+
+| ID | Sev. | Achado | Fase |
+|---|---|---|---|
+| SEC-14 | 🔴 Crítico | Grid malformado, pela REST ou pelo Yjs, trava a sala e — pelo vigia de presença, num `setInterval` sem `try` — **derruba o processo**, todas as mesas juntas. Sem login: criar sala não exige login no servidor *(reproduzido com o `npm run dev`)* | ✅ E.3a |
+| SEC-15 | 🟠 Alto | O tamanho da mesa não tinha teto: salas (a instância de 512 MB e os 500 MB do banco em horas), ficha de até ~557 KB, NPCs, chat, e o buffer de socket que não lê *(medido e reproduzido)* | ✅ E.3b |
 
 ---
 
@@ -992,6 +1002,16 @@ quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
         L.3: sem este mapa, a L.3 não tem de onde partir.
 - [ ] **E.2** Calibragem e PR do ledger — [roteiro](#o-roteiro-de-uma-varredura), passo X.2.
 - [ ] **E.3** Executar só os FAZER — passo X.3.
+  - [x] **E.3a** 🔒 **SEC-14 — grid malformado derrubava o processo** (E.02 do ledger). *(30/09/2026 —
+        adiantado a pedido do dono, num PR de segurança antes do ledger: o Render volta em 01/10.)* A
+        forma do grid é validada nas duas portas (REST → `400 invalid_grid`; Yjs → revertido, GM
+        inclusive), e o reenvio e o vigia de presença não deixam erro escapar. `grid-integrity` (9);
+        provado revertendo por camada. Texto e portão em [`SEGURANCA.md`](./SEGURANCA.md#fase-e--varredura-backend).
+  - [x] **E.3b** 🔒 **SEC-15 — tetos de tamanho** (E.03 do ledger). *(30/09/2026, no mesmo PR.)* 30 salas
+        (`MAX_ROOMS`), 32 NPCs, ficha de 64 KB, chat de 100 em todo caminho, 1 MiB por socket que não lê;
+        o restore não traz sala abandonada. `room-limits` (9); provado revertendo teto a teto.
+        **Decisão do dono (30/09):** criar sala **não** passa a exigir login no servidor — ADIAR, gatilho
+        em [`SEGURANCA.md`](./SEGURANCA.md#fase-e--varredura-backend).
 - [ ] **E.4** 🔒 Portão, se a E.3 mudou código — passo X.4.
 - [ ] **E.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase E concluída em:** ____/____/______
@@ -1582,7 +1602,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **591** testes, 40 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11)* — `vitest` 4.1.11 |
+| `npx vitest run` | **609** testes, 42 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
