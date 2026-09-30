@@ -124,20 +124,32 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 **Anti-forjamento (T5.4):** o campo `rollResult` enviado no `message` é **ignorado** — vira texto
 normal. Rolagens só existem via `roll`/`/roll`, com RNG e bônus derivados da ficha do servidor.
 
-**Códigos de erro padrão:**
+**Erros — `{ error, code }` em toda resposta de erro (Fase E, E.3c — 30/09/2026).** O `code` vem de
+um conjunto fechado e o **status sai do `code`**, por uma tabela só
+([`server/errors.ts`](../server/errors.ts)). O `error` é texto para gente, em português, e **pode
+mudar**: o cliente decide pelo `code` (`ApiError.code`), nunca pelo texto. É a versão 10× menor da
+[RFC 9457](https://www.rfc-editor.org/rfc/rfc9457). *Até a E, o status de várias rotas saía do texto
+da mensagem, e a sala inexistente respondia "Room not found", em inglês, na tela do convite.*
 
-- **400** — validação de entrada (código inválido, corpo malformado, tipo de rolagem inválido)
-- **401** — token ausente/inválido/expirado
-- **403** — ação negada (não é GM, não é membro); `removed_by_gm` no `join` de quem o GM removeu
-- **404** — sala/jogador não encontrado
-- **409** — conflito: `seat_taken` (assento de outro, sem o token dele — R.1), `room_exists`
-  (código em uso — R.2) ou `room_full` (16 assentos — R.16)
-- **413** — payload acima de 1 MB
-- **429** — rate limit (por IP; atrás do proxy do Render o IP vem do `X-Forwarded-For` — R.5)
-
-**Código estável (R.1):** as respostas novas trazem `{ error, code }`. O cliente decide pelo `code`
-(`ApiError.code`), nunca pelo texto de `error`, que pode mudar. É a versão menor da RFC 9457 que a
-Fase I avalia estender às outras respostas.
+| Status | `code` | Quando |
+|---|---|---|
+| 400 | `invalid_input` | Campo faltando, tipo errado, valor fora da faixa (código de sala, ficha, chat vazio, dano, rolagem, iniciativa sem `action` nem lista…) |
+| 400 | `invalid_json` | Corpo que não é JSON |
+| 400 | `invalid_grid` | Grid malformado (E.02) |
+| 401 | `session_invalid` | Sessão de **mesa** ausente, inválida ou revogada — o cliente reconecta (T3.3) |
+| 401 | `login_required` | Sessão de **conta** (JWT do Supabase) — só a IA pede |
+| 403 | `gm_only` | Ação do Mestre pedida por quem não é o Mestre |
+| 403 | `not_allowed` | Ação que ninguém faz assim (o GM remover a si mesmo) |
+| 403 | `not_in_room` | Quem pediu tem sessão, mas não está (mais) na mesa |
+| 403 | `removed_by_gm` | O GM removeu este `peerId` (R.3) |
+| 404 | `room_not_found` · `target_not_found` · `route_not_found` | A sala; o alvo da ação (jogador, NPC, token); a rota da API |
+| 409 | `seat_taken` · `room_exists` · `room_full` · `npcs_full` | Assento de outro (R.1); código em uso (R.2); 16 assentos (R.16); 32 NPCs (E.03) |
+| 409 | `invalid_state` | A ação não cabe no estado atual: NPC morto atacando, estabilizar fora de Mortal, arma com fórmula de dano quebrada |
+| 413 | `sheet_too_large` · `payload_too_large` · `prompt_too_large` | Ficha acima de 64 KB (E.03); corpo acima de 1 MB; prompt da IA acima do teto |
+| 429 | `rate_limited` | Limitador (por IP; atrás do proxy do Render, o IP vem do `X-Forwarded-For` — R.5) |
+| 500 | `internal_error` | Bug — aparece no log como `unhandled_error` |
+| 502 · 503 | `ai_failed` · `ai_unavailable` | O provedor de IA falhou; a IA não está configurada |
+| 503 | `rooms_full` | O máximo de salas abertas (`MAX_ROOMS` — E.03) |
 
 ---
 
@@ -207,8 +219,8 @@ Qualquer outro `type` ou JSON inválido é ignorado silenciosamente. Tipos de ro
 | Mensagem | Formato | Quando |
 |---|---|---|
 | **Broadcast de sala** | `GameRoom` inteiro em JSON | Após **qualquer** mutação (chat, roll, grid, iniciativa, join/leave, presença) |
-| **Erro pontual** | `{ type: "error", error: string }` | Ex.: mensagem vazia; teto de chat ou de ações estourado, uma vez por janela (R.4). Vai só ao autor |
-| **Erro de rolagem** | `{ type: "roll-error", error: string }` | Ex.: perícia inexistente, tipo inválido (vai só ao autor) |
+| **Erro pontual** | `{ type: "error", error: string, code }` | Ex.: mensagem vazia (`invalid_input`); teto de chat ou de ações estourado, uma vez por janela (`rate_limited` — R.4). Vai só ao autor |
+| **Erro de rolagem** | `{ type: "roll-error", error: string, code }` | Ex.: perícia inexistente, tipo inválido (vai só ao autor). O `code` é o da tabela do §3 (E.3c) |
 
 > O cliente (`handlePayload`) reconhece `error`/`roll-error` pelo campo `type` e exibe no banner;
 > qualquer outro payload é tratado como o estado da sala (`setRoom`).

@@ -90,9 +90,11 @@ mensagem muda à vontade. A RFC fica para quando um sintoma pedir o que o `code`
 **Reversível:** sim — acrescentar um campo ao JSON de erro não quebra cliente nenhum (o `ApiError` já
 lê `code` desde a R.1). Os quatro `code` que existem ficam como estão.
 
-**VEREDITO:** FAZER
-- Teste que reproduz: `src/__tests__/error-codes.integration.test.ts` — uma linha por caminho de erro,
-  status × `code` × mensagem em português. Os casos da tabela acima falham hoje.
+**VEREDITO:** FAZER — ✅ **feito** na E.3c (30/09/2026).
+- Teste que reproduz: `src/__tests__/error-codes.integration.test.ts` (32) — uma linha por caminho de
+  erro, status × `code` × mensagem em português, o erro pelo WebSocket, e duas travas no código-fonte.
+  Provado revertendo: com o código antigo, os 32 falham. O contrato está no
+  [protocolo](../PROTOCOLO_MULTIPLAYER.md#3-endpoints-rest).
 
 ### E.21 — "Esta sala existe?" responde no ritmo do limitador global
 
@@ -398,9 +400,11 @@ ao seguinte, se foi ele que saiu), usado pelos três caminhos.
 
 **Reversível:** sim — nada persistido muda de formato.
 
-**VEREDITO:** FAZER
-- Teste que reproduz: `src/__tests__/initiative-removal.test.ts` — os três casos acima e a saída de um
-  jogador antes da vez.
+**VEREDITO:** FAZER — ✅ **feito** na E.3d (30/09/2026).
+- Teste que reproduz: `src/__tests__/initiative-removal.test.ts` (8) — os três casos acima, a saída de
+  um jogador e a remoção de uma ficha gerada antes da vez, o death save de quem recebe a vez em Mortal, e
+  a remoção do NPC pelo nome (achada no conserto: filtrava só pelo id da rota). Provado revertendo: com o
+  filtro antigo, 7 falham.
 
 ### E.08 — Gravação em voo × sala encerrada: a sala pode voltar no boot
 
@@ -496,9 +500,9 @@ invisível para quem lê o código, e o teste não a pegaria.)*
 
 **Reversível:** sim — a mensagem continua uma string de horário; só o fuso muda.
 
-**VEREDITO:** FAZER
-- Teste que reproduz: `src/__tests__/chat-time.test.ts` — com o processo em UTC, um instante fixo
-  formata no horário de Brasília. Falha hoje.
+**VEREDITO:** FAZER — ✅ **feito** na E.3e (30/09/2026).
+- Teste que reproduz: `src/__tests__/chat-time.test.ts` (2) — com o processo em UTC, um instante fixo
+  formata no horário de Brasília. Provado revertendo: sem o `timeZone` explícito, os 2 falham.
 
 ### E.11 — `code.toUpperCase()` em 25 pontos: normalização sem dono
 

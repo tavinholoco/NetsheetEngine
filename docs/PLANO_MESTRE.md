@@ -1019,10 +1019,10 @@ quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
         1.461 depois da D) e o `server.ts`, **1.436**. Propor os cortes — sessão / autorização / regras
         / NPCs / chat; rotas / realtime / Yjs — **sem executar**, com veredito próprio. É o insumo da
         L.3: sem este mapa, a L.3 não tem de onde partir.
-- [ ] **E.2** Calibragem e PR do ledger — [roteiro](#o-roteiro-de-uma-varredura), passo X.2.
+- [x] **E.2** Calibragem e PR do ledger — [roteiro](#o-roteiro-de-uma-varredura), passo X.2.
       *(30/09/2026 — calibragem: 6 FAZER em 24, **25%**, abaixo de 1/3; a régua não precisou de ajuste.
-      O PR do ledger está aberto; o merge do dono fecha este item e libera a E.3c–e.)*
-- [ ] **E.3** Executar só os FAZER — passo X.3.
+      Ledger mergeado no PR #23, depois do #22 (segurança); `master` verde nos 4 jobs.)*
+- [x] **E.3** Executar só os FAZER — passo X.3. *(30/09/2026 — os seis, cada um com teste antes e prova revertendo.)*
   - [x] **E.3a** 🔒 **SEC-14 — grid malformado derrubava o processo** (E.02 do ledger). *(30/09/2026 —
         adiantado a pedido do dono, num PR de segurança antes do ledger: o Render volta em 01/10.)* A
         forma do grid é validada nas duas portas (REST → `400 invalid_grid`; Yjs → revertido, GM
@@ -1033,25 +1033,42 @@ quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
         o restore não traz sala abandonada. `room-limits` (9); provado revertendo teto a teto.
         **Decisão do dono (30/09):** criar sala **não** passa a exigir login no servidor — ADIAR, gatilho
         em [`SEGURANCA.md`](./SEGURANCA.md#fase-e--varredura-backend).
-  - [ ] **E.3c** **E.01 — todo erro com `code`, e o status sai do `code`.** Um conjunto fechado de códigos
+  - [x] **E.3c** **E.01 — todo erro com `code`, e o status sai do `code`.** Um conjunto fechado de códigos
         e uma tabela `code → status`; `respondWithResult` e `respondToCombat` viram uma função; as mensagens
         em inglês vão para o português. Teste primeiro: `error-codes.integration`, uma linha por caminho de
         erro (os casos reproduzidos no ledger falham hoje). Os quatro `code` da R e os quatro da E.3a–b
         ficam como estão.
-  - [ ] **E.3d** **E.07 — tirar alguém da iniciativa não pula a vez de outro.** Um helper só para os três
+        *(30/09/2026 — `server/errors.ts` tem os códigos e a tabela; no `roomManager`, o tipo `RoomResult`
+        torna o `code` obrigatório — o compilador não deixa erro sair sem ele; no `server.ts`,
+        `sendError` é a única saída. O erro pelo WebSocket também leva `code`, e `/api` desconhecida é 404
+        em JSON em todo ambiente. De carona: a iniciativa sem `action` nem lista reenviava a sala a todos
+        sem conferir o GM — agora 400. **Três testes antigos fixavam o defeito** ("Room not found", chat
+        vazio 403, estabilizar fora de Mortal 400) e foram trocados com o porquê. `error-codes` (32);
+        provado revertendo: os 32 falham com o código antigo.)*
+  - [x] **E.3d** **E.07 — tirar alguém da iniciativa não pula a vez de outro.** Um helper só para os três
         caminhos (`deleteRoomNpc`, `deleteGeneratedPlayer`, `leaveRoom`), que mantém a vez com quem a tinha
         — ou passa ao seguinte, se foi ele que saiu. Teste primeiro: `initiative-removal`, com os três casos
         do ledger e a saída de um jogador antes da vez.
-  - [ ] **E.3e** **E.10 — o horário do chat no fuso de Brasília.** Um formatador só, com
+        *(30/09/2026 — `removeFromInitiative`: quem tinha a vez segue com ela; se foi ele que saiu, a vez
+        passa ao seguinte e o turno dele começa, com o death save de Mortal (`beginTurn`, extraído do
+        `nextTurn`). Achado no conserto: remover o NPC pelo **nome** deixava a entrada dele na iniciativa.
+        `initiative-removal` (8); provado revertendo: 7 falham com o filtro antigo.)*
+  - [x] **E.3e** **E.10 — o horário do chat no fuso de Brasília.** Um formatador só, com
         `timeZone: "America/Sao_Paulo"`, no lugar das 12 chamadas. Teste primeiro: `chat-time`, com o
         processo em UTC. *(A versão maior — o instante em ISO, formatado no cliente — é ADIAR: jogador de
         outro fuso.)*
+        *(30/09/2026 — `chatTime()` e `CHAT_TIME_ZONE` no `roomManager`. `chat-time` (2) põe o processo em
+        UTC: sem isso, passaria nesta máquina e falharia só no CI. Provado revertendo o `timeZone`.)*
   - [x] **E.3f** **E.13 — o Registro de sessões lê os eventos que faltavam.** *(30/09/2026, no PR do
         ledger — só documento.)* A [tabela](#registro-de-sessões) ganha `unhandled_error`,
         `persistence_save_failed` e `rooms_full`, e a ressalva do `sse_fallback` (E.14).
-- [ ] **E.4** 🔒 Portão, se a E.3 mudou código — passo X.4.
-- [ ] **E.5** 🧠 Estado durável — passo X.5.
-- [ ] ✅ **Fase E concluída em:** ____/____/______
+- [x] **E.4** 🔒 Portão, se a E.3 mudou código — passo X.4. *(30/09/2026 — duas entradas no
+      [registro](./SEGURANCA.md#fase-e--varredura-backend): a E.3a–b, com os achados SEC-14 e SEC-15, e a
+      E.3c–e, sem achado novo.)*
+- [x] **E.5** 🧠 Estado durável — passo X.5. *(30/09/2026 — caixas, linha de base (**651** testes, 45
+      arquivos), E2E, este PR. O passo 6 — o `master` verde depois do merge — é conferido na sessão que
+      o dono mergear.)*
+- [x] ✅ **Fase E concluída em:** 30/09/2026
 
 ---
 
@@ -1361,7 +1378,9 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
 - [ ] **I.0** 🔍 **Premissas** — medidas em 29/09/2026:
       - **O cliente já sabe ler `code`:** o `ApiError` guarda o `code` do servidor desde a R.1
-        (`src/api/http.ts:20`). O que falta é o servidor mandá-lo em todo erro — isso é da **E.1a**.
+        (`src/api/http.ts:20`). ~~O que falta é o servidor mandá-lo em todo erro — isso é da **E.1a**.~~
+        *Feito na E.3c (30/09): todo erro sai com `code`, e a tabela está no
+        [protocolo](./PROTOCOLO_MULTIPLAYER.md#3-endpoints-rest). A I confere que o cliente decide por ele.*
       - **O `apiFetch` já trata corpo não-JSON** (`.catch(() => ({}))`) e **não tem timeout.** Cuidado
         antes de pôr um: a instância gratuita volta da hibernação em **cerca de 1 min**
         ([free](https://render.com/docs/free)). Timeout menor que isso quebra a primeira requisição
@@ -1640,7 +1659,7 @@ público mudar.
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
-| E | 🔍 | Varredura: backend | 🔶 E.0–E.1 feitos (24 itens, 6 FAZER); SEC-14 e SEC-15 consertados (E.3a–b, PR #22); ledger em PR; falta a E.3c–e | — |
+| E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
@@ -1654,11 +1673,11 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Depois do bloco R (29/09/2026 — conferida de novo na revisão de robustez) |
+| Verificação | Depois da Fase E (30/09/2026) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **609** testes, 42 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b)* — `vitest` 4.1.11 |
+| `npx vitest run` | **651** testes, 45 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
