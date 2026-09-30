@@ -203,6 +203,21 @@ export function sheetTooLarge(sheet: unknown): boolean {
   return !!validated && sheetBytes(validated.sheet) > MAX_SHEET_BYTES;
 }
 
+/**
+ * Fase E (E.10 → E.3e) — o fuso do horário da mesa. O servidor monta o horário
+ * de cada mensagem como texto, e o cliente o mostra como veio; sem o fuso
+ * explícito, valia o do processo — e o Render roda em UTC: às 22:02 de
+ * Brasília a mesa via 01:02. A mesa é de convidados do dono, no Brasil (sem
+ * horário de verão desde 2019). Jogador de outro fuso é a versão maior —
+ * mandar o instante e formatar no cliente —, ADIAR no ledger da E.
+ */
+export const CHAT_TIME_ZONE = "America/Sao_Paulo";
+
+/** Horário curto do chat (`22:02`), no fuso da mesa — o único formatador. */
+export function chatTime(at: Date = new Date()): string {
+  return at.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: CHAT_TIME_ZONE });
+}
+
 /** Guarda uma mensagem no chat com o teto — o ÚNICO caminho de escrita. Antes,
  *  dois caminhos tinham teto e oito não; e o do jogador tirava uma só. */
 function pushChat(room: GameRoom, message: ChatMessage): void {
@@ -370,7 +385,7 @@ export function createRoom(code: string, roomName: string, gmHandle: string, gmP
         senderHandle: "SISTEMA_NET",
         senderRole: "gm",
         text: `Sala [${normalizedCode}] criada por Mestre ${safeGmHandle}. Conexão com a Net de Night City estabelecida!`,
-        timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+        timestamp: chatTime()
       }
     ],
     initiativeList: [],
@@ -635,7 +650,7 @@ export function joinRoom(
       text: isReconnect
         ? `🔌 Edgerunner [${player.handle}] reconectou-se à mesa!`
         : `⚡ Edgerunner [${player.handle}] (${player.role}) conectou-se à mesa!`,
-      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      timestamp: chatTime()
     });
   }
 
@@ -800,7 +815,7 @@ export function generateRoomNpc(
     senderHandle: "SISTEMA_NET",
     senderRole: "gm",
     text: `💀 [MESTRE DE JOGO] gerou o NPC [${sheet.handle}] (${sheet.role} - Ref Nvl ${sheet.stats.REF}) e o inseriu no mapa tático!`,
-    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    timestamp: chatTime()
   });
 
   return { room, npcPlayer };
@@ -858,7 +873,7 @@ export function generateRoomPlayerEdgerunner(
     senderHandle: "SISTEMA_NET",
     senderRole: "gm",
     text: `⚡ [MESTRE DE JOGO] gerou uma nova ficha de Edgerunner aleatória [${sheet.handle}] (${sheet.role}) para a mesa!`,
-    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    timestamp: chatTime()
   });
 
   return { room, player: edgerunnerPlayer };
@@ -919,7 +934,7 @@ export function deleteRoomNpc(
       senderHandle: "SISTEMA_NET",
       senderRole: "gm",
       text: `🗑️ [MESTRE DE JOGO] removeu o NPC [${removedHandle}] da mesa de jogo.`,
-      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      timestamp: chatTime()
     });
   }
 
@@ -988,7 +1003,7 @@ export function deleteGeneratedPlayer(
         senderHandle: "SISTEMA_NET",
         senderRole: "gm",
         text: `🗑️ [MESTRE DE JOGO] removeu a ficha do Edgerunner [${handle}] da mesa.`,
-        timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+        timestamp: chatTime()
       });
     }
   }
@@ -1069,7 +1084,7 @@ export function postChatMessage(
     senderHandle: player.handle,
     senderRole: requesterPeerId === room.gmPeerId ? "gm" : "player",
     text: safeText,
-    timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    timestamp: chatTime(),
     isDiceRoll: !!rollResult,
     rollResult
   };
@@ -1125,7 +1140,7 @@ export function rollDiceForPlayer(
   // cliente manda nunca é lido.
   const sheet: CharacterSheet = player.sheet || ({} as CharacterSheet);
   const kind = sanitizeText(request?.kind, 12).toLowerCase();
-  const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const now = chatTime();
   const rollId = "roll_" + Date.now() + "_" + crypto.randomBytes(3).toString("hex");
   const stamp = (core: RollCore): RollResult => ({ id: rollId, timestamp: now, characterName: player.handle, ...core });
   // C.4 — o modificador de situação do GM entra em ataque e perícia, com o
@@ -1173,9 +1188,6 @@ export function rollDiceForPlayer(
 
 /** Teto do dano bruto: 20d100 (o teto do parser de fórmula) com folga. */
 const MAX_RAW_DAMAGE = 2500;
-
-/** Horário curto do chat, igual ao resto da mesa. */
-const chatTime = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
 /** Mensagem do sistema no chat da mesa — pelo `pushChat`, com o teto de todo caminho (E.03). */
 function pushSystemMessage(room: GameRoom, prefix: string, text: string, rollResult?: RollResult): void {
@@ -1592,7 +1604,7 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
           senderHandle: "SISTEMA_NET",
           senderRole: "gm",
           text: `👑 [SISTEMA] O Mestre [${playerHandle}] deixou a mesa. [${newGm.handle}] assumiu como novo Mestre de Jogo!`,
-          timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+          timestamp: chatTime()
         });
       } else {
         room.gmPeerId = undefined;
@@ -1601,7 +1613,7 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
           senderHandle: "SISTEMA_NET",
           senderRole: "gm",
           text: `⚠️ [SISTEMA] O Mestre [${playerHandle}] deixou a mesa. A mesa aguarda um novo Mestre de Jogo.`,
-          timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+          timestamp: chatTime()
         });
       }
     }
@@ -1611,7 +1623,7 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
       senderHandle: "SISTEMA_NET",
       senderRole: "gm",
       text: `🔌 Edgerunner [${playerHandle}] desconectou-se da mesa.`,
-      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      timestamp: chatTime()
     });
   }
 
