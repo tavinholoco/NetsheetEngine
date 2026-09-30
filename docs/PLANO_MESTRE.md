@@ -290,6 +290,29 @@ em qualquer decisão de escopo nas demais.
 2. **Se mais de 1/3 dos itens virar FAZER, o critério está frouxo.** Recalibre a régua e passe a
    lista de novo, em vez de aceitar a resposta agradável.
 
+### O roteiro de uma varredura
+
+*(Revisão de robustez, 29/09/2026.)* Até aqui cada varredura tinha **duas caixas** — "varrer" e
+"executar" — e o resto era prosa. Três defeitos saíam disso: uma varredura de 1–2 dias numa caixa só
+não deixa a sessão fria saber **o que já foi olhado** (o protocolo de sessão depende de caixa); as
+pistas envelheciam sem ninguém medir (das 14 da E, uma a R.3 já tinha resolvido sem ninguém riscar,
+uma dava ao `roomManager` 1.461 linhas quando são 1.579, e uma escondia um bug reproduzível — o
+horário do chat, na E.1d); e o código que a varredura muda **não passava pelo portão** nem tinha
+passo de PR. Toda varredura (E, G–J) segue agora os mesmos passos — escritos só aqui —, e cada fase
+lista só as suas áreas.
+
+| Passo | O que é | Pronto quando |
+|---|---|---|
+| **X.0** 🔍 Premissas | Medir cada pista contra o código do dia (grep, contagem, reprodução). Resolvida sai riscada; mudada ganha o número novo | Toda pista com medição e data |
+| **X.1** Áreas | Uma caixa por área. Cada área responde às perguntas dela, classifica as pistas dela **e procura além delas** — varredura que só classifica pista é revisão, não varredura | A seção da área existe no ledger |
+| **X.2** Calibragem e revisão do dono | Contar os FAZER (acima de 1/3, recalibrar). O ledger vai num **PR só de documento**; o merge do dono aprova os veredictos. **Achado de segurança aberto fica fora desse PR** (o repo é público): uma linha sem o caminho, e o texto inteiro vai com o conserto | Ledger mergeado |
+| **X.3** Executar os FAZER | Um commit por item, teste que reproduz **antes**, provado revertendo | Cada FAZER com teste e prova |
+| **X.4** 🔒 Portão | Se a X.3 mudou código, as seis perguntas em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Se nada virou código, uma linha dizendo isso | Registro escrito |
+| **X.5** 🧠 Estado durável | Passos 2–6 do [ritual de encerramento](#ritual-de-encerramento--ao-fechar-uma-fase): caixas, data, linha de base, E2E, PR, `master` verde | `master` verde depois do merge |
+
+**Por que a X.2 separa os dois tempos com um merge:** a regra 1 acima pede disciplina; o PR a impõe
+por processo. E quem corrige veredicto é o dono — foi ele que desfez o ADIAR errado da A.5.
+
 ### Por que este projeto precisa disso
 
 Não é conselho abstrato, é diagnóstico. O `combatModifier` foi construído de ponta a ponta
@@ -423,6 +446,10 @@ hora de mesa: **~45–90 MB por hora**, ~0,2–0,4 GB por sessão. O site inteir
 
 **A regra 4 (site fora do Render) economiza pouco, pelos números:** só as horas de visita e a banda do
 site. Continua valendo, mas não é urgente — fazer quando o produto for publicado.
+*(Revisão de robustez, 29/09/2026: "quando o produto for publicado" não é gatilho verificável, e
+nenhuma fase é dona da regra 4. **ADIAR — gatilho:** o painel do Render mostrar o NetSheet acima de
+100 h num mês (o mesmo número do risco 1 abaixo), ou a mesa abrir para gente de fora dos convidados.
+Quando disparar, vira item junto com a I.1e — o cross-origin só se testa de verdade com o site fora.)*
 
 **Os riscos reais — os dois de uso normal ainda sem sintoma; o de abuso, calculado na revisão pós-D:**
 
@@ -438,7 +465,9 @@ site. Continua valendo, mas não é urgente — fazer quando o produto for publi
    6 ou mais jogadores e fichas cheias, uma sessão passa de 0,5 GB. **É o ARQ-01, já na Fase L**
    (broadcast por diferença). **Gatilho para antecipar:** a banda do workspace passar de 2,5 GB num
    mês. Mitigação intermediária de uma linha: compressão por mensagem no WebSocket
-   (`perMessageDeflate`) — JSON comprime bem, mas custa CPU e memória no servidor gratuito.
+   (`perMessageDeflate`) — JSON comprime bem, mas custa CPU e memória no servidor gratuito. *(Revisão
+   de robustez, 29/09: o README do `ws` avisa de fragmentação de memória catastrófica com
+   concorrência no Linux — a linha é uma, o teste de memória antes não é opcional. Ver a L.0.)*
 3. **Abuso pela mesa (SEC-10, revisão pós-D).** O WebSocket não limita mensagens, e cada uma reenvia
    a sala inteira a todas as conexões. Um participante com um script — e, com o lobby aberto, qualquer
    visitante é participante — a **10 mensagens/s gasta os 5 GB do workspace em ~35 min**. Não é
@@ -551,6 +580,9 @@ fim desta seção. IDs referenciados pelas fases.
 revisão pós-D)* — quatro a sete meses de calendário para
 quem tem outra ocupação. Ponto de corte natural: **fechando A–D o jogo já roda certo**; F entrega a
 identidade visual nova; e as varreduras viram manutenção de fim de semana.
+*(Revisão de robustez, 29/09/2026: o que resta, de E a M, soma **18,5–23,5 dias** pelas estimativas
+das próprias fases — e duas estão curtas: a K com a Net inteira (ver K.0) e a L com o broadcast por
+diferença (ver L.0).)*
 
 Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório)
 
@@ -823,6 +855,8 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       linhas** — e de ~75 mil para **~47 mil tokens**: de quatro leituras para **duas**. **Ainda não
       cabe numa só.** O próximo corte, com o mesmo método: mover o bloco R quando ele fechar (R.15), a
       revisão pós-D e a auditoria de 03/09. **Gatilho:** o R.15 marcado.
+      *(Revisão de robustez, 29/09: dar itens às fases E–M somou ~200 linhas, e o plano voltou a três
+      leituras. O corte acima tira mais que isso — o bloco R sozinho passa de 300.)*
 - [x] **R.14** 🔒 **Portão de segurança** — o bloco muda autorização (R.1, R.3, R.6) e entrada (R.4):
       as seis perguntas em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). E a pergunta que o repo
       público impõe: **o que este PR ensina a quem lê o código antes de o conserto estar no ar?**
@@ -891,47 +925,74 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
 
 ### FASE E — 🔍 VARREDURA: BACKEND *(1–2 dias)*
 
-Escopo: `server.ts`, `server/roomManager.ts`, `server/roomPersistence.ts`, `server/logger.ts`.
+Escopo: `server.ts` e `server/*` — **7 arquivos, ~3.400 linhas** em 29/09/2026 *(a lista antiga tinha
+quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
+[roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
-- [ ] **E.1** Varredura (sem tocar em código) → ledger em `docs/varreduras/E-backend.md`.
-- [ ] **E.2** Executar apenas os itens FAZER.
-
-**Pistas já levantadas:**
-- `respondWithResult` decide entre 404 e 403 **por substring em português** — renomear uma mensagem
-  muda o status code da API.
-- `code.toUpperCase()` repetido em dezenas de pontos; normalização sem dono.
-- `process.exit(0)` no shutdown sem drenar sockets abertos.
-- Conferir se algum erro de `roomPersistence` é engolido em silêncio.
-- `(ws as any)._peerId` e os `any` do protocolo Yjs.
-- Candidato a refactor: fatiar `roomManager` (1.035 linhas) em sessão / autorização / regras / npcs /
-  chat. *(ARQ-05)* *(A Fase D o levou a 1.461: dano, ataque de NPC, iniciativa e death save.)*
-- **A sala não tem teto de NPCs** (`generateRoomNpc`) — só o GM gera e o limitador de taxa segura o
-  ritmo, mas a mensagem de iniciativa da D.4 cresce com eles. *(portão da D.9, 28/09/2026)*
-- O `respondToCombat` (D.1) já contorna o `respondWithResult` para devolver 400 em entrada inválida
-  — mesma classificação por substring, agora em dois lugares.
-- Mais de dez timestamps do chat montados à mão no `roomManager`; a D criou o `chatTime` e o
-  `pushSystemMessage`, e só o código da própria fase passou a usá-los.
-- *Da revisão pós-D (29/09/2026) — o que não virou pendência R:*
-  - **Conexão morta no WebSocket.** O servidor não manda `ping`; socket que caiu sem aviso fica no
-    `wsClients` recebendo broadcast até o TCP desistir. O
-    [README do `ws`](https://github.com/websockets/ws#how-to-detect-and-close-broken-connections)
-    recomenda ping/pong a cada ~30 s com `terminate()` de quem não responde. Sintoma a procurar:
-    jogador "online" que já fechou a aba.
-  - **`updateTacticalGrid` grava o `gridState` como veio** (`room.tacticalGrid = gridState`) — a
-    mesma classe do `updateInitiative` que a D.4 fechou. Só o GM chega lá.
-  - ~~**O lobby (`GET /api/rooms`) só passa pelo limitador global** — relevante se a R.11 mantiver a
-    lista.~~ *Resolvida pela R.11 (29/09): a rota saiu.*
-  - **O modelo de IA está fixo no código** (`gemini-2.5-flash`). Desde 18/09/2026 o Google limita o
-    acesso aos modelos 2.5 a quem já os usava, sem data de desligamento
-    ([descontinuações](https://ai.google.dev/gemini-api/docs/deprecations)). Ler o nome do modelo de
-    uma variável de ambiente é uma linha — gatilho na [ADR 0005](./adr/0005-provedor-de-ia.md).
-  - **Código de erro estável** para a classificação por substring: a versão 10× menor da
-    [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) é um campo `code` ao lado do `error` — o
-    status passa a sair do `code`, e a mensagem pode mudar à vontade. Liga com a Fase I.
-
-**O que a varredura pergunta:** todo caminho de erro devolve o status certo e uma mensagem tratável?
-Existe estado que cresce sem limite? Que suposição quebra se duas requisições chegarem juntas?
-
+- [ ] **E.0** 🔍 **Premissas** — as pistas de cada área abaixo foram **medidas em 29/09/2026** (revisão
+      de robustez). Conferir de novo no dia de abrir: o código anda.
+- [ ] **E.1** Varredura por área → ledger em `docs/varreduras/E-backend.md`, sem tocar em código.
+  - [ ] **E.1a Erros e status.** Todo caminho de erro devolve o status certo e uma mensagem tratável?
+        Uma linha por rota: status × mensagem × `code`.
+        - **Hoje são três jeitos de classificar erro:** o `respondWithResult` por substring em
+          português (`server.ts:283` — renomear uma mensagem muda o status da API); o
+          `respondToCombat` da D.1 por `startsWith`/regex (`:641`); e o `code` estável que a R.1
+          estreou em quatro respostas (`seat_taken`, `room_exists`, `removed_by_gm`, `room_full`).
+        - **A E é dona do `code` no servidor** — a versão 10× menor da
+          [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457): o status sai do `code`, e a mensagem muda
+          à vontade. A I só confere que o cliente decide por ele (o `ApiError.code` já existe).
+  - [ ] **E.1b Estado que cresce.** Todo `Map`, `Record` e array do servidor: quem limita, quem recolhe?
+        - **NPCs sem teto** (`generateRoomNpc`, `roomManager.ts:671`) — cada NPC também vira token no
+          grid, e a mensagem de iniciativa da D.4 cresce com eles. Só o GM gera. *(portão da D.9)*
+        - **Chat:** o teto de 100 mensagens vale em dois caminhos (o chat do jogador, `:996`, e o
+          `pushSystemMessage`, `:1112`); os outros oito `push` à mão dependem do próximo com teto.
+        - **`updateTacticalGrid` grava o `gridState` como veio** (`:666`) — a rota só confere
+          `typeof object`. A mesma classe do `updateInitiative` que a D.4 fechou. Só o GM chega lá.
+        - **Socket morto.** O servidor não manda `ping`: socket que caiu sem aviso fica no `wsClients`
+          recebendo broadcast até o TCP desistir. A presença (heartbeat de 20 s) já marca o jogador
+          offline — o custo é o buffer do socket morto, não um "online" falso. O
+          [README do `ws`](https://github.com/websockets/ws#how-to-detect-and-close-broken-connections)
+          recomenda ping a cada ~30 s com `terminate()`. Sintoma a procurar: memória subindo com a
+          mesa aberta.
+  - [ ] **E.1c Concorrência e ciclo de vida.** Que suposição quebra se duas requisições chegarem
+        juntas? O Node é uma thread: o risco mora nos `await` — persistência com debounce × `deleteRoom`,
+        verificação do JWT na rota da IA.
+        - *Conferido:* o `listen` só acontece depois do `await restoreRoomsFromDb()`
+          (`server.ts:1339` → `:1373`) — nenhuma requisição chega antes do restore.
+        - **Shutdown:** `flushAllPending()` e `process.exit(0)` sem fechar sockets (`:1421`). O Render
+          dá **30 s** entre o `SIGTERM` e o `SIGKILL` ([deploys](https://render.com/docs/deploys)) —
+          algo se perde nesse intervalo?
+  - [ ] **E.1d Dado montado como texto.** O que o servidor formata que devia mandar como dado?
+        - **O horário do chat sai no fuso do servidor — reproduzido em 29/09.** São 12 chamadas de
+          `toLocaleTimeString("pt-BR")` no `roomManager` (11 à mão e o `chatTime` da D), e o cliente
+          mostra a string como veio (`MultiplayerRoom.tsx:687`). O Render roda em **UTC**
+          ([comunidade do Render](https://community.render.com/t/date-time-server/5598)): às 22:02 de
+          Brasília, a mesa em produção mostra **01:02**. `TZ=UTC node -e "…toLocaleTimeString…"`
+          reproduz. Ninguém viu porque o dev local roda no fuso do Brasil e nenhum teste olha o
+          horário. **É sintoma pronto para o filtro:** aparece na primeira sessão em produção.
+        - `code.toUpperCase()` em **25** pontos (12 no `server.ts`, 10 no `roomManager`, 3 na
+          persistência) — normalização sem dono.
+        - **Modelo de IA fixo** (`gemini-2.5-flash`, `server.ts:421`). Desde 18/09/2026 o Google limita
+          os modelos 2.5 a quem já os usava, sem data de desligamento
+          ([descontinuações](https://ai.google.dev/gemini-api/docs/deprecations)). Ler o nome de uma
+          variável de ambiente é uma linha — gatilho na [ADR 0005](./adr/0005-provedor-de-ia.md).
+  - [ ] **E.1e Logs e gatilhos.** Todo `catch` registra? Nenhum segredo sai?
+        - *Medido:* a persistência **não engole** erro — `save`, `delete` e `restore` registram
+          `warn`, e o save tenta de novo. Mas o log vive 7 dias e ninguém o lê: engolido na prática.
+        - **Listar os eventos que são gatilho de algum ADIAR** (`sse_fallback`, `gemini_api_error`,
+          `ws_rate_limited`, `persistence_save_failed`, `ws_invalid_yjs_frame`, `unhandled_error`) e
+          conferir que é esta a lista do [Registro de sessões](#registro-de-sessões).
+        - ~~`(ws as any)._peerId`~~ — *resolvida na R.3: virou `WeakMap`.* Restam **7** `any` no
+          `server.ts` (o `flush` do SSE, o `catch` da IA, o awareness e a mensagem do WebSocket, o
+          handler de erro do Express).
+  - [ ] **E.1f Mapa de cortes** *(ARQ-05)*. O `roomManager` tem **1.579 linhas** (1.035 na auditoria,
+        1.461 depois da D) e o `server.ts`, **1.436**. Propor os cortes — sessão / autorização / regras
+        / NPCs / chat; rotas / realtime / Yjs — **sem executar**, com veredito próprio. É o insumo da
+        L.3: sem este mapa, a L.3 não tem de onde partir.
+- [ ] **E.2** Calibragem e PR do ledger — [roteiro](#o-roteiro-de-uma-varredura), passo X.2.
+- [ ] **E.3** Executar só os FAZER — passo X.3.
+- [ ] **E.4** 🔒 Portão, se a E.3 mudou código — passo X.4.
+- [ ] **E.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase E concluída em:** ____/____/______
 
 ---
@@ -989,6 +1050,21 @@ estratégia, portanto, é **reconstruir a linguagem com faces livres**, não cop
         pelo mesmo origin. **A F não tinha item `.0` de verificação** (o `CLAUDE.md` pede um em toda
         fase de construção): este F.0 passa a abrir com a conferência das premissas da F.1–F.4 antes
         do conserto.
+      - **Premissas medidas na revisão de robustez (29/09/2026):**
+        - **O critério de pronto não tem comando.** A F.2 conta 1.722 cores literais, a revisão pós-D
+          1.731; uma terceira regex, no mesmo dia, deu **1.846**. "Tendendo a zero" só é medida se a
+          contagem for **um comando versionado** (script ou linha exata no plano). O F.0 fixa o comando
+          e a linha de base **antes** da primeira migração — e diz o que fica fora (a escala do
+          `HealthTracker`, por exemplo).
+        - **O vermelho também mora em dado, não só em classe.** O token de NPC nasce `#ef4444` no
+          servidor (`roomManager.ts:323`, `:711`) e no cliente (`TacticalGrid.tsx:251`, `:279`), e a cor
+          é **persistida** com o grid da sala. O grep de classes não a vê, e a F.2.2 ("vermelho só para
+          dano") precisa decidir a cor do NPC — NPC não é dano.
+        - **A F.4.2 tem versão 10× menor:** uma regra `@media (prefers-reduced-motion: reduce)` no
+          `index.css` desliga as 23 animações `animate-*` e os efeitos novos de uma vez; o `motion-safe:`
+          do Tailwind fica para exceção.
+        - **A F.2.4 migra ~1,7–1,8 mil literais em "1 dia"** — o F.0 refaz a estimativa com a contagem
+          por arquivo.
 
 #### F.1 — O sistema tipográfico 2020 *(1 dia)*
 
@@ -1103,35 +1179,47 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
 
 ### FASE G — 🔍 VARREDURA: FRONTEND *(1–2 dias)*
 
-Escopo: `src/components`, `src/features`, `src/pages`, `src/stores`, `src/hooks`. Vem **depois** da
-Fase F para não varrer código que acabou de ser reestilizado.
+Escopo: `src/components`, `src/features`, `src/pages`, `src/stores`, `src/hooks` — e, desde a
+revisão de robustez, **`src/utils` e `src/lib`** (menos o `supabase.ts`, que é da L.4): os dois
+somavam ~1.800 linhas **fora do escopo de qualquer varredura**. Vem **depois** da Fase F para não
+varrer código que acabou de ser reestilizado. Segue o
+[roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
-- [ ] **G.1** Varredura → ledger em `docs/varreduras/G-frontend.md`.
-- [ ] **G.2** Executar apenas os itens FAZER.
-
-**Pistas já levantadas:**
-- `syncSheetStore(sheetResult)` é chamado **no corpo do render** do `App.tsx` — efeito colateral fora
-  de efeito. **Agora com sintoma** *(visto na C, 25/09/2026)*: o React avisa no console, a cada carga,
-  "Cannot update a component while rendering a different component". Anterior à Fase C (`7fe4f47`).
-- Os dois `useEffect` que sincronizam URL ↔ aba com dois refs de guarda. **Agora com sintoma**
-  *(visto na D.3, 28/09/2026)*: em modo dev, **todo deep link** (`/room/X`, `/multiplayer`) volta
-  para `/` — o `StrictMode` roda o efeito "aba → URL" duas vezes e a guarda do primeiro render só
-  segura a primeira. Produção não tem o duplo efeito, e o E2E roda o build de produção.
-- `createBlankCharacterSheet` gera seis IDs de armadura no mesmo tick com `Date.now()` + sufixo curto.
-- ~~`StatBlock.handleSet` altera `stats` sem tocar em `currentStats`; `handleChange` aplica um
-  `Math.min` difícil de justificar.~~ *Resolvida na C.6: o `currentStats` virou derivado e o
-  `StatBlock` parou de escrevê-lo.*
-- 16 `console.*` sobrevivendo ao logger estruturado. *(ARQ-07, parte 1)* *(contados em 29/09: 12 no
-  cliente, 3 dentro do próprio `server/logger.ts` — que são o logger — e 1 num comentário do
-  `server.ts`. O alvo real são os 12)*
-- Candidatos a refactor: `MultiplayerRoom` 944 (1.031 depois da Fase D), `FriendsList` 723, `CyberpunkMenu` 608. *(ARQ-05)*
-- *Conferido na revisão pós-D (29/09/2026):* o `syncSheetStore` segue no corpo do render
-  (`App.tsx:68`) e o `createBlankCharacterSheet` segue em `useCharacterSheet.ts` — as pistas valem.
-  **Depois da R.1** o cliente ganha um estado novo (o `409` do `join`); a G confere o que a tela mostra.
-
-**O que a varredura pergunta:** que estado existe em dois lugares e pode divergir? O que a UI faz
-quando a rede falha, o token expira ou a resposta demora? Dá para operar a ficha só com teclado?
-
+- [ ] **G.0** 🔍 **Premissas** — medidas em 29/09/2026; conferir de novo no dia, e depois da F.
+- [ ] **G.1** Varredura por área → ledger em `docs/varreduras/G-frontend.md`.
+  - [ ] **G.1a Estado em dois lugares.** Que estado existe em dois lugares e pode divergir?
+        - `syncSheetStore(sheetResult)` no **corpo do render** (`App.tsx:69`). **Com sintoma** *(visto na
+          C, 25/09)*: o React avisa a cada carga "Cannot update a component while rendering a different
+          component". Anterior à Fase C (`7fe4f47`).
+        - Os dois `useEffect` que sincronizam URL ↔ aba, com dois refs de guarda. **Com sintoma** *(visto
+          na D.3, 28/09)*: em modo dev, **todo deep link** (`/room/X`, `/multiplayer`) volta para `/` — o
+          `StrictMode` roda o efeito "aba → URL" duas vezes e a guarda só segura a primeira. Produção não
+          tem o duplo efeito, e o E2E roda o build de produção.
+        - A ficha local × a ficha na mesa (desde a decisão 7a, a mesa não aceita o ferimento do cliente).
+  - [ ] **G.1b Rede, sessão e espera.** O que a tela mostra quando a rede falha, o token expira ou a
+        resposta demora? *(A G olha a tela; o contrato é da I.)*
+        - Os estados novos das R: `409 seat_taken` (R.1), `403 removed_by_gm` (R.3), `409 room_full`
+          (R.16), `409 room_exists` (R.2).
+        - **A espera de ~1 min** quando o Render acorda de hibernação ([free](https://render.com/docs/free)):
+          a primeira ação depois de um tempo parado parece travada?
+  - [ ] **G.1c Teclado e foco.** Dá para operar a ficha só com teclado? *(Contraste, movimento e foco
+        em modal são da F.4.2 — não repetir.)*
+  - [ ] **G.1d Efeitos, IDs e console.**
+        - `createBlankCharacterSheet` (`useCharacterSheet.ts:46`) gera seis IDs de armadura no mesmo tick
+          com `Date.now()` + sufixo curto.
+        - **12** `console.*` no cliente sobrevivendo ao logger estruturado *(ARQ-07, parte 1; contados em
+          29/09 — os 3 do `server/logger.ts` são o próprio logger)*.
+        - ~~`StatBlock.handleSet` altera `stats` sem tocar em `currentStats`.~~ *Resolvida na C.6.*
+  - [ ] **G.1e Testes de componente** *(ARQ-08)*. **27** componentes `.tsx` e **3** arquivos de teste
+        que renderizam componente (`ui-smoke`, `combat-ui`, `invite-button`). Quais telas quebram sem
+        ninguém ver? O filtro vale: teste novo só onde houve sintoma ou regra de jogo na tela.
+  - [ ] **G.1f Mapa de cortes** *(ARQ-05)*. `MultiplayerRoom` **1.028**, `TacticalGrid` **792** (não
+        estava na lista), `FriendsList` **723**, `CyberpunkMenu` **609**. Mesmo formato da E.1f — insumo
+        da L.3, sem executar.
+- [ ] **G.2** Calibragem e PR do ledger — passo X.2.
+- [ ] **G.3** Executar só os FAZER — passo X.3.
+- [ ] **G.4** 🔒 Portão, se a G.3 mudou código — passo X.4.
+- [ ] **G.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase G concluída em:** ____/____/______
 
 ---
@@ -1142,33 +1230,56 @@ Escopo: transporte WebSocket, fallback SSE, CRDT Yjs, awareness, reconexão, pre
 mais cara — os bugs aqui só aparecem com duas pessoas e rede ruim, e é onde a decisão 3 concentra o
 uso real.
 
-- [ ] **H.1** Varredura → ledger em `docs/varreduras/H-multiplayer.md`.
-- [ ] **H.2** Executar apenas os itens FAZER.
+**Como varrer:** não é teste automatizado — é quebrar de propósito, com o log aberto, **cenário por
+cenário**. Cada cenário é uma caixa, e o ledger anota o que se esperava, o que aconteceu e os eventos
+do log. Onde: o **build de produção local** (`npm run build` e `npm start` com
+`NODE_ENV=production`, como o E2E), que não gasta hora nem banda do Render; só o H.1j precisa do ar.
+Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwright. *(ARQ-08, parte
+3.)* Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
-**Pistas já levantadas:**
-- `destroyRoomYjs` dispara quando o último socket fecha — corrida se alguém reconecta no mesmo
-  instante.
-- Reconexão resolve ficha por **last-write-wins com `updatedAt` do cliente**: o relógio do navegador
-  decide quem ganha.
-- Transferência de GM na saída (T1.8) — existe janela de dois GMs ou de nenhum?
-- Quando o cliente cai para SSE, quais ações deixam de funcionar? O usuário fica sabendo?
-- Broadcast completo e updates Yjs incrementais podem chegar fora de ordem.
-- Awareness sem limpeza de estados órfãos.
-- A habilidade especial **não é rolável na mesa**: o tipo `skill` procura em `sheet.skills`, e ela
-  mora em `specialAbilityName`. Na ficha funciona. *(visto na C.8, 25/09/2026 — sem sintoma de mesa
-  ainda: ninguém pediu)*
-- *Da revisão pós-D (29/09/2026):*
-  - **A reconexão muda de contrato na R.1** (o `join` com `peerId` existente passa a exigir o
-    token). A H confere o fluxo 401 → `join` com rede ruim, servidor reiniciado e duas abas.
-  - **O stream SSE só confere o token na abertura** — sessão revogada depois (expulsão, R.3) não
-    derruba um stream já aberto.
-  - **A autorização por diff do grid já teve um buraco** (SEC-12, R.6). Evidência para a
-    [ADR 0002](./adr/0002-yjs-websockets.md) — o gatilho de reabrir continua sendo bug de convergência.
-
-**Como varrer:** sessão real com 3+ abas, rede estrangulada, refresh no meio do combate, servidor
-reiniciado com a mesa aberta. Não é teste automatizado — é meia hora quebrando de propósito com o log
-aberto. *(ARQ-08, parte 3)*
-
+- [ ] **H.0** 🔍 **Premissas** — medidas em 29/09/2026:
+      - ~~**O stream SSE só confere o token na abertura** — a expulsão não derruba um stream aberto.~~
+        *Resolvida para a expulsão na R.3:* a rota fecha o stream do expulso (`ssePeer`). Resta a
+        pergunta para outras revogações — no H.1e.
+      - **Awareness órfão dura até 30 s, não para sempre.** O `y-protocols` apaga o estado remoto que
+        não se atualiza em 30 s (`outdatedTimeout`, no servidor e em cada cliente). O servidor não
+        remove o estado quando o socket fecha (`server.ts:1246`) — o sintoma possível é um cursor
+        fantasma de até 30 s.
+      - **O gatilho da [ADR 0002](./adr/0002-yjs-websockets.md) é conferido aqui** (bug de
+        convergência). A autorização por diff do grid já teve um buraco (SEC-12, R.6) — evidência para
+        a ADR, não gatilho.
+      - **O diagrama adiado da sequência do handshake** tem gatilho "quando a H precisar depurar
+        reconexão" ([`ARQUITETURA.md`](./ARQUITETURA.md#diagramas-adiados)) — decidir no H.1d.
+      - **De preferência, com uma sessão real já registrada** no [Registro de sessões](#registro-de-sessões):
+        os bugs daqui aparecem com gente de verdade, e a primeira sessão é o melhor insumo da H.
+- [ ] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`.
+  - [ ] **H.1a Mesa de base:** GM + 2 jogadores em 3 abas, do zero ao combate. O que os outros cenários
+        comparam.
+  - [ ] **H.1b Rede estrangulada:** chat, rolagem, token movido e dano chegam, e na ordem? Broadcast
+        completo e update Yjs incremental podem chegar fora de ordem.
+  - [ ] **H.1c Refresh no meio do combate** — do jogador e do GM.
+  - [ ] **H.1d Servidor reiniciado com a mesa aberta:** restore, sessões persistidas (B.4) e o fluxo
+        401 → `join` **com o token** que a R.1 impôs.
+  - [ ] **H.1e O mesmo jogador em duas abas:** o `join` com token revoga as sessões antigas
+        (`roomManager.ts:576`) e não fecha o socket da outra aba — o que ela vê?
+  - [ ] **H.1f O GM sai** (T1.8): existe janela de dois GMs ou de nenhum? A variante do SEC-07 pelo
+        *handle* do GM segue ADIAR (R.1).
+  - [ ] **H.1g Queda para SSE** (bloquear o WebSocket): o que deixa de funcionar, o jogador fica
+        sabendo, e o `sse_fallback` aparece no log?
+  - [ ] **H.1h Último socket fecha e alguém reconecta no mesmo instante:** o `destroyRoomYjs`
+        (`server.ts:1251`) descarta o doc — a reconexão perde movimento do grid?
+  - [ ] **H.1i Ficha editada em duas abas:** a reconexão resolve por **last-write-wins com o
+        `updatedAt` do cliente** — o relógio do navegador decide quem ganha.
+  - [ ] **H.1j** *(no ar)* **O Render troca a instância com a mesa aberta:** um merge no `master` no
+        meio da sessão publica sozinho (30 s entre `SIGTERM` e `SIGKILL`); e a volta depois de hibernar
+        leva ~1 min ([free](https://render.com/docs/free)).
+  - [ ] **H.1k Habilidade especial na mesa:** não é rolável — o tipo `skill` procura em `sheet.skills`,
+        e ela mora em `specialAbilityName` (visto na C.8). Na ficha funciona. Sem sintoma de mesa até
+        alguém pedir.
+- [ ] **H.2** Calibragem e PR do ledger — passo X.2.
+- [ ] **H.3** Executar só os FAZER — passo X.3.
+- [ ] **H.4** 🔒 Portão, se a H.3 mudou código — passo X.4.
+- [ ] **H.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase H concluída em:** ____/____/______
 
 ---
@@ -1178,25 +1289,36 @@ aberto. *(ARQ-08, parte 3)*
 Escopo: `src/api/*` contra os endpoints do Express — a costura que nenhuma das varreduras anteriores
 olha, porque cada lado parece correto sozinho.
 
-- [ ] **I.1** Varredura → ledger em `docs/varreduras/I-integracao.md`.
-- [ ] **I.2** Executar apenas os itens FAZER.
+Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
-**Pistas já levantadas:**
-- Contratos de rota escritos duas vezes à mão: conferir se cada endpoint tem tipo compartilhado de
-  request e response.
-- Erros do servidor são strings em português (`{ error: "Acesso Negado! ..." }`) — o cliente decide
-  comportamento a partir de texto? Códigos estáveis resolveriam. *Referência (revisão pós-D):* o
-  formato padrão é a [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`type`, `title`, `status`,
-  `detail`, em `application/problem+json`). Pelo filtro, a candidata é a versão 10× menor — um `code`
-  estável ao lado do `error` que já existe — e a RFC inteira só com sintoma que o `code` não resolva.
-- O que o usuário vê quando o token expira no meio da sessão (401)?
-- `apiFetch` / `authedFetch`: têm timeout? retry? tratam corpo não-JSON?
-- `RollResult` montado em dois lugares com campos ligeiramente diferentes.
-- `VITE_API_URL` derivando `ws`/`wss` — testar cross-origin de verdade.
-
-**O que a varredura pergunta:** se eu mudar este endpoint, o TypeScript me avisa no cliente — ou
-descubro em produção? Todo estado de erro do servidor tem estado de UI correspondente?
-
+- [ ] **I.0** 🔍 **Premissas** — medidas em 29/09/2026:
+      - **O cliente já sabe ler `code`:** o `ApiError` guarda o `code` do servidor desde a R.1
+        (`src/api/http.ts:20`). O que falta é o servidor mandá-lo em todo erro — isso é da **E.1a**.
+      - **O `apiFetch` já trata corpo não-JSON** (`.catch(() => ({}))`) e **não tem timeout.** Cuidado
+        antes de pôr um: a instância gratuita volta da hibernação em **cerca de 1 min**
+        ([free](https://render.com/docs/free)). Timeout menor que isso quebra a primeira requisição
+        depois de um tempo parado — exatamente o `join` de quem chega para jogar.
+      - **O `RollResult` tem uma interface só** (`src/types/cyberpunk.ts:141`) e o motor é um só desde a
+        C (`src/rules/`). Conferir se ainda há dois montadores com campos diferentes, como a pista dizia.
+      - **O `VITE_API_URL` só importa quando o site sair do Render** (regra 4 do
+        [custo zero](#-contrato-de-custo-zero)) — hoje o site e a API são o mesmo origin, e a regra 4
+        **não tem fase dona**. Ver a I.1e.
+- [ ] **I.1** Varredura por área → ledger em `docs/varreduras/I-integracao.md`.
+  - [ ] **I.1a Inventário de rotas.** Uma linha por endpoint: quem chama no cliente, tipo de request e
+        response compartilhado ou escrito duas vezes à mão, códigos de erro tratados. *Se eu mudar este
+        endpoint, o TypeScript me avisa no cliente — ou descubro em produção?*
+  - [ ] **I.1b Erros.** Todo estado de erro do servidor tem estado de UI? O cliente decide por `code`
+        ou por texto? *Referência:* a [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`type`,
+        `title`, `status`, `detail`). Pelo filtro, a RFC inteira só com sintoma que o `code` não resolva.
+  - [ ] **I.1c Sessão.** O que o usuário vê quando o token expira ou é revogado no meio da sessão (401)?
+  - [ ] **I.1d Transporte.** `apiFetch` / `authedFetch`: timeout, retry e a restrição da hibernação
+        acima.
+  - [ ] **I.1e Cross-origin** (`VITE_API_URL` → `ws`/`wss`, `CORS_ORIGINS`, o `connect-src` do CSP).
+        **Condicional:** se a regra 4 continuar sem dono, o veredito natural é ADIAR com o gatilho dela.
+- [ ] **I.2** Calibragem e PR do ledger — passo X.2.
+- [ ] **I.3** Executar só os FAZER — passo X.3.
+- [ ] **I.4** 🔒 Portão, se a I.3 mudou código — passo X.4.
+- [ ] **I.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase I concluída em:** ____/____/______
 
 ---
@@ -1206,42 +1328,68 @@ descubro em produção? Todo estado de erro do servidor tem estado de UI corresp
 A Fase B fecha os seis buracos conhecidos. Esta procura os que a auditoria não achou —
 sistematicamente, e depois de todo o código novo de C, D e F ter entrado.
 
-- [ ] **J.1** Varredura → ledger em `docs/varreduras/J-seguranca.md`.
-- [ ] **J.2** Executar apenas os itens FAZER.
-
-**Como varrer:**
-- **Conferir o registro do portão** em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase): toda fase de construção respondeu as seis perguntas? Alguma resposta envelheceu?
-- **Tabela completa:** cada endpoint e cada mensagem de WebSocket × autenticado? autorizado? entrada
-  validada? saída filtrada? Uma linha por rota, sem exceção.
-- Superfície de entrada: todo campo que entra em `sheet`, `gridState`, `initiativeList` e no
-  protocolo Yjs — **o binário Yjs é entrada de usuário e hoje só tem try/catch**.
-- Revisar o CSP: `connect-src https:` e `img-src https:` são amplos; apertar para os origins reais.
-- Re-rodar as 56 de RLS e conferir as políticas de storage de avatar.
-- `npm audit` e `gitleaks` sobre o **histórico completo**, não só o HEAD. *(Conferido na revisão
-  pós-D: o gitleaks do CI **já** varre o histórico — `fetch-depth: 0`. Resta confirmar que a
-  allowlist do `.gitleaks.toml` não esconde nada além da anon key.)*
-- **O repositório é público e o `master` não tem proteção de branch** (conferido em 29/09/2026). O
-  gatilho da A.10 continua o mesmo — repo público não dá push a ninguém, e workflow disparado por fork
-  não recebe secret —, mas a pergunta 2 do portão pesa mais: código, ledgers e este plano são lidos
-  por qualquer um. Daí a regra da revisão pós-D: **achado aberto vai ao ar junto com o conserto**.
-- **Actions fixadas por tag, não por SHA** (`@v4`, `@v1`), e o `supabase/setup-cli` instala
-  `version: latest`. O [guia de hardening do GitHub](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions)
-  recomenda SHA para action de terceiro. **ADIAR** — gatilho: uma action usada aqui aparecer num
-  incidente de cadeia de suprimento, ou o CLI `latest` quebrar o `db-sync`.
-- Conferir que nenhum segredo entrou no bundle depois das mudanças de B (transformar o teste da T10.7
-  em script).
-- **Da D.9 (28/09/2026) — sair e voltar "curado":** o `leaveRoom` apaga o registro do jogador, e a
-  volta é um join novo, que aceita o ferimento da ficha do cliente. A decisão 7a fechou a sincronia e
-  a reconexão, não essa porta. **Gatilho:** um jogador aparecer inteiro depois de sair no meio de uma
-  luta, ou a mesa ter público fora dos convidados do dono. *(Revisão pós-D: o segundo gatilho valia
-  enquanto o lobby era aberto. A R.11 (29/09) o fechou — a sala se acha pelo código-convite —, então
-  o gatilho volta a ser o primeiro. A versão maior da R.1, assento por conta, fecha esta porta.)*
-
 **O que a varredura pergunta:** se um jogador convidado virar hostil, o que ele consegue fazer? (é o
 modelo de ameaça real da decisão 3) Que dado sai do servidor para quem não deveria vê-lo? **E quem
 recebe credencial, provando o quê?** — a pergunta que a revisão pós-D mostrou faltar: o SEC-07 viveu
-desde a T1.7 porque todos perguntavam de onde vinha o autor, e ninguém, quem ganhava o token.
+desde a T1.7 porque todos perguntavam de onde vinha o autor, e ninguém, quem ganhava o token. Segue o
+[roteiro de uma varredura](#o-roteiro-de-uma-varredura). **O que a J achar aberto vai ao ar junto com
+o conserto** (o repo é público).
 
+- [ ] **J.0** 🔍 **Premissas** — medidas em 29/09/2026:
+      - O gitleaks do CI **já** varre o histórico (`fetch-depth: 0`) — conferido na revisão pós-D.
+      - O CSP segue com `connect-src 'self' ws: wss: https:` (`server.ts:166`).
+      - As 56 de RLS **não rodam desde a B** — exigem o Supabase local, e o Docker desta máquina falha
+        no arranque (contorno no [`BACKUP.md`](./BACKUP.md)).
+      - **Antes desta revisão, as varreduras E–I não passavam pelo portão** — a J confere que cada X.4
+        foi respondido.
+      - **Régua externa — decidir aqui, opcional:** os requisitos de nível 1 do
+        [OWASP ASVS 5.0](https://github.com/OWASP/ASVS) (maio de 2025) nos capítulos de validação (V2),
+        API (V4), sessão (V7), autorização (V8), configuração (V13) e log (V16), como lista de
+        conferência, sem pontuação. *Sintoma que a justifica:* os seis achados da revisão pós-D
+        escaparam de portões que perguntam de memória. *Risco:* virar teatro de conformidade — só entra
+        o requisito que se aplica a uma rota real.
+- [ ] **J.1** Varredura por área → ledger em `docs/varreduras/J-seguranca.md`.
+  - [ ] **J.1a Registro do portão** em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase): toda fase — e
+        toda varredura que mudou código — respondeu as seis perguntas? Alguma resposta envelheceu?
+  - [ ] **J.1b Tabela de superfície:** cada endpoint REST, cada tipo de mensagem do WebSocket e o
+        quadro Yjs × autenticado? autorizado? entrada validada? saída filtrada? Uma linha por rota, sem
+        exceção.
+  - [ ] **J.1c Credenciais:** toda emissão — `create`, `join`, *upgrade* do WebSocket, JWT do Supabase
+        — e o que quem recebe prova. *(A lição do SEC-07.)*
+  - [ ] **J.1d Entrada:** todo campo que entra em `sheet`, `gridState`, `initiativeList` e no protocolo
+        Yjs — **o binário Yjs é entrada de usuário** e tem try/catch e o teto de 1 MiB (R.4).
+  - [ ] **J.1e WebSocket**, pela [folha da OWASP](https://cheatsheetseries.owasp.org/cheatsheets/WebSocket_Security_Cheat_Sheet.html):
+        - o *upgrade* não confere `Origin`; o que protege de *cross-site WebSocket hijacking* é o token
+          ir na query e não em cookie — registrar como decisão, não como acaso;
+        - o token na URL: onde a URL do *upgrade* aparece em log (nosso e do Render)?
+        - sessão revogada fecha o socket? A R.3 fez isso para a expulsão; e as outras revogações?
+        - *backpressure*: cliente lento acumulando reenvios da sala no buffer (liga com a E.1b).
+  - [ ] **J.1f Configuração e cadeia:**
+        - CSP: `connect-src https:` e `img-src https:` são amplos; apertar para os origins reais.
+        - RLS: re-rodar as 56 e conferir as políticas de storage de avatar.
+        - gitleaks: a allowlist do `.gitleaks.toml` libera, além da anon key, padrões largos (`<.*>`,
+          `example`, `placeholder`, `your-`) — confirmar que só escondem exemplo.
+        - Segredo no bundle depois das mudanças de B: transformar o teste da T10.7 em script.
+        - **O repositório é público e o `master` não tem proteção de branch** (conferido em 29/09). O
+          gatilho da A.10 continua o mesmo — repo público não dá push a ninguém, e workflow disparado
+          por fork não recebe secret —, mas a pergunta 2 do portão pesa mais: código, ledgers e este
+          plano são lidos por qualquer um.
+        - **Actions fixadas por tag, não por SHA** (`@v4`, `@v1`), e o `supabase/setup-cli` instala
+          `version: latest`. O [guia de hardening do GitHub](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions)
+          recomenda SHA para action de terceiro. **ADIAR** — gatilho: uma action usada aqui aparecer
+          num incidente de cadeia de suprimento, ou o CLI `latest` quebrar o `db-sync`.
+  - [ ] **J.1g ADIAR herdados:**
+        - **Sair e voltar "curado"** (D.9, 28/09): o `leaveRoom` apaga o registro do jogador, e a volta
+          é um join novo, que aceita o ferimento da ficha do cliente. A decisão 7a fechou a sincronia e
+          a reconexão, não essa porta. **Gatilho:** um jogador aparecer inteiro depois de sair no meio
+          de uma luta. *(O segundo gatilho — público fora dos convidados — a R.11 fechou em 29/09. A
+          versão maior da R.1, assento por conta, fecha esta porta.)*
+        - A variante do SEC-07 pelo *handle* do GM (R.1).
+- [ ] **J.2** Calibragem e PR do ledger — passo X.2, com a exceção do repo público levada a sério: na
+      J, quase todo FAZER é achado aberto.
+- [ ] **J.3** Executar só os FAZER — passo X.3.
+- [ ] **J.4** 🔒 Portão, se a J.3 mudou código — passo X.4.
+- [ ] **J.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase J concluída em:** ____/____/______
 
 ---
@@ -1264,18 +1412,47 @@ verdade), netrunning por último (é meio jogo à parte).
       - Toda regra nova começa na tabela e na [conferência](./CONFERENCIA_CP2020.md#o-que-fica-para-a-fase-k),
         com duas fontes — o cuidado com Cyberpunk RED vale em dobro para netrunning (K.5), onde o RED
         mudou quase tudo.
+      - *Medido na revisão de robustez (29/09/2026):*
+        - **A K cabe em 4–5 dias só sem a K.5 inteira.** Netrunning no 2020 é "meio jogo à parte" (as
+          palavras deste plano): mapa da Net, fortalezas de dados, programas, MU — um relato o descreve
+          como uma masmorra que o netrunner joga enquanto o grupo espera
+          ([SirPhoebos](https://writeups.letsyouandhimfight.com/sirphoebos/cyberpunk-2020/)). Não cabe
+          com outros seis itens. **O defeito é do plano, não da K.5** — daí a decisão abaixo.
+        - **A criação (K.6) tem mais regra do que o item diz**, e as fontes divergem em parte: atributos
+          por rolagem (1d10 nove vezes, descartando 1 e 2, ou 9d10 num bolo) ou por pontos — que um
+          relato diz ser só para NPC; **40 pontos de perícia de carreira** e **REF + INT de perícias
+          livres** (S3 e S6 concordam); verba inicial pela habilidade especial (S6); e o custo em IP
+          (nível × 10 × multiplicador, em S6 — outras fontes divergem). Cada regra, duas fontes.
+        - **"Drops" (K.4) é vocabulário de videogame**, não regra do 2020 — o mesmo cuidado que já
+          pegou três premissas do RED. O NPC gerado já traz armas, armadura e cromo; o item precisa
+          dizer o que a mesa quer fazer com isso.
+        - **A K.2 muda o formato da ficha** (o `data` jsonb e o `sheetSchema`). Hoje a produção tem
+          **0** fichas (backup de 29/09): mudar antes de haver jogador é barato; depois, exige migrar o
+          JSON das fichas salvas.
+        - **A K.7 esqueceu uma perícia:** a conferência lista **oito** faltando — Cyberdeck Design
+          (TECH) também, e ela não está em `cyberpunkData.ts:234`.
+- [ ] **K.0b** 🧑‍⚖️ **Decisão do dono — o tamanho da K.5 e o método da K.6.**
+      - **K.5**, em ordem de tamanho: *(1, recomendada)* **o netrunner na ficha** — deck, programas e MU
+        como dado, sem a Net jogável; *(2)* **a Net na mesa**, com mapa e turnos — fase própria, depois da
+        L; *(3)* **ADIAR** até alguém da mesa do dono jogar de netrunner. A 1 agora e a 2 com o gatilho da
+        3 é a combinação que o filtro sugere.
+      - **K.6:** quais métodos de atributo a criação oferece (rolagem, bolo de 9d10, pontos), e se a
+        evolução por IP entra junto ou depois.
 - [ ] **K.1** *(era T11.5)* Export/import de ficha (JSON + impressão em PDF) — reaproveita o validador
-      de `src/rules/sheetSchema.ts`.
+      de `src/rules/sheetSchema.ts`. *Versão 10× menor do PDF:* folha de estilo de impressão
+      (`@media print` e o "Salvar como PDF" do navegador), sem biblioteca de PDF no bundle nem no CSP.
 - [ ] **K.2** *(era T11.1)* Inventário, peso e EV: Carry (BODY×10 kg), Lift (BODY×40 kg), encumbrance
       automático, penalidade de REF por armadura. *(RUL-11)*
 - [ ] **K.3** *(era T11.3)* Pós-ferimento automático — em boa parte já entregue pela Fase C.
-- [ ] **K.4** *(era T11.4)* Inventário e drops de NPC.
-- [ ] **K.5** *(era T11.2)* Netrunning: MU, programas, data walls, ações por turno.
+- [ ] **K.4** *(era T11.4)* Inventário e drops de NPC — *reescrever na K.0 com o que a mesa precisa
+      (ver acima).*
+- [ ] **K.5** *(era T11.2)* Netrunning: MU, programas, data walls, ações por turno — *no tamanho que a
+      K.0b decidir.*
 - [ ] **K.6** Criação de personagem com orçamento (pontos de atributo, perícia por INT+REF, carreira)
       e evolução por IP. *(RUL-10)*
 - [ ] **K.7** Completar `SKILL_TABLES` (remover "Social" de INT; adicionar Accounting, Anthropology,
-      Gamble, Shadow/Track, Wilderness Survival, Interrogation, Pharmaceuticals) e adicionar Leap
-      (Run÷4). Remover "Walk", que não existe no livro. *(RUL-12, RUL-11)*
+      Gamble, Shadow/Track, Wilderness Survival, Interrogation, Cyberdeck Design, Pharmaceuticals) e
+      adicionar Leap (Run÷4). Remover "Walk", que não existe no livro. *(RUL-12, RUL-11)*
 - [ ] **K.8** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] **K.9** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase K concluída em:** ____/____/______
@@ -1292,6 +1469,17 @@ público mudar.
       dado que supunha (ver a nota nela); e a **R.4 põe teto no abuso** do broadcast — a L.1 fica com o
       custo do **uso normal**, e deve ser decidida com os números do Registro de sessões (R.12), não
       com a estimativa de 26/09.
+      *Medido na revisão de robustez (29/09/2026):*
+      - **A L.1 sozinha pode ocupar os 3 dias da fase:** muda o contrato do
+        [`PROTOCOLO_MULTIPLAYER.md`](./PROTOCOLO_MULTIPLAYER.md), o *merge* no cliente, a reconexão e o
+        caminho do SSE. Refazer a estimativa aqui.
+      - **O `perMessageDeflate` não é "mitigação de uma linha"** (risco 2 do custo zero): o
+        [README do `ws`](https://github.com/websockets/ws#websocket-compression) avisa que, com
+        concorrência, a compressão pode causar **fragmentação de memória catastrófica** no Linux, e por
+        isso vem desligada no servidor. Na instância gratuita, só com medição de memória antes.
+      - **A L.3 depende dos mapas de corte da E.1f e da G.1f** — sem eles, fatiar vira varredura nova.
+      - **A L.5 parte de 20 `any`** (fora de teste e de comentário; eram 23 na auditoria) e **12
+        `console.*`** no cliente.
 - [ ] **L.1** Broadcast por delta (`chat:new`, `player:health`, `initiative:set`); estado completo só
       no join e na reconexão. *(ARQ-01)*
 - [ ] **L.2** `manualChunks` separando **o Supabase**, que está no chunk de entrada e é carregado até
@@ -1302,7 +1490,7 @@ público mudar.
       *Premissa corrigida na revisão pós-D (29/09):* o `motion` saiu na ARQ-10 (02/09), e o chunk de
       entrada é **629 kB / 186 kB gzip** desde que a C.1 tirou o `mathjs` — não 1,3 MB. Medir o que o
       Supabase pesa hoje antes de separar; se o ganho não pagar o `manualChunks`, a L.2 vira DESCARTAR.
-- [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que E e G–J mapearam. *(ARQ-05)*
+- [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que a E.1f e a G.1f mapearam. *(ARQ-05)*
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [ ] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
       `--max-warnings 0` no CI. *(ARQ-07)*
@@ -1324,10 +1512,17 @@ público mudar.
       sabido: as 56 de RLS **não rodam desde a Fase B** (Supabase local desligado na C e na D); o
       backup (R.10) precisa ter sido **restaurado ao menos uma vez** num projeto Supabase novo para contar
       como backup; e a M.3 revisa também os ADIAR das ADRs e da conferência, não só os dos ledgers.
+      *Medido na revisão de robustez (29/09/2026):* "ADIAR" aparecia **43 vezes** nos documentos vivos
+      (contado antes desta revisão), e só **20** linhas traziam o gatilho na mesma linha — a M.3 começa por `grep -rn ADIAR docs/` (fora
+      de `historico/` e `legacy/`) e classifica cada um. Dois têm gatilho **"o dono confirmar no livro"**
+      ([conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu)): se o dono não tem o livro, o
+      gatilho nunca dispara — é DESCARTAR disfarçado, e a M.3 os resolve.
 - [ ] **M.1** Suíte completa: `tsc --noEmit`, build, unit, integração, E2E, RLS, `npm audit`.
       *(é a T12.2 do plano antigo)*
 - [ ] **M.2** **Uma sessão de jogo real**, 2+ pessoas, do zero ao combate. É o teste que nenhuma suíte
-      substitui e o único que valida C e D. *(é a T12.3 do plano antigo)*
+      substitui e o único que valida C e D. *(é a T12.3 do plano antigo)* *(Revisão de robustez: esta é
+      a sessão de **encerramento**, não a primeira. A primeira não precisa esperar a M — o
+      [Registro de sessões](#registro-de-sessões) diz por quê.)*
 - [ ] **M.3** Revisar os cinco ledgers de varredura: todo ADIAR ainda tem gatilho plausível?
 - [ ] **M.4** Arquivar o roadmap concluído no `README.md`. *(é a T12.5)*
 - [ ] **M.5** Encerrar formalmente o `PLANO_DE_ACAO.md` (`git rm` + commit). *(é a T12.6, DOC-05)*
@@ -1346,7 +1541,7 @@ público mudar.
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
-| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.12, R.14 e R.16 feitos; faltam a R.13 (aprovada, PR próprio) e o R.15 | — |
+| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
 | E | 🔍 | Varredura: backend | ⬜ | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
@@ -1361,7 +1556,7 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Depois das R.1–R.9 e R.16 (29/09/2026) |
+| Verificação | Depois do bloco R (29/09/2026 — conferida de novo na revisão de robustez) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
@@ -1406,6 +1601,21 @@ vermelho se algum virar erro antes:
 7 dias (a retenção do log do Render Hobby). É a fonte de dado da L.6 e o número real que substitui a
 estimativa do [contrato de custo zero](#-contrato-de-custo-zero).
 
-| Data | Jogadores × horas | `sse_fallback` no log | Horas e banda do NetSheet no painel do Render | Observação |
+**É também onde os gatilhos que moram no log são lidos** *(revisão de robustez, 29/09/2026)*. Três
+ADIAR deste plano disparam com uma linha de log — e um log de 7 dias que ninguém lê faz o gatilho
+disparar e sumir, como a [ADR 0005](./adr/0005-provedor-de-ia.md) já avisava. Depois de cada sessão,
+buscar no log do Render e anotar a contagem de cada um (a E.1e confere e completa a lista):
+
+| Evento | Gatilho de | Dispara quando |
+|---|---|---|
+| `sse_fallback` | L.6 — manter ou remover o SSE | Decide com a contagem acumulada |
+| `gemini_api_error` | [ADR 0005](./adr/0005-provedor-de-ia.md) — Groq / `AI_MODEL` | `429`, cota esgotada ou modelo recusado |
+| `ws_rate_limited` | L.1 antecipada (risco 3 do custo zero) | Aparecer numa sessão real |
+
+**A primeira sessão não espera a M.2.** Desde as R, a mesa aguenta uma sessão em produção; a H, a
+L.0, a L.1, a L.6 e as estimativas do custo zero dependem desta tabela, e ela está vazia. Jogar cedo
+é o insumo mais barato do plano — a M.2 continua sendo a sessão de encerramento.
+
+| Data | Jogadores × horas | Eventos-gatilho no log (`sse_fallback` · `gemini_api_error` · `ws_rate_limited`) | Horas e banda do NetSheet no painel do Render | Observação |
 |---|---|---|---|---|
 | — | — | — | — | *nenhuma sessão em produção ainda* |

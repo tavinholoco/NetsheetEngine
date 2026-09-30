@@ -32,7 +32,10 @@ segunda não substitui a primeira.
 
 Seis perguntas. Aplicadas **ao fechar cada fase de construção** (A, B, C, D, F, K, L, M — e todo
 bloco de pendências que mude código, como o R da revisão pós-D), sobre o que
-*aquela fase* mudou — nunca sobre o sistema inteiro. Timebox: 30 minutos.
+*aquela fase* mudou — nunca sobre o sistema inteiro. Timebox: 30 minutos. **As varreduras (E, G–J)
+também passam, quando executam FAZER que muda código** — é o passo X.4 do
+[roteiro de uma varredura](./PLANO_MESTRE.md#o-roteiro-de-uma-varredura) *(revisão de robustez,
+29/09/2026: antes, o código que uma varredura mudava não passava por portão nenhum)*.
 
 Cada pergunta mapeia uma categoria STRIDE e nasceu de um achado real deste repositório.
 
@@ -443,9 +446,17 @@ script avisam.
 **Junto, fora da segurança:** a interface mostrava "v0.4.0" escrito à mão em seis lugares; agora lê o
 `package.json` (continuação do R.9).
 
+### Fase E — Varredura: backend
+
+*(a preencher no passo E.4 — só se a E.3 mudar código)*
+
 ### Fase F — Reestruturação visual
 
 *(a preencher)*
+
+### Fases G, H, I e J — varreduras
+
+*(cada uma a preencher no seu passo X.4 — só se a execução dos FAZER mudar código)*
 
 ### Fase K — Profundidade de sistema
 
