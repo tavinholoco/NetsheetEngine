@@ -84,13 +84,13 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | Método | Rota | Corpo | Resposta |
 |---|---|---|---|
 | `GET` | `/api/health` | — | `{ status: "online", system, version, …, clientIp }` — `clientIp` é o IP **do próprio chamador** como os limitadores o veem (R.5) |
-| `GET` | `/api/rooms` | — | Lista `{ code, name, gmHandle, playersCount }[]` das salas ativas |
+| ~~`GET`~~ | ~~`/api/rooms`~~ | — | **Saiu na R.11 (29/09/2026)** — listava o código de toda sala a qualquer visitante. A sala se acha pelo código-convite (`NC-2020-K7Q9XD`, prefixo do GM + sufixo aleatório do cliente) ou pelo link `/room/CÓDIGO` |
 | `POST` | `/api/rooms/create` | `{ code, name, gmHandle, gmPeerId }` | `{ room, sessionToken }` · **409** `room_exists` se o código já é de uma mesa (R.2 — antes, a mesa era apagada) |
 | `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` + header `X-Session-Token` para voltar ao próprio assento (R.1) | `{ room, sessionToken }` · **409** `seat_taken` se o assento é de outro · **409** `room_full` se a sala já tem 16 assentos (R.16 — quem já tem assento sempre volta) · **403** `removed_by_gm` (R.3) |
 | `GET` | `/api/rooms/:code` | — | **Sem token:** recorte público `{ code, name, gmHandle, playersCount }`. **Com `X-Session-Token` válido:** `GameRoom` completo. **Token inválido:** 401. (404 se não existe) |
 
-> Validações do `code`: 2–12 caracteres alfanuméricos ou hífen, normalizado para maiúsculas
-> (`NC-2020`). Código inválido → **400**.
+> Validações do `code`: 2–24 caracteres alfanuméricos ou hífen (eram 12 até a R.11), normalizado para
+> maiúsculas (`NC-2020-K7Q9XD`). Código inválido → **400**.
 
 **Saíram desta seção na Fase B** — não são mais rotas públicas:
 

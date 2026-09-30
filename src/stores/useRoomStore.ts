@@ -15,13 +15,6 @@ import type { GameRoom } from '../types/multiplayer';
 
 export type RoomView = 'lobby' | 'active';
 
-interface ActiveRoomInfo {
-  code: string;
-  name: string;
-  gmHandle: string;
-  playersCount: number;
-}
-
 interface RoomState {
   view: RoomView;
   setView: (v: RoomView) => void;
@@ -41,10 +34,6 @@ interface RoomState {
   /** Token de sessão da mesa (T1.7; persistido em sessionStorage). */
   sessionToken: string;
   setSessionToken: (token: string) => void;
-
-  /** Lista de salas públicas do lobby. */
-  activeRooms: ActiveRoomInfo[];
-  setActiveRooms: (rooms: ActiveRoomInfo[]) => void;
 
   errorMsg: string;
   setErrorMsg: (msg: string) => void;
@@ -68,9 +57,6 @@ export const useRoomStore = create<RoomState>((set) => ({
 
   sessionToken: '',
   setSessionToken: (token) => set({ sessionToken: token }),
-
-  activeRooms: [],
-  setActiveRooms: (rooms) => set({ activeRooms: rooms }),
 
   errorMsg: '',
   setErrorMsg: (msg) => set({ errorMsg: msg }),

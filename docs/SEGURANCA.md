@@ -420,6 +420,29 @@ o banco de produção inteiro — e isso passa pelo portão:
 o `db-sync` e o keepalive. Rodar junto derruba a senha do outro (`28P01`) — o runbook e o cabeçalho do
 script avisam.
 
+**29/09/2026 — R.11, a sala sai do lobby** (decisão do dono; impõe a decisão 3):
+
+1. **Entrada nova?** Nenhuma. O código de sala aceita até 24 caracteres (eram 12) — mesma regex,
+   mesmo alfabeto, validado no limite como antes.
+2. **Dado novo sai? Sai menos — é o propósito.** A rota `GET /api/rooms`, que entregava a qualquer
+   visitante o código, o nome, o GM e o número de jogadores de toda sala, **saiu**. O `/api/health`
+   segue com contagens, sem código. O recorte público do `GET /api/rooms/:code` (B.3) continua, mas
+   agora exige saber o código — que é o convite.
+3. **Autorização nova?** Nenhuma nova; a de sempre ficou **mais difícil de alcançar**: o código deixou
+   de ser adivinhável. Seis símbolos de 31, de Web Crypto (~30 bits); com o limitador do `join` (120/min
+   por IP) e o `trust proxy` (R.5), chutar uma sala leva anos.
+4. **Jogador convidado hostil?** Continua podendo o que um convidado pode — e **repassar o convite**.
+   O que muda é o **visitante não convidado**: não vê mais sala nenhuma, e não adivinha código. O sufixo
+   é gerado **no cliente**: quem cria sala por fora da interface com código fraco só expõe a própria
+   mesa. **Variante do SEC-07 (GM pelo *handle*):** o *handle* do GM saiu do lobby — só quem tem o
+   código o vê. O ADIAR fica, e o gatilho não disparou.
+5. **Estado novo sem limite?** Nenhum. E um *timer* a menos: o *polling* do lobby a cada 8 s.
+6. **Custo?** **Menor:** o lobby parou de consultar o servidor a cada 8 s — era uma das duas coisas que
+   mantinham o Render acordado (risco 1 do contrato de custo zero).
+
+**Junto, fora da segurança:** a interface mostrava "v0.4.0" escrito à mão em seis lugares; agora lê o
+`package.json` (continuação do R.9).
+
 ### Fase F — Reestruturação visual
 
 *(a preencher)*

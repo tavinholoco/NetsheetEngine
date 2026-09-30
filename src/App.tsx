@@ -21,6 +21,7 @@ import {
 import type { Modifier } from './rules/dice';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';
+import { APP_VERSION } from './version';
 import { Dice5, CheckCircle2 } from 'lucide-react';
 
 // ===========================================================================
@@ -378,7 +379,7 @@ export default function App() {
                   <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,1)]"></div>
                   <span className="text-emerald-500 text-[10px] font-bold uppercase">SUPABASE CLOUD CONECTADO</span>
                 </div>
-                <span className="border-l border-slate-800 pl-4 text-[10px]">v0.4.0-RELEASE</span>
+                <span className="border-l border-slate-800 pl-4 text-[10px]">{APP_VERSION}</span>
               </div>
             </div>
           </footer>

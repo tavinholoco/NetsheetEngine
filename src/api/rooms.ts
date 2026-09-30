@@ -16,17 +16,11 @@ import { GameRoom, InitiativeEntry, TableRollKind, TacticalGridState } from '../
 import { useRoomStore } from '../stores/useRoomStore';
 import { useSheetStore } from '../stores/useSheetStore';
 import type { RangeBandKey } from '../rules/tables';
+import { inviteCode } from '../lib/roomCode';
 
 export interface JoinResponse {
   room: GameRoom;
   sessionToken: string;
-}
-
-export interface RoomSummary {
-  code: string;
-  name: string;
-  gmHandle: string;
-  playersCount: number;
 }
 
 // ===========================================================================
@@ -175,18 +169,20 @@ export async function authedFetch<T>(path: string, body: object): Promise<T> {
 // ENDPOINTS — SALAS MULTIPLAYER
 // ===========================================================================
 
-/** GET /api/rooms — lista salas públicas do lobby. */
-export function listRooms(): Promise<RoomSummary[]> {
-  return apiFetch<RoomSummary[]>('/api/rooms');
-}
+// R.11 — não há mais lista de salas: o lobby deixou de listá-las (a sala se
+// acha pelo código ou pelo link que o GM manda).
 
-/** POST /api/rooms/create — cria uma mesa (o chamador vira GM). */
+/**
+ * POST /api/rooms/create — cria uma mesa (o chamador vira GM). R.11: o código
+ * enviado é o prefixo que o GM digitou + um sufixo aleatório (`inviteCode`) —
+ * é ele o convite. Guarda o código que o SERVIDOR devolveu.
+ */
 export async function createRoom(input: { code: string; name: string; gmHandle: string }): Promise<JoinResponse> {
   const res = await apiFetch<JoinResponse>('/api/rooms/create', {
     method: 'POST',
-    body: JSON.stringify({ ...input, gmPeerId: getPeerId() })
+    body: JSON.stringify({ ...input, code: inviteCode(input.code), gmPeerId: getPeerId() })
   });
-  persistSession(res.sessionToken, res.room, input.code);
+  persistSession(res.sessionToken, res.room, res.room.code);
   return res;
 }
 

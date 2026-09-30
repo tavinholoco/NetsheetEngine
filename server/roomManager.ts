@@ -146,9 +146,13 @@ export function sanitizeText(value: unknown, maxLength: number): string {
   return value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, maxLength);
 }
 
-/** Código de sala: 2–12 caracteres alfanuméricos ou hífen (ex.: NC-2020). */
+/**
+ * Código de sala: 2–24 caracteres alfanuméricos ou hífen. Desde a R.11 o
+ * cliente cria com um sufixo aleatório (`NC-2020-K7Q9XD`, ver
+ * src/lib/roomCode.ts) — o código é o convite; o teto subiu de 12 para 24.
+ */
 export function isValidRoomCode(code: string): boolean {
-  return /^[A-Z0-9-]{2,12}$/.test(code.trim().toUpperCase());
+  return /^[A-Z0-9-]{2,24}$/.test(code.trim().toUpperCase());
 }
 
 // In-memory store for game rooms

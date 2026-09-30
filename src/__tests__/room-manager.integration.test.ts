@@ -403,11 +403,13 @@ describe("roomManager — rolagens e validação", () => {
     expect(sanitizeText(null, 10)).toBe("");
   });
 
-  it("isValidRoomCode aceita 2–12 alfanuméricos/hífen", () => {
+  // R.11 — o teto subiu de 12 para 24: o código de convite leva um sufixo aleatório.
+  it("isValidRoomCode aceita 2–24 alfanuméricos/hífen", () => {
     expect(isValidRoomCode("NC-2020")).toBe(true);
+    expect(isValidRoomCode("NC-2020-K7Q9XD")).toBe(true);
     expect(isValidRoomCode("ab")).toBe(true);
     expect(isValidRoomCode("A")).toBe(false); // mínimo 2
-    expect(isValidRoomCode("1234567890123")).toBe(false); // máximo 12
+    expect(isValidRoomCode("1234567890123456789012345")).toBe(false); // máximo 24
     expect(isValidRoomCode("sala!x")).toBe(false);
     expect(isValidRoomCode("sala x")).toBe(false);
   });
