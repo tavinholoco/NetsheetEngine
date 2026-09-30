@@ -940,10 +940,18 @@ Escopo: `server.ts` e `server/*` — **7 arquivos, ~3.400 linhas** em 29/09/2026
 quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
 [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
-- [ ] **E.0** 🔍 **Premissas** — as pistas de cada área abaixo foram **medidas em 29/09/2026** (revisão
+- [x] **E.0** 🔍 **Premissas** — as pistas de cada área abaixo foram **medidas em 29/09/2026** (revisão
       de robustez). Conferir de novo no dia de abrir: o código anda.
-- [ ] **E.1** Varredura por área → ledger em `docs/varreduras/E-backend.md`, sem tocar em código.
-  - [ ] **E.1a Erros e status.** Todo caminho de erro devolve o status certo e uma mensagem tratável?
+      *(30/09/2026 — as 13 pistas conferidas contra o `master` em `7fdb7bb`: **todas bateram**, linha e
+      contagem — tabela no topo do [ledger](./varreduras/E-backend.md). O fuso do chat reproduziu de
+      novo: o mesmo instante, `01:02` em UTC e `22:02` em São Paulo.)*
+- [x] **E.1** Varredura por área → ledger em `docs/varreduras/E-backend.md`, sem tocar em código.
+      *(30/09/2026 — **24 itens: 6 FAZER (25%), 17 ADIAR, 1 DESCARTAR.** As 3.404 linhas lidas inteiras;
+      o que dava para reproduzir foi reproduzido fora do repositório. Dois FAZER eram achados de segurança
+      abertos — **SEC-14 e SEC-15** —, consertados antes do ledger a pedido do dono: E.3a–b.)*
+  - [x] **E.1a Erros e status.** *(E.01 FAZER — reproduzido: `join` com código errado mostra "Room not
+        found" em inglês na tela; chat vazio → 403; mesa cheia → 403 na ficha gerada e 409 no `join`. E.21
+        e E.22 ADIAR.)* Todo caminho de erro devolve o status certo e uma mensagem tratável?
         Uma linha por rota: status × mensagem × `code`.
         - **Hoje são três jeitos de classificar erro:** o `respondWithResult` por substring em
           português (`server.ts:283` — renomear uma mensagem muda o status da API); o
@@ -952,7 +960,9 @@ quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
         - **A E é dona do `code` no servidor** — a versão 10× menor da
           [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457): o status sai do `code`, e a mensagem muda
           à vontade. A I só confere que o cliente decide por ele (o `ApiError.code` já existe).
-  - [ ] **E.1b Estado que cresce.** Todo `Map`, `Record` e array do servidor: quem limita, quem recolhe?
+  - [x] **E.1b Estado que cresce.** Todo `Map`, `Record` e array do servidor: quem limita, quem recolhe?
+        *(E.02 e E.03 FAZER — viraram SEC-14 e SEC-15, já consertados; E.04, E.05, E.20, E.24 e E.25 ADIAR;
+        E.23 DESCARTAR — o Render já comprime.)*
         - **NPCs sem teto** (`generateRoomNpc`, `roomManager.ts:671`) — cada NPC também vira token no
           grid, e a mensagem de iniciativa da D.4 cresce com eles. Só o GM gera. *(portão da D.9)*
         - **Chat:** o teto de 100 mensagens vale em dois caminhos (o chat do jogador, `:996`, e o
@@ -965,15 +975,20 @@ quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
           [README do `ws`](https://github.com/websockets/ws#how-to-detect-and-close-broken-connections)
           recomenda ping a cada ~30 s com `terminate()`. Sintoma a procurar: memória subindo com a
           mesa aberta.
-  - [ ] **E.1c Concorrência e ciclo de vida.** Que suposição quebra se duas requisições chegarem
+  - [x] **E.1c Concorrência e ciclo de vida.** Que suposição quebra se duas requisições chegarem
         juntas? O Node é uma thread: o risco mora nos `await` — persistência com debounce × `deleteRoom`,
         verificação do JWT na rota da IA.
+        *(E.07 FAZER — reproduzido: remover alguém da iniciativa no meio da rodada **pula a vez** de outro.
+        E.06 ADIAR, com regra de processo já: **todo deploy roda duas instâncias por ≥60 s** (doc do
+        Render) — não mergear com mesa aberta. E.08, E.09 e E.19 ADIAR.)*
         - *Conferido:* o `listen` só acontece depois do `await restoreRoomsFromDb()`
           (`server.ts:1339` → `:1373`) — nenhuma requisição chega antes do restore.
         - **Shutdown:** `flushAllPending()` e `process.exit(0)` sem fechar sockets (`:1421`). O Render
           dá **30 s** entre o `SIGTERM` e o `SIGKILL` ([deploys](https://render.com/docs/deploys)) —
           algo se perde nesse intervalo?
-  - [ ] **E.1d Dado montado como texto.** O que o servidor formata que devia mandar como dado?
+  - [x] **E.1d Dado montado como texto.** O que o servidor formata que devia mandar como dado?
+        *(E.10 FAZER — o horário do chat. E.11 e E.12 ADIAR; o modelo 2.5 segue sem data de desligamento,
+        com acesso limitado a quem já usava — conferir com uma pergunta ao Netrunner IA no ar.)*
         - **O horário do chat sai no fuso do servidor — reproduzido em 29/09.** São 12 chamadas de
           `toLocaleTimeString("pt-BR")` no `roomManager` (11 à mão e o `chatTime` da D), e o cliente
           mostra a string como veio (`MultiplayerRoom.tsx:687`). O Render roda em **UTC**
@@ -987,7 +1002,10 @@ quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
           os modelos 2.5 a quem já os usava, sem data de desligamento
           ([descontinuações](https://ai.google.dev/gemini-api/docs/deprecations)). Ler o nome de uma
           variável de ambiente é uma linha — gatilho na [ADR 0005](./adr/0005-provedor-de-ia.md).
-  - [ ] **E.1e Logs e gatilhos.** Todo `catch` registra? Nenhum segredo sai?
+  - [x] **E.1e Logs e gatilhos.** Todo `catch` registra? Nenhum segredo sai?
+        *(Nenhum segredo sai — conferido. E.13 FAZER, só documento: o Registro de sessões ganha
+        `unhandled_error`, `persistence_save_failed` e `rooms_full`. E.14 ADIAR: o `sse_fallback` conta
+        queda de rede, não só proxy — premissa levada à H.0. E.15 e E.16 ADIAR.)*
         - *Medido:* a persistência **não engole** erro — `save`, `delete` e `restore` registram
           `warn`, e o save tenta de novo. Mas o log vive 7 dias e ninguém o lê: engolido na prática.
         - **Listar os eventos que são gatilho de algum ADIAR** (`sse_fallback`, `gemini_api_error`,
@@ -996,11 +1014,14 @@ quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
         - ~~`(ws as any)._peerId`~~ — *resolvida na R.3: virou `WeakMap`.* Restam **7** `any` no
           `server.ts` (o `flush` do SSE, o `catch` da IA, o awareness e a mensagem do WebSocket, o
           handler de erro do Express).
-  - [ ] **E.1f Mapa de cortes** *(ARQ-05)*. O `roomManager` tem **1.579 linhas** (1.035 na auditoria,
+  - [x] **E.1f Mapa de cortes** *(ARQ-05)*. *(E.18 — seis cortes no `roomManager`, cinco no
+        `server.ts`, todos ADIAR com a L.3 de dona. O que mais barateia teste é o do `server.ts`.)* O `roomManager` tem **1.579 linhas** (1.035 na auditoria,
         1.461 depois da D) e o `server.ts`, **1.436**. Propor os cortes — sessão / autorização / regras
         / NPCs / chat; rotas / realtime / Yjs — **sem executar**, com veredito próprio. É o insumo da
         L.3: sem este mapa, a L.3 não tem de onde partir.
 - [ ] **E.2** Calibragem e PR do ledger — [roteiro](#o-roteiro-de-uma-varredura), passo X.2.
+      *(30/09/2026 — calibragem: 6 FAZER em 24, **25%**, abaixo de 1/3; a régua não precisou de ajuste.
+      O PR do ledger está aberto; o merge do dono fecha este item e libera a E.3c–e.)*
 - [ ] **E.3** Executar só os FAZER — passo X.3.
   - [x] **E.3a** 🔒 **SEC-14 — grid malformado derrubava o processo** (E.02 do ledger). *(30/09/2026 —
         adiantado a pedido do dono, num PR de segurança antes do ledger: o Render volta em 01/10.)* A
@@ -1012,6 +1033,22 @@ quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
         o restore não traz sala abandonada. `room-limits` (9); provado revertendo teto a teto.
         **Decisão do dono (30/09):** criar sala **não** passa a exigir login no servidor — ADIAR, gatilho
         em [`SEGURANCA.md`](./SEGURANCA.md#fase-e--varredura-backend).
+  - [ ] **E.3c** **E.01 — todo erro com `code`, e o status sai do `code`.** Um conjunto fechado de códigos
+        e uma tabela `code → status`; `respondWithResult` e `respondToCombat` viram uma função; as mensagens
+        em inglês vão para o português. Teste primeiro: `error-codes.integration`, uma linha por caminho de
+        erro (os casos reproduzidos no ledger falham hoje). Os quatro `code` da R e os quatro da E.3a–b
+        ficam como estão.
+  - [ ] **E.3d** **E.07 — tirar alguém da iniciativa não pula a vez de outro.** Um helper só para os três
+        caminhos (`deleteRoomNpc`, `deleteGeneratedPlayer`, `leaveRoom`), que mantém a vez com quem a tinha
+        — ou passa ao seguinte, se foi ele que saiu. Teste primeiro: `initiative-removal`, com os três casos
+        do ledger e a saída de um jogador antes da vez.
+  - [ ] **E.3e** **E.10 — o horário do chat no fuso de Brasília.** Um formatador só, com
+        `timeZone: "America/Sao_Paulo"`, no lugar das 12 chamadas. Teste primeiro: `chat-time`, com o
+        processo em UTC. *(A versão maior — o instante em ISO, formatado no cliente — é ADIAR: jogador de
+        outro fuso.)*
+  - [x] **E.3f** **E.13 — o Registro de sessões lê os eventos que faltavam.** *(30/09/2026, no PR do
+        ledger — só documento.)* A [tabela](#registro-de-sessões) ganha `unhandled_error`,
+        `persistence_save_failed` e `rooms_full`, e a ressalva do `sse_fallback` (E.14).
 - [ ] **E.4** 🔒 Portão, se a E.3 mudou código — passo X.4.
 - [ ] **E.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase E concluída em:** ____/____/______
@@ -1273,6 +1310,16 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         reconexão" ([`ARQUITETURA.md`](./ARQUITETURA.md#diagramas-adiados)) — decidir no H.1d.
       - **De preferência, com uma sessão real já registrada** no [Registro de sessões](#registro-de-sessões):
         os bugs daqui aparecem com gente de verdade, e a primeira sessão é o melhor insumo da H.
+      - *Levados pela E (30/09/2026), do [ledger](./varreduras/E-backend.md):*
+        - **O cliente cai para o SSE numa queda de rede comum** (E.14, lido, não reproduzido): o
+          `wsEverOpen` nasce `false` a cada tentativa (`MultiplayerRoom.tsx:171`); se o WS cai depois de
+          conectar e a tentativa de 3 s depois falha, o cliente vai para o SSE e o servidor registra
+          `sse_fallback`. É o H.1g — e a contagem da L.6 depende dele.
+        - **Todo deploy roda duas instâncias por ≥60 s** (E.06, pela [doc do Render](https://render.com/docs/deploys)):
+          a nova recebe o tráfego novo e restaura do banco no boot; a velha segue com os sockets e só leva
+          o `SIGTERM` 60 s depois. O H.1j confere o que se perde — o ledger tem a previsão.
+        - **Socket que não lê agora é derrubado** (E.03, 1 MiB): na rede estrangulada do H.1b, conferir
+          que um jogador lento de verdade **não** cai por isso.
 - [ ] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`.
   - [ ] **H.1a Mesa de base:** GM + 2 jogadores em 3 abas, do zero ao combate. O que os outros cenários
         comparam.
@@ -1385,16 +1432,25 @@ o conserto** (o repo é público).
   - [ ] **J.1b Tabela de superfície:** cada endpoint REST, cada tipo de mensagem do WebSocket e o
         quadro Yjs × autenticado? autorizado? entrada validada? saída filtrada? Uma linha por rota, sem
         exceção.
+        - *Da E (30/09):* a ficha de todo **NPC vai a todos os jogadores** no reenvio (E.20 — a saída não
+          é filtrada por papel); e há leitura que responde "esta sala existe?" sob o limitador **global**,
+          não o do `join` (E.21 — a conta da R.11 fica 5× otimista, e segue em anos). Os dois ADIAR, com
+          gatilho no [ledger](./varreduras/E-backend.md).
   - [ ] **J.1c Credenciais:** toda emissão — `create`, `join`, *upgrade* do WebSocket, JWT do Supabase
         — e o que quem recebe prova. *(A lição do SEC-07.)*
   - [ ] **J.1d Entrada:** todo campo que entra em `sheet`, `gridState`, `initiativeList` e no protocolo
         Yjs — **o binário Yjs é entrada de usuário** e tem try/catch e o teto de 1 MiB (R.4).
+        - *Da E (30/09):* a **forma** do `gridState` e do update Yjs passou a ser conferida (SEC-14) — a J
+          confere se há outra porta sem forma. E ids como `__proto__` acham o protótipo de `players`/`npcs`
+          (E.22, ADIAR: hoje só o GM chega, e o `join` os recusa por acaso).
   - [ ] **J.1e WebSocket**, pela [folha da OWASP](https://cheatsheetseries.owasp.org/cheatsheets/WebSocket_Security_Cheat_Sheet.html):
         - o *upgrade* não confere `Origin`; o que protege de *cross-site WebSocket hijacking* é o token
           ir na query e não em cookie — registrar como decisão, não como acaso;
         - o token na URL: onde a URL do *upgrade* aparece em log (nosso e do Render)?
         - sessão revogada fecha o socket? A R.3 fez isso para a expulsão; e as outras revogações?
         - *backpressure*: cliente lento acumulando reenvios da sala no buffer (liga com a E.1b).
+          *(E.03, 30/09: reproduzido — o heap crescia linear — e fechado **por socket**, 1 MiB. Falta o
+          teto **global** de sockets: E.24, ADIAR, gatilho de memória no painel do Render.)*
   - [ ] **J.1f Configuração e cadeia:**
         - CSP: `connect-src https:` e `img-src https:` são amplos; apertar para os origins reais.
         - RLS: re-rodar as 56 e conferir as políticas de storage de avatar.
@@ -1584,7 +1640,7 @@ público mudar.
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
-| E | 🔍 | Varredura: backend | ⬜ | — |
+| E | 🔍 | Varredura: backend | 🔶 E.0–E.1 feitos (24 itens, 6 FAZER); SEC-14 e SEC-15 consertados (E.3a–b, PR #22); ledger em PR; falta a E.3c–e | — |
 | F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | ⬜ | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
@@ -1650,14 +1706,17 @@ buscar no log do Render e anotar a contagem de cada um (a E.1e confere e complet
 
 | Evento | Gatilho de | Dispara quando |
 |---|---|---|
-| `sse_fallback` | L.6 — manter ou remover o SSE | Decide com a contagem acumulada |
+| `sse_fallback` | L.6 — manter ou remover o SSE | Decide com a contagem acumulada. **Ressalva (E.14, 30/09):** até a H.1g consertar o cliente, a contagem inclui queda de rede e restart do servidor, não só proxy que bloqueia WebSocket — anotar o *user agent* e a hora, para separar depois |
 | `gemini_api_error` | [ADR 0005](./adr/0005-provedor-de-ia.md) — Groq / `AI_MODEL` | `429`, cota esgotada ou modelo recusado |
 | `ws_rate_limited` | L.1 antecipada (risco 3 do custo zero) | Aparecer numa sessão real |
+| `unhandled_error` *(E.13)* | Um bug chegou ao usuário como `500` | **Qualquer** ocorrência — investigar na hora |
+| `persistence_save_failed` *(E.13)* | Estado da mesa que não chegou ao banco; em sequência, o E.15 (retry sem espaçar) | Uma sequência de linhas: o banco esteve fora |
+| `rooms_full` *(E.03)* | E.25 — criar sala exigir login | Aparecer sem o dono ter criado as salas |
 
 **A primeira sessão não espera a M.2.** Desde as R, a mesa aguenta uma sessão em produção; a H, a
 L.0, a L.1, a L.6 e as estimativas do custo zero dependem desta tabela, e ela está vazia. Jogar cedo
 é o insumo mais barato do plano — a M.2 continua sendo a sessão de encerramento.
 
-| Data | Jogadores × horas | Eventos-gatilho no log (`sse_fallback` · `gemini_api_error` · `ws_rate_limited`) | Horas e banda do NetSheet no painel do Render | Observação |
+| Data | Jogadores × horas | Eventos-gatilho no log (a contagem de cada evento da tabela acima) | Horas e banda do NetSheet no painel do Render | Observação |
 |---|---|---|---|---|
 | — | — | — | — | *nenhuma sessão em produção ainda* |

@@ -117,3 +117,14 @@ Dois fatos novos, nenhum reabre a decisão:
 - **O log do Render guarda 7 dias** (plano Hobby). Os dois gatilhos desta ADR são linhas de log: se
   ninguém olhar o log dentro de uma semana, o gatilho dispara e some. O
   [Registro de sessões](../PLANO_MESTRE.md#registro-de-sessões) do plano é o lugar de anotar.
+
+## Nota de 30/09/2026 — Fase E (E.12)
+
+A [página de descontinuações](https://ai.google.dev/gemini-api/docs/deprecations), lida no dia: o
+`gemini-2.5-flash` **não está descontinuado** ("continuará sendo servido até segunda ordem"), segue sem
+data de desligamento, e o acesso está limitado a quem **já usou ativamente** os modelos 2.5; a
+recomendação para projeto novo é o 3.5 Flash-Lite ou o 3.8 Flash. **O NetSheet nunca chamou a IA em
+produção.** Se o acesso é por projeto do Google, quem o garante é o uso do Newra News com a mesma chave —
+e isso não se confere do repositório. **Como conferir sem esperar uma sessão:** na primeira visita ao ar
+com login, uma pergunta ao Netrunner IA. Resposta normal fecha a dúvida; erro, o `gemini_api_error` diz
+se foi o modelo — e aí vale o gatilho acima, com a versão 10× menor (`AI_MODEL`). Nada muda na decisão.

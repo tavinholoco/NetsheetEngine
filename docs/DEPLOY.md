@@ -108,6 +108,15 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
 (T3.2), mas conexões WebSocket/SSE ao vivo são por instância.
 
 - **Mantenha 1 réplica** (as configs abaixo já fixam isso).
+- **⚠️ Não mergeie no `master` com uma mesa aberta** *(Fase E, E.06 — 30/09/2026)*. Mesmo com 1
+  réplica, **cada deploy roda duas instâncias por pelo menos 60 s**: no deploy sem interrupção, a
+  instância nova sobe, restaura as salas do banco e passa a receber o tráfego novo; a velha segue com os
+  WebSockets de quem estava jogando e só recebe o `SIGTERM` 60 s depois, com mais 30 s de carência
+  ([Render — deploys](https://render.com/docs/deploys)). Nesse intervalo, o que o GM faz por REST cai na
+  nova e o que a mesa faz pelo WebSocket, na velha — e a nova nunca relê o banco. **Até ~1,5 min de chat,
+  dano e grid se perdem.** O Render publica a cada push no `master`, então a regra é de quem mergeia:
+  PR de código, só fora de sessão de jogo. O conserto no código é ADIAR, com gatilho no
+  [ledger da E](./varreduras/E-backend.md).
 - Se escalar horizontalmente no futuro, será preciso um pub/sub compartilhado
   (ex.: Redis/Postgres LISTEN) — fora do escopo atual (documentado no
   ADR-0002).
