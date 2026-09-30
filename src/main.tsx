@@ -3,6 +3,15 @@ import {createRoot} from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+// Fase F (F.0c, ARQ-09) — fontes auto-hospedadas. O `@import` do Google Fonts
+// era recusado pelo CSP de produção (`font-src 'self'`) e a tela caía em fonte
+// de sistema. O Vite copia os woff2 para dist/assets, servidos pelo mesmo
+// origin; o `unicode-range` de cada peso faz o navegador baixar só o `latin`.
+import '@fontsource/rajdhani/400.css';
+import '@fontsource/rajdhani/500.css';
+import '@fontsource/rajdhani/600.css';
+import '@fontsource/rajdhani/700.css';
+import '@fontsource/share-tech-mono/400.css';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(

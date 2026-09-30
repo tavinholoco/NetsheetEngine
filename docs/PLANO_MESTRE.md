@@ -547,7 +547,7 @@ número real.
 | ARQ-07 | 🔵 Baixo | Sem ESLint; 23 `any` e 16 `console.*` | L |
 | ARQ-08 | 🔵 Baixo | 3 smoke tests para 20 componentes React | C/D/G/H |
 | ARQ-10 | 🟡 Médio | **Dependências e arquivos mortos** — `motion` instalado sem nenhum import, 7 wrappers `components/ui/*` sem consumidor (com 5 pacotes Radix), e `bun.lock` desatualizado desde 07/08 enquanto o CI usa `npm ci` | ✅ resolvido em 02/09 |
-| ARQ-09 | 🟠 Alto | **As fontes não carregam em produção** — o `@import` do Google Fonts sobrevive ao build, mas o CSP (`style-src`/`font-src`) o bloqueia; como o helmet é pulado em dev, só quebra no ar | F |
+| ARQ-09 | 🟠 Alto | **As fontes não carregam em produção** — o `@import` do Google Fonts sobrevive ao build, mas o CSP (`style-src`/`font-src`) o bloqueia; como o helmet é pulado em dev, só quebra no ar | ✅ F.0c |
 
 ### Documentação e processo (5)
 
@@ -1171,31 +1171,48 @@ site está no ar.
       piso de 10 px. **(b)** Vermelho só para dano; o resto vai para amarelo, ciano ou o papel novo
       **`fault`** (magenta). **(c)** A cor por seção fica. **(d)** O livro, em P&B, é a referência de
       diagramação; a cor vem da época.
-- [ ] **F.0c** **Fontes auto-hospedadas** *(ARQ-09)*. `@fontsource/rajdhani` (pesos 400, 500, 600 e
+- [x] **F.0c** **Fontes auto-hospedadas** *(ARQ-09)*. `@fontsource/rajdhani` (pesos 400, 500, 600 e
       700 — os que o `@import` pede hoje) e `@fontsource/share-tech-mono` (400), importadas por peso
       no `main.tsx`; sai o `@import` do Google da linha 1 do `index.css`. O arquivo por peso traz todos
       os subconjuntos, e o `unicode-range` faz o navegador baixar só o `latin`. O CSP **não muda**
       (`font-src 'self'`), e o `font-display: swap` já é o padrão do `@fontsource`. O Orbitron entra
       na F.1.3. *De carona, privacidade:* o navegador do jogador deixa de pedir fonte ao Google.
-- [ ] **F.0d** **Guarda no E2E** — o Playwright já sobe o build de produção, com o helmet. Um teste
+      *(30/09/2026 — os dois pacotes em `dependencies`, porque o Render builda com
+      `NODE_ENV=production`, como o Vite e o Tailwind. O build emite 13 `woff2` (e 13 `woff`); na ficha,
+      com o helmet, o navegador baixou **três**, só do `latin` — Rajdhani 400 e 700 e Share Tech Mono,
+      ~15 KB cada. `npm audit`: 0. Nenhuma referência ao Google no `dist/`.)*
+- [x] **F.0d** **Guarda no E2E** — o Playwright já sobe o build de produção, com o helmet. Um teste
       novo, em três telas (início, ficha, entrada da mesa): **(1)** nenhuma violação de CSP no console;
       **(2)** as faces carregadas — `[...document.fonts]` com `status === "loaded"`, **nunca**
       `document.fonts.check()`. **Provado revertendo:** com o `@import` de volta, os dois falham. É o
       critério de pronto (2) da fase virando teste, e pega qualquer recurso externo futuro.
-- [ ] **F.0e** **O comando da contagem** — `npm run audit:colors` (`scripts/audit-colors.mjs`), o
+      *(30/09/2026 — `e2e/fonts-csp.spec.ts`, escrito **antes** do conserto. A violação vem do evento
+      `securitypolicyviolation` e do console. **Provado dos dois lados:** com o código de antes, falha
+      por `style-src-elem https://fonts.googleapis.com/…`; sem os imports do `@fontsource` (e sem o
+      Google), falha por "nenhuma face carregada em /". E2E: 7/7.)*
+- [x] **F.0e** **O comando da contagem** — `npm run audit:colors` (`scripts/audit-colors.ts`), o
       critério de pronto (1) com comando versionado. Conta, **por arquivo**, em `src/**/*.{ts,tsx}`:
       utilitário da paleta padrão (as 22 famílias × tom), `rgb()`/`rgba()` e hex literal; e hex e
       `rgba` no `index.css` fora do `@theme`. `black`/`white` numa coluna à parte. **Exceção só
       nomeada, com motivo** — o padrão do `audit-ci.mjs`; a primeira é o hex do campo `color` do
       token (sem leitor). Teste do contador com um arquivo de exemplo. Nesta PR ele **só reporta**; a
       trava no CI é a F.2.10. Linha de base: a da tabela acima.
-- [ ] **F.0f** **`netsheet-prod` no [`.claude/launch.json`](../.claude/launch.json)** — o build de
+      *(30/09/2026 — em `.ts`, rodado pelo `tsx` como o `backup-db.ts`: o teste importa as funções com
+      tipo. **Linha de base: paleta 1.748 · `rgba` 114 · hex 17 → 1.879 a migrar; `black`/`white` 108.**
+      Achado ao escrever: `\brgba` não pega `shadow-[0_0_12px_rgba(…)]` — o `_` conta como letra para o
+      `\b`, o mesmo motivo de as contagens antigas não verem o brilho. `audit-colors` (7); provado
+      revertendo o lookbehind para `\b`: o teste do brilho falha.)*
+- [x] **F.0f** **`netsheet-prod` no [`.claude/launch.json`](../.claude/launch.json)** — o build de
       produção na porta 3100, para a verificação visual no painel com o helmet ativo (testado em 30/09
       e desfeito; entra aqui). A porta 3000 fica com o dev e com o E2E.
+      *(30/09/2026 — exige `npm run build` antes. Usado na prova visual da F.0c: a ficha, que caía em
+      Cascadia/Consolas, agora carrega as duas faces, sem aviso de CSP.)*
 - [ ] **F.0g** **Conferir no ar** depois do deploy do PR 1: uma visita a
       `https://netsheetengine.onrender.com` com o DevTools — **antes**, o console recusa o
       `fonts.googleapis.com`; **depois**, nenhum aviso de CSP e as faces `loaded`. Uma visita de cada
       vez, nada de monitor (regra 3 do custo zero).
+      **Não bloqueia a F.2:** se o PR 1 ainda não estiver no ar (o Render volta em 01/10), a sessão
+      segue pela F.2.1 e marca esta caixa quando conferir.
 
 #### F.2 — Ligar os tokens: o encanamento *(1–1,5 dia — PR 2; vem antes da F.1)*
 
@@ -1755,7 +1772,7 @@ público mudar.
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
-| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0a–b feitos (premissas medidas e decisão 10); próximo: F.0c | — |
+| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0a–f feitos (premissas, decisão 10, fontes auto-hospedadas, guardas); F.0g no ar depois do deploy; próximo: F.2.1 | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
@@ -1772,12 +1789,13 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **651** testes, 45 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e)* — `vitest` 4.1.11 |
-| `npm run test:e2e` | 6/6 (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos |
+| `npx vitest run` | **658** testes, 46 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e)* — `vitest` 4.1.11 |
+| `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`) |
 | Chunk de entrada | 629 kB / 186 kB gzip |
+| `npm run audit:colors` | **1.879** a migrar (paleta 1.748 · `rgba` 114 · hex 17) e 108 `black`/`white` — a linha de base da F (F.0e, 30/09); zero é o critério de pronto da F.2.10 |
 | Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
