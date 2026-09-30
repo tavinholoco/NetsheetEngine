@@ -448,7 +448,89 @@ script avisam.
 
 ### Fase E — Varredura: backend
 
-*(a preencher no passo E.4 — só se a E.3 mudar código)*
+**30/09/2026 — SEC-14 e SEC-15**, achados na varredura (E.02 e E.03 do
+[ledger](./varreduras/E-backend.md)), **reproduzidos antes** e consertados num PR próprio, a pedido do
+dono, antes do ledger: o Render volta em 01/10 e publica o `master`. O ledger público os tem em uma
+linha; o texto inteiro é este, e vai ao ar com o conserto. Os outros FAZER da E respondem ao portão
+quando entrarem.
+
+**SEC-14 — um grid malformado derrubava o servidor inteiro** 🔴. O grid tem duas portas de escrita —
+a rota REST (fallback do GM) e o doc Yjs (todo jogador, ao vivo) — e nenhuma conferia a **forma** do
+que entrava; a R.6 conferiu *quem* pode mudar o quê, não *o que* é um token. O reenvio da sala espelha
+o JSON no doc Yjs a cada mutação, e um grid que o espelho não entendia fazia o `broadcastRoomUpdate`
+lançar. Reproduzido em 30/09:
+- **qualquer visitante, sem login:** o servidor não exige login para criar sala (só a tela exige), então
+  ele é GM da própria sala; abre o socket e manda `tokens: 5` pela REST → `500`, e daí em diante chat e
+  rolagem da sala → `500`;
+- **qualquer jogador convidado:** um update Yjs com um item que não é token no array do grid → a mesma
+  trava;
+- **e o processo cai:** o vigia de presença chama o mesmo reenvio dentro de um `setInterval`, sem `try`.
+  Quando alguém da sala cai para offline (~75 s), a exceção escapa do timer e o Node sai com código 1 —
+  **visto com o `npm run dev`**, com o stack em `gridDoc.ts` ← `seedDocFromJson` ←
+  `broadcastRoomUpdate` ← o timer. Todas as mesas juntas, repetível a cada restart.
+
+**Conserto, em duas camadas:** (1) a forma é validada nas duas portas, pela mesma regra
+(`src/lib/gridDoc.ts`): a REST responde `400 invalid_grid` e grava o grid campo a campo; o Yjs reverte
+— GM inclusive, porque validar forma não é autorização —, e o revert apaga o lixo do doc. Só o que
+**mudou** é conferido: dado velho que ninguém tocou não reverte movimento legítimo. (2) O reenvio
+nunca deixa o espelho escapar (o doc é descartado e renasce do JSON, que é a verdade durável), e o
+vigia e o coletor pegam erro por sala. `grid-integrity.integration` (9). **Provado revertendo:** com o
+código antigo, 8 falham; só a validação revertida, 5; só o isolamento, os 2 dele. E o mesmo ataque do
+`npm run dev`, depois do conserto: `400`, e o servidor no ar por mais de 2 min.
+
+**SEC-15 — o tamanho da mesa não tinha teto** 🟠. A R.4 e a R.16 limitaram o ritmo e os assentos; o
+tamanho do que o servidor guarda e reenvia seguia livre. Medido e reproduzido em 30/09:
+- **salas sem teto**, ~4 KB de memória e ~3,9 KB no banco cada: um IP, no ritmo do limitador (120/min),
+  cria ~172 mil por dia — ~680 MB de heap numa instância de **512 MB** e ~650 MB no banco, acima dos
+  **500 MB** do Supabase gratuito, que então entra em
+  [modo só-leitura](https://supabase.com/docs/guides/platform/database-size). E o restore trazia tudo
+  de volta no boot, 15 min antes da primeira volta do coletor;
+- **ficha saneada de até ~557 KB** (a do gerador tem 2,7 KB): 16 assim fazem uma sala de ~8,7 MB,
+  reenviada a até 48 sockets;
+- **NPCs sem teto; chat** com teto em dois caminhos e oito `push` sem (as pistas da E.1b);
+- **socket que não lê:** cada reenvio ficava no buffer do servidor. Com 3 sockets parados, o heap vivo foi
+  de 49 a 156 MB em 100 reenvios, linear. Com os 48 sockets de uma sala, segundos até o teto.
+
+**Conserto:** 30 salas (`MAX_ROOMS` no painel muda sem deploy) → `503 rooms_full`; 32 NPCs por sala →
+`409 npcs_full`; ficha saneada de 64 KB → `413 sheet_too_large`; chat de 100 por um caminho só
+(`pushChat`); socket com mais de 1 MiB esperando é derrubado, no WS e no SSE (`slow_consumer_closed`);
+o restore não traz sala abandonada nem passa do teto. `room-limits.integration` (9). **Provado
+revertendo:** neutralizado um teto por vez, falham exatamente os testes dele.
+
+**Portão — as seis perguntas sobre este código:**
+
+1. **Entrada nova?** Nenhuma nova; duas que já existiam passaram a ser **conferidas** — o `gridState` da
+   REST e o update Yjs do grid (forma, tamanho, tipo de cada campo, só os campos de token). E a ficha
+   ganhou teto de tamanho.
+2. **Dado novo sai?** Nenhum: quatro `code` estáveis nas respostas de erro (`invalid_grid`, `rooms_full`,
+   `npcs_full`, `sheet_too_large`) e cinco eventos de log (`yjs_seed_failed`, `grid_update_rejected`,
+   `room_sweep_failed`, `rooms_full`, `slow_consumer_closed`) com sala, `peerId` e tamanho — sem
+   conteúdo nem segredo.
+3. **Autorização nova?** Nenhuma. A validação de forma vale para todo mundo, GM incluído — ela não
+   decide quem pode, decide o que é um grid.
+4. **Jogador convidado hostil — ou visitante, que cria a própria sala?** Não derruba mais o processo
+   (nem pela REST, nem pelo Yjs), não trava a sala dos outros, não enche a memória nem o banco com salas,
+   fichas, NPCs ou chat, e não prende reenvios num socket parado. **Continua podendo:** ocupar as 30
+   vagas de sala — o GM legítimo fica sem criar mesa até o coletor liberar (24 h) ou o dono subir
+   `MAX_ROOMS` no painel; é o preço aceito do teto (versão 10× menor), registrado no `DEPLOY.md`. E
+   abrir sockets em várias salas: o teto de buffer é **por socket**, e o número total de sockets não tem
+   teto global — ADIAR abaixo.
+5. **Estado novo sem limite?** O contrário: salas, NPCs, ficha, chat e buffer de socket ganharam teto.
+6. **Custo por requisição a serviço externo?** Menor: o banco deixa de receber linhas sem fim, e o
+   restore apaga as abandonadas.
+
+**Decisão do dono (30/09) — criar sala exigir login no servidor: não agora.** A tela já exige; o servidor
+não. Os tetos fecham o esgotamento com ou sem login, e cadastro no Supabase é aberto — o login seria
+atrito e rastro, não barreira. **ADIAR — gatilho:** `rooms_full` no log de produção sem o dono ter
+criado as salas, ou a mesa abrir para gente de fora dos convidados.
+
+**ADIAR — teto global de sockets.** Com o teto por socket, o pior caso é o número de sockets vezes
+~1 MiB mais uma sala. **Gatilho:** a memória do serviço passar de ~400 MB no painel do Render, ou um
+reinício por falta de memória. Vai para a J.1e (*backpressure*), que já pergunta isso.
+
+**O que este PR ensina antes de o conserto estar no ar?** Tudo o que descreve — e o texto vai **junto**
+com o código, nunca antes. O Render volta em 01/10 e publica o `master`: a recomendação é mergear
+antes. Até lá o serviço está suspenso, e a produção não tem usuário nenhum.
 
 ### Fase F — Reestruturação visual
 
@@ -491,7 +573,9 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-10 | WebSocket sem limitador por mensagem, `maxPayload` de 100 MiB | R | ✅ fechado 29/09 (R.4) — o ritmo do REST ainda gasta a banda em horas (L.1, R.11) |
 | SEC-11 | Sem `trust proxy`: limitadores contam o IP do proxy | R | ✅ fechado no código 29/09 (R.5) — **conferir no ar** com o `clientIp` do `/api/health` |
 | SEC-12 | Posse de token no grid Yjs conferida contra o dono novo | R | ✅ fechado 29/09 (R.6) — reproduzido antes, com cliente Yjs real |
-| SEC-13 | Sala sem teto de assentos: cada assento abre até 3 sockets e recebe cada reenvio | R | ✅ fechado 29/09 (R.16) — 16 assentos, contando as fichas geradas; `room.npcs` segue sem teto (pista da E) |
+| SEC-13 | Sala sem teto de assentos: cada assento abre até 3 sockets e recebe cada reenvio | R | ✅ fechado 29/09 (R.16) — 16 assentos, contando as fichas geradas; `room.npcs` segue sem teto (pista da E) — *teto de NPCs no SEC-15* |
+| SEC-14 | Grid malformado (REST ou Yjs) trava a sala e, pelo vigia de presença, **derruba o processo** — sem login | E | ✅ fechado 30/09 (E.02) — forma validada nas duas portas; reenvio e vigia isolados |
+| SEC-15 | O tamanho da mesa não tinha teto: salas, NPCs, ficha, chat e buffer de socket lento | E | ✅ fechado 30/09 (E.03) — teto global de sockets: ADIAR, na J.1e |
 
 ---
 
@@ -508,6 +592,10 @@ Registrado para não ser refeito, e para o portão não repetir pergunta já res
 - **Rate limit** — global (600/min), de sala (120/min) e de chat (30/min), com buckets separados por
   limiter, contando o IP real atrás do proxy do Render (`trust proxy`, R.5). O **WebSocket** tem os
   mesmos tetos por jogador, mais teto de quadro e de sockets (R.4, `server/wsLimits.ts`).
+- **Tetos de tamanho** (E.03 — SEC-15): 30 salas abertas, 32 NPCs por sala, ficha de 64 KB, chat de 100
+  por um caminho só, 1 MiB de reenvios esperando por socket. E a **forma do grid** conferida nas duas
+  portas, REST e Yjs (E.02 — SEC-14). Números em `server/roomManager.ts`, `server/wsLimits.ts` e
+  `src/lib/gridDoc.ts`, com o porquê.
 - **helmet + CSP** em produção, CORS por allowlist via `CORS_ORIGINS`.
 - **gitleaks** no CI, com SARIF na aba Security, e hook de pre-commit opcional.
 - **Rolagens server-authoritative** (T5.4) — o cliente pede, o servidor rola com `crypto.randomInt`.

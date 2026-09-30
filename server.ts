@@ -249,6 +249,8 @@ const aiLimiter = makeRateLimiter(10, 60_000);
 // 401), então a redação pode mudar sem quebrar ninguém.
 const ERR_SESSAO_MESA = "Sessão inválida ou expirada. Reconecte-se à mesa.";
 const ERR_SESSAO_CONTA = "Sessão inválida ou expirada. Entre novamente.";
+// E.03 (SEC-15) — a mesma recusa no join e na sincronia da ficha.
+const ERR_FICHA_GRANDE = { error: `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`, code: "sheet_too_large" };
 
 // T1.7 — autor do request é derivado do token de sessão, nunca do peerId livre
 function getSessionPeerId(req: express.Request, code: string): string | null {
@@ -518,7 +520,7 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   }
   // E.03 (SEC-15) — a ficha vai em todo reenvio da sala, a cada socket.
   if (sheetTooLarge(sheet)) {
-    return res.status(413).json({ error: `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`, code: "sheet_too_large" });
+    return res.status(413).json(ERR_FICHA_GRANDE);
   }
   // R.1 (SEC-07) — voltar a um assento ocupado exige o token vigente dele, no
   // mesmo header da leitura autenticada (B.3). O `peerId` sozinho é público.
@@ -583,7 +585,7 @@ app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
     return res.status(400).json({ error: "Ficha inválida." });
   }
   if (sheetTooLarge(sheet)) {
-    return res.status(413).json({ error: `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`, code: "sheet_too_large" });
+    return res.status(413).json(ERR_FICHA_GRANDE);
   }
   const result = updatePlayerSheet(req.params.code, peerId, sheet);
   if (result.error || !result.room) {

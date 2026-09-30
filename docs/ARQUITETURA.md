@@ -148,6 +148,15 @@ O coletor (`collectAbandonedRooms`, varrido de 15 em 15 min) cumpre os **três**
 As 24 h são conservadoras de propósito: o risco não é simétrico. Recolher tarde custa uma linha a
 mais no banco por mais um dia; recolher cedo apaga a mesa de alguém, e o delete é irreversível.
 
+**Fase E (E.03 — SEC-15), 30/09/2026 — duas regras novas no ciclo:**
+- **`[*] --> Criada` tem teto:** no máximo `MAX_ROOMS` salas abertas (padrão 30); acima disso o
+  `create` responde `503 rooms_full`. Criar sala não exige login no servidor, e sem o teto um visitante
+  enchia a memória da instância e o banco.
+- **O boot não ressuscita sala abandonada.** O coletor só dá a primeira volta 15 min depois do boot, e o
+  restore trazia tudo de volta antes dele. Agora o restore aplica a mesma pergunta do coletor (a sala
+  passou de `ROOM_ABANDONED_TIMEOUT_MS`?), apaga a linha da abandonada e para no teto — as mais
+  recentes primeiro.
+
 ---
 
 ## Pipeline de dano FNFF

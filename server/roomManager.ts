@@ -1177,7 +1177,7 @@ const MAX_RAW_DAMAGE = 2500;
 /** Horário curto do chat, igual ao resto da mesa. */
 const chatTime = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-/** Mensagem do sistema no chat da mesa, com o mesmo teto de 100 do `postChatMessage`. */
+/** Mensagem do sistema no chat da mesa — pelo `pushChat`, com o teto de todo caminho (E.03). */
 function pushSystemMessage(room: GameRoom, prefix: string, text: string, rollResult?: RollResult): void {
   pushChat(room, {
     id: `msg_${prefix}_` + Date.now() + "_" + crypto.randomBytes(3).toString("hex"),

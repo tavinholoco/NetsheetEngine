@@ -29,6 +29,7 @@ Cliente (React) ──►  Express + WebSocket (dist/server.cjs)  ──►  Sup
 | `HOST` | runtime | Obrigatório `0.0.0.0` em containers (default já é esse) |
 | `ROOM_OFFLINE_TIMEOUT_MS` | runtime | Opcional — timeout de `isOnline` da mesa (T3.4). Padrão 60 s |
 | `ROOM_ABANDONED_TIMEOUT_MS` | runtime | Opcional — janela de abandono: o coletor encerra a mesa após este tempo sem ninguém ativo (B.5). Padrão 24 h. **Diminuir com cuidado — o delete é irreversível** |
+| `MAX_ROOMS` | runtime | Opcional (E.03) — quantas salas podem estar abertas ao mesmo tempo. **Padrão 30.** Criar sala não exige login no servidor, e cada sala é memória na instância de 512 MB e uma linha no banco. Se o GM ver "o servidor está com o máximo de mesas abertas" (`503 rooms_full`, com `rooms_full` no log), subir aqui: é a saída sem deploy de código. As vagas voltam sozinhas 24 h depois da última atividade de cada sala |
 | `TRUST_PROXY` | runtime | Opcional (R.5) — em quantos proxies confiar para achar o IP do jogador. **Padrão: `1` em produção** (o proxy do Render), nenhum fora dela. Aceita número de saltos, `false` ou lista de endereços/sub-redes; `true` é recusado (deixaria o cliente escolher o próprio IP). Só mexer se a verificação pós-deploy mostrar o IP errado |
 
 > **NUNCA** commite valores reais: o CI roda **gitleaks** e bloqueia o push.
