@@ -77,5 +77,12 @@ const last3 = received[received.length - 1]?.chatMessages || [];
 check("6. Texto processado após binário", last3.some((m) => m.text === "ping-pos-binary"));
 
 ws.close();
+// Sai da sala de teste: o GM era o único, então o servidor a apaga. Contra
+// produção (verify-prod.mjs), isso evita deixar a sala até o coletor (24 h).
+await fetch(`${BASE}/api/rooms/${code}/leave`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ sessionToken: data.sessionToken })
+}).catch(() => {});
 console.log(`\n📊 Resultado: ${passed} passaram, ${failed} falharam\n`);
 process.exit(failed === 0 ? 0 : 1);
