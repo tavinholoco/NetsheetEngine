@@ -6,9 +6,11 @@
 
 ## Primeiro passo, sempre
 
-0. **Atualize o `master` local antes de ler qualquer coisa:** `git fetch --all --prune --tags` e
+0. **Atualize o `master` local antes de ler qualquer coisa:** `git status` (a sessão anterior pode
+   ter deixado outro branch), `git checkout master`, `git fetch --all --prune --tags` e
    `git merge --ff-only origin/master`. Os PRs são mergeados pelo dono no GitHub; sem isso você lê um
-   plano velho. *(A sessão de 25/09 abriu com o `master` 14 commits atrás.)*
+   plano velho. *(A sessão de 25/09 abriu com o `master` 14 commits atrás; a de 30/09, no branch do PR
+   anterior.)*
 1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M),
    mais blocos de pendências fora das fases (P em 25/09; **R**, da revisão pós-D de 29/09) que
    precedem a fase seguinte. O arquivo passa de uma leitura só: leia em partes, e não pule nenhuma.
