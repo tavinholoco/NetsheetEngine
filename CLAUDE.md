@@ -70,6 +70,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Dano na cabeça | **Armadura → BTM (mín. 1) → ×2** — o livro não diz quando dobrar; decisão 6 do plano (26/09/2026) |
 | Ferimento na mesa | **Pontos (0–40) na ficha, nível derivado; só servidor e GM escrevem na mesa.** Token sem ficha não recebe dano; penetração escalonada ADIAR — decisão 7 (28/09/2026) |
 | Migration × deploy | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa. O Render publica sem esperar o `db-sync` |
+| Netrunning | **O netrunner na ficha** (deck, programas, MU) entra na K.5; **a Net jogável na mesa: ADIAR**, fase própria depois da L — gatilho: alguém da mesa jogar de netrunner. Decisão 9 (30/09/2026) |
 
 ## Comandos que importam
 
@@ -97,6 +98,9 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.
+- **O dono tem o livro físico** (30/09/2026) — a fonte primária quando as secundárias divergem. As
+  dúvidas abertas ficam em "Perguntas para o livro", na conferência. Registre a regra com as suas
+  palavras e a página; **nunca copie texto ou tabela do livro** para o repositório, que é público.
 - Há um padrão recorrente aqui: **coisa construída de ponta a ponta e nunca ligada.** O
   `combatModifier` e o `currentStats` foram ligados na Fase C; o `@theme` de cores é da Fase F.
   Antes de construir algo novo, confira se o que existe já resolve.
