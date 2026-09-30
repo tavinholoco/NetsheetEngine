@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "netsheet-prod",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "process.env.NODE_ENV='production';process.env.PORT='3100';require('./dist/server.cjs')"],
+      "port": 3100
     }
   ]
 }
