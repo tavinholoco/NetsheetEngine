@@ -1,7 +1,8 @@
 # ADR 0006 — Identidade visual: reconstruir a linguagem do Cyberpunk 2020 com faces livres
 
 - **Status:** Aceito
-- **Data:** 02/09/2026 *(duas revisões no mesmo dia — ver histórico ao final)*
+- **Data:** 02/09/2026 *(duas revisões no mesmo dia — ver histórico ao final)*; **revisão 4 em
+  30/09/2026**, medida antes da execução — ver [o que a medição mudou](#revisão-4--o-que-a-medição-de-30092026-mudou)
 - **Decisores:** Desenvolvimento (Fase F — Reestruturação visual: identidade Cyberpunk 2020)
 - **Fase do plano:** Fase F do [`PLANO_MESTRE.md`](../PLANO_MESTRE.md)
 
@@ -108,6 +109,24 @@ Duas medidas objetivas, não "está bonito":
 
 A identidade nova é a consequência visível; a capacidade de mudá-la barato é a entrega real.
 
+## Revisão 4 — o que a medição de 30/09/2026 mudou
+
+Antes de executar a Fase F, as premissas desta ADR foram medidas contra o código e contra o app
+rodando (o F.0a do [plano](../PLANO_MESTRE.md), com a tabela inteira). **A direção fica; quatro
+premissas caíram**, e o dono respondeu às perguntas que elas abriram — a decisão 10 do plano.
+
+| Esta ADR dizia | Medido | Decisão 10 |
+|---|---|---|
+| Rajdhani "já em uso" no corpo e na UI | **96%** do texto da ficha está em Share Tech Mono; o Rajdhani quase não aparece | **(a)** O papel da tabela acima passa a valer de fato: Rajdhani em rótulo, navegação e texto corrido; mono só em número, dado e terminal |
+| Share Tech Mono para terminal e dados | A face **só tem o peso 400**; 99 elementos da ficha pedem negrito e recebem negrito sintético | **(a)** Mono sem negrito — destaque de terminal é brilho, não peso. Piso de 10 px |
+| 7 tokens por papel; migração mecânica | 129 combinações prefixo × cor × tom; 727 usos de `slate` em ~10 tons | Duas camadas: **rampa por papel** (mecânica) e **nomes semânticos para os neutros**, com a tabela de conversão versionada |
+| Vermelho só dano | 244 usos, a maioria marca, menu, GM, erro e ação destrutiva | **(b)** Papel novo **`fault`** (magenta) para erro, ação destrutiva, *fumble* e NPC hostil; marca e GM para amarelo ou ciano. **(c)** A cor por seção fica, sem vermelho |
+| `prefers-reduced-motion` respeitado | Não é técnica suficiente do WCAG 2.2.2 (nível A) | Animação decorativa **para em ≤ 5 s**; a preferência do sistema zera o resto |
+| Vocabulário gráfico da diagramação da Talsorian | Sem fonte pública para barra preta, faixas ou numeração | **(d)** O livro do dono (interior em P&B) responde: é a referência de diagramação e tipografia; a cor vem da época |
+
+O critério de pronto ganhou comando: `npm run audit:colors` em zero no CI, e o E2E das fontes com o
+helmet ativo.
+
 ## Histórico de revisões
 
 **Versão 1 — migrar para o Cyberpunk 2077.** Proposta a partir da galeria
@@ -126,3 +145,8 @@ confundia matéria-prima com resultado.
 
 **Versão 3 — esta.** Identidade CP2020 reconstruída com faces livres, sobre o encanamento de tokens.
 Fase de 2 para 4 dias.
+
+**Revisão 4 (30/09/2026) — a versão 3, medida.** Nenhuma mudança de direção: a medição antes da
+execução corrigiu quatro premissas (a fonte "já em uso", a migração "mecânica", o alcance do vermelho
+e o critério de movimento) e o dono respondeu às perguntas que elas abriram (decisão 10). Fase de 4
+para 4,5–5 dias. Ver [a seção acima](#revisão-4--o-que-a-medição-de-30092026-mudou).

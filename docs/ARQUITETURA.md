@@ -353,4 +353,4 @@ Aplicando o [filtro de necessidade](./PLANO_MESTRE.md#-filtro-de-necessidade) ao
 |---|---|---|
 | Sequência do handshake (join → token → upgrade → rolagem) | **ADIAR** | Quando a Fase H precisar depurar reconexão. O [`PROTOCOLO_MULTIPLAYER.md`](./PROTOCOLO_MULTIPLAYER.md) já descreve o fluxo em prosa, e ninguém se perdeu nele ainda |
 | Reconexão e last-write-wins por `updatedAt` | **ADIAR** | Quando a Fase H achar um bug de convergência de ficha |
-| Camadas de token visual | **ADIAR** | Se a Fase F.2 se mostrar confusa na prática. A tabela de tokens na ADR 0006 provavelmente basta |
+| Camadas de token visual | **ADIAR** | Se a Fase F.2 se mostrar confusa na prática. *(30/09/2026: a F.2 passou a ter duas camadas — rampa por papel e nomes semânticos para os neutros —, e quem as documenta é a tabela de conversão versionada da F.2.1, junto do script. O diagrama segue ADIAR)* |

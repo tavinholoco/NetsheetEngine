@@ -66,7 +66,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Explosão do d10 | **Encadeia.** O cliente e o PRD estão certos; corrigir o servidor |
 | Regras | **Fidelidade estrita** ao Cyberpunk 2020 |
 | Público da alpha | **Jogadores convidados pelo dono** — é o modelo de ameaça real. **Imposto na R.11 (29/09):** o lobby não lista salas; o código, com sufixo aleatório, é o convite |
-| Identidade visual | **Cyberpunk 2020** (mesa de 1988) — *não* 2077 nem RED. Ver ADR 0006 |
+| Identidade visual | **Cyberpunk 2020** (mesa de 1988) — *não* 2077 nem RED. Ver ADR 0006. **Na F (decisão 10, 30/09):** Rajdhani nos rótulos, mono só em dado e sem negrito; vermelho só dano, magenta (`fault`) para erro e hostil; o livro do dono é P&B — referência de diagramação, não de cor |
 | Provedor de IA | **Groq primário, Gemini fallback — decidido, NÃO implementado.** A B.1 trancou o endpoint mantendo o Gemini; a migração ainda não tem fase dona. Ver ADR 0005 |
 | Yjs / CRDT do grid | **Mantido sob observação**, com gatilho para reabrir. Ver ADR 0002 |
 | PITR do Supabase | **Não** — exige plano pago (decisão 4). *A premissa "o backup diário gratuito basta" era falsa: o plano gratuito não tem backup automático* |
