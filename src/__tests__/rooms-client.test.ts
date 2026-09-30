@@ -73,8 +73,9 @@ describe('R.1 — postJoin', () => {
   });
 
   it('outro erro (404) não troca o peerId', async () => {
-    mockFetch([{ status: 404, body: { error: 'Room not found' } }]);
-    await expect(postJoin('NC-2020', 'Vex', SHEET)).rejects.toMatchObject({ status: 404 });
+    // A resposta como o servidor a manda desde a E.3c.
+    mockFetch([{ status: 404, body: { error: 'Sala não encontrada. Confira o código do convite.', code: 'room_not_found' } }]);
+    await expect(postJoin('NC-2020', 'Vex', SHEET)).rejects.toMatchObject({ status: 404, code: 'room_not_found' });
     expect(useRoomStore.getState().peerId).toBe('peer_vex');
   });
 });

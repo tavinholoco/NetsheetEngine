@@ -58,6 +58,7 @@ import {
   MAX_NPCS_PER_ROOM,
   sheetTooLarge,
   MAX_SHEET_BYTES,
+  type RoomResult,
   verifySession,
   sanitizeText,
   isValidRoomCode,
@@ -79,6 +80,8 @@ dotenv.config({ path: ['.env', '.env.local'] });
 // T10.6 — hardening: helmet (security headers, produção) e logger JSON.
 import helmet from "helmet";
 import { logger } from "./server/logger.js";
+// Fase E (E.3c) — os códigos de erro e o status de cada um: uma tabela só.
+import { STATUS_BY_CODE, type ErrorCode } from "./server/errors.js";
 
 // `app` exportado para testes de integração (T9.3 — supertest) sem subir o
 // listener; o `startServer()` (porta 3000 + Vite/SPA + restore do banco) roda
@@ -180,6 +183,16 @@ if (process.env.NODE_ENV === "production") {
   );
 }
 
+/**
+ * Fase E (E.3c) — a única saída de erro da API: `{ error, code }`, com o
+ * status tirado da tabela de `server/errors.ts`. A mensagem é para gente e muda
+ * à vontade; o cliente decide pelo `code`. Um teste trava o `server.ts` contra
+ * `status(N).json({ error` escrito à mão.
+ */
+function sendError(res: express.Response, code: ErrorCode, error: string) {
+  return res.status(STATUS_BY_CODE[code]).json({ error, code });
+}
+
 // T1.4 — rate limit simples por IP (anti-abuso).
 // NOTA (T9.3): cada limiter tem o PRÓPRIO mapa de buckets — antes, roomLimiter
 // e chatLimiter compartilhavam um único mapa keyed por IP, então o limite do
@@ -225,7 +238,7 @@ function makeRateLimiter(maxRequests: number, windowMs: number) {
 
     // A mesma janela fixa do WebSocket (R.4) — uma conta só para os dois transportes.
     if (!allowInWindow(buckets, ip, maxRequests, windowMs, now)) {
-      return res.status(429).json({ error: "Muitas requisições. Aguarde um instante." });
+      return sendError(res, "rate_limited", "Muitas requisições. Aguarde um instante.");
     }
     next();
   };
@@ -250,7 +263,9 @@ const aiLimiter = makeRateLimiter(10, 60_000);
 const ERR_SESSAO_MESA = "Sessão inválida ou expirada. Reconecte-se à mesa.";
 const ERR_SESSAO_CONTA = "Sessão inválida ou expirada. Entre novamente.";
 // E.03 (SEC-15) — a mesma recusa no join e na sincronia da ficha.
-const ERR_FICHA_GRANDE = { error: `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`, code: "sheet_too_large" };
+const ERR_FICHA_GRANDE = `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`;
+// E.3c — antes "Room not found", em inglês, na tela de quem erra o convite.
+const ERR_SALA_NAO_ENCONTRADA = "Sala não encontrada. Confira o código do convite.";
 
 // T1.7 — autor do request é derivado do token de sessão, nunca do peerId livre
 function getSessionPeerId(req: express.Request, code: string): string | null {
@@ -284,13 +299,12 @@ function getSessionPeerIdFromQuery(req: express.Request, code: string): string |
   return verifySession(code, token);
 }
 
-// Resposta padronizada: 404 p/ sala não encontrada, 403 p/ negação de autorização
-function respondWithResult(res: express.Response, result: { room: { code: string } | null; error?: string }) {
-  if (!result.room) {
-    const msg = result.error || "Ação não permitida";
-    const isNotFound = msg.includes("não encontrada") || msg.includes("não encontrado") || msg.includes("encerrada");
-    return res.status(isNotFound ? 404 : 403).json({ error: msg });
-  }
+// Resposta padronizada das ações na sala: a sala, ou o erro pelo `code` (E.3c).
+// Antes, o status saía do TEXTO — 404 se a mensagem dizia "não encontrad",
+// senão 403 —, e renomear uma mensagem mudava o status da API. O
+// `respondToCombat` da Fase D repetia a ideia com outra regra; virou esta.
+function respondWithResult(res: express.Response, result: RoomResult<object>) {
+  if (!result.room) return sendError(res, result.code, result.error);
   broadcastRoomUpdate(result.room.code);
   return res.json(result.room);
 }
@@ -419,7 +433,7 @@ app.post("/api/gemini", aiLimiter, async (req, res) => {
   // decidir — 401 sem tocar em rede nem em configuração.
   const token = bearerFromHeader(req.headers.authorization);
   if (!token) {
-    return res.status(401).json({ error: "Faça login para usar o Netrunner IA." });
+    return sendError(res, "login_required", "Faça login para usar o Netrunner IA.");
   }
 
   // Falha fechada: com token, mas sem verificação configurada, o servidor não
@@ -428,26 +442,26 @@ app.post("/api/gemini", aiLimiter, async (req, res) => {
   // culpando a sessão do usuário.
   if (!isAuthVerificationConfigured()) {
     logger.warn("ai_unavailable", { reason: "verificação de identidade não configurada" });
-    return res.status(503).json({ error: "Netrunner IA indisponível: verificação de identidade não configurada no servidor." });
+    return sendError(res, "ai_unavailable", "Netrunner IA indisponível: verificação de identidade não configurada no servidor.");
   }
 
   const user = await verifySupabaseJwt(token);
   if (!user) {
-    return res.status(401).json({ error: ERR_SESSAO_CONTA });
+    return sendError(res, "login_required", ERR_SESSAO_CONTA);
   }
 
   const { prompt } = req.body ?? {};
   if (typeof prompt !== "string" || !prompt.trim()) {
-    return res.status(400).json({ error: "Prompt é obrigatório." });
+    return sendError(res, "invalid_input", "Prompt é obrigatório.");
   }
   if (prompt.length > MAX_PROMPT_CHARS) {
-    return res.status(413).json({ error: `Prompt longo demais (máx. ${MAX_PROMPT_CHARS} caracteres).` });
+    return sendError(res, "prompt_too_large", `Prompt longo demais (máx. ${MAX_PROMPT_CHARS} caracteres).`);
   }
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(503).json({ error: "Netrunner IA indisponível: GEMINI_API_KEY não configurada." });
+      return sendError(res, "ai_unavailable", "Netrunner IA indisponível: GEMINI_API_KEY não configurada.");
     }
     const ai = new GoogleGenAI({ apiKey });
 
@@ -464,7 +478,7 @@ app.post("/api/gemini", aiLimiter, async (req, res) => {
   } catch (error: any) {
     logger.error("gemini_api_error", { message: error?.message || String(error) });
     // Mensagem do provedor pode conter detalhe interno — não repassa ao cliente.
-    res.status(502).json({ error: "Falha ao contatar o Netrunner IA. Tente de novo em instantes." });
+    sendError(res, "ai_failed", "Falha ao contatar o Netrunner IA. Tente de novo em instantes.");
   }
 });
 
@@ -482,24 +496,18 @@ app.post("/api/gemini", aiLimiter, async (req, res) => {
 app.post("/api/rooms/create", roomLimiter, (req, res) => {
   const { code, name, gmHandle, gmPeerId } = req.body ?? {};
   if (typeof code !== "string" || !isValidRoomCode(code)) {
-    return res.status(400).json({ error: "Código de sala inválido. Use 2–24 caracteres alfanuméricos ou hífen (ex.: NC-2020)." });
+    return sendError(res, "invalid_input", "Código de sala inválido. Use 2–24 caracteres alfanuméricos ou hífen (ex.: NC-2020).");
   }
   // R.2 (SEC-08) — código em uso é outra mesa, com gente dentro: nunca
   // sobrescrever. Antes, qualquer um apagava a mesa com o código do lobby.
   if (getRoom(code)) {
-    return res.status(409).json({
-      error: `Já existe uma mesa com o código ${code.trim().toUpperCase()}. Entre nela pelo código, ou escolha outro.`,
-      code: "room_exists"
-    });
+    return sendError(res, "room_exists", `Já existe uma mesa com o código ${code.trim().toUpperCase()}. Entre nela pelo código, ou escolha outro.`);
   }
   // E.03 (SEC-15) — salas abertas têm teto: criar não exige login no servidor,
   // e cada sala é memória na instância de 512 MB e uma linha no banco.
   if (roomsAtCapacity()) {
     logger.warn("rooms_full", { max: MAX_ROOMS });
-    return res.status(503).json({
-      error: `O servidor está com o máximo de mesas abertas (${MAX_ROOMS}). Tente de novo mais tarde.`,
-      code: "rooms_full"
-    });
+    return sendError(res, "rooms_full", `O servidor está com o máximo de mesas abertas (${MAX_ROOMS}). Tente de novo mais tarde.`);
   }
   const result = createRoom(code, name, gmHandle, gmPeerId);
   broadcastRoomUpdate(result.room.code);
@@ -510,17 +518,17 @@ app.post("/api/rooms/create", roomLimiter, (req, res) => {
 app.post("/api/rooms/join", roomLimiter, (req, res) => {
   const { code, peerId, handle, sheet } = req.body ?? {};
   if (typeof code !== "string" || !isValidRoomCode(code)) {
-    return res.status(400).json({ error: "Código de sala inválido." });
+    return sendError(res, "invalid_input", "Código de sala inválido.");
   }
   if (typeof peerId !== "string" || !peerId.trim()) {
-    return res.status(400).json({ error: "peerId é obrigatório." });
+    return sendError(res, "invalid_input", "peerId é obrigatório.");
   }
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
-    return res.status(400).json({ error: "Ficha de personagem inválida." });
+    return sendError(res, "invalid_input", "Ficha de personagem inválida.");
   }
   // E.03 (SEC-15) — a ficha vai em todo reenvio da sala, a cada socket.
   if (sheetTooLarge(sheet)) {
-    return res.status(413).json(ERR_FICHA_GRANDE);
+    return sendError(res, "sheet_too_large", ERR_FICHA_GRANDE);
   }
   // R.1 (SEC-07) — voltar a um assento ocupado exige o token vigente dele, no
   // mesmo header da leitura autenticada (B.3). O `peerId` sozinho é público.
@@ -528,23 +536,20 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   // R.3 (SEC-09) — quem o GM removeu não volta pelo mesmo peerId; sem isto, a
   // reconexão automática do cliente desfazia a expulsão em segundos.
   if (wasRemovedByGm(code, peerId)) {
-    return res.status(403).json({ error: "O Mestre removeu você desta mesa.", code: "removed_by_gm" });
+    return sendError(res, "removed_by_gm", "O Mestre removeu você desta mesa.");
   }
   const proofToken = (req.get("X-Session-Token") || "").trim() || undefined;
   const refusal = seatClaimRefusal(code, peerId, proofToken);
   if (refusal) {
-    return res.status(409).json({ error: refusal, code: "seat_taken" });
+    return sendError(res, "seat_taken", refusal);
   }
   // R.16 (SEC-13) — assento novo só se couber: cada um abre até 3 sockets.
   if (roomIsFullFor(code, peerId)) {
-    return res.status(409).json({
-      error: `Esta mesa está cheia (${MAX_SEATS_PER_ROOM} lugares). Peça ao Mestre para abrir espaço.`,
-      code: "room_full"
-    });
+    return sendError(res, "room_full", `Esta mesa está cheia (${MAX_SEATS_PER_ROOM} lugares). Peça ao Mestre para abrir espaço.`);
   }
   const result = joinRoom(code, peerId, handle, sheet, proofToken);
   if (!result) {
-    return res.status(404).json({ error: "Room not found" });
+    return sendError(res, "room_not_found", ERR_SALA_NAO_ENCONTRADA);
   }
   broadcastRoomUpdate(result.room.code);
   res.json({ room: result.room, sessionToken: result.sessionToken });
@@ -559,7 +564,7 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
 app.get("/api/rooms/:code", (req, res) => {
   const room = getRoom(req.params.code);
   if (!room) {
-    return res.status(404).json({ error: "Room not found" });
+    return sendError(res, "room_not_found", ERR_SALA_NAO_ENCONTRADA);
   }
 
   const rawToken = req.get("X-Session-Token");
@@ -569,7 +574,7 @@ app.get("/api/rooms/:code", (req, res) => {
 
   const peerId = getSessionPeerIdFromHeader(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   res.json(room);
 });
@@ -578,19 +583,17 @@ app.get("/api/rooms/:code", (req, res) => {
 app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { sheet } = req.body ?? {};
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
-    return res.status(400).json({ error: "Ficha inválida." });
+    return sendError(res, "invalid_input", "Ficha inválida.");
   }
   if (sheetTooLarge(sheet)) {
-    return res.status(413).json(ERR_FICHA_GRANDE);
+    return sendError(res, "sheet_too_large", ERR_FICHA_GRANDE);
   }
   const result = updatePlayerSheet(req.params.code, peerId, sheet);
-  if (result.error || !result.room) {
-    return res.status(404).json({ error: result.error || "Room or player not found" });
-  }
+  if (!result.room) return sendError(res, result.code, result.error);
   broadcastRoomUpdate(result.room.code);
   res.json(result.room);
 });
@@ -599,11 +602,11 @@ app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/player-health", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { targetPeerId, woundLevel } = req.body ?? {};
   if (typeof targetPeerId !== "string" || woundLevel === undefined) {
-    return res.status(400).json({ error: "targetPeerId e woundLevel são obrigatórios" });
+    return sendError(res, "invalid_input", "targetPeerId e woundLevel são obrigatórios.");
   }
   const result = updatePlayerWoundLevel(req.params.code, requesterPeerId, targetPeerId, woundLevel);
   return respondWithResult(res, result);
@@ -613,17 +616,13 @@ app.post("/api/rooms/:code/player-health", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { gridState } = req.body ?? {};
   if (!gridState || typeof gridState !== "object") {
-    return res.status(400).json({ error: "gridState são obrigatórios" });
+    return sendError(res, "invalid_input", "gridState é obrigatório.");
   }
   const result = updateTacticalGrid(req.params.code, requesterPeerId, gridState);
-  // E.02 (SEC-14) — grid malformado é entrada inválida (400), não recusa de permissão.
-  if (!result.room && result.code === "invalid_grid") {
-    return res.status(400).json({ error: result.error, code: result.code });
-  }
   return respondWithResult(res, result);
 });
 
@@ -631,15 +630,12 @@ app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { archetypeId } = req.body ?? {};
   // E.03 (SEC-15) — teto de NPCs: 409 com código, como a sala cheia (R.16).
   if (roomNpcsFull(req.params.code)) {
-    return res.status(409).json({
-      error: `A mesa já tem ${MAX_NPCS_PER_ROOM} NPCs. Remova algum para gerar outro.`,
-      code: "npcs_full"
-    });
+    return sendError(res, "npcs_full", `A mesa já tem ${MAX_NPCS_PER_ROOM} NPCs. Remova algum para gerar outro.`);
   }
   const result = generateRoomNpc(req.params.code, requesterPeerId, archetypeId);
   return respondWithResult(res, result);
@@ -649,7 +645,7 @@ app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/players/generate", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const result = generateRoomPlayerEdgerunner(req.params.code, requesterPeerId);
   return respondWithResult(res, result);
@@ -659,7 +655,7 @@ app.post("/api/rooms/:code/players/generate", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const result = deleteGeneratedPlayer(req.params.code, requesterPeerId, req.params.targetPeerId);
   // R.3 (SEC-09) — a sessão já foi revogada; fecha o que ele ainda tem aberto.
@@ -671,7 +667,7 @@ app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res
 app.post("/api/rooms/:code/npcs/:npcId/delete", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const result = deleteRoomNpc(req.params.code, requesterPeerId, req.params.npcId);
   return respondWithResult(res, result);
@@ -681,30 +677,15 @@ app.post("/api/rooms/:code/npcs/:npcId/delete", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { woundLevel } = req.body ?? {};
   if (woundLevel === undefined) {
-    return res.status(400).json({ error: "woundLevel é obrigatório" });
+    return sendError(res, "invalid_input", "woundLevel é obrigatório.");
   }
   const result = updateNpcWoundLevel(req.params.code, requesterPeerId, req.params.npcId, woundLevel);
   return respondWithResult(res, result);
 });
-
-/**
- * Resposta das ações de combate da Fase D. Entrada inválida é 400, não 403:
- * o `respondWithResult` classifica todo erro que não é "não encontrado" como
- * recusa de permissão.
- */
-function respondToCombat(res: express.Response, result: { room: { code: string } | null; error?: string }) {
-  if (!result.room) {
-    const msg = result.error || "Ação de combate não aplicada";
-    const status = msg.startsWith("Acesso Negado") ? 403 : /não encontrad/.test(msg) ? 404 : 400;
-    return res.status(status).json({ error: msg });
-  }
-  broadcastRoomUpdate(result.room.code);
-  return res.json(result.room);
-}
 
 // Fase D (D.1) — GM aplica dano: o servidor faz a conta do livro (armadura →
 // BTM → ×2 na cabeça), marca os pontos na trilha e rola o stun save. O
@@ -712,10 +693,10 @@ function respondToCombat(res: express.Response, result: { room: { code: string }
 app.post("/api/rooms/:code/damage", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { targetId, raw, location } = req.body ?? {};
-  return respondToCombat(res, applyDamage(req.params.code, requesterPeerId, { targetId, raw, location }));
+  return respondWithResult(res, applyDamage(req.params.code, requesterPeerId, { targetId, raw, location }));
 });
 
 // Fase D (D.3) — GM ataca com um NPC: o servidor rola ataque contra a
@@ -723,20 +704,20 @@ app.post("/api/rooms/:code/damage", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/attack", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { attackerId, targetId, range, difficulty } = req.body ?? {};
-  return respondToCombat(res, resolveGmAttack(req.params.code, requesterPeerId, { attackerId, targetId, range, difficulty }));
+  return respondWithResult(res, resolveGmAttack(req.params.code, requesterPeerId, { attackerId, targetId, range, difficulty }));
 });
 
 // Fase D (D.5) — GM estabiliza quem está em Mortal: para o death save por turno.
 app.post("/api/rooms/:code/stabilize", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { targetId, stabilized } = req.body ?? {};
-  return respondToCombat(res, setStabilized(req.params.code, requesterPeerId, { targetId, stabilized }));
+  return respondWithResult(res, setStabilized(req.params.code, requesterPeerId, { targetId, stabilized }));
 });
 
 // Send chat message (T1.7 — autenticado; handle/role vêm do servidor).
@@ -746,7 +727,7 @@ app.post("/api/rooms/:code/stabilize", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { text } = req.body ?? {};
   const result = postChatMessage(req.params.code, requesterPeerId, text);
@@ -758,14 +739,11 @@ app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
 app.post("/api/rooms/:code/roll", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { kind, skillName } = req.body ?? {};
   const result = rollDiceForPlayer(req.params.code, requesterPeerId, { kind, skillName });
-  if (!result.room) {
-    const msg = result.error || "Rolagem não permitida";
-    return res.status(400).json({ error: msg });
-  }
+  if (!result.room) return sendError(res, result.code, result.error);
   broadcastRoomUpdate(result.room.code);
   return res.json({ room: result.room, roll: result.roll });
 });
@@ -778,10 +756,10 @@ app.post("/api/rooms/:code/roll", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/heartbeat", roomLimiter, (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   if (!touchPlayer(req.params.code, peerId)) {
-    return res.status(404).json({ error: "Jogador não está na mesa." });
+    return sendError(res, "not_in_room", "Você não está nesta mesa.");
   }
   res.json({ success: true, isOnline: true });
 });
@@ -790,7 +768,7 @@ app.post("/api/rooms/:code/heartbeat", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { locationName, combatModifier, modifierReason } = req.body ?? {};
   const result = updateRoomSettings(req.params.code, requesterPeerId, locationName, combatModifier, modifierReason);
@@ -801,7 +779,7 @@ app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
 app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
   const peerId = getSessionPeerId(req, req.params.code);
   if (!peerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const result = leaveRoom(req.params.code, peerId);
   // Fase 5 (T5.2) — fecha o socket WS do peer que saiu (evita fantasma)
@@ -822,7 +800,7 @@ app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
 app.post("/api/rooms/:code/initiative", roomLimiter, (req, res) => {
   const requesterPeerId = getSessionPeerId(req, req.params.code);
   if (!requesterPeerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { action, initiativeList } = req.body ?? {};
   let result;
@@ -834,7 +812,8 @@ app.post("/api/rooms/:code/initiative", roomLimiter, (req, res) => {
   } else if (initiativeList) {
     result = updateInitiative(req.params.code, requesterPeerId, initiativeList);
   } else {
-    result = { room: getRoom(req.params.code) ?? null };
+    // E.3c — antes devolvia a sala e a reenviava a todos, sem conferir o GM.
+    return sendError(res, "invalid_input", "Informe action (next ou roll) ou initiativeList.");
   }
   return respondWithResult(res, result);
 });
@@ -844,7 +823,7 @@ app.get("/api/rooms/:code/stream", (req, res) => {
   const code = req.params.code.toUpperCase();
   const room = getRoom(code);
   if (!room) {
-    return res.status(404).json({ error: "Room not found" });
+    return sendError(res, "room_not_found", ERR_SALA_NAO_ENCONTRADA);
   }
 
   // B.3 (SEC-02) — o stream despejava a sala inteira, a cada mutação, para
@@ -853,7 +832,7 @@ app.get("/api/rooms/:code/stream", (req, res) => {
   // Sem recorte público aqui — stream sem sessão não tem para que servir.
   const peerId = getSessionPeerIdFromQuery(req, code);
   if (!peerId) {
-    return res.status(401).json({ error: ERR_SESSAO_MESA });
+    return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
 
   // Fase B (B.7) — INSTRUMENTAÇÃO DO FALLBACK, para a Fase L decidir com dado.
@@ -937,7 +916,7 @@ function wsAllow(ws: WebSocket, code: string, peerId: string, budget: WsBudget, 
   if (wsLimiter.justExceeded(code, peerId, budget)) {
     logger.warn("ws_rate_limited", { room: code, peerId, budget });
     if (aviso && ws.readyState === WebSocket.OPEN) {
-      try { ws.send(JSON.stringify({ type: "error", error: aviso })); } catch { /* ignore */ }
+      try { ws.send(JSON.stringify({ type: "error", error: aviso, code: "rate_limited" })); } catch { /* ignore */ }
     }
   }
   return false;
@@ -1246,7 +1225,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           else if (result.error) {
             // Erro de volta para o autor (ex.: mensagem vazia)
             if (ws.readyState === WebSocket.OPEN) {
-              try { ws.send(JSON.stringify({ type: "error", error: result.error })); } catch { /* ignore */ }
+              try { ws.send(JSON.stringify({ type: "error", error: result.error, code: result.code })); } catch { /* ignore */ }
             }
           }
           break;
@@ -1258,7 +1237,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           const result = rollDiceForPlayer(code, peerId, { kind: msg.kind, skillName: msg.skillName });
           if (result.room) broadcastRoomUpdate(code);
           else if (ws.readyState === WebSocket.OPEN) {
-            try { ws.send(JSON.stringify({ type: "roll-error", error: result.error || "Rolagem não permitida" })); } catch { /* ignore */ }
+            try { ws.send(JSON.stringify({ type: "roll-error", error: result.error, code: result.code })); } catch { /* ignore */ }
           }
           break;
         }
@@ -1352,16 +1331,23 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// E.3c — rota da API que não existe: 404 em JSON, em todo ambiente. Antes só
+// o fallback de produção fazia isso; em dev e nos testes, o Express respondia
+// HTML. Registrado depois de todas as rotas da API e antes do Vite/estáticos.
+app.use("/api", (_req, res) => {
+  sendError(res, "route_not_found", "Rota não encontrada.");
+});
+
 // T1.4 — erro de parsing/payload do express.json em formato JSON
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err?.type === "entity.too.large") {
-    return res.status(413).json({ error: "Payload excede o limite de 1MB." });
+    return sendError(res, "payload_too_large", "Payload excede o limite de 1MB.");
   }
   if (err?.type === "entity.parse.failed" || err instanceof SyntaxError) {
-    return res.status(400).json({ error: "JSON inválido no corpo da requisição." });
+    return sendError(res, "invalid_json", "JSON inválido no corpo da requisição.");
   }
   logger.error("unhandled_error", { message: err?.message || String(err), stack: err?.stack });
-  return res.status(500).json({ error: "Erro interno do servidor." });
+  return sendError(res, "internal_error", "Erro interno do servidor.");
 });
 
 // Fase 3 (T3.4) — varre periodicamente e marca como offline jogadores sem
@@ -1445,13 +1431,9 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    // T10.1 — fallback SPA: qualquer rota client-side serve o index.html,
-    // mas /api/* desconhecida responde JSON 404 (não HTML) — healthchecks e
-    // uptime bots não devem receber o bundle da SPA.
-    app.get("*", (req, res) => {
-      if (req.path.startsWith("/api/")) {
-        return res.status(404).json({ error: "Rota não encontrada" });
-      }
+    // T10.1 — fallback SPA: qualquer rota client-side serve o index.html. A
+    // /api/* desconhecida já respondeu 404 em JSON antes daqui (E.3c).
+    app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

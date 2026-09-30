@@ -34,7 +34,17 @@ import {
 } from "../src/rules/damage.js";
 import { WOUND_TRACK_POINTS } from "../src/rules/tables.js";
 import { gridChangeProblem, normalizeGridInput } from "../src/lib/gridDoc.js";
+import { fail, type RoomFailure } from "./errors.js";
 import { logger } from "./logger.js";
+
+/**
+ * Fase E (E.3c) — o resultado de toda ação na sala: a sala (e o que a ação
+ * devolve junto), ou uma falha com `code` obrigatório — o compilador não deixa
+ * um erro sair sem código. A rota responde pelo `code` (server/errors.ts).
+ */
+export type RoomResult<T extends object = {}> =
+  | ({ room: GameRoom; error?: undefined; code?: undefined } & T)
+  | (RoomFailure & { [K in keyof T]?: undefined });
 
 // ============================================================
 // SESSÕES (T1.7) — token secreto por jogador, nunca na broadcast
@@ -660,19 +670,19 @@ export function joinRoom(
   return { room, sessionToken };
 }
 
-export function updatePlayerSheet(code: string, peerId: string, sheet: CharacterSheet): { room: GameRoom | null; error?: string } {
+export function updatePlayerSheet(code: string, peerId: string, sheet: CharacterSheet): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
-  if (!room.players[peerId]) return { room: null, error: "Jogador não encontrado na mesa" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
+  if (!room.players[peerId]) return fail("not_in_room", "Você não está nesta mesa.");
 
   // B.2 (SEC-05) — caminho quente do problema: a ficha era gravada verbatim a
   // cada edição. O autor já vinha da sessão (T1.7); o que faltava era conferir
   // o CONTEÚDO. Sem isto, `woundLevel: -999` ou `BODY: 9999` viravam estado da
   // mesa, eram persistidos e transmitidos a todos.
   const validated = sanitizeCharacterSheet(sheet);
-  if (!validated) return { room: null, error: "Ficha inválida" };
+  if (!validated) return fail("invalid_input", "Ficha inválida.");
   if (sheetBytes(validated.sheet) > MAX_SHEET_BYTES) {
-    return { room: null, error: `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).` };
+    return fail("sheet_too_large", `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`);
   }
   if (validated.changed.length > 0) {
     logger.warn("sheet_sanitized", { at: "updatePlayerSheet", code, peerId, fields: validated.changed.slice(0, 20), count: validated.changed.length });
@@ -703,17 +713,17 @@ export function updatePlayerWoundLevel(
   requesterPeerId: string,
   targetPeerId: string,
   woundLevel: number
-): { room: GameRoom | null; error?: string } {
+): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   // Strict check: Only GM can modify another player's bio-monitor
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa tem permissão para alterar o Bio-Monitor de outros jogadores." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa tem permissão para alterar o Bio-Monitor de outros jogadores.");
   }
 
   const player = room.players[targetPeerId];
-  if (!player) return { room: null, error: "Jogador não encontrado na mesa." };
+  if (!player) return fail("target_not_found", "Jogador não encontrado na mesa.");
 
   const clamped = manualWoundLevel(woundLevel);
   writeWound(player.sheet, { ...woundStateOf({ woundLevel: clamped }), isDead: player.sheet.isDead === true });
@@ -740,12 +750,12 @@ export function updateTacticalGrid(
   code: string,
   requesterPeerId: string,
   gridState: unknown
-): { room: GameRoom | null; error?: string; code?: "invalid_grid" } {
+): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode alterar o mapa tático." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa pode alterar o mapa tático.");
   }
 
   // E.02 (SEC-14) — o grid era gravado como veio. Um `tokens: 5` travava a
@@ -755,7 +765,7 @@ export function updateTacticalGrid(
   const prev = room.tacticalGrid ?? { rows: 8, cols: 10, theme: "alley", tokens: [] };
   const problem = grid ? gridChangeProblem(prev, grid) : "o mapa precisa de uma lista de tokens";
   if (!grid || problem) {
-    return { room: null, error: `Mapa tático inválido: ${problem}.`, code: "invalid_grid" };
+    return fail("invalid_grid", `Mapa tático inválido: ${problem}.`);
   }
   room.tacticalGrid = grid;
   return { room };
@@ -766,16 +776,16 @@ export function generateRoomNpc(
   code: string,
   requesterPeerId: string,
   archetypeId?: string
-): { room: GameRoom | null; npcPlayer?: RoomPlayer; error?: string } {
+): RoomResult<{ npcPlayer: RoomPlayer }> {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode gerar NPCs." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa pode gerar NPCs.");
   }
   // E.03 (SEC-15) — cada NPC é uma ficha a mais em todo reenvio da sala.
   if (roomNpcsFull(room.code)) {
-    return { room: null, error: `A mesa já tem ${MAX_NPCS_PER_ROOM} NPCs. Remova algum para gerar outro.` };
+    return fail("npcs_full", `A mesa já tem ${MAX_NPCS_PER_ROOM} NPCs. Remova algum para gerar outro.`);
   }
 
   const sheet = generateRandomNpc(archetypeId);
@@ -825,16 +835,16 @@ export function generateRoomNpc(
 export function generateRoomPlayerEdgerunner(
   code: string,
   requesterPeerId: string
-): { room: GameRoom | null; player?: RoomPlayer; error?: string } {
+): RoomResult<{ player: RoomPlayer }> {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode gerar Edgerunners." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa pode gerar Edgerunners.");
   }
   // R.16 (SEC-13) — ficha gerada ocupa assento como qualquer outro.
   if (Object.keys(room.players).length >= MAX_SEATS_PER_ROOM) {
-    return { room: null, error: `A mesa está cheia (${MAX_SEATS_PER_ROOM} lugares). Remova alguém para gerar outra ficha.` };
+    return fail("room_full", `A mesa está cheia (${MAX_SEATS_PER_ROOM} lugares). Remova alguém para gerar outra ficha.`);
   }
 
   const sheet = generateRandomNpc();
@@ -884,12 +894,12 @@ export function deleteRoomNpc(
   code: string,
   requesterPeerId: string,
   npcId: string
-): { room: GameRoom | null; error?: string } {
+): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode remover NPCs." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa pode remover NPCs.");
   }
 
   let removedHandle = "";
@@ -950,12 +960,12 @@ export function deleteGeneratedPlayer(
   code: string,
   requesterPeerId: string,
   targetPeerId: string
-): { room: GameRoom | null; error?: string; removedPeerId?: string } {
+): RoomResult<{ removedPeerId?: string }> {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode remover Edgerunners." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa pode remover Edgerunners.");
   }
 
   let removedPeerId: string | undefined;
@@ -969,7 +979,7 @@ export function deleteGeneratedPlayer(
     // R.3 — desde que remover revoga e barra a volta, o GM se removendo ficaria
     // trancado fora da própria mesa. A tela já não oferece; o servidor recusa.
     if (targetKey && targetKey === requesterPeerId) {
-      return { room: null, error: "Acesso Negado! O Mestre não remove a si mesmo — use Sair." };
+      return fail("not_allowed", "Acesso Negado! O Mestre não remove a si mesmo — use Sair.");
     }
 
     if (targetKey && room.players[targetKey]) {
@@ -1041,16 +1051,16 @@ export function updateNpcWoundLevel(
   requesterPeerId: string,
   npcId: string,
   woundLevel: number
-): { room: GameRoom | null; error?: string } {
+): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode alterar o estado do Bio-Monitor de NPCs." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa pode alterar o estado do Bio-Monitor de NPCs.");
   }
 
   if (!room.npcs || !room.npcs[npcId]) {
-    return { room: null, error: "NPC não encontrado." };
+    return fail("target_not_found", "NPC não encontrado.");
   }
 
   const npc = room.npcs[npcId];
@@ -1071,15 +1081,15 @@ export function postChatMessage(
   requesterPeerId: string,
   text: string,
   rollResult?: RollResult
-): { room: GameRoom | null; error?: string } {
+): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   const player = room.players[requesterPeerId];
-  if (!player) return { room: null, error: "Jogador não está na mesa." };
+  if (!player) return fail("not_in_room", "Você não está nesta mesa.");
 
   const safeText = sanitizeText(text, 500);
-  if (!safeText && !rollResult) return { room: null, error: "Mensagem vazia" };
+  if (!safeText && !rollResult) return fail("invalid_input", "Mensagem vazia.");
 
   const newMsg: ChatMessage = {
     id: "msg_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
@@ -1131,11 +1141,11 @@ export function rollDiceForPlayer(
   requesterPeerId: string,
   request: { kind: string; skillName?: string },
   rng: Rng = serverRng
-): { room: GameRoom | null; roll?: RollResult; error?: string } {
+): RoomResult<{ roll: RollResult }> {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
   const player = room.players[requesterPeerId];
-  if (!player) return { room: null, error: "Jogador não está na mesa." };
+  if (!player) return fail("not_in_room", "Você não está nesta mesa.");
 
   // As parcelas saem de src/rules/rolls.ts — as mesmas funções que a ficha do
   // cliente chama (C.10). Atributos CORRENTES (C.6): o `currentStats` que o
@@ -1156,7 +1166,7 @@ export function rollDiceForPlayer(
     roll = stamp(sheetAttackRoll(rng, sheet, firstWeapon(sheet), gm));
   } else if (kind === "damage") {
     const { core, formula } = sheetDamageRoll(rng, firstWeapon(sheet));
-    if (!core) return { room: null, error: `Fórmula de dano inválida: ${formula}` };
+    if (!core) return fail("invalid_state", `Fórmula de dano inválida na sua arma: ${formula}`);
     roll = stamp(core);
   } else if (kind === "save") {
     // C.7 — death save: BODY − nível Mortal.
@@ -1169,10 +1179,10 @@ export function rollDiceForPlayer(
     const skill = Array.isArray(sheet.skills)
       ? sheet.skills.find((s) => s.name.toLowerCase() === skillName.toLowerCase())
       : undefined;
-    if (!skill) return { room: null, error: "Perícia não encontrada na sua ficha." };
+    if (!skill) return fail("invalid_input", "Perícia não encontrada na sua ficha.");
     roll = stamp(sheetSkillRoll(rng, sheet, skill, gm));
   } else {
-    return { room: null, error: "Tipo de rolagem inválido. Use: attack, damage, save, stun ou skill." };
+    return fail("invalid_input", "Tipo de rolagem inválido. Use: attack, damage, save, stun ou skill.");
   }
 
   const result = postChatMessage(code, requesterPeerId, "", roll);
@@ -1209,15 +1219,15 @@ function pushSystemMessage(room: GameRoom, prefix: string, text: string, rollRes
  * (decisão 7c): token sem ficha — cobertura, perigo, NPC criado direto no
  * grid — não recebe dano.
  */
-function findDamageTarget(room: GameRoom, targetId: string): { target?: RoomPlayer; error?: string } {
+function findDamageTarget(room: GameRoom, targetId: string): { target: RoomPlayer; failure?: undefined } | { target?: undefined; failure: RoomFailure } {
   const byId = (id: string) => room.players[id] ?? room.npcs?.[id];
   const direct = byId(targetId);
   if (direct) return { target: direct };
   const token = room.tacticalGrid?.tokens.find((t) => t.id === targetId);
-  if (!token) return { error: "Alvo não encontrado na mesa." };
+  if (!token) return { failure: fail("target_not_found", "Alvo não encontrado na mesa.") };
   const owner = token.peerId ? byId(token.peerId) : undefined;
   if (!owner) {
-    return { error: `[${token.name}] é um token sem ficha e não recebe dano. Para um NPC que sangra, gere-o com ficha.` };
+    return { failure: fail("invalid_input", `[${token.name}] é um token sem ficha e não recebe dano. Para um NPC que sangra, gere-o com ficha.`) };
   }
   return { target: owner };
 }
@@ -1310,19 +1320,19 @@ export function applyDamage(
   requesterPeerId: string,
   request: { targetId?: unknown; raw?: unknown; location?: unknown },
   rng: Rng = serverRng
-): { room: GameRoom | null; outcome?: HitOutcome; error?: string } {
+): RoomResult<{ outcome: HitOutcome }> {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa aplica dano." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa aplica dano.");
   }
 
   const raw = Number(request?.raw);
-  if (!Number.isFinite(raw) || raw < 0) return { room: null, error: "Dano inválido: informe um número de 0 para cima." };
-  if (!isArmorLocation(request?.location)) return { room: null, error: "Localização inválida." };
+  if (!Number.isFinite(raw) || raw < 0) return fail("invalid_input", "Dano inválido: informe um número de 0 para cima.");
+  if (!isArmorLocation(request?.location)) return fail("invalid_input", "Localização inválida.");
 
-  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
-  if (!target) return { room: null, error };
+  const { target, failure } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
+  if (!target) return failure;
 
   return { room, outcome: applyDamageTo(room, target, raw, request.location, rng) };
 }
@@ -1344,11 +1354,11 @@ export function resolveGmAttack(
   requesterPeerId: string,
   request: { attackerId?: unknown; targetId?: unknown; range?: unknown; difficulty?: unknown },
   rng: Rng = serverRng
-): { room: GameRoom | null; hit?: boolean; outcome?: HitOutcome; error?: string } {
+): RoomResult<{ hit: boolean; outcome?: HitOutcome }> {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa ataca pelos NPCs." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa ataca pelos NPCs.");
   }
 
   // A faixa do livro, ou uma dificuldade livre dentro do limite.
@@ -1356,7 +1366,7 @@ export function resolveGmAttack(
   const free = Number(request?.difficulty);
   const hasFree = !band && Number.isInteger(free) && free >= MIN_FREE_DIFFICULTY && free <= MAX_FREE_DIFFICULTY;
   if (!band && !hasFree) {
-    return { room: null, error: `Informe a faixa de alcance, ou uma dificuldade de ${MIN_FREE_DIFFICULTY} a ${MAX_FREE_DIFFICULTY}.` };
+    return fail("invalid_input", `Informe a faixa de alcance, ou uma dificuldade de ${MIN_FREE_DIFFICULTY} a ${MAX_FREE_DIFFICULTY}.`);
   }
   const difficulty = band ? band.difficulty : free;
   const difficultyLabel = band ? `${band.name} (${band.difficulty})` : `Dificuldade ${free}`;
@@ -1368,18 +1378,18 @@ export function resolveGmAttack(
   const attacker = room.npcs?.[attackerId];
   if (!attacker) {
     return room.players[attackerId]
-      ? { room: null, error: "Jogador rola o próprio ataque; aplique o dano que ele rolar." }
-      : { room: null, error: "Atacante não encontrado entre os NPCs da mesa." };
+      ? fail("invalid_input", "Jogador rola o próprio ataque; aplique o dano que ele rolar.")
+      : fail("target_not_found", "Atacante não encontrado entre os NPCs da mesa.");
   }
-  if (attacker.sheet.isDead) return { room: null, error: `[${attacker.handle}] está morto e não ataca.` };
+  if (attacker.sheet.isDead) return fail("invalid_state", `[${attacker.handle}] está morto e não ataca.`);
 
-  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
-  if (!target) return { room: null, error };
-  if (target === attacker) return { room: null, error: "O NPC não ataca a si mesmo." };
+  const { target, failure } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
+  if (!target) return failure;
+  if (target === attacker) return fail("invalid_input", "O NPC não ataca a si mesmo.");
 
   const weapon = firstWeapon(attacker.sheet);
   const formula = weapon?.damage || FALLBACK_DAMAGE;
-  if (!parseDamageFormula(formula)) return { room: null, error: `Fórmula de dano inválida na arma do NPC: ${formula}` };
+  if (!parseDamageFormula(formula)) return fail("invalid_state", `Fórmula de dano inválida na arma do NPC: ${formula}`);
 
   // O ataque, com o modificador do GM (C.4), em nome do NPC.
   const gm = gmModifier(room.combatModifier, room.modifierReason);
@@ -1407,12 +1417,12 @@ export function updateRoomSettings(
   locationName?: string,
   combatModifier?: number,
   modifierReason?: string
-): { room: GameRoom | null; error?: string } {
+): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode alterar as condições da mesa." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa pode alterar as condições da mesa.");
   }
 
   if (locationName !== undefined) room.locationName = sanitizeText(locationName, 60) || room.locationName;
@@ -1426,15 +1436,15 @@ export function updateRoomSettings(
 }
 
 // GM Power: Update or replace initiative list (T1.3)
-export function updateInitiative(code: string, requesterPeerId: string, initiativeList: InitiativeEntry[]): { room: GameRoom | null; error?: string } {
+export function updateInitiative(code: string, requesterPeerId: string, initiativeList: InitiativeEntry[]): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode editar a ordem de iniciativa." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa pode editar a ordem de iniciativa.");
   }
 
-  if (!Array.isArray(initiativeList)) return { room: null, error: "Lista de iniciativa inválida" };
+  if (!Array.isArray(initiativeList)) return fail("invalid_input", "Lista de iniciativa inválida.");
 
   // D.4 — a entrada é montada campo a campo. Antes era `{ ...e }`: qualquer
   // campo que o cliente mandasse virava estado da sala, persistido e
@@ -1515,11 +1525,11 @@ export function rollInitiative(
   code: string,
   requesterPeerId: string,
   rng: Rng = serverRng
-): { room: GameRoom | null; error?: string } {
+): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa rola a iniciativa." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa rola a iniciativa.");
   }
 
   const combatants = [
@@ -1551,12 +1561,12 @@ export function rollInitiative(
 }
 
 // GM Power: Advance to next turn (T1.3)
-export function nextTurn(code: string, requesterPeerId: string, rng: Rng = serverRng): { room: GameRoom | null; error?: string } {
+export function nextTurn(code: string, requesterPeerId: string, rng: Rng = serverRng): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode avançar o turno." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa pode avançar o turno.");
   }
 
   if (room.initiativeList.length === 0) return { room };
@@ -1579,17 +1589,17 @@ export function setStabilized(
   code: string,
   requesterPeerId: string,
   request: { targetId?: unknown; stabilized?: unknown }
-): { room: GameRoom | null; error?: string } {
+): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
   if (!checkIsGm(room, requesterPeerId)) {
-    return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa estabiliza." };
+    return fail("gm_only", "Acesso Negado! Apenas o Mestre da Mesa estabiliza.");
   }
-  const { target, error } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
-  if (!target) return { room: null, error };
+  const { target, failure } = findDamageTarget(room, sanitizeText(request?.targetId, 64));
+  if (!target) return failure;
   const stabilized = request?.stabilized === true;
   if (stabilized && mortalLevel(woundStateOf(target.sheet).woundLevel) === null) {
-    return { room: null, error: `[${target.handle}] não está em Mortal: não há o que estabilizar.` };
+    return fail("invalid_state", `[${target.handle}] não está em Mortal: não há o que estabilizar.`);
   }
   target.sheet.isStabilized = stabilized;
   pushSystemMessage(
@@ -1603,9 +1613,9 @@ export function setStabilized(
 }
 
 // Sair da mesa — T1.8: se o GM sair, transfere o cargo ou limpa gmPeerId
-export function leaveRoom(code: string, peerId: string): { room: GameRoom | null; error?: string } {
+export function leaveRoom(code: string, peerId: string): RoomResult {
   const room = getRoom(code);
-  if (!room) return { room: null, error: "Sala não encontrada" };
+  if (!room) return fail("room_not_found", "Sala não encontrada.");
 
   const wasGm = room.gmPeerId === peerId;
   const player = room.players[peerId];
@@ -1666,7 +1676,7 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
   // Mesa vazia → encerrar a sala e revogar todas as sessões (evita salas órfãs no lobby)
   if (Object.keys(room.players).length === 0) {
     deleteRoom(code);
-    return { room: null, error: "Sala encerrada — nenhum jogador restante." };
+    return fail("room_not_found", "Sala encerrada — nenhum jogador restante.");
   }
 
   return { room };
