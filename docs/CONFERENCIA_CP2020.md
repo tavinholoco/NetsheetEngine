@@ -52,6 +52,12 @@ modelo ainda não representa:
 O livro de 1990 não está no repositório. A conferência usou **fontes secundárias independentes**, e
 uma regra só foi aceita quando **duas ou mais concordam**. Onde só há inferência, a linha diz.
 
+> **30/09/2026 — o dono tem o livro físico.** Ele passa a ser a **fonte primária**: quando o livro e
+> as secundárias divergem, vence o livro, e a divergência do código vira bug (decisão 2). O que as
+> secundárias não fecharam está em [Perguntas para o livro](#perguntas-para-o-livro). **O repositório
+> é público:** a conferência anota a regra **com as nossas palavras e a página** — nunca texto ou
+> tabela copiados do livro.
+
 | # | Fonte | O que ela sustenta |
 |---|---|---|
 | S1 | [Ficha do Roll20 para CP2020](https://github.com/Roll20/roll20-character-sheets/blob/master/Cyberpunk%202020/Cyberpunk2020.html) — fórmulas executáveis | Efeito de ferimento (÷2, ÷3, −2), atributo de cada Special Ability, `1d10!!`, Run/Leap/Carry/Lift |
@@ -242,14 +248,14 @@ Verificação da **D.0** (28/09/2026), com as decisões do dono (decisão 7 do p
 |---|---|---|---|
 | Dano conta **pontos** | 4 pontos por caixa, 40 no total; o resto de uma caixa fica marcado | Trilha acima; S9 escreve pontos | **D.1** — a ficha guarda pontos, o nível é derivado (decisão 7b) |
 | Perda de membro | Membro com **mais de 8** pontos num acerto, depois de todos os modificadores: decepado ou inutilizado | S5, S9 | **D.1** — aviso no chat |
-| Death save ao perder membro | Imediato, em Mortal 0 | **só S9** | **D.1 como aviso**, sem rolagem automática. **Gatilho:** o dono confirmar no livro |
+| Death save ao perder membro | Imediato, em Mortal 0 | **só S9** | **D.1 como aviso**, sem rolagem automática. **Gatilho:** o dono confirmar no livro — [pergunta aberta](#perguntas-para-o-livro) |
 | Cabeça com mais de 8 | Morte instantânea (o ×2 já aplicado) | S5, S9 | **D.1** — estado Morto |
 | Iniciativa | `1d10` **aberto** (o 10 explode) + REF **corrente** (com o ferimento) + Combat Sense do Solo. O 1 **não** é fumble — iniciativa não é teste | S1 (`1d10!!+REF+Combat_Sense`), S8 (`1d10x10 + ref.total + CombatSense`, com o `ref.total` já ferido), S5 | **D.4** — `sheetInitiativeRoll` |
 | Empate na iniciativa | O livro não dá desempate | Nenhuma fonte trata | Fica a ordem da rolagem. **ADIAR** — gatilho: a mesa pedir um desempate (ex.: maior REF) |
 | Dificuldade por alcance | Queima-roupa 10 (até 1 m); curto 15 (¼ do alcance); médio 20 (½); longo 25 (alcance); extremo 30 (2×) — p. 99 | **S8** (`lookups.js`) e **S9** (`rangefinding.js`, cita a p. 99) dão as cinco; **S1** confirma as quatro de cima | **D.3** — `RANGE_BANDS` no `tables.ts` |
 | O ataque acerta com | Total **igual ou maior** que a dificuldade | S8 (`attackRoll.total >= DC`), S9 | **D.3** — `attackHits` |
 | Fumble no ataque | Erro, mesmo com total alto | S9; e a regra do 1 (C.1) | **D.3** |
-| Queima-roupa dá dano máximo | Com arma de fogo | **Uma linhagem só**: o S9 descreve o S8 fazendo isso, mas o arquivo do S8 lido não tem; um resumo de busca repete | **ADIAR** — gatilho: o dono confirmar no livro |
+| Queima-roupa dá dano máximo | Com arma de fogo | **Uma linhagem só**: o S9 descreve o S8 fazendo isso, mas o arquivo do S8 lido não tem; um resumo de busca repete | **ADIAR** — gatilho: o dono confirmar no livro — [pergunta aberta](#perguntas-para-o-livro) |
 | Corpo a corpo | Teste **resistido**: o defensor rola (Dodge, Melee…) | Conhecido; não conferido em fonte nesta fase | **D.3 parcial:** o GM informa o total do defensor como dificuldade livre. Rolagem resistida automática: **ADIAR** — gatilho: a mesa usar corpo a corpo com frequência |
 | Penetração escalonada | Cada acerto que fura a armadura tira 1 do SP daquele ponto | Um resumo de busca a chama de **opcional** ("One option is…"), página de origem não lida; S9 a implementa **atrás de uma chave** | **ADIAR** (decisão 7d). **Gatilho:** a mesa pedir, ou uma luta longa em que a armadura que nunca gasta incomode |
 | Cobertura entre atirador e alvo | SP da cobertura contra o dano | S5 diz só "subtraído do dano"; S9 **combina** cobertura e armadura pela tabela proporcional (p. 99) | **ADIAR** (decisão 7c: token sem ficha não recebe dano). **Gatilho:** o GM precisar da cobertura no cálculo, com a regra de combinação conferida em duas fontes |
@@ -265,3 +271,36 @@ Verificação da **D.0** (28/09/2026), com as decisões do dono (decisão 7 do p
 | Carga | Carry = BODY × 10 kg; Lift = BODY × 40 kg | Ausentes | RUL-11 |
 | Perícias | Social é **EMP**; INT tem Accounting, Anthropology, Gamble, Shadow/Track, Wilderness Survival; COOL tem Interrogation; TECH tem Cyberdeck Design e Pharmaceuticals | Social duplicado em INT; essas 9 faltam | RUL-12 |
 | Criação | 10 roles; atributos 2–10 na criação | Sem orçamento | RUL-10 |
+
+## Perguntas para o livro
+
+*(Criada em 30/09/2026, quando o dono confirmou que tem o livro físico.)* O que as fontes secundárias
+não fecharam, para o dono conferir. **Como responder:** a regra com as suas palavras e a página —
+nunca o texto do livro (o repositório é público). Uma sessão que receber a resposta registra aqui e
+na linha da regra; **se o livro divergir do código, é bug** e entra na fase corrente, com teste
+derivado da tabela (a disciplina da Fase C).
+
+**Já implementadas — a resposta pode mudar o jogo de hoje:**
+
+- [ ] **Death save ao perder membro.** É imediato, em Mortal 0? Só o S9 diz isso. Hoje a perda de
+      membro vira **aviso no chat**, sem rolagem ([linha](#o-que-a-fase-d-conferiu)).
+- [ ] **Queima-roupa com arma de fogo dá dano máximo?** Uma linhagem de fonte só. Hoje **não** dá.
+- [ ] **Penetração escalonada** (o acerto que fura a armadura tira 1 do SP daquele ponto): é regra do
+      núcleo ou opcional? A decisão 7d a adiou supondo opcional — se for do núcleo, o ADIAR vira bug.
+- [ ] **Corpo a corpo:** o defensor rola o quê contra o ataque? Hoje o GM informa o total do defensor
+      como dificuldade livre.
+- [ ] **Cabeça — a ordem entre ×2 e BTM.** A decisão 6 escolheu armadura → BTM → ×2 porque as fontes
+      dizem que o livro não traz a ordem (p. 103, segundo o S9). Um exemplo resolvido no livro com
+      outra ordem é o motivo novo que reabre a decisão; na falta dele, ela fica.
+- [ ] **Jury Rig:** a descrição dá atributo? Hoje é TECH, escolha do projeto
+      ([por quê](#habilidades-especiais)).
+
+**Para a Fase K — respondidas antes de a K.0 estimar:**
+
+- [ ] **Criação (K.6):** os métodos de gerar atributos que o livro oferece; os 40 pontos de perícia de
+      carreira; REF + INT de perícias livres; a verba inicial.
+- [ ] **Evolução por IP (K.6):** o custo de subir um nível de perícia, com o multiplicador.
+- [ ] **Carga e movimento (K.2, K.7):** Carry, Lift e Leap; a penalidade de EV da armadura no REF.
+- [ ] **Perícias (K.7):** conferir a lista por atributo, com as oito que faltam.
+- [ ] **O netrunner na ficha (K.5, decisão 9):** o que a ficha precisa guardar — deck, programas, MU e
+      o que mais o livro amarra ao personagem.

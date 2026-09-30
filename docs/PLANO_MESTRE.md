@@ -241,7 +241,7 @@ porque o portão pergunta sobre *o que a fase mudou*, e ali mudou quem **usa** a
 ## ⚖️ Decisões tomadas (02/09/2026)
 
 Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo. *(1 a 3 em
-02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09; 8 em 29/09/2026.)*
+02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09; 8 em 29/09; 9 em 30/09/2026.)*
 
 | # | Pergunta | Decisão | Consequência |
 |---|---|---|---|
@@ -253,6 +253,7 @@ Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem mo
 | 6 | Na cabeça, o dano dobra antes ou depois do BTM? | **Depois — opção A: armadura → BTM (mín. 1) → ×2** | O livro dá a regra e não diz quando; A é a ordem do texto e a das implementações de fãs. B seria mais letal pelo valor do BTM. Pesquisa e números na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d) |
 | 7 | As quatro perguntas da D.0: quem escreve o ferimento na mesa, pontos × nível, token sem ficha, penetração escalonada | **(a)** Na mesa, **só o servidor e o GM** escrevem o ferimento — a sincronia da ficha deixa de levá-lo. **(b)** A ficha **guarda pontos** (0–40), e o nível é derivado; junto nasce o estado **Morto**. **(c)** Token sem ficha **não recebe dano**. **(d)** Penetração escalonada: **ADIAR** | (a) fecha o achado do portão C.14. (b) é fidelidade estrita: o livro conta pontos, e o nível sozinho perde o resto da caixa. Sem migration SQL — a ficha mora no `data` jsonb. (c) e (d) são as versões menores, com gatilho na [conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu). Detalhe na D.0 |
 | 8 | Como fazer backup, se o plano gratuito não faz nenhum? (R.10 — reabre a premissa da decisão 4) | **Dump manual** com o CLI (`npm run backup:db`), **todo mês e antes de toda migration**, guardado **fora do repositório** e fora da máquina, de preferência cifrado | Custo zero, e é o que a doc do Supabase recomenda ao gratuito. O repo é **público**: o script recusa destino dentro dele, e o `.gitignore` barra o dump à mão. Os arquivos do Storage (avatares) ficam de fora. Runbook e registro em [`BACKUP.md`](./BACKUP.md). **Gatilho para rever:** perder dado entre dois dumps, ou o volume de fichas tornar o mês de perda inaceitável — aí o workflow com dump cifrado (opção 2 da R.10) |
+| 9 | Quanto de netrunning entra na K? (K.0b — a revisão de robustez mediu que a Net inteira não cabe na K) | **O netrunner na ficha** — deck, programas e MU como dado — entra na K.5. **A Net jogável na mesa** (mapa, turnos, fortalezas de dados) fica **fora da K: ADIAR**, como fase própria depois da L | A K volta a caber na estimativa. **Gatilho** da Net na mesa: alguém da mesa do dono jogar de netrunner. As regras vêm do livro, que o dono tem (30/09) — o cuidado com o RED, que mudou quase tudo no netrunning, vale em dobro |
 
 ---
 
@@ -1342,12 +1343,22 @@ o conserto** (o repo é público).
         no arranque (contorno no [`BACKUP.md`](./BACKUP.md)).
       - **Antes desta revisão, as varreduras E–I não passavam pelo portão** — a J confere que cada X.4
         foi respondido.
-      - **Régua externa — decidir aqui, opcional:** os requisitos de nível 1 do
-        [OWASP ASVS 5.0](https://github.com/OWASP/ASVS) (maio de 2025) nos capítulos de validação (V2),
-        API (V4), sessão (V7), autorização (V8), configuração (V13) e log (V16), como lista de
-        conferência, sem pontuação. *Sintoma que a justifica:* os seis achados da revisão pós-D
-        escaparam de portões que perguntam de memória. *Risco:* virar teatro de conformidade — só entra
-        o requisito que se aplica a uma rota real.
+      - **Régua externa.** *Sintoma que a justifica:* os seis achados da revisão pós-D escaparam de
+        portões que perguntam de memória — uma lista de fora pega o que a memória não lembra de
+        perguntar.
+        - **Decidida pelo dono em 30/09/2026: o [OWASP API Security Top 10](https://api-security.owasp.org/editions/2023/en/0x11-t10)
+          (edição 2023, a vigente)** — dez categorias de defeito, uma linha cada, cruzadas com a tabela
+          da J.1b. É régua de busca: só vira item o defeito achado numa rota real.
+          É a versão 10× menor, e ela cobre o histórico: **12 dos 13 achados** de segurança do projeto
+          caem em cinco categorias — API1, autorização por objeto (SEC-02, 07, 08, 09, 12); API2,
+          autenticação (SEC-07); API3, autorização por campo (SEC-05, 12); API4, consumo sem limite
+          (SEC-01, 04, 10, 13); API8, configuração (SEC-06, 11). Só o SEC-03 (sessão perdida no
+          restart, disponibilidade) fica de fora.
+        - **O [ASVS 5.0](https://github.com/OWASP/ASVS) inteiro, não:** são ~345 requisitos (70 no
+          nível 1), escritos para aplicação com usuário autenticado — aqui o jogador é um assento
+          anônimo com token, e boa parte viraria "não se aplica". Vale como **consulta pontual** quando
+          uma área pedir profundidade: sessão (V7) na J.1c, frontend e CSP (V3) na J.1f.
+        - *Risco das duas:* virar teatro de conformidade. Só vira item o que se aplica a uma rota real.
 - [ ] **J.1** Varredura por área → ledger em `docs/varreduras/J-seguranca.md`.
   - [ ] **J.1a Registro do portão** em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase): toda fase — e
         toda varredura que mudou código — respondeu as seis perguntas? Alguma resposta envelheceu?
@@ -1431,13 +1442,19 @@ verdade), netrunning por último (é meio jogo à parte).
           JSON das fichas salvas.
         - **A K.7 esqueceu uma perícia:** a conferência lista **oito** faltando — Cyberdeck Design
           (TECH) também, e ela não está em `cyberpunkData.ts:234`.
+      - **O dono tem o livro** *(30/09/2026)*. Ele é a fonte primária da K: onde as fontes secundárias
+        divergem (criação, IP, netrunning), a regra sai do livro, com a página. As perguntas estão em
+        [Perguntas para o livro](./CONFERENCIA_CP2020.md#perguntas-para-o-livro), na conferência.
 - [ ] **K.0b** 🧑‍⚖️ **Decisão do dono — o tamanho da K.5 e o método da K.6.**
       - **K.5**, em ordem de tamanho: *(1, recomendada)* **o netrunner na ficha** — deck, programas e MU
         como dado, sem a Net jogável; *(2)* **a Net na mesa**, com mapa e turnos — fase própria, depois da
         L; *(3)* **ADIAR** até alguém da mesa do dono jogar de netrunner. A 1 agora e a 2 com o gatilho da
         3 é a combinação que o filtro sugere.
+        *(30/09/2026 — **o dono escolheu a recomendação:** a 1 na K.5, e a 2 como ADIAR com o gatilho
+        da 3. Virou a [decisão 9](#-decisões-tomadas-02092026).)*
       - **K.6:** quais métodos de atributo a criação oferece (rolagem, bolo de 9d10, pontos), e se a
-        evolução por IP entra junto ou depois.
+        evolução por IP entra junto ou depois. **Ainda aberta** — decidir na K.0, com o livro na mão:
+        os métodos que ele oferece são o cardápio.
 - [ ] **K.1** *(era T11.5)* Export/import de ficha (JSON + impressão em PDF) — reaproveita o validador
       de `src/rules/sheetSchema.ts`. *Versão 10× menor do PDF:* folha de estilo de impressão
       (`@media print` e o "Salvar como PDF" do navegador), sem biblioteca de PDF no bundle nem no CSP.
@@ -1446,8 +1463,10 @@ verdade), netrunning por último (é meio jogo à parte).
 - [ ] **K.3** *(era T11.3)* Pós-ferimento automático — em boa parte já entregue pela Fase C.
 - [ ] **K.4** *(era T11.4)* Inventário e drops de NPC — *reescrever na K.0 com o que a mesa precisa
       (ver acima).*
-- [ ] **K.5** *(era T11.2)* Netrunning: MU, programas, data walls, ações por turno — *no tamanho que a
-      K.0b decidir.*
+- [ ] **K.5** *(era T11.2)* **O netrunner na ficha** (decisão 9): o deck, os programas e a MU como
+      dado da ficha, com as regras do livro — sem a Net jogável.
+      - **A Net na mesa** (mapa, turnos, data walls, ações por turno): **ADIAR**, fase própria depois
+        da L. **Gatilho:** alguém da mesa do dono jogar de netrunner.
 - [ ] **K.6** Criação de personagem com orçamento (pontos de atributo, perícia por INT+REF, carreira)
       e evolução por IP. *(RUL-10)*
 - [ ] **K.7** Completar `SKILL_TABLES` (remover "Social" de INT; adicionar Accounting, Anthropology,
@@ -1516,7 +1535,10 @@ público mudar.
       (contado antes desta revisão), e só **20** linhas traziam o gatilho na mesma linha — a M.3 começa por `grep -rn ADIAR docs/` (fora
       de `historico/` e `legacy/`) e classifica cada um. Dois têm gatilho **"o dono confirmar no livro"**
       ([conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu)): se o dono não tem o livro, o
-      gatilho nunca dispara — é DESCARTAR disfarçado, e a M.3 os resolve.
+      gatilho nunca dispara — é DESCARTAR disfarçado, e a M.3 os resolve. *(30/09: **o dono tem o
+      livro.** Os dois gatilhos são executáveis e viraram
+      [Perguntas para o livro](./CONFERENCIA_CP2020.md#perguntas-para-o-livro) — não precisam esperar
+      a M.)*
 - [ ] **M.1** Suíte completa: `tsc --noEmit`, build, unit, integração, E2E, RLS, `npm audit`.
       *(é a T12.2 do plano antigo)*
 - [ ] **M.2** **Uma sessão de jogo real**, 2+ pessoas, do zero ao combate. É o teste que nenhuma suíte
