@@ -110,10 +110,14 @@ describe("API de salas — criar/join/leave", () => {
     expect(room.chatMessages.some((m: { text: string }) => m.text.includes("conectou-se"))).toBe(true);
   });
 
-  it("entrar em sala inexistente → 404 Room not found", async () => {
+  // E.3c — este teste fixava a mensagem em inglês ("Room not found"), que a
+  // tela do lobby mostra a quem erra o código do convite. O contrato agora é
+  // o `code`; a mensagem é para gente e em português.
+  it("entrar em sala inexistente → 404 room_not_found", async () => {
     const res = await request(app).post("/api/rooms/join").send({ code: "ZZ-9999", peerId: "p", handle: "H", sheet: SHEET });
     expect(res.status).toBe(404);
-    expect(res.body.error).toBe("Room not found");
+    expect(res.body.code).toBe("room_not_found");
+    expect(res.body.error).toMatch(/Sala não encontrada/);
   });
 
   // B.3 (SEC-02) — este teste assertava que QUALQUER UM lia a sala inteira,
@@ -297,7 +301,10 @@ describe("API — GM permissions (jogador → 403)", () => {
   });
 
   // D.5 — a regra está em death-save-turn.integration; aqui, o que é da rota.
-  it("stabilize: jogador → 403; GM em Mortal → 200; fora do Mortal → 400; alvo inexistente → 404", async () => {
+  // E.3c — "fora do Mortal" era 400 (o `respondToCombat` tratava todo erro que
+  // não era permissão nem "não encontrado" como entrada inválida). A entrada
+  // está certa; é o estado do alvo que não permite: 409 `invalid_state`.
+  it("stabilize: jogador → 403; GM em Mortal → 200; fora do Mortal → 409; alvo inexistente → 404", async () => {
     const denied = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(playerToken), targetId: "peer_pj", stabilized: true });
     expect(denied.status).toBe(403);
     // O teste de player-health acima deixou o peer_pj em Mortal 6.
@@ -305,7 +312,8 @@ describe("API — GM permissions (jogador → 403)", () => {
     expect(ok.status).toBe(200);
     expect(ok.body.players["peer_pj"].sheet.isStabilized).toBe(true);
     const notMortal = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(gmToken), targetId: "gm_peer", stabilized: true });
-    expect(notMortal.status).toBe(400);
+    expect(notMortal.status).toBe(409);
+    expect(notMortal.body.code).toBe("invalid_state");
     const missing = await request(app).post(`/api/rooms/${code}/stabilize`).send({ ...authed(gmToken), targetId: "nao_existe", stabilized: true });
     expect(missing.status).toBe(404);
   });
@@ -455,10 +463,12 @@ describe("API — heartbeat, roll e chat", () => {
     expect(msg.senderRole).toBe("player");
   });
 
-  it("chat: mensagem vazia → 403; sem token → 401", async () => {
+  // E.3c — mensagem vazia era 403, recusa de permissão, porque o texto não
+  // dizia "não encontrado". É entrada inválida: 400 `invalid_input`.
+  it("chat: mensagem vazia → 400; sem token → 401", async () => {
     const empty = await request(app).post(`/api/rooms/${code}/message`).send(authed(playerToken));
-    expect(empty.status).toBe(403);
-    expect(empty.body.error).toBe("Mensagem vazia");
+    expect(empty.status).toBe(400);
+    expect(empty.body.code).toBe("invalid_input");
     const noToken = await request(app).post(`/api/rooms/${code}/message`).send({ text: "x" });
     expect(noToken.status).toBe(401);
   });

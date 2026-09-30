@@ -532,6 +532,28 @@ reinício por falta de memória. Vai para a J.1e (*backpressure*), que já pergu
 com o código, nunca antes. O Render volta em 01/10 e publica o `master`: a recomendação é mergear
 antes. Até lá o serviço está suspenso, e a produção não tem usuário nenhum.
 
+**30/09/2026 — E.3c–e** (os outros FAZER da E: códigos de erro, a vez na iniciativa, o horário do
+chat). Fecha a **E.4**.
+
+1. **Entrada nova?** Nenhuma. Uma entrada que era aceita passou a ser **recusada**: `POST /initiative`
+   sem `action` nem lista respondia 200 e reenviava a sala a todos, **sem conferir se quem pedia era o
+   GM** — agora `400 invalid_input`.
+2. **Dado novo sai?** Um `code` em toda resposta de erro — constante do servidor, sem dado de ninguém.
+   As mensagens trocaram o inglês pelo português. A rota `/api` desconhecida responde 404 em JSON em todo
+   ambiente (antes, em dev e nos testes, o Express respondia HTML). Nenhum código novo distingue algo que
+   antes não se distinguia: `room_not_found` é o mesmo 404 de antes, e `session_invalid`, o mesmo 401.
+3. **Autorização nova?** Nenhuma. Os mesmos `gm_only`, agora com código; o único caminho sem conferência
+   de GM que existia (a iniciativa vazia) fechou.
+4. **Jogador convidado hostil?** Quem tem a vez e **sai da mesa** passa a vez ao seguinte — e, se ele está
+   em Mortal, o death save do turno dele é rolado na hora, como o GM faria virando o turno. Sair e voltar
+   não o põe de volta na iniciativa (o GM rola de novo), então não dá para "girar" a vez de ninguém. Nada
+   além disso.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberta: são correções de
+contrato e de regra, sem achado de segurança.
+
 ### Fase F — Reestruturação visual
 
 *(a preencher)*
