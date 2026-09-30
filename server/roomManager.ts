@@ -893,6 +893,9 @@ export function deleteRoomNpc(
   }
 
   let removedHandle = "";
+  // E.3d — os ids do NPC achado: a iniciativa o guarda pelo peerId, e a rota
+  // pode ter recebido o nome. Filtrar só pelo que chegou deixava a entrada.
+  const removedIds = new Set<string>([npcId]);
 
   const npcs = room.npcs;
   if (npcs) {
@@ -906,6 +909,8 @@ export function deleteRoomNpc(
 
     if (targetKey && npcs[targetKey]) {
       removedHandle = npcs[targetKey].handle;
+      removedIds.add(targetKey);
+      if (npcs[targetKey].peerId) removedIds.add(npcs[targetKey].peerId);
       delete npcs[targetKey];
     }
   }
@@ -924,10 +929,6 @@ export function deleteRoomNpc(
   }
 
   // Clean up initiative list
-  room.initiativeList = room.initiativeList.filter(
-    i => i.playerId !== npcId
-  );
-
   if (removedHandle) {
     pushChat(room, {
       id: "msg_npc_del_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
@@ -937,6 +938,9 @@ export function deleteRoomNpc(
       timestamp: chatTime()
     });
   }
+
+  // Depois do aviso: se a vez passar, o death save do turno vem em seguida no chat.
+  removeFromInitiative(room, (e) => removedIds.has(e.playerId));
 
   return { room };
 }
@@ -994,10 +998,6 @@ export function deleteGeneratedPlayer(
         );
       }
 
-      room.initiativeList = room.initiativeList.filter(
-        i => i.playerId !== targetPeerId && i.playerId !== actualPeerId && i.playerId !== targetKey
-      );
-
       pushChat(room, {
         id: "msg_plr_del_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
         senderHandle: "SISTEMA_NET",
@@ -1005,6 +1005,8 @@ export function deleteGeneratedPlayer(
         text: `🗑️ [MESTRE DE JOGO] removeu a ficha do Edgerunner [${handle}] da mesa.`,
         timestamp: chatTime()
       });
+
+      removeFromInitiative(room, (e) => e.playerId === targetPeerId || e.playerId === actualPeerId || e.playerId === targetKey);
     }
   }
 
@@ -1458,6 +1460,49 @@ function setInitiativeOrder(room: GameRoom, entries: InitiativeEntry[]): void {
   room.activeTurnIndex = 0;
 }
 
+/**
+ * Fase E (E.07 → E.3d) — tira gente da iniciativa sem pular a vez de ninguém.
+ * Os três caminhos que tiram alguém da lista (remover NPC, remover ficha
+ * gerada, sair da mesa) filtravam a lista e deixavam o índice: tirar quem vem
+ * ANTES da vez deslocava o índice para o seguinte, e a virada pulava alguém —
+ * o caso comum é o GM tirar o NPC que acabou de morrer, no meio da rodada.
+ *
+ * Quem tinha a vez continua com ela. Se foi ele que saiu, a vez passa ao
+ * seguinte na ordem (dando a volta), e o turno dele começa — com o death save
+ * de quem está em Mortal (D.5), como numa virada normal.
+ */
+function removeFromInitiative(room: GameRoom, gone: (e: InitiativeEntry) => boolean, rng: Rng = serverRng): void {
+  const list = room.initiativeList;
+  const kept = list.filter((e) => !gone(e));
+  if (kept.length === list.length) return;
+  if (kept.length === 0) {
+    room.initiativeList = [];
+    room.activeTurnIndex = 0;
+    return;
+  }
+  const current = list[room.activeTurnIndex];
+  let next = current && !gone(current) ? current : undefined;
+  const turnPassed = !next;
+  for (let i = 1; !next && i <= list.length; i++) {
+    const e = list[(room.activeTurnIndex + i) % list.length];
+    if (!gone(e)) next = e;
+  }
+  const index = Math.max(0, kept.indexOf(next!));
+  room.initiativeList = kept.map((e, i) => ({ ...e, isCurrentTurn: i === index }));
+  room.activeTurnIndex = index;
+  if (turnPassed) beginTurn(room, rng);
+}
+
+/** D.5 — a vez chegou a quem está em Mortal, vivo e não estabilizado: o
+ *  servidor rola o death save do turno. Entrada posta à mão não tem ficha. */
+function beginTurn(room: GameRoom, rng: Rng): void {
+  const current = room.initiativeList[room.activeTurnIndex];
+  const who = current && (room.players[current.playerId] ?? room.npcs?.[current.playerId]);
+  if (who?.sheet && !who.sheet.isDead && !who.sheet.isStabilized && mortalLevel(woundStateOf(who.sheet).woundLevel) !== null) {
+    rollDeathSaveFor(room, who, rng);
+  }
+}
+
 // ============================================================
 // INICIATIVA AUTOMÁTICA (Fase D, D.4)
 // ============================================================
@@ -1521,14 +1566,7 @@ export function nextTurn(code: string, requesterPeerId: string, rng: Rng = serve
     ...item,
     isCurrentTurn: idx === room.activeTurnIndex
   }));
-
-  // D.5 — a vez chegou a quem está em Mortal, vivo e não estabilizado: o
-  // servidor rola o death save do turno. Entrada posta à mão não tem ficha.
-  const current = room.initiativeList[room.activeTurnIndex];
-  const who = current && (room.players[current.playerId] ?? room.npcs?.[current.playerId]);
-  if (who?.sheet && !who.sheet.isDead && !who.sheet.isStabilized && mortalLevel(woundStateOf(who.sheet).woundLevel) !== null) {
-    rollDeathSaveFor(room, who, rng);
-  }
+  beginTurn(room, rng);
 
   return { room };
 }
@@ -1584,14 +1622,6 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
     }
 
     // Remove player from initiative list if present
-    room.initiativeList = room.initiativeList.filter(i => i.playerId !== peerId);
-    if (room.initiativeList.length === 0) {
-      room.activeTurnIndex = 0;
-    } else if (room.activeTurnIndex >= room.initiativeList.length) {
-      room.activeTurnIndex = 0;
-      room.initiativeList[0].isCurrentTurn = true;
-    }
-
     // T1.8 — GM abandonou a mesa
     if (wasGm) {
       const remainingOnline = Object.values(room.players).filter(p => p.isOnline);
@@ -1625,6 +1655,10 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
       text: `🔌 Edgerunner [${playerHandle}] desconectou-se da mesa.`,
       timestamp: chatTime()
     });
+
+    // E.3d — sai da iniciativa sem pular a vez de ninguém (antes, só o índice
+    // que passava do fim era corrigido).
+    removeFromInitiative(room, (e) => e.playerId === peerId);
   }
 
   revokeSessionsForPeer(code, peerId);
