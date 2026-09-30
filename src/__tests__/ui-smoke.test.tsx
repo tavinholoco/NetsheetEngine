@@ -16,8 +16,9 @@ describe('Infra de testes (Vitest + RTL + jsdom)', () => {
     render(<Button variant="cyber">ENTRAR NA NET</Button>);
     const btn = screen.getByRole('button', { name: 'ENTRAR NA NET' });
     expect(btn).toBeInTheDocument();
-    // jest-dom + variantes do cva aplicadas ao className
-    expect(btn.className).toContain('bg-yellow-400');
+    // jest-dom + variantes do cva aplicadas ao className. Desde a F.2 a cor é o
+    // token do papel (signal = o amarelo da chamada principal), não a paleta.
+    expect(btn.className).toContain('bg-signal-400');
   });
 
   it('renderiza a página 404 dentro do Router', () => {
