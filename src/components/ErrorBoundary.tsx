@@ -34,13 +34,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-mono">
-          <div className="max-w-lg w-full bg-slate-900/80 border-2 border-red-600/50 rounded-2xl p-8 text-center shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+        <div className="min-h-screen bg-surface flex items-center justify-center p-6 font-mono">
+          <div className="max-w-lg w-full bg-raised/80 border-2 border-red-600/50 rounded-2xl p-8 text-center shadow-[0_0_30px_rgba(239,68,68,0.2)]">
             <div className="text-5xl mb-4">⚠️</div>
             <h1 className="text-xl font-black text-red-400 uppercase tracking-widest mb-2">
               Erro Crítico no Terminal
             </h1>
-            <p className="text-xs text-slate-400 mb-1">
+            <p className="text-xs text-muted mb-1">
               A NETSHEET ENGINE encontrou uma falha inesperada no processamento.
             </p>
             <p className="text-[10px] text-red-300/70 bg-red-950/40 border border-red-800/50 rounded p-2 mb-5 break-words">

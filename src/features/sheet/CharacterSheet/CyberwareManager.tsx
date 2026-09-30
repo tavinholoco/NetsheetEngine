@@ -51,23 +51,23 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
   };
 
   return (
-    <div className="bg-slate-900/70 border-l-4 border-y border-r border-slate-800 rounded-lg p-5 shadow-[0_0_20px_rgba(168,85,247,0.1)] space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-purple-500 select-none">
+    <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-cyber-500/10 space-y-4 relative overflow-hidden">
+      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-cyber-500 select-none">
         CHROME
       </div>
 
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3 relative z-10">
+      <div className="flex items-center justify-between border-b border-line pb-3 relative z-10">
         <div className="flex items-center space-x-2">
-          <Cpu className="w-5 h-5 text-purple-400" />
-          <h2 className="text-lg font-mono font-bold text-purple-400 uppercase tracking-widest">
+          <Cpu className="w-5 h-5 text-cyber-400" />
+          <h2 className="text-lg font-mono font-bold text-cyber-400 uppercase tracking-widest">
             Cyberware & Humanidade
           </h2>
         </div>
         <div className="flex items-center space-x-2 text-xs font-mono">
-          <span className="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-300">
-            Empatia: <strong className="text-purple-400">{maxHumanity}</strong>
+          <span className="px-2 py-1 rounded bg-surface border border-line-strong text-fg-soft">
+            Empatia: <strong className="text-cyber-400">{maxHumanity}</strong>
           </span>
-          <span className={`px-2 py-1 rounded border ${humanityLeft < 3 ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-slate-950 border-slate-700 text-slate-300'}`}>
+          <span className={`px-2 py-1 rounded border ${humanityLeft < 3 ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-surface border-line-strong text-fg-soft'}`}>
             Restante: <strong>{humanityLeft}</strong>
           </span>
         </div>
@@ -76,28 +76,28 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
       {/* Lista de cyberware */}
       <div className="space-y-2 relative z-10">
         {cyberware.length === 0 ? (
-          <div className="text-center py-6 text-xs font-mono text-slate-500 bg-slate-950/60 rounded border border-dashed border-slate-700">
+          <div className="text-center py-6 text-xs font-mono text-subtle bg-surface/60 rounded border border-dashed border-line-strong">
             Nenhum cromo instalado. Adicione ciberimplantes para melhorar seu edgerunner.
           </div>
         ) : (
           cyberware.map((cw) => (
             <div
               key={cw.id}
-              className={`bg-slate-950/80 p-3 rounded-lg border-l-2 border-l-purple-500 border-y border-r border-slate-800 flex items-center justify-between gap-3 hover:border-purple-500/50 transition-all ${
+              className={`bg-surface/80 p-3 rounded-lg border-l-2 border-l-cyber-500 border-y border-r border-line flex items-center justify-between gap-3 hover:border-cyber-500/50 transition-all ${
                 !cw.installed ? 'opacity-60' : ''
               }`}
             >
               <div className="min-w-0">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-mono font-bold text-white truncate">{cw.name}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-950 border border-purple-700 text-purple-300 uppercase font-bold shrink-0">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyber-950 border border-cyber-700 text-cyber-300 uppercase font-bold shrink-0">
                     {cw.category}
                   </span>
                 </div>
-                <div className="text-[10px] font-mono text-slate-400 mt-0.5 space-x-3">
+                <div className="text-[10px] font-mono text-muted mt-0.5 space-x-3">
                   <span>🩸 {cw.humanityLoss} HL</span>
                   <span>€$ {cw.costEb.toLocaleString()}</span>
-                  <span className="text-yellow-400">Perda real: {cw.actualHL} HL</span>
+                  <span className="text-signal-400">Perda real: {cw.actualHL} HL</span>
                   {cw.notes && <span>{cw.notes}</span>}
                 </div>
               </div>
@@ -107,15 +107,15 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
                   title={cw.installed ? 'Desinstalar' : 'Instalar'}
                   className={`p-2 rounded border transition-all cursor-pointer ${
                     cw.installed
-                      ? 'bg-emerald-950/60 border-emerald-600 text-emerald-400 hover:bg-emerald-900'
-                      : 'bg-slate-900 border-slate-700 text-slate-500 hover:text-slate-300'
+                      ? 'bg-ok-950/60 border-ok-600 text-ok-400 hover:bg-ok-900'
+                      : 'bg-raised border-line-strong text-subtle hover:text-fg-soft'
                   }`}
                 >
                   <Power className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => removeCyberware(cw.id)}
-                  className="p-2 rounded bg-slate-900 hover:bg-red-950 border border-slate-800 hover:border-red-500 text-slate-500 hover:text-red-400 transition-all cursor-pointer"
+                  className="p-2 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -137,12 +137,12 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
 
       {/* Form de adição */}
       {showAdd ? (
-        <div className="bg-slate-950/90 border border-purple-500/40 rounded-lg p-3 space-y-2.5 relative z-10 animate-fadeIn">
+        <div className="bg-surface/90 border border-cyber-500/40 rounded-lg p-3 space-y-2.5 relative z-10 animate-fadeIn">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono font-black text-purple-400 uppercase tracking-widest">
+            <span className="text-[10px] font-mono font-black text-cyber-400 uppercase tracking-widest">
               Novo Ciberimplante
             </span>
-            <button onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-white cursor-pointer">
+            <button onClick={() => setShowAdd(false)} className="text-muted hover:text-white cursor-pointer">
               ✕
             </button>
           </div>
@@ -152,50 +152,50 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Kerenzikov Speedware (+2 REF)"
-              className="w-full bg-slate-900 border border-slate-700 text-xs font-mono text-slate-100 px-2.5 py-1.5 rounded focus:border-purple-400 focus:outline-none"
+              className="w-full bg-raised border border-line-strong text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
             />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 text-xs font-mono text-purple-300 px-2.5 py-1.5 rounded focus:border-purple-400 focus:outline-none"
+              className="w-full bg-raised border border-line-strong text-xs font-mono text-cyber-300 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
             <div className="flex items-center space-x-2">
-              <label className="text-[10px] text-slate-400 shrink-0">Custo (€$):</label>
+              <label className="text-[10px] text-muted shrink-0">Custo (€$):</label>
               <input
                 type="number"
                 value={costEb}
                 onChange={(e) => setCostEb(parseInt(e.target.value) || 0)}
-                className="w-full bg-slate-900 border border-slate-700 text-xs font-mono text-emerald-400 px-2.5 py-1.5 rounded focus:border-purple-400 focus:outline-none"
+                className="w-full bg-raised border border-line-strong text-xs font-mono text-ok-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
               />
             </div>
             <div className="flex items-center space-x-2">
-              <label className="text-[10px] text-slate-400 shrink-0">Perda HL:</label>
+              <label className="text-[10px] text-muted shrink-0">Perda HL:</label>
               <input
                 type="text"
                 value={humanityLoss}
                 onChange={(e) => setHumanityLoss(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 text-xs font-mono text-yellow-400 px-2.5 py-1.5 rounded focus:border-purple-400 focus:outline-none"
+                className="w-full bg-raised border border-line-strong text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
               />
             </div>
           </div>
           <div className="flex items-center justify-between pt-1">
-            <label className="flex items-center space-x-1.5 text-[10px] font-mono text-slate-300 cursor-pointer">
+            <label className="flex items-center space-x-1.5 text-[10px] font-mono text-fg-soft cursor-pointer">
               <input
                 type="checkbox"
                 checked={installed}
                 onChange={(e) => setInstalled(e.target.checked)}
-                className="accent-purple-500"
+                className="accent-cyber-500"
               />
               Instalado agora
             </label>
             <button
               onClick={addCyberware}
               disabled={!name.trim()}
-              className="px-3 py-1.5 bg-purple-500 hover:bg-purple-400 disabled:opacity-40 text-black font-black text-[10px] uppercase rounded transition-all cursor-pointer font-mono"
+              className="px-3 py-1.5 bg-cyber-500 hover:bg-cyber-400 disabled:opacity-40 text-black font-black text-[10px] uppercase rounded transition-all cursor-pointer font-mono"
             >
               <Plus className="w-3.5 h-3.5 inline mr-1" />
               Instalar
@@ -205,7 +205,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
       ) : (
         <button
           onClick={() => setShowAdd(true)}
-          className="w-full py-2.5 bg-slate-950 hover:bg-purple-950/60 border border-dashed border-purple-700/60 text-purple-400 hover:text-purple-300 font-mono font-bold text-[11px] uppercase rounded transition-all cursor-pointer relative z-10"
+          className="w-full py-2.5 bg-surface hover:bg-cyber-950/60 border border-dashed border-cyber-700/60 text-cyber-400 hover:text-cyber-300 font-mono font-bold text-[11px] uppercase rounded transition-all cursor-pointer relative z-10"
         >
           + Adicionar Ciberimplante
         </button>

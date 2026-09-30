@@ -135,16 +135,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-md bg-slate-950 border border-yellow-500/50 shadow-[0_0_30px_rgba(250,204,21,0.25)]">
+      <DialogContent className="max-w-md bg-surface border border-signal-500/50 shadow-glow-30 shadow-signal-400/25">
         {/* Header */}
-        <DialogHeader className="border-b border-slate-800 pb-3">
-          <div className="flex items-center space-x-2 text-yellow-400">
+        <DialogHeader className="border-b border-line pb-3">
+          <div className="flex items-center space-x-2 text-signal-400">
             <Shield className="w-5 h-5" />
-            <DialogTitle className="text-yellow-400">
+            <DialogTitle className="text-signal-400">
               {isRegister ? 'Cadastrar Novo Edgerunner' : 'Autenticação Net-Access'}
             </DialogTitle>
           </div>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted">
             {isRegister
               ? 'Crie sua conta para sincronizar suas fichas na nuvem gratuitamente'
               : 'Faça login para salvar e recuperar suas fichas em qualquer dispositivo'}
@@ -161,46 +161,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="space-y-4 font-mono">
           {isRegister && (
             <div>
-              <label className="text-xs text-slate-400 block mb-1 uppercase">Nome / Handle do Edgerunner:</label>
+              <label className="text-xs text-muted block mb-1 uppercase">Nome / Handle do Edgerunner:</label>
               <div className="relative">
-                <UserIcon className="w-4 h-4 absolute left-3 top-2.5 text-slate-500 z-10" />
+                <UserIcon className="w-4 h-4 absolute left-3 top-2.5 text-subtle z-10" />
                 <Input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="ex: Johnny Silverhand"
-                  className="pl-9 focus-visible:border-yellow-400 focus-visible:ring-yellow-400"
+                  className="pl-9 focus-visible:border-signal-400 focus-visible:ring-signal-400"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="text-xs text-slate-400 block mb-1 uppercase">Endereço de E-mail:</label>
+            <label className="text-xs text-muted block mb-1 uppercase">Endereço de E-mail:</label>
             <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3 top-2.5 text-slate-500 z-10" />
+              <Mail className="w-4 h-4 absolute left-3 top-2.5 text-subtle z-10" />
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="edgerunner@nightcity.net"
                 required
-                className="pl-9 focus-visible:border-yellow-400 focus-visible:ring-yellow-400"
+                className="pl-9 focus-visible:border-signal-400 focus-visible:ring-signal-400"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 block mb-1 uppercase">Senha do Terminal:</label>
+            <label className="text-xs text-muted block mb-1 uppercase">Senha do Terminal:</label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-2.5 text-slate-500 z-10" />
+              <Lock className="w-4 h-4 absolute left-3 top-2.5 text-subtle z-10" />
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="pl-9 focus-visible:border-yellow-400 focus-visible:ring-yellow-400"
+                className="pl-9 focus-visible:border-signal-400 focus-visible:ring-signal-400"
               />
             </div>
           </div>
@@ -228,9 +228,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         </form>
 
         <div className="relative flex py-1 items-center font-mono">
-          <div className="flex-grow border-t border-slate-800"></div>
-          <span className="flex-shrink mx-3 text-[10px] text-slate-500 uppercase">ou acesse com</span>
-          <div className="flex-grow border-t border-slate-800"></div>
+          <div className="flex-grow border-t border-line"></div>
+          <span className="flex-shrink mx-3 text-[10px] text-subtle uppercase">ou acesse com</span>
+          <div className="flex-grow border-t border-line"></div>
         </div>
 
         <Button
@@ -239,18 +239,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           variant="secondary"
           className="w-full py-2 h-auto text-xs"
         >
-          <Sparkles className="w-4 h-4 text-cyan-400" />
+          <Sparkles className="w-4 h-4 text-accent-400" />
           <span>Login com Google</span>
         </Button>
 
-        <div className="text-center pt-2 border-t border-slate-800 font-mono">
+        <div className="text-center pt-2 border-t border-line font-mono">
           <button
             type="button"
             onClick={() => {
               setIsRegister(!isRegister);
               setErrorMsg(null);
             }}
-            className="text-xs text-cyan-400 hover:underline uppercase cursor-pointer"
+            className="text-xs text-accent-400 hover:underline uppercase cursor-pointer"
           >
             {isRegister
               ? 'Já possui uma conta? Faça Login'

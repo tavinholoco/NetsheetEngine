@@ -17,7 +17,7 @@ export const PATCH_NOTES: PatchNote[] = [
     date: 'FASE 7 // ATUAL',
     title: 'TÁTICO & INTERATIVIDADE DO GRID',
     tag: 'GRID & HUD',
-    tagColor: 'text-yellow-400 border-yellow-500/60 bg-yellow-950/60',
+    tagColor: 'text-signal-400 border-signal-500/60 bg-signal-950/60',
     summary: 'Atualização v0.4.0 com otimização em tempo real do grid tático, inspeção direta por botão (?) de status, movimentação sem latência visual e eliminação de saltos de tela.',
     highlights: [
       'Ícone de Inspeção (?): Adicionado botão dedicado de interrogação em cada token/elemento do grid para alternar o painel de status do elemento de forma direta e sem conflitos de drag.',
@@ -32,7 +32,7 @@ export const PATCH_NOTES: PatchNote[] = [
     date: 'FASE 6 // CONCLUÍDO',
     title: 'SISTEMA SOCIAL & REFINAMENTO MULTIPLAYER',
     tag: 'SOCIAL & MULTI',
-    tagColor: 'text-emerald-400 border-emerald-500/60 bg-emerald-950/60',
+    tagColor: 'text-ok-400 border-ok-500/60 bg-ok-950/60',
     summary: 'Conclusão da Fase 6 (Rede Social de Edgerunners, solicitações de amizade com aceite/recusa em tempo real e correção do sistema de remoção de amigos) e início da Fase 7.',
     highlights: [
       'Envio e recebimento de solicitações de amizade para usuários reais com ID Cyberpunk único',
@@ -61,7 +61,7 @@ export const PATCH_NOTES: PatchNote[] = [
     date: 'FASE 4 // CONCLUÍDO',
     title: 'PERFIL LED & BIBLIOTECA DE LENDAS',
     tag: 'PERFIL',
-    tagColor: 'text-emerald-400 border-emerald-500/60 bg-emerald-950/60',
+    tagColor: 'text-ok-400 border-ok-500/60 bg-ok-950/60',
     summary: 'Botao unificado de perfil com LED de status reativo, selecao de avatar com cores distintas e clonagem de lendas de Night City.',
     highlights: [
       'Indicador LED com cores reativas: Verde (Online), Amarelo (Inativo) e Roxo (Em Jogo)',
@@ -75,7 +75,7 @@ export const PATCH_NOTES: PatchNote[] = [
     date: 'FASE 3 // CONCLUÍDO',
     title: 'MULTIPLAYER EM TEMPO REAL',
     tag: 'NETWORKING',
-    tagColor: 'text-purple-400 border-purple-500/60 bg-purple-950/60',
+    tagColor: 'text-cyber-400 border-cyber-500/60 bg-cyber-950/60',
     summary: 'Infraestrutura de sincronizacao em tempo real para salas de jogo multiplayer com monitoramento do Mestre e rolagens simultaneas.',
     highlights: [
       'Canal de transmissao SSE e WebSockets de ultrabaixa latencia (< 50ms)',
@@ -88,7 +88,7 @@ export const PATCH_NOTES: PatchNote[] = [
     date: 'FASE 2 // CONCLUÍDO',
     title: 'ASSISTENTE NETRUNNER IA',
     tag: 'INTELLIGENCE',
-    tagColor: 'text-cyan-400 border-cyan-500/60 bg-cyan-950/60',
+    tagColor: 'text-accent-400 border-accent-500/60 bg-accent-950/60',
     summary: 'Integracao com Gemini API para diagnosticos taticos de build, geracao de Lifepath narrativo e suporte ao livro de regras.',
     highlights: [
       'Chat inteligente especializado no sistema Cyberpunk 2020',
@@ -101,7 +101,7 @@ export const PATCH_NOTES: PatchNote[] = [
     date: 'FASE 1 // CONCLUÍDO',
     title: 'MOTOR FNFF & AUTOMATIZACAO',
     tag: 'CORE ENGINE',
-    tagColor: 'text-yellow-400 border-yellow-500/60 bg-yellow-950/60',
+    tagColor: 'text-signal-400 border-signal-500/60 bg-signal-950/60',
     summary: 'Calculadora completa de estatisticas derivadas, sistema de combate FNFF, gestao de cyberware e rolador de dados com efeitos sonoros.',
     highlights: [
       'Autocalculo de BTM, SP de Armadura por localizacao e Perda de Humanidade',
@@ -133,7 +133,7 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
               PATCH NOTES // NETWORK FEED
             </h3>
           </div>
-          <span className="text-[10px] text-slate-300 bg-red-950/80 px-2 py-0.5 rounded border border-red-800">
+          <span className="text-[10px] text-fg-soft bg-red-950/80 px-2 py-0.5 rounded border border-red-800">
             SYSTEM_LOG.DAT
           </span>
         </div>
@@ -144,10 +144,10 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
         {PATCH_NOTES.map((note) => (
           <div
             key={note.version}
-            className="bg-slate-950/80 border border-slate-800 hover:border-red-500/60 p-3.5 rounded-lg transition-all group backdrop-blur-md relative overflow-hidden shadow-lg hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+            className="bg-surface/80 border border-line hover:border-red-500/60 p-3.5 rounded-lg transition-all group backdrop-blur-md relative overflow-hidden shadow-lg hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
           >
             {/* Top Accent Bar */}
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-500 via-yellow-500 to-cyan-500"></div>
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-500 via-signal-500 to-accent-500"></div>
 
             <div className="pl-2 space-y-2">
               <div className="flex items-center justify-between">
@@ -155,7 +155,7 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
                   <span className="text-sm font-extrabold text-red-400 tracking-wider">
                     {note.version}
                   </span>
-                  <span className="text-[10px] text-slate-300 font-bold uppercase tracking-tight">
+                  <span className="text-[10px] text-fg-soft font-bold uppercase tracking-tight">
                     {note.title}
                   </span>
                 </div>
@@ -164,18 +164,18 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
                 </span>
               </div>
 
-              <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
+              <p className="text-[11px] text-fg-soft leading-relaxed font-sans">
                 {note.summary}
               </p>
 
               {!compact && (
-                <div className="pt-1.5 border-t border-slate-900 space-y-1">
+                <div className="pt-1.5 border-t border-line-soft space-y-1">
                   <span className="text-[10px] text-red-400/90 font-bold uppercase block">
                     Destaques da Atualizacao:
                   </span>
                   <ul className="space-y-1">
                     {note.highlights.map((h, idx) => (
-                      <li key={idx} className="text-[10px] text-slate-400 flex items-start space-x-1.5">
+                      <li key={idx} className="text-[10px] text-muted flex items-start space-x-1.5">
                         <span className="text-red-500 font-bold shrink-0">•</span>
                         <span>{h}</span>
                       </li>
@@ -184,9 +184,9 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-[9px] text-slate-300 pt-1">
+              <div className="flex items-center justify-between text-[9px] text-fg-soft pt-1">
                 <span>STATUS: STABLE_DEPLOY</span>
-                <span className="text-slate-200">{note.date}</span>
+                <span className="text-fg">{note.date}</span>
               </div>
             </div>
           </div>
