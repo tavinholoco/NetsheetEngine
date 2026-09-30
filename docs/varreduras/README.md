@@ -8,7 +8,7 @@ Uma varredura que não gerou ledger não aconteceu.
 | Arquivo | Fase | Escopo |
 |---|---|---|
 | `E-backend.md` | E | `server.ts`, `server/*` |
-| `G-frontend.md` | G | `src/components`, `src/features`, `src/pages`, `src/stores`, `src/hooks` |
+| `G-frontend.md` | G | `src/components`, `src/features`, `src/pages`, `src/stores`, `src/hooks`, `src/utils`, `src/lib` (menos o `supabase.ts`, da L.4) |
 | `H-multiplayer.md` | H | WebSocket, SSE, Yjs, awareness, reconexão, presença |
 | `I-integracao.md` | I | `src/api/*` contra os endpoints do Express |
 | `J-seguranca.md` | J | Superfície completa de autenticação, autorização, entrada e saída |
@@ -21,7 +21,9 @@ Uma varredura que não gerou ledger não aconteceu.
 
 Estão no plano, não aqui — [o filtro de necessidade](../PLANO_MESTRE.md#-filtro-de-necessidade)
 define as cinco perguntas, os três veredictos, a separação em dois tempos (*achar e classificar*,
-depois *executar só os FAZER*) e a regra de calibragem de 1/3.
+depois *executar só os FAZER*) e a regra de calibragem de 1/3; e o
+[roteiro de uma varredura](../PLANO_MESTRE.md#o-roteiro-de-uma-varredura), os passos X.0–X.5 que
+toda varredura segue.
 
 **Este arquivo não repete essas regras de propósito.** Regra escrita em dois lugares vira duas regras
 diferentes em três meses.
@@ -44,6 +46,8 @@ Copie o bloco abaixo ao abrir uma varredura.
 
 ## X.01 — <título curto do achado>
 
+**Área:** X.1a — <nome da área no plano; é o que a caixa da área confere>
+
 **Sintoma observado:** <bug reproduzível, número errado, erro no log, incômodo sentido jogando.
 "Seria mais limpo se…" NÃO é sintoma — se a resposta aqui for vazia, o veredito é ADIAR.>
 
@@ -61,6 +65,14 @@ Copie o bloco abaixo ao abrir uma varredura.
 - Se FAZER → teste que reproduz o sintoma: `<caminho do teste>`
 - Se ADIAR → **gatilho:** "quando <condição verificável>"
 - Se DESCARTAR → **razão:** "<uma linha, para a ideia não voltar na próxima varredura>"
+
+---
+
+## Mapa de cortes (só E e G — insumo da L.3)
+
+| Arquivo | Linhas | Corte proposto | Veredito |
+|---|---|---|---|
+| `<arquivo>` | <n> | <módulo novo e o que vai para ele> | FAZER · ADIAR (gatilho) · DESCARTAR |
 ```
 
 ---
