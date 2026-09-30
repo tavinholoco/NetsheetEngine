@@ -1346,8 +1346,9 @@ o conserto** (o repo é público).
       - **Régua externa.** *Sintoma que a justifica:* os seis achados da revisão pós-D escaparam de
         portões que perguntam de memória — uma lista de fora pega o que a memória não lembra de
         perguntar.
-        - **Recomendada (30/09/2026): o [OWASP API Security Top 10](https://api-security.owasp.org/editions/2023/en/0x11-t10)
-          (edição 2023, a vigente)** — dez categorias, uma linha cada, cruzadas com a tabela da J.1b.
+        - **Decidida pelo dono em 30/09/2026: o [OWASP API Security Top 10](https://api-security.owasp.org/editions/2023/en/0x11-t10)
+          (edição 2023, a vigente)** — dez categorias de defeito, uma linha cada, cruzadas com a tabela
+          da J.1b. É régua de busca: só vira item o defeito achado numa rota real.
           É a versão 10× menor, e ela cobre o histórico: **12 dos 13 achados** de segurança do projeto
           caem em cinco categorias — API1, autorização por objeto (SEC-02, 07, 08, 09, 12); API2,
           autenticação (SEC-07); API3, autorização por campo (SEC-05, 12); API4, consumo sem limite
