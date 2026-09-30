@@ -20,7 +20,14 @@ import { spawnSync } from "node:child_process";
 
 const BASE = (process.argv[2] || process.env.BASE_URL || "https://netsheetengine.onrender.com").replace(/\/$/, "");
 const LOCAL = /\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(BASE);
-const esperado = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+// Roda da raiz do repositório (o E2E de WebSocket também é chamado de lá). Lê o
+// package.json do diretório atual, não do caminho do script: assim ele funciona
+// até copiado para fora do repo (o fallback da tarefa agendada de 01/10).
+if (!fs.existsSync("package.json") || !fs.existsSync("scripts/test-ws-e2e.mjs")) {
+  console.error("❌ Rode da raiz do repositório NetSheet Engine.");
+  process.exit(2);
+}
+const esperado = JSON.parse(fs.readFileSync("package.json", "utf8")).version;
 
 const resultados = [];
 const ok = (id, nome, passou, detalhe = "") => resultados.push({ id, nome, passou, detalhe });
