@@ -25,9 +25,9 @@ const TELAS: { path: string; pronta: (page: Page) => ReturnType<Page["getByText"
 ];
 
 test("as fontes carregam com o CSP de produção, sem violação, nas três telas", async ({ page }) => {
-  const console_csp: string[] = [];
+  const avisosNoConsole: string[] = [];
   page.on("console", (msg) => {
-    if (/Content Security Policy/i.test(msg.text())) console_csp.push(msg.text());
+    if (/Content Security Policy/i.test(msg.text())) avisosNoConsole.push(msg.text());
   });
   await page.addInitScript(() => {
     (window as unknown as { __csp: string[] }).__csp = [];
@@ -54,7 +54,7 @@ test("as fontes carregam com o CSP de produção, sem violação, nas três tela
     carregadas.forEach((f) => vistas.add(f));
   }
 
-  expect(console_csp, "aviso de CSP no console").toEqual([]);
+  expect(avisosNoConsole, "aviso de CSP no console").toEqual([]);
   // As duas faces da identidade aparecem em algum lugar das três telas.
   for (const familia of FAMILIAS) expect([...vistas]).toContain(familia);
 });
