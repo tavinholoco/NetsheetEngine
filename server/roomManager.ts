@@ -33,6 +33,7 @@ import {
   type WoundState
 } from "../src/rules/damage.js";
 import { WOUND_TRACK_POINTS } from "../src/rules/tables.js";
+import { gridChangeProblem, normalizeGridInput } from "../src/lib/gridDoc.js";
 import { logger } from "./logger.js";
 
 // ============================================================
@@ -654,8 +655,8 @@ export function updatePlayerWoundLevel(
 export function updateTacticalGrid(
   code: string,
   requesterPeerId: string,
-  gridState: TacticalGridState
-): { room: GameRoom | null; error?: string } {
+  gridState: unknown
+): { room: GameRoom | null; error?: string; code?: "invalid_grid" } {
   const room = getRoom(code);
   if (!room) return { room: null, error: "Sala não encontrada" };
 
@@ -663,7 +664,16 @@ export function updateTacticalGrid(
     return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode alterar o mapa tático." };
   }
 
-  room.tacticalGrid = gridState;
+  // E.02 (SEC-14) — o grid era gravado como veio. Um `tokens: 5` travava a
+  // sala e, pelo vigia de presença, derrubava o processo. Agora ele é montado
+  // campo a campo e conferido (a mesma regra da porta Yjs, em src/lib/gridDoc).
+  const grid = normalizeGridInput(gridState);
+  const prev = room.tacticalGrid ?? { rows: 8, cols: 10, theme: "alley", tokens: [] };
+  const problem = grid ? gridChangeProblem(prev, grid) : "o mapa precisa de uma lista de tokens";
+  if (!grid || problem) {
+    return { room: null, error: `Mapa tático inválido: ${problem}.`, code: "invalid_grid" };
+  }
+  room.tacticalGrid = grid;
   return { room };
 }
 

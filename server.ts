@@ -17,7 +17,7 @@ import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
 import * as syncProtocol from "y-protocols/sync";
 import * as awarenessProtocol from "y-protocols/awareness";
-import { TOKEN_KEYS, deriveGridFromDoc, writeGridToDoc } from "./src/lib/gridDoc.js";
+import { TOKEN_KEYS, deriveGridFromDoc, docTokensProblem, gridChangeProblem, writeGridToDoc } from "./src/lib/gridDoc.js";
 // Fase B (B.1 — SEC-01) — o Netrunner IA passa a exigir identidade verificada,
 // e a instrução do modelo passa a ser código do servidor, não entrada do cliente.
 import { bearerFromHeader, isAuthVerificationConfigured, verifySupabaseJwt } from "./server/supabaseAuth.js";
@@ -335,7 +335,17 @@ function broadcastRoomUpdate(code: string) {
   queueRoomPersist(code);
   // Fase 5 (T5.3) — espelha JSON → doc Yjs quando o grid mudou por REST
   // (joinRoom, generateNpc, etc.) para os clientes CRDT convergirem.
-  seedDocFromJson(code);
+  // E.02 (SEC-14) — o espelho NUNCA lança daqui. Esta função roda dentro das
+  // rotas e do vigia de presença (um `setInterval`): um grid que o espelho não
+  // entendia travava a sala e, pelo vigia, derrubava o processo inteiro. O JSON
+  // é a verdade durável (T5.1): se o espelho falhar, o doc é descartado e
+  // renasce do JSON na próxima mensagem Yjs.
+  try {
+    seedDocFromJson(code);
+  } catch (e) {
+    logger.error("yjs_seed_failed", { room: code.toUpperCase(), message: (e as Error)?.message || String(e) });
+    destroyRoomYjs(code);
+  }
   const payload = JSON.stringify(room);
 
   // SSE (fallback) — mesmo payload JSON
@@ -570,6 +580,10 @@ app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
     return res.status(400).json({ error: "gridState são obrigatórios" });
   }
   const result = updateTacticalGrid(req.params.code, requesterPeerId, gridState);
+  // E.02 (SEC-14) — grid malformado é entrada inválida (400), não recusa de permissão.
+  if (!result.room && result.code === "invalid_grid") {
+    return res.status(400).json({ error: result.error, code: result.code });
+  }
   return respondWithResult(res, result);
 });
 
@@ -1014,10 +1028,21 @@ function mirrorDocToJson(code: string, originWs: WebSocket): boolean {
   if (!entry || !room) return true;
   const prev = room.tacticalGrid;
   if (!prev) return true;
-  const next = deriveGridFromDoc(entry.doc);
-  if (JSON.stringify(prev) === JSON.stringify(next)) return true;
-
   const originPeerId = wsPeer.get(originWs);
+  // E.02 (SEC-14) — a FORMA antes da permissão, e para todo mundo, GM
+  // inclusive: validar forma não é autorização. Um item que não é token no
+  // array (o `deriveGridFromDoc` o ignora, então a comparação abaixo não o
+  // veria) ou um token malformado são revertidos — o revert apaga o lixo.
+  const junk = docTokensProblem(entry.doc);
+  const next = deriveGridFromDoc(entry.doc);
+  if (!junk && JSON.stringify(prev) === JSON.stringify(next)) return true;
+  const shapeProblem = junk ?? gridChangeProblem(prev, next);
+  if (shapeProblem) {
+    logger.warn("grid_update_rejected", { room: key, peerId: originPeerId, reason: shapeProblem.slice(0, 120) });
+    writeGridToDoc(entry.doc, prev, "server");
+    return false;
+  }
+
   const isGm = room.gmPeerId === originPeerId;
   const prevById = new Map(prev.tokens.map((t) => [t.id, t]));
   const nextIds = new Set(next.tokens.map((t) => t.id));
@@ -1297,13 +1322,28 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 // Iniciado dentro do startServer (após o restore) — no topo do módulo um
 // re-evaluate (watch/HMR) vazaria interval sem cleanup.
 let presenceWatcher: NodeJS.Timeout | null = null;
-function startPresenceWatcher(): void {
-  presenceWatcher = setInterval(() => {
-    const changedCodes = markStalePlayersOffline();
-    for (const code of changedCodes) {
+
+/**
+ * Uma volta do vigia de presença. Exportada para teste (E.02).
+ *
+ * E.02 (SEC-14) — o que roda num `setInterval` não pode lançar: exceção num
+ * timer é exceção não tratada, e o Node derruba o PROCESSO — todas as mesas
+ * juntas, por causa de uma. Era o que acontecia com um grid malformado. O
+ * `broadcastRoomUpdate` já não deixa o espelho Yjs escapar; o `try` por sala
+ * aqui é a segunda camada, para o que vier depois.
+ */
+export function runPresenceSweep(): void {
+  for (const code of markStalePlayersOffline()) {
+    try {
       broadcastRoomUpdate(code); // já faz queueRoomPersist (T3.1)
+    } catch (e) {
+      logger.error("room_sweep_failed", { room: code, message: (e as Error)?.message || String(e) });
     }
-  }, Math.min(15_000, Math.max(2_000, ROOM_OFFLINE_TIMEOUT_MS / 2)));
+  }
+}
+
+function startPresenceWatcher(): void {
+  presenceWatcher = setInterval(runPresenceSweep, Math.min(15_000, Math.max(2_000, ROOM_OFFLINE_TIMEOUT_MS / 2)));
 }
 
 // Fase B (B.5 — SEC-04) — coletor de salas abandonadas. Implementa a
@@ -1330,7 +1370,10 @@ function startRoomCollector(): void {
         destroyRoomYjs(code);
         await deleteRoomPersisted(code);
       }
-    })();
+    })().catch((e) => {
+      // E.02 — mesma regra do vigia: timer não derruba o processo.
+      logger.error("room_collect_failed", { message: (e as Error)?.message || String(e) });
+    });
   }, ROOM_COLLECT_INTERVAL_MS);
 }
 
