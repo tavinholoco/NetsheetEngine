@@ -6,9 +6,11 @@
 
 ## Primeiro passo, sempre
 
-0. **Atualize o `master` local antes de ler qualquer coisa:** `git fetch --all --prune --tags` e
+0. **Atualize o `master` local antes de ler qualquer coisa:** `git status` (a sessão anterior pode
+   ter deixado outro branch), `git checkout master`, `git fetch --all --prune --tags` e
    `git merge --ff-only origin/master`. Os PRs são mergeados pelo dono no GitHub; sem isso você lê um
-   plano velho. *(A sessão de 25/09 abriu com o `master` 14 commits atrás.)*
+   plano velho. *(A sessão de 25/09 abriu com o `master` 14 commits atrás; a de 30/09, no branch do PR
+   anterior.)*
 1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M),
    mais blocos de pendências fora das fases (P em 25/09; **R**, da revisão pós-D de 29/09) que
    precedem a fase seguinte. O arquivo passa de uma leitura só: leia em partes, e não pule nenhuma.
@@ -19,6 +21,9 @@
 4. **Confira o CI do `master` e o keepalive** (`gh run list --branch master --limit 3` e
    `gh run list --workflow keepalive.yml --limit 2`). Vermelho é o primeiro trabalho da sessão.
    O job `db-sync` só roda no `master` — **PR verde não prova que a migration entrou em produção.**
+   Se a lista vier com runs velhos (visto em 30/09, com um run na fila), confira sem o filtro:
+   `gh run list --limit 8` e olhe a coluna do branch. Run `cancelled` no `master` costuma ser a
+   concorrência do CI (`cancel-in-progress`) — o push seguinte cobre o mesmo código.
 5. Confira o **[Protocolo de sessão](./docs/PLANO_MESTRE.md#-protocolo-de-sessão)** no plano: ele
    detalha o ritual de abertura e de encerramento de fase.
 
@@ -70,6 +75,8 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Dano na cabeça | **Armadura → BTM (mín. 1) → ×2** — o livro não diz quando dobrar; decisão 6 do plano (26/09/2026) |
 | Ferimento na mesa | **Pontos (0–40) na ficha, nível derivado; só servidor e GM escrevem na mesa.** Token sem ficha não recebe dano; penetração escalonada ADIAR — decisão 7 (28/09/2026) |
 | Migration × deploy | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa. O Render publica sem esperar o `db-sync` |
+| Merge × sessão de jogo | **Nunca mergear no `master` com mesa aberta.** Todo deploy do Render roda duas instâncias por ≥60 s, e a mesa perde até ~1,5 min de estado (E.06, `docs/DEPLOY.md`) |
+| Login para criar mesa | **O servidor não exige** (a tela exige). Os tetos da E.03 (30 salas, `MAX_ROOMS`) fecham o esgotamento; exigir login é ADIAR com gatilho — decisão do dono (30/09/2026), em `docs/SEGURANCA.md` |
 | Netrunning | **O netrunner na ficha** (deck, programas, MU) entra na K.5; **a Net jogável na mesa: ADIAR**, fase própria depois da L — gatilho: alguém da mesa jogar de netrunner. Decisão 9 (30/09/2026) |
 
 ## Comandos que importam
@@ -91,6 +98,13 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   fecha no servidor: iniciativa → ataque contra o alcance → dano em **pontos** (armadura → BTM → ×2)
   → stun e death save → virada de turno. O GM age pelo cartão do token no grid; na mesa, o jogador
   não escreve o próprio ferimento.
+- **Desde a Fase E (30/09) o servidor tem contrato de erro e tetos.** Todo erro da API é
+  `{ error, code }`, e o status sai do `code` por uma tabela só ([`server/errors.ts`](./server/errors.ts));
+  no `roomManager`, o tipo `RoomResult` não deixa erro sair sem `code`, e no `server.ts` a única saída
+  é o `sendError`. **Rota nova segue isso** — um teste trava status escrito à mão. A mesa tem tetos
+  (30 salas, 32 NPCs, ficha de 64 KB, chat de 100, 1 MiB por socket lento) e o grid tem forma
+  conferida nas duas portas, REST e Yjs (SEC-14, SEC-15). O ledger da varredura está em
+  `docs/varreduras/E-backend.md`, com o mapa de cortes que a L.3 vai usar.
 - **Ver o app rodando:** a configuração `netsheet-dev` do [`.claude/launch.json`](./.claude/launch.json)
   (`npm run dev`, porta 3000) abre o preview no painel. Em modo dev, **deep link volta para `/`**
   (pista da Fase G) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,

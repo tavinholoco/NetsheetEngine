@@ -60,7 +60,9 @@ sessão e manda ler o plano antes de propor trabalho.
       keepalive.yml --limit 2`. **Vermelho em qualquer um dos dois é o primeiro trabalho da sessão**,
       antes de qualquer item de fase. *(Nasceu em 24/09/2026: o merge da Fase B ficou vermelho porque
       o token do CI tinha expirado, e a migration 0007 não chegou em produção — o PR estava verde
-      porque o `db-sync` só roda no `master`.)*
+      porque o `db-sync` só roda no `master`.)* *(30/09: com um run na fila, o filtro `--branch`
+      devolveu runs de agosto — conferir também sem o filtro, `gh run list --limit 8`. E `cancelled`
+      no `master` costuma ser a concorrência do CI: o push seguinte cobre o mesmo código.)*
 - **4.** Ler o registro de [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase) das fases já
       fechadas, e as decisões do [`CLAUDE.md`](../CLAUDE.md) — para não reabrir questão resolvida.
 - **5.** Varrer os **ADIAR em aberto** nos ledgers de [`varreduras/`](./varreduras/) e nas ADRs:
@@ -306,7 +308,7 @@ lista só as suas áreas.
 |---|---|---|
 | **X.0** 🔍 Premissas | Medir cada pista contra o código do dia (grep, contagem, reprodução). Resolvida sai riscada; mudada ganha o número novo | Toda pista com medição e data |
 | **X.1** Áreas | Uma caixa por área. Cada área responde às perguntas dela, classifica as pistas dela **e procura além delas** — varredura que só classifica pista é revisão, não varredura | A seção da área existe no ledger |
-| **X.2** Calibragem e revisão do dono | Contar os FAZER (acima de 1/3, recalibrar). O ledger vai num **PR só de documento**; o merge do dono aprova os veredictos. **Achado de segurança aberto fica fora desse PR** (o repo é público): uma linha sem o caminho, e o texto inteiro vai com o conserto | Ledger mergeado |
+| **X.2** Calibragem e revisão do dono | Contar os FAZER (acima de 1/3, recalibrar). O ledger vai num **PR só de documento**; o merge do dono aprova os veredictos. **Achado de segurança aberto fica fora desse PR** (o repo é público): uma linha sem o caminho, e o texto inteiro vai com o conserto. *Precedente da E (30/09):* achado **reproduzido** e grave pode ser consertado **antes** do ledger, num PR de segurança próprio — perguntar ao dono; o branch do ledger vai empilhado no de segurança e já traz o texto | Ledger mergeado |
 | **X.3** Executar os FAZER | Um commit por item, teste que reproduz **antes**, provado revertendo | Cada FAZER com teste e prova |
 | **X.4** 🔒 Portão | Se a X.3 mudou código, as seis perguntas em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Se nada virou código, uma linha dizendo isso | Registro escrito |
 | **X.5** 🧠 Estado durável | Passos 2–6 do [ritual de encerramento](#ritual-de-encerramento--ao-fechar-uma-fase): caixas, data, linha de base, E2E, PR, `master` verde | `master` verde depois do merge |
@@ -887,8 +889,10 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       jobs, Node 24, 590 testes + 1 só-Windows pulado, E2E 6/6, `db-sync` em dia. **Todo o código do
       bloco R está no `master`.** O que falta é a verificação no ar, no checklist abaixo.)*
 
-      > **Isto NÃO bloqueia a Fase E.** O R.15 fecha em 01/10, pela tarefa agendada e pelos dois itens
-      > do dono. **A próxima sessão abre a Fase E (E.1)** — decisão do dono em 30/09/2026.
+      > **Isto NÃO bloqueia a Fase F.** O R.15 fecha em 01/10, pela tarefa agendada e pelos itens do dono.
+      > A Fase E abriu e fechou em 30/09 com ele aberto. **A próxima sessão abre a Fase F, pelo F.0** —
+      > decisão do dono em 30/09/2026. Exceção: se o checklist de 01/10 falhou (algo ❌ no PR
+      > `claude/verificacao-01-10` ou no resumo da tarefa), esse vermelho vem primeiro.
 
       **Checklist de 01/10/2026 — quando a API voltar.** O Render suspendeu o serviço em setembro
       (incidente no [contrato de custo zero](#-contrato-de-custo-zero)); ele volta na virada do mês e
@@ -1066,8 +1070,8 @@ quatro; faltavam `supabaseAuth.ts`, `aiPrompt.ts` e `wsLimits.ts`)*. Segue o
       [registro](./SEGURANCA.md#fase-e--varredura-backend): a E.3a–b, com os achados SEC-14 e SEC-15, e a
       E.3c–e, sem achado novo.)*
 - [x] **E.5** 🧠 Estado durável — passo X.5. *(30/09/2026 — caixas, linha de base (**651** testes, 45
-      arquivos), E2E, este PR. O passo 6 — o `master` verde depois do merge — é conferido na sessão que
-      o dono mergear.)*
+      arquivos), E2E, o PR #24. **Passo 6 conferido:** depois do merge do #24, o `master` ficou verde nos 4
+      jobs, com o `db-sync` em dia ("Remote database is up to date" — a E não teve migration).)*
 - [x] ✅ **Fase E concluída em:** 30/09/2026
 
 ---
@@ -1132,7 +1136,7 @@ estratégia, portanto, é **reconstruir a linguagem com faces livres**, não cop
           e a linha de base **antes** da primeira migração — e diz o que fica fora (a escala do
           `HealthTracker`, por exemplo).
         - **O vermelho também mora em dado, não só em classe.** O token de NPC nasce `#ef4444` no
-          servidor (`roomManager.ts:323`, `:711`) e no cliente (`TacticalGrid.tsx:251`, `:279`), e a cor
+          servidor (`roomManager.ts:410`, `:819` — linhas de 30/09, depois da E) e no cliente (`TacticalGrid.tsx:251`, `:279`), e a cor
           é **persistida** com o grid da sala. O grep de classes não a vê, e a F.2.2 ("vermelho só para
           dano") precisa decidir a cor do NPC — NPC não é dano.
         - **A F.4.2 tem versão 10× menor:** uma regra `@media (prefers-reduced-motion: reduce)` no
@@ -1140,6 +1144,20 @@ estratégia, portanto, é **reconstruir a linguagem com faces livres**, não cop
           do Tailwind fica para exceção.
         - **A F.2.4 migra ~1,7–1,8 mil literais em "1 dia"** — o F.0 refaz a estimativa com a contagem
           por arquivo.
+      - **Para a sessão que abrir a F** *(fechamento da E, 30/09/2026)*:
+        - **Desde 01/10 o site está no ar** (se o checklist do R.15 passou). O bug das fontes se confere
+          **na produção de verdade**, além do build local: uma visita a `https://netsheetengine.onrender.com`
+          com o DevTools aberto — o Console mostra o CSP recusando `fonts.googleapis.com`. Uma visita só,
+          nada de monitor (regra 3 do custo zero).
+        - **A E não tocou em estilo, fonte nem CSP.** No código que o cliente usa, só no `src/lib/gridDoc.ts`
+          (compartilhado: o grid ignora e apaga item que não é token — SEC-14). As premissas acima, medidas
+          em 29/09, continuam de pé — mas o F.0 as mede de novo no dia, como manda o roteiro. A única linha que a E deslocou (a cor do
+          NPC no `roomManager`) já está com o número novo.
+        - **O vermelho do NPC tem dono agora:** a cor nasce no servidor, que desde a E valida o grid
+          (`src/lib/gridDoc.ts`, SEC-14) — `color` é texto de até 32 caracteres. Trocar a cor do NPC não
+          esbarra na validação, e os grids já gravados com `#ef4444` continuam válidos.
+        - **Mergear fora de sessão de jogo** (`DEPLOY.md`, E.06): a F é a fase que mais vai ao ar em
+          pedaços — cada PR publica sozinho.
 
 #### F.1 — O sistema tipográfico 2020 *(1 dia)*
 
@@ -1318,7 +1336,7 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         pergunta para outras revogações — no H.1e.
       - **Awareness órfão dura até 30 s, não para sempre.** O `y-protocols` apaga o estado remoto que
         não se atualiza em 30 s (`outdatedTimeout`, no servidor e em cada cliente). O servidor não
-        remove o estado quando o socket fecha (`server.ts:1246`) — o sintoma possível é um cursor
+        remove o estado quando o socket fecha (`server.ts:1297`, depois da E) — o sintoma possível é um cursor
         fantasma de até 30 s.
       - **O gatilho da [ADR 0002](./adr/0002-yjs-websockets.md) é conferido aqui** (bug de
         convergência). A autorização por diff do grid já teve um buraco (SEC-12, R.6) — evidência para
@@ -1346,13 +1364,13 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
   - [ ] **H.1d Servidor reiniciado com a mesa aberta:** restore, sessões persistidas (B.4) e o fluxo
         401 → `join` **com o token** que a R.1 impôs.
   - [ ] **H.1e O mesmo jogador em duas abas:** o `join` com token revoga as sessões antigas
-        (`roomManager.ts:576`) e não fecha o socket da outra aba — o que ela vê?
+        (`roomManager.ts:668`, depois da E) e não fecha o socket da outra aba — o que ela vê?
   - [ ] **H.1f O GM sai** (T1.8): existe janela de dois GMs ou de nenhum? A variante do SEC-07 pelo
         *handle* do GM segue ADIAR (R.1).
   - [ ] **H.1g Queda para SSE** (bloquear o WebSocket): o que deixa de funcionar, o jogador fica
         sabendo, e o `sse_fallback` aparece no log?
   - [ ] **H.1h Último socket fecha e alguém reconecta no mesmo instante:** o `destroyRoomYjs`
-        (`server.ts:1251`) descarta o doc — a reconexão perde movimento do grid?
+        (`server.ts:1302`, depois da E) descarta o doc — a reconexão perde movimento do grid?
   - [ ] **H.1i Ficha editada em duas abas:** a reconexão resolve por **last-write-wins com o
         `updatedAt` do cliente** — o relógio do navegador decide quem ganha.
   - [ ] **H.1j** *(no ar)* **O Render troca a instância com a mesa aberta:** um merge no `master` no
@@ -1424,7 +1442,7 @@ o conserto** (o repo é público).
 
 - [ ] **J.0** 🔍 **Premissas** — medidas em 29/09/2026:
       - O gitleaks do CI **já** varre o histórico (`fetch-depth: 0`) — conferido na revisão pós-D.
-      - O CSP segue com `connect-src 'self' ws: wss: https:` (`server.ts:166`).
+      - O CSP segue com `connect-src 'self' ws: wss: https:` (`server.ts:175`, depois da E).
       - As 56 de RLS **não rodam desde a B** — exigem o Supabase local, e o Docker desta máquina falha
         no arranque (contorno no [`BACKUP.md`](./BACKUP.md)).
       - **Antes desta revisão, as varreduras E–I não passavam pelo portão** — a J confere que cada X.4
