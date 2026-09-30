@@ -1,0 +1,67 @@
+{
+  "_leia": "Fase F (F.2.1) — a tabela de conversão das cores escritas à mão para os tokens do @theme (src/index.css). É a especificação da migração e a documentação das duas camadas de token: a rampa por papel (os tons de hoje, com nome de papel) e os nomes semânticos dos neutros. Quem aplica é scripts/migrate-colors.ts; `npx tsx scripts/migrate-colors.ts --tabela` imprime cada combinação encontrada no código e o destino dela.",
+
+  "rampas": {
+    "_leia": "Família do Tailwind → rampa com nome de papel. Os valores de cada tom são copiados da paleta do Tailwind (theme.css): trocar a família pela rampa não muda cor nenhuma. Mudar a identidade depois é mudar o valor da rampa, num lugar só.",
+    "slate": "night",
+    "cyan": "accent",
+    "yellow": "signal",
+    "emerald": "ok",
+    "purple": "cyber",
+    "amber": "caution",
+    "pink": "fault",
+    "red": "danger"
+  },
+
+  "papeis": {
+    "_leia": "O que cada rampa significa no produto (decisão 10 e F.0a).",
+    "night": "neutros — fundo, linha e texto; os usos comuns têm nome semântico (abaixo)",
+    "accent": "ciano — ação, foco, links, a seção FICHA",
+    "signal": "amarelo — destaque, marca, GM, chamada principal",
+    "ok": "verde — sucesso, online, a seção JOGAR",
+    "cyber": "roxo — o que é tecnologia: Netrunner e IA, cyberware e humanidade",
+    "caution": "âmbar — ação de combate, perigo no grid, status inativo",
+    "fault": "magenta — erro, ação destrutiva, falha crítica, NPC hostil (decisão 10b; usado a partir da F.2.2)",
+    "danger": "vermelho — SÓ dano (decisão 10b; a escala wound-* vem da F.2.7)"
+  },
+
+  "porTabela": {
+    "_leia": "As famílias que a conversão troca sozinha: nelas o tom de hoje já tem um papel só.",
+    "familias": ["slate", "cyan", "yellow", "emerald", "purple", "amber"]
+  },
+
+  "aMao": {
+    "_leia": "As famílias que NÃO entram por tabela: o tom de hoje mistura papéis, e trocar por nome rotularia errado. Ficam literais até a F.2b (PR 3), classificadas uso a uso.",
+    "red": "F.2.2 — dos 244 usos, a maioria não é dano (marca, menu, GM, erro, ação destrutiva)",
+    "pink": "F.2.2/F.2.9 — os 39 usos de hoje são DADOS, rolagem e armas; nenhum é falha. Trocar por `fault` rotularia errado todos",
+    "rose": "F.2.7 — a escala de ferimento, Mortal 4–6",
+    "orange": "F.2.7 e o atributo MA",
+    "sky": "o tema de grid 'Praça Arasaka (Azul)' — tem que continuar distinto do ciano do tema 'Beco Neon'",
+    "teal": "o atributo EMP"
+  },
+
+  "neutros": {
+    "_leia": "slate → nome semântico, pelo tipo de utilitário × tom. Tom sem nome cai na rampa `night-*`. Cada nome vale exatamente o tom de hoje: a conversão não muda cor.",
+    "tipos": {
+      "fundo": ["bg", "from", "via", "to"],
+      "texto": ["text", "placeholder", "caret", "decoration"],
+      "linha": ["border", "divide", "ring", "ring-offset", "outline", "stroke", "fill", "shadow", "accent"]
+    },
+    "fundo": { "950": "surface", "900": "raised", "800": "raised-strong" },
+    "linha": { "900": "line-soft", "800": "line", "700": "line-strong" },
+    "texto": { "100": "fg-strong", "200": "fg", "300": "fg-soft", "400": "muted", "500": "subtle", "600": "faint" }
+  },
+
+  "brilho": {
+    "_leia": "rgb() dos brilhos em shadow-[…] → cor do token. A geometria vira a escala `shadow-glow-<raio>` do @theme e a cor, `shadow-<token>/<alfa>`. Os valores rgb são os da paleta antiga (v3) que o código copiou; o token é o tom equivalente de hoje. rgb que não está aqui (vermelho, rosa, o fósforo do efeito CRT) fica para a F.2b.",
+    "6,182,212": "accent-500",
+    "250,204,21": "signal-400",
+    "234,179,8": "signal-500",
+    "16,185,129": "ok-500",
+    "168,85,247": "cyber-500",
+    "251,191,36": "caution-400",
+    "245,158,11": "caution-500",
+    "2,6,23": "night-950",
+    "255,255,255": "white"
+  }
+}

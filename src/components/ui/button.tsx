@@ -4,24 +4,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded text-xs font-bold uppercase tracking-wider transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400 disabled:pointer-events-none disabled:opacity-50 cursor-pointer font-mono active:scale-95",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded text-xs font-bold uppercase tracking-wider transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-400 disabled:pointer-events-none disabled:opacity-50 cursor-pointer font-mono active:scale-95",
   {
     variants: {
       variant: {
         default:
-          "bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold shadow-[0_0_15px_rgba(6,182,212,0.4)]",
+          "bg-accent-500 hover:bg-accent-400 text-black font-extrabold shadow-glow-15 shadow-accent-500/40",
         cyber:
-          "bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold shadow-[0_0_15px_rgba(250,204,21,0.4)]",
+          "bg-signal-400 hover:bg-signal-300 text-black font-extrabold shadow-glow-15 shadow-signal-400/40",
         destructive:
           "bg-red-600 hover:bg-red-500 text-white font-bold shadow-[0_0_12px_rgba(239,68,68,0.4)]",
         outline:
-          "border border-cyan-500/60 bg-slate-950 hover:bg-cyan-950/40 text-cyan-400 hover:border-cyan-400",
+          "border border-accent-500/60 bg-surface hover:bg-accent-950/40 text-accent-400 hover:border-accent-400",
         secondary:
-          "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700",
+          "bg-raised-strong hover:bg-night-700 text-fg border border-line-strong",
         ghost:
-          "hover:bg-slate-800/80 text-slate-300 hover:text-white",
+          "hover:bg-raised-strong/80 text-fg-soft hover:text-white",
         emerald:
-          "bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold shadow-[0_0_15px_rgba(16,185,129,0.4)]",
+          "bg-ok-500 hover:bg-ok-400 text-black font-extrabold shadow-glow-15 shadow-ok-500/40",
         magenta:
           "bg-pink-600 hover:bg-pink-500 text-white font-extrabold shadow-[0_0_15px_rgba(219,39,119,0.4)]",
       },

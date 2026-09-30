@@ -12,15 +12,153 @@
   --font-sans: "Rajdhani", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Share Tech Mono", ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
 
-  /* Paleta neon da identidade NETSHEET ENGINE */
-  --color-night-950: #020617;
-  --color-night-900: #0f172a;
-  --color-neon-cyan: #22d3ee;
-  --color-neon-yellow: #facc15;
-  --color-neon-red: #ef4444;
-  --color-neon-purple: #a855f7;
-  --color-neon-pink: #ec4899;
-  --color-neon-emerald: #10b981;
+  /* ---------------------------------------------------------------
+     COR — duas camadas (Fase F, F.2.1). A tabela que as documenta e
+     converte o código é scripts/color-map.json.
+
+     1) Rampa por papel: os tons que o código usava, com nome do que
+        significam no produto. Valores copiados da paleta do Tailwind
+        (`npx tsx scripts/migrate-colors.ts --tema`) — trocar a família
+        pela rampa não muda cor. Mudar a identidade é mudar aqui.
+          night   neutros (fundo, linha, texto)
+          accent  ciano — ação, foco, links, a seção FICHA
+          signal  amarelo — destaque, marca, GM, chamada principal
+          ok      verde — sucesso, online, a seção JOGAR
+          cyber   roxo — Netrunner e IA, cyberware e humanidade
+          caution âmbar — ação de combate, perigo no grid, inativo
+          fault   magenta — erro, ação destrutiva, hostil (F.2.2)
+          danger  vermelho — SÓ dano (decisão 10b; F.2.2 e F.2.7)
+     2) Nomes semânticos para os neutros mais usados (abaixo).
+     --------------------------------------------------------------- */
+  --color-night-50: oklch(98.4% 0.003 247.858);
+  --color-night-100: oklch(96.8% 0.007 247.896);
+  --color-night-200: oklch(92.9% 0.013 255.508);
+  --color-night-300: oklch(86.9% 0.022 252.894);
+  --color-night-400: oklch(70.4% 0.04 256.788);
+  --color-night-500: oklch(55.4% 0.046 257.417);
+  --color-night-600: oklch(44.6% 0.043 257.281);
+  --color-night-700: oklch(37.2% 0.044 257.287);
+  --color-night-800: oklch(27.9% 0.041 260.031);
+  --color-night-900: oklch(20.8% 0.042 265.755);
+  --color-night-950: oklch(12.9% 0.042 264.695);
+
+  --color-accent-50: oklch(98.4% 0.019 200.873);
+  --color-accent-100: oklch(95.6% 0.045 203.388);
+  --color-accent-200: oklch(91.7% 0.08 205.041);
+  --color-accent-300: oklch(86.5% 0.127 207.078);
+  --color-accent-400: oklch(78.9% 0.154 211.53);
+  --color-accent-500: oklch(71.5% 0.143 215.221);
+  --color-accent-600: oklch(60.9% 0.126 221.723);
+  --color-accent-700: oklch(52% 0.105 223.128);
+  --color-accent-800: oklch(45% 0.085 224.283);
+  --color-accent-900: oklch(39.8% 0.07 227.392);
+  --color-accent-950: oklch(30.2% 0.056 229.695);
+
+  --color-signal-50: oklch(98.7% 0.026 102.212);
+  --color-signal-100: oklch(97.3% 0.071 103.193);
+  --color-signal-200: oklch(94.5% 0.129 101.54);
+  --color-signal-300: oklch(90.5% 0.182 98.111);
+  --color-signal-400: oklch(85.2% 0.199 91.936);
+  --color-signal-500: oklch(79.5% 0.184 86.047);
+  --color-signal-600: oklch(68.1% 0.162 75.834);
+  --color-signal-700: oklch(55.4% 0.135 66.442);
+  --color-signal-800: oklch(47.6% 0.114 61.907);
+  --color-signal-900: oklch(42.1% 0.095 57.708);
+  --color-signal-950: oklch(28.6% 0.066 53.813);
+
+  --color-ok-50: oklch(97.9% 0.021 166.113);
+  --color-ok-100: oklch(95% 0.052 163.051);
+  --color-ok-200: oklch(90.5% 0.093 164.15);
+  --color-ok-300: oklch(84.5% 0.143 164.978);
+  --color-ok-400: oklch(76.5% 0.177 163.223);
+  --color-ok-500: oklch(69.6% 0.17 162.48);
+  --color-ok-600: oklch(59.6% 0.145 163.225);
+  --color-ok-700: oklch(50.8% 0.118 165.612);
+  --color-ok-800: oklch(43.2% 0.095 166.913);
+  --color-ok-900: oklch(37.8% 0.077 168.94);
+  --color-ok-950: oklch(26.2% 0.051 172.552);
+
+  --color-cyber-50: oklch(97.7% 0.014 308.299);
+  --color-cyber-100: oklch(94.6% 0.033 307.174);
+  --color-cyber-200: oklch(90.2% 0.063 306.703);
+  --color-cyber-300: oklch(82.7% 0.119 306.383);
+  --color-cyber-400: oklch(71.4% 0.203 305.504);
+  --color-cyber-500: oklch(62.7% 0.265 303.9);
+  --color-cyber-600: oklch(55.8% 0.288 302.321);
+  --color-cyber-700: oklch(49.6% 0.265 301.924);
+  --color-cyber-800: oklch(43.8% 0.218 303.724);
+  --color-cyber-900: oklch(38.1% 0.176 304.987);
+  --color-cyber-950: oklch(29.1% 0.149 302.717);
+
+  --color-caution-50: oklch(98.7% 0.022 95.277);
+  --color-caution-100: oklch(96.2% 0.059 95.617);
+  --color-caution-200: oklch(92.4% 0.12 95.746);
+  --color-caution-300: oklch(87.9% 0.169 91.605);
+  --color-caution-400: oklch(82.8% 0.189 84.429);
+  --color-caution-500: oklch(76.9% 0.188 70.08);
+  --color-caution-600: oklch(66.6% 0.179 58.318);
+  --color-caution-700: oklch(55.5% 0.163 48.998);
+  --color-caution-800: oklch(47.3% 0.137 46.201);
+  --color-caution-900: oklch(41.4% 0.112 45.904);
+  --color-caution-950: oklch(27.9% 0.077 45.635);
+
+  --color-fault-50: oklch(97.1% 0.014 343.198);
+  --color-fault-100: oklch(94.8% 0.028 342.258);
+  --color-fault-200: oklch(89.9% 0.061 343.231);
+  --color-fault-300: oklch(82.3% 0.12 346.018);
+  --color-fault-400: oklch(71.8% 0.202 349.761);
+  --color-fault-500: oklch(65.6% 0.241 354.308);
+  --color-fault-600: oklch(59.2% 0.249 0.584);
+  --color-fault-700: oklch(52.5% 0.223 3.958);
+  --color-fault-800: oklch(45.9% 0.187 3.815);
+  --color-fault-900: oklch(40.8% 0.153 2.432);
+  --color-fault-950: oklch(28.4% 0.109 3.907);
+
+  --color-danger-50: oklch(97.1% 0.013 17.38);
+  --color-danger-100: oklch(93.6% 0.032 17.717);
+  --color-danger-200: oklch(88.5% 0.062 18.334);
+  --color-danger-300: oklch(80.8% 0.114 19.571);
+  --color-danger-400: oklch(70.4% 0.191 22.216);
+  --color-danger-500: oklch(63.7% 0.237 25.331);
+  --color-danger-600: oklch(57.7% 0.245 27.325);
+  --color-danger-700: oklch(50.5% 0.213 27.518);
+  --color-danger-800: oklch(44.4% 0.177 26.899);
+  --color-danger-900: oklch(39.6% 0.141 25.723);
+  --color-danger-950: oklch(25.8% 0.092 26.042);
+
+  /* Neutros com nome — pelo tipo de uso × tom (color-map.json, "neutros"). */
+  --color-surface: var(--color-night-950);       /* fundo da página e dos painéis */
+  --color-raised: var(--color-night-900);        /* painel elevado, campo */
+  --color-raised-strong: var(--color-night-800); /* hover, trilho de barra */
+  --color-line-soft: var(--color-night-900);
+  --color-line: var(--color-night-800);          /* borda e divisor */
+  --color-line-strong: var(--color-night-700);
+  --color-fg-strong: var(--color-night-100);
+  --color-fg: var(--color-night-200);            /* texto do corpo */
+  --color-fg-soft: var(--color-night-300);
+  --color-muted: var(--color-night-400);         /* texto secundário */
+  --color-subtle: var(--color-night-500);        /* abaixo de 4,5:1 — F.2.8 */
+  --color-faint: var(--color-night-600);         /* abaixo de 4,5:1 — F.2.8 */
+
+  /* Brilho neon (F.2.5): a geometria aqui, a cor pelo token —
+     `shadow-glow-15 shadow-accent-500/40`. O currentColor é só o padrão:
+     o Tailwind o troca pela cor de `shadow-<token>`. */
+  --shadow-glow-5: 0 0 5px currentColor;
+  --shadow-glow-6: 0 0 6px currentColor;
+  --shadow-glow-8: 0 0 8px currentColor;
+  --shadow-glow-10: 0 0 10px currentColor;
+  --shadow-glow-12: 0 0 12px currentColor;
+  --shadow-glow-15: 0 0 15px currentColor;
+  --shadow-glow-18: 0 0 18px currentColor;
+  --shadow-glow-20: 0 0 20px currentColor;
+  --shadow-glow-25: 0 0 25px currentColor;
+  --shadow-glow-28: 0 0 28px currentColor;
+  --shadow-glow-30: 0 0 30px currentColor;
+  --drop-shadow-glow-10: 0 0 10px currentColor;
+  --drop-shadow-glow-12: 0 0 12px currentColor;
+  --drop-shadow-glow-15: 0 0 15px currentColor;
+  --drop-shadow-glow-18: 0 0 18px currentColor;
+  --drop-shadow-glow-20: 0 0 20px currentColor;
 
   /* Animações HUD */
   --animate-fadeIn: fadeIn 0.3s ease-out;
@@ -90,22 +228,22 @@
   body {
     margin: 0;
     min-height: 100vh;
-    background-color: #020617;
-    color: #e2e8f0;
+    background-color: var(--color-surface);
+    color: var(--color-fg);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
   ::selection {
-    background-color: #22d3ee;
-    color: #020617;
+    background-color: var(--color-accent-400);
+    color: var(--color-surface);
   }
 
   /* Scrollbar padrão do app */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #164e63 #0f172a;
+    scrollbar-color: var(--color-accent-900) var(--color-raised);
   }
 
   ::-webkit-scrollbar {
@@ -114,24 +252,24 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: var(--color-raised);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #0e7490, #155e75);
+    background: linear-gradient(180deg, var(--color-accent-700), var(--color-accent-800));
     border-radius: 4px;
-    border: 1px solid #164e63;
+    border: 1px solid var(--color-accent-900);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #22d3ee;
+    background: var(--color-accent-400);
   }
 }
 
 /* Scrollbar custom para painéis internos (chat, listas, feeds) */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #155e75 #0f172a;
+  scrollbar-color: var(--color-accent-800) var(--color-raised);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -140,25 +278,25 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: color-mix(in oklab, var(--color-raised) 60%, transparent);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #155e75;
+  background: var(--color-accent-800);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #22d3ee;
+  background: var(--color-accent-400);
 }
 
 /* Efeito CRT / scanlines para overlays HUD */
 .crt-scanlines {
   background-image: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, 0) 0px,
-    rgba(0, 0, 0, 0) 2px,
-    rgba(0, 0, 0, 0.22) 3px
+    transparent 0px,
+    transparent 2px,
+    color-mix(in oklab, var(--color-black) 22%, transparent) 3px
   );
 }
 
@@ -178,7 +316,7 @@
 }
 
 .glitch-text::before {
-  color: #22d3ee;
+  color: var(--color-accent-400);
   animation: glitch 2.5s infinite;
   z-index: -1;
 }

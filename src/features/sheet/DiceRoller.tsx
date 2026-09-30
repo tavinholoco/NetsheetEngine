@@ -75,7 +75,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
             className={`px-3.5 py-2 rounded-lg border-2 transition-all flex items-center space-x-1.5 uppercase font-black tracking-wider cursor-pointer ${
               tab === id
                 ? 'bg-pink-600 text-white border-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.5)]'
-                : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-pink-500/50 hover:text-white'
+                : 'bg-surface text-muted border-line hover:border-pink-500/50 hover:text-white'
             }`}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -85,33 +85,33 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
       </div>
 
       {/* Panel */}
-      <div className="bg-slate-900/80 border-l-4 border-pink-500 border-y border-r border-slate-800 rounded-xl p-6 shadow-[0_0_25px_rgba(236,72,153,0.12)] relative overflow-hidden">
+      <div className="bg-raised/80 border-l-4 border-y border-r border-line rounded-xl p-6 shadow-[0_0_25px_rgba(236,72,153,0.12)] relative overflow-hidden">
         <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[60px] font-black text-pink-500 select-none">
           FNFF
         </div>
 
         {tab === 'skill' && (
           <div className="space-y-4 relative z-10">
-            <div className="flex items-center space-x-2 border-b border-slate-800 pb-3">
+            <div className="flex items-center space-x-2 border-b border-line pb-3">
               <Dice5 className="w-5 h-5 text-pink-400" />
               <h2 className="text-lg font-bold text-pink-400 uppercase tracking-widest">Rolagem de Perícia</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] text-slate-400 block mb-1 uppercase">Perícia:</label>
+                <label className="text-[10px] text-muted block mb-1 uppercase">Perícia:</label>
                 <input
                   type="text"
                   value={skillName}
                   onChange={(e) => setSkillName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 px-2.5 py-2 rounded focus:border-pink-400 focus:outline-none"
+                  className="w-full bg-surface border border-line-strong text-xs text-fg-strong px-2.5 py-2 rounded focus:border-pink-400 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-1 uppercase">Atributo:</label>
+                <label className="text-[10px] text-muted block mb-1 uppercase">Atributo:</label>
                 <select
                   value={skillStat}
                   onChange={(e) => setSkillStat(e.target.value as StatName)}
-                  className="w-full bg-slate-950 border border-slate-700 text-xs text-cyan-300 px-2.5 py-2 rounded focus:border-pink-400 focus:outline-none"
+                  className="w-full bg-surface border border-line-strong text-xs text-accent-300 px-2.5 py-2 rounded focus:border-pink-400 focus:outline-none"
                 >
                   {STATS.map((s) => (
                     <option key={s} value={s}>{s} ({sheet.stats[s] || 0})</option>
@@ -119,14 +119,14 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-1 uppercase">Nível da Perícia:</label>
+                <label className="text-[10px] text-muted block mb-1 uppercase">Nível da Perícia:</label>
                 <input
                   type="number"
                   min={0}
                   max={10}
                   value={skillRank}
                   onChange={(e) => setSkillRank(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-950 border border-slate-700 text-xs text-yellow-400 px-2.5 py-2 rounded focus:border-pink-400 focus:outline-none"
+                  className="w-full bg-surface border border-line-strong text-xs text-signal-400 px-2.5 py-2 rounded focus:border-pink-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -141,33 +141,33 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
 
         {tab === 'damage' && (
           <div className="space-y-4 relative z-10">
-            <div className="flex items-center space-x-2 border-b border-slate-800 pb-3">
-              <Zap className="w-5 h-5 text-yellow-400" />
-              <h2 className="text-lg font-bold text-yellow-400 uppercase tracking-widest">Rolagem de Dano</h2>
+            <div className="flex items-center space-x-2 border-b border-line pb-3">
+              <Zap className="w-5 h-5 text-signal-400" />
+              <h2 className="text-lg font-bold text-signal-400 uppercase tracking-widest">Rolagem de Dano</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-slate-400 block mb-1 uppercase">Arma:</label>
+                <label className="text-[10px] text-muted block mb-1 uppercase">Arma:</label>
                 <input
                   type="text"
                   value={weaponName}
                   onChange={(e) => setWeaponName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 px-2.5 py-2 rounded focus:border-yellow-400 focus:outline-none"
+                  className="w-full bg-surface border border-line-strong text-xs text-fg-strong px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-1 uppercase">Fórmula (ex.: 2d6+2):</label>
+                <label className="text-[10px] text-muted block mb-1 uppercase">Fórmula (ex.: 2d6+2):</label>
                 <input
                   type="text"
                   value={damageFormula}
                   onChange={(e) => setDamageFormula(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 text-xs text-yellow-400 px-2.5 py-2 rounded focus:border-yellow-400 focus:outline-none font-bold"
+                  className="w-full bg-surface border border-line-strong text-xs text-signal-400 px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none font-bold"
                 />
               </div>
             </div>
             <button
               onClick={rollDamage}
-              className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xs uppercase rounded shadow-[0_0_15px_rgba(250,204,21,0.4)] transition-all cursor-pointer"
+              className="w-full py-3 bg-signal-500 hover:bg-signal-400 text-black font-black text-xs uppercase rounded shadow-glow-15 shadow-signal-400/40 transition-all cursor-pointer"
             >
               💥 Rolar {damageFormula} + Local de Impacto
             </button>
@@ -176,19 +176,19 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
 
         {tab === 'save' && (
           <div className="space-y-4 relative z-10">
-            <div className="flex items-center space-x-2 border-b border-slate-800 pb-3">
+            <div className="flex items-center space-x-2 border-b border-line pb-3">
               <HeartPulse className="w-5 h-5 text-red-400" />
               <h2 className="text-lg font-bold text-red-400 uppercase tracking-widest">Stun &amp; Death Save</h2>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted">
               Role 1d10: passa com resultado menor ou igual ao alvo. O alvo é o seu
-              <strong className="text-yellow-400"> BODY ({body})</strong> menos o que o ferimento atual
-              (<strong className="text-yellow-400">{woundRow(sheet.woundLevel).name}</strong>) tira.
+              <strong className="text-signal-400"> BODY ({body})</strong> menos o que o ferimento atual
+              (<strong className="text-signal-400">{woundRow(sheet.woundLevel).name}</strong>) tira.
               Stun a cada dano sofrido; death save a cada turno em ferimento Mortal.
             </p>
             <button
               onClick={rollStunSave}
-              className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase rounded transition-all cursor-pointer"
+              className="w-full py-3 bg-caution-500 hover:bg-caution-400 text-black font-black text-xs uppercase rounded transition-all cursor-pointer"
             >
               💫 Stun · 1d10 ≤ {stunSaveTarget(body, sheet.woundLevel)}
             </button>
@@ -205,11 +205,11 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
       </div>
 
       {/* Histórico */}
-      <div className="bg-slate-950/80 border border-slate-800 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between p-3 border-b border-slate-800">
+      <div className="bg-surface/80 border border-line rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between p-3 border-b border-line">
           <div className="flex items-center space-x-2">
-            <History className="w-4 h-4 text-cyan-400" />
-            <span className="text-xs font-black text-cyan-400 uppercase tracking-widest">Histórico ({rollHistory.length})</span>
+            <History className="w-4 h-4 text-accent-400" />
+            <span className="text-xs font-black text-accent-400 uppercase tracking-widest">Histórico ({rollHistory.length})</span>
           </div>
           <button
             onClick={onClearHistory}
@@ -221,24 +221,24 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
         </div>
         <div className="max-h-80 overflow-y-auto custom-scrollbar">
           {rollHistory.length === 0 ? (
-            <div className="text-center py-8 text-[11px] text-slate-500 font-mono">
+            <div className="text-center py-8 text-[11px] text-subtle font-mono">
               Nenhuma rolagem registrada ainda.
             </div>
           ) : (
             rollHistory.map((roll) => (
-              <div key={roll.id} className="flex items-start justify-between px-3 py-2 border-b border-slate-900 hover:bg-slate-900/40 transition-colors">
+              <div key={roll.id} className="flex items-start justify-between px-3 py-2 border-b border-line-soft hover:bg-raised/40 transition-colors">
                 <div className="min-w-0 space-y-0.5">
                   <div className="flex items-center space-x-2">
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300 uppercase font-bold">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-raised border border-line-strong text-accent-300 uppercase font-bold">
                       {roll.rollType}
                     </span>
                     <span className="text-xs font-bold text-white truncate">{roll.label}</span>
                   </div>
-                  <p className="text-[10px] text-slate-400 truncate">{roll.details}</p>
-                  <span className="text-[9px] text-slate-600">{roll.timestamp}</span>
+                  <p className="text-[10px] text-muted truncate">{roll.details}</p>
+                  <span className="text-[9px] text-faint">{roll.timestamp}</span>
                 </div>
                 <div className="shrink-0 text-right">
-                  <span className={`text-xl font-black ${roll.isCriticalSuccess ? 'text-emerald-400' : roll.isCriticalFailure ? 'text-red-500' : 'text-yellow-400'}`}>
+                  <span className={`text-xl font-black ${roll.isCriticalSuccess ? 'text-ok-400' : roll.isCriticalFailure ? 'text-red-500' : 'text-signal-400'}`}>
                     {roll.total}
                   </span>
                 </div>

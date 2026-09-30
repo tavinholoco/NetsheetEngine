@@ -25,8 +25,8 @@ export const WOUND_MAX = 10;
  * Exportado porque o TacticalGrid.tsx também consome este símbolo.
  */
 export const WOUND_LEVEL_NAMES: { name: string; color: string }[] = [
-  { name: 'Saudável (OK)', color: 'text-emerald-400' },
-  { name: 'Ferimento Leve (Light)', color: 'text-yellow-400' },
+  { name: 'Saudável (OK)', color: 'text-ok-400' },
+  { name: 'Ferimento Leve (Light)', color: 'text-signal-400' },
   { name: 'Ferimento Sério (Serious)', color: 'text-orange-400' },
   { name: 'Ferimento Crítico (Critical)', color: 'text-red-400' },
   { name: 'Mortal 0', color: 'text-red-500' },

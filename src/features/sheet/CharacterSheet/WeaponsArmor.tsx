@@ -67,17 +67,17 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
   // SP por localização vem da regra pura em src/utils/derivedStats.ts
 
   return (
-    <div className="bg-slate-900/70 border-l-4 border-yellow-500 border-y border-r border-slate-800 rounded-lg p-5 shadow-[0_0_20px_rgba(234,179,8,0.1)] space-y-4 relative overflow-hidden">
+    <div className="bg-raised/70 border-l-4 border-signal-500 border-y border-r rounded-lg p-5 shadow-glow-20 shadow-signal-500/10 space-y-4 relative overflow-hidden">
       {/* Background HUD Accent */}
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-yellow-500 select-none">
+      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-signal-500 select-none">
         COMBAT_KIT
       </div>
 
       {/* Header & Tabs */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3 relative z-10">
+      <div className="flex items-center justify-between border-b border-line pb-3 relative z-10">
         <div className="flex items-center space-x-2">
-          <Crosshair className="w-5 h-5 text-yellow-400" />
-          <h2 className="text-lg font-mono font-bold text-yellow-400 uppercase tracking-widest">
+          <Crosshair className="w-5 h-5 text-signal-400" />
+          <h2 className="text-lg font-mono font-bold text-signal-400 uppercase tracking-widest">
             Arsenal & Proteção SP // Combat Systems
           </h2>
         </div>
@@ -88,7 +88,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
             className={`px-3 py-1.5 rounded transition-all font-bold uppercase tracking-wider ${
               activeTab === 'weapons'
                 ? 'bg-pink-600 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
-                : 'bg-slate-950 text-slate-400 hover:text-white'
+                : 'bg-surface text-muted hover:text-white'
             }`}
           >
             🔫 Armas ({sheet.weapons.length})
@@ -97,8 +97,8 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
             onClick={() => setActiveTab('armor')}
             className={`px-3 py-1.5 rounded transition-all font-bold uppercase tracking-wider ${
               activeTab === 'armor'
-                ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.5)]'
-                : 'bg-slate-950 text-slate-400 hover:text-white'
+                ? 'bg-accent-500 text-black shadow-glow-10 shadow-accent-500/50'
+                : 'bg-surface text-muted hover:text-white'
             }`}
           >
             🛡️ Proteção SP por Localização
@@ -111,41 +111,41 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
         <div className="space-y-4 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {sheet.weapons.map((w) => (
-              <div key={w.id} className="bg-slate-950/80 p-4 rounded-lg border-l-2 border-l-pink-500 border-y border-r border-slate-800 hover:border-pink-500/50 transition-all space-y-3">
+              <div key={w.id} className="bg-surface/80 p-4 rounded-lg border-l-2 border-l-pink-500 border-y border-r border-line hover:border-pink-500/50 transition-all space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-sm font-mono font-bold text-white block uppercase">{w.name}</span>
-                    <span className="text-[10px] font-mono text-slate-400">
+                    <span className="text-[10px] font-mono text-muted">
                       Tipo: {w.type} • WA: {w.wa >= 0 ? `+${w.wa}` : w.wa} • Alcance: {w.rangeMeters}m
                     </span>
                   </div>
 
                   <button
                     onClick={() => handleRemoveWeapon(w.id)}
-                    className="p-1 rounded bg-slate-900 hover:bg-pink-950 text-slate-500 hover:text-pink-400 border border-slate-800 transition-all"
+                    className="p-1 rounded bg-raised hover:bg-pink-950 text-subtle hover:text-pink-400 border border-line transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-900 p-2 rounded border border-slate-800">
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-raised p-2 rounded border border-line">
                   <div>
-                    <span className="text-[10px] text-slate-400 block uppercase">Dano:</span>
-                    <span className="text-yellow-400 font-bold">{w.damage}</span>
+                    <span className="text-[10px] text-muted block uppercase">Dano:</span>
+                    <span className="text-signal-400 font-bold">{w.damage}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block uppercase">Cadência (RoF):</span>
-                    <span className="text-cyan-400 font-bold">{w.rof} tiros/turno</span>
+                    <span className="text-[10px] text-muted block uppercase">Cadência (RoF):</span>
+                    <span className="text-accent-400 font-bold">{w.rof} tiros/turno</span>
                   </div>
                 </div>
 
                 {/* Ammo Counter & Action Buttons */}
                 <div className="flex flex-wrap items-center justify-between pt-2 gap-2 text-xs font-mono">
                   <div className="flex items-center space-x-2">
-                    <span className="text-slate-400 uppercase text-[10px]">Munição:</span>
+                    <span className="text-muted uppercase text-[10px]">Munição:</span>
                     <span
                       className={`font-bold ${
-                        w.currentShots === 0 ? 'text-pink-500 animate-pulse' : 'text-emerald-400'
+                        w.currentShots === 0 ? 'text-pink-500 animate-pulse' : 'text-ok-400'
                       }`}
                     >
                       {w.currentShots} / {w.shots}
@@ -159,7 +159,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
                     </button>
                     <button
                       onClick={() => handleReloadWeapon(w.id)}
-                      className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 uppercase text-[10px]"
+                      className="px-2 py-0.5 rounded bg-raised-strong text-fg-soft hover:bg-night-700 uppercase text-[10px]"
                     >
                       Recarregar
                     </button>
@@ -176,7 +176,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
 
                     <button
                       onClick={() => onRollDamageOnly(w.name, w.damage)}
-                      className="px-2 py-1 bg-yellow-500 hover:bg-yellow-400 text-black rounded font-bold text-[10px] uppercase tracking-wider"
+                      className="px-2 py-1 bg-signal-500 hover:bg-signal-400 text-black rounded font-bold text-[10px] uppercase tracking-wider"
                     >
                       Dano
                     </button>
@@ -187,8 +187,8 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
           </div>
 
           {/* Quick Add Presets */}
-          <div className="bg-slate-950/80 p-3 rounded border border-slate-800 space-y-2">
-            <span className="text-xs font-mono font-bold text-slate-400 block uppercase tracking-wider">
+          <div className="bg-surface/80 p-3 rounded border border-line space-y-2">
+            <span className="text-xs font-mono font-bold text-muted block uppercase tracking-wider">
               Adicionar Armas Padrão de Night City:
             </span>
             <div className="flex flex-wrap gap-2">
@@ -196,7 +196,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
                 <button
                   key={w.id}
                   onClick={() => handleAddDefaultWeapon(w)}
-                  className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-cyan-300 flex items-center space-x-1 transition-all"
+                  className="px-2.5 py-1 rounded bg-raised hover:bg-raised-strong border border-line-strong hover:border-accent-500/50 text-xs font-mono text-accent-300 flex items-center space-x-1 transition-all"
                 >
                   <Plus className="w-3 h-3" />
                   <span>{w.name} ({w.damage})</span>
@@ -210,8 +210,8 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
       {/* ARMOR TAB */}
       {activeTab === 'armor' && (
         <div className="space-y-4 relative z-10">
-          <div className="bg-slate-950/80 p-4 rounded-lg border border-slate-800 space-y-3">
-            <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest block">
+          <div className="bg-surface/80 p-4 rounded-lg border border-line space-y-3">
+            <span className="text-xs font-mono font-bold text-accent-400 uppercase tracking-widest block">
               Pontos de Parada (Stopping Power - SP) por Localização Corporal
             </span>
 
@@ -227,22 +227,22 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
                 const spVal = armorSpAt(sheet.armor, loc);
 
                 return (
-                  <div key={loc} className="bg-slate-900/90 p-3 rounded border border-slate-800 text-center space-y-2 hover:border-cyan-500/50 transition-all">
+                  <div key={loc} className="bg-raised/90 p-3 rounded border border-line text-center space-y-2 hover:border-accent-500/50 transition-all">
                     <span className="text-xl block">{icon}</span>
-                    <span className="text-[10px] font-mono text-slate-400 block uppercase">{label}</span>
-                    <div className="text-lg font-mono font-bold text-yellow-400">
+                    <span className="text-[10px] font-mono text-muted block uppercase">{label}</span>
+                    <div className="text-lg font-mono font-bold text-signal-400">
                       SP {spVal}
                     </div>
                     <div className="flex items-center justify-center space-x-1">
                       <button
                         onClick={() => handleUpdateArmorSp(loc, spVal - 1)}
-                        className="w-5 h-5 rounded bg-slate-950 border border-slate-700 text-xs font-mono font-bold text-slate-300 hover:bg-slate-800"
+                        className="w-5 h-5 rounded bg-surface border border-line-strong text-xs font-mono font-bold text-fg-soft hover:bg-raised-strong"
                       >
                         -
                       </button>
                       <button
                         onClick={() => handleUpdateArmorSp(loc, spVal + 1)}
-                        className="w-5 h-5 rounded bg-slate-950 border border-slate-700 text-xs font-mono font-bold text-slate-300 hover:bg-slate-800"
+                        className="w-5 h-5 rounded bg-surface border border-line-strong text-xs font-mono font-bold text-fg-soft hover:bg-raised-strong"
                       >
                         +
                       </button>

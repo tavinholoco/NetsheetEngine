@@ -1222,7 +1222,7 @@ do `combatModifier` e do `currentStats`. **Sem esta etapa, aplicar a identidade 
 substituições — e a próxima mudança custará outras tantas.** Esta parte **não muda o visual**; a que
 muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3).
 
-- [ ] **F.2.1** **Duas camadas de token, e a tabela de conversão.** No `@theme` do `index.css`:
+- [x] **F.2.1** **Duas camadas de token, e a tabela de conversão.** No `@theme` do `index.css`:
       - **rampa por papel**, com os tons que o código usa e os valores de hoje — `accent` (ciano: ação,
         foco, links), `signal` (amarelo: destaque, GM, marca), `ok` (verde: sucesso, online), `net`
         (roxo: Netrunner e IA), `fault` (magenta: erro, destrutivo, hostil) e `danger` (vermelho: **só
@@ -1237,16 +1237,54 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3).
       - *Por que duas camadas e não os 7 nomes planos de 02/09:* com 7 nomes, `slate-100/200/300`
         viram um só `fg` e a conversão exige juízo em cada linha; com a rampa, é mecânica — que era a
         promessa do item.
-- [ ] **F.2.4** **Converter por script**, arquivo por arquivo, do maior para o menor (`MultiplayerRoom`
+      *(30/09/2026 — as rampas têm 11 tons cada, copiados da paleta instalada
+      (`npx tsx scripts/migrate-colors.ts --tema`); os neutros com nome são `surface`, `raised`,
+      `raised-strong`, `line-soft`, `line`, `line-strong`, `fg-strong`, `fg`, `fg-soft`, `muted`,
+      `subtle` e `faint`, e o tom sem nome cai em `night-*`. Os 8 tokens antigos, sem uso, saíram, e o
+      resto do `index.css` (corpo, seleção, scrollbars, scanline) lê os tokens. **Três ajustes, pelo
+      que os usos mostraram** (a tabela diz o porquê de cada um):
+      - o **rosa não entra por tabela**: os 39 usos de hoje são DADOS, rolagem e armas — nenhum é
+        falha. Trocar por `fault` rotularia errado todos; vai à mão na F.2.2, com o vermelho (e as
+        famílias de poucos usos: `rose` e `orange` da escala de ferimento, `sky` do tema de grid azul,
+        `teal` do atributo EMP);
+      - o **roxo** é Netrunner/IA **e** cyberware/humanidade: o papel é **`cyber`**, não `net`;
+      - o **âmbar** (56 usos) ganha papel próprio, **`caution`**: ação de combate, perigo no grid,
+        status inativo.
+      A tabela real tem **130** combinações (`--tabela` imprime cada uma e o destino).
+      `migrate-colors` (11 — conversão e conflitos).)*
+- [x] **F.2.4** **Converter por script**, arquivo por arquivo, do maior para o menor (`MultiplayerRoom`
       235 → `TacticalGrid` 168 → `CyberpunkMenu` 162 → `FriendsList` 161 → `PrdViewer` 92 → …), um
       commit por arquivo ou lote. Inclui as strings de classe fora de `.tsx` (`injuryRules.ts`). A
       app funciona o tempo todo.
-- [ ] **F.2.5** **Brilho por token:** `--shadow-glow` (e os raios que o código usa) no `@theme`, e
+      *(30/09/2026 — `npx tsx scripts/migrate-colors.ts --aplicar`: os quatro maiores um por commit e
+      os outros 24 num lote; ~1.520 trocas. **Achado pela F.2.6 — a primeira conversão mudou o
+      visual:** o cartão da sala ganhou uma borda verde inteira. **19 elementos** tinham duas classes
+      de cor da mesma propriedade (`border-l-4 border-emerald-500 … border-slate-800`), e o Tailwind 4
+      resolve pela ordem do CSS, que para a mesma propriedade é a **alfabética do nome** (conferido
+      compilando): `slate` vencia `emerald`, mas `line` perde para `ok` — renomear inverte o vencedor.
+      A conversão foi desfeita (os commits eram gerados e não tinham subido) e refeita em ordem:
+      primeiro `--resolver` tira a classe que perdia — código morto, nunca pintou nada —, depois a
+      conversão. O detector entende template e ternário (a parte fixa soma a cada ramo, os ramos não
+      somam entre si): **por linha eram 101 "conflitos"; os reais são 19**. `--conflitos` depois da
+      conversão: **0**. *Revelado de desenho:* 13 cartões têm uma "barra de destaque" colorida à
+      esquerda que **nunca apareceu**, e os 4 amarelos pintavam a borda inteira — vai à F.2.11.)*
+- [x] **F.2.5** **Brilho por token:** `--shadow-glow` (e os raios que o código usa) no `@theme`, e
       `shadow-glow shadow-accent/40` no lugar dos **110** `rgba()` em `shadow-[…]`.
-- [ ] **F.2.6** **Prova — nada mudou:** capturas antes e depois de cinco telas (início, ficha, dados,
+      *(30/09/2026 — uma escala por raio, `shadow-glow-5` a `-30` e `drop-shadow-glow-10` a `-20`, com
+      `currentColor` que o Tailwind troca pela cor de `shadow-<token>` (conferido no 4.3.3). No mesmo
+      passe do script: `shadow-[0_0_15px_rgba(6,182,212,0.4)]` → `shadow-glow-15 shadow-accent-500/40`.
+      Os brilhos vermelhos e rosas e o fósforo RGB do efeito CRT ficam para a F.2b.)*
+- [x] **F.2.6** **Prova — nada mudou:** capturas antes e depois de cinco telas (início, ficha, dados,
       mesa do GM, mesa do jogador) no `netsheet-prod`. Diferença aceita: só o arredondamento dos tons
       fundidos nos neutros. O `ui-smoke`, que fixa `bg-yellow-400`, passa a fixar o token — trocado
       com o porquê. `audit:colors` deve cair perto de zero, fora o vermelho da F.2.2.
+      *(30/09/2026 — captura com o Chromium do Playwright, relógio congelado e animação desligada, e
+      comparação pixel a pixel. **Ruído medido antes:** duas capturas do mesmo build diferem só numa
+      região de 30×8 px da ficha. **Resultado:** nenhuma diferença forte (Δ > 12) fora dessa região;
+      sobram diferenças de **no máximo 8** (de 255) nos halos de brilho — o `rgba` da paleta antiga
+      (v3) virou o tom equivalente de hoje (v4, oklch). A remoção das 19 classes mortas, sozinha: zero
+      diferença. `audit:colors`: **1.879 → 322** (paleta 285 · `rgba` 36 · hex 1) — o que sobra é
+      todo da F.2b. `black`/`white`: 109.)*
 
 #### F.1 — O sistema tipográfico *(1 dia — PR 3; decisão 10a)*
 
@@ -1287,7 +1325,9 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3).
   | Faixa da marca, menu ativo, PRD, página inicial, cabeçalho da página | `signal` ou `accent` |
   | O GM — mensagens no chat, "Poderes do GM" | `signal` (o GM já é amarelo no papel) |
   | Rótulo do atributo BODY | neutro ou `accent` |
-  | Erro de sistema, botão de apagar, alerta de humanidade, falha crítica no dado, NPC hostil no grid | **`fault`** — magenta (o `neon-pink` que o `@theme` já tem) |
+  | Erro de sistema, botão de apagar, alerta de humanidade, falha crítica no dado, NPC hostil no grid | **`fault`** — magenta (a rampa já existe no `@theme` desde a F.2.1) |
+  | **O rosa de hoje** (F.2.1): DADOS, rolagem, armas, o atributo ATTR | a matiz nova de DADOS (F.2.9) — **não** `fault` |
+  | `rose`/`orange` da escala de ferimento; `orange` do atributo MA; `sky` do tema de grid azul; `teal` do atributo EMP | `wound-*` (F.2.7); nos atributos e no tema, um tom da paleta de papéis que os mantenha distintos |
 
   *O NPC:* muda nas classes do `TacticalGrid`; o campo `color` persistido fica como está (sem
   leitor — pista da G). Os grids já gravados seguem válidos.
@@ -1296,14 +1336,22 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3).
 - [ ] **F.2.7** **A escala de dano, `wound-*`, com contraste.** No fundo escuro, a gravidade tem que
       **clarear**, não escurecer: hoje Mortal 2–6 fica entre 3,0 e 4,5:1. Todo tom da escala com
       **≥ 4,5:1** sobre `surface` e `raised`, medido com a cor computada.
-- [ ] **F.2.8** **`muted` com ≥ 4,5:1.** `text-slate-500` (56) e `text-slate-600` (17) viram `muted` —
-      o conserto de contraste num lugar só, que é o ganho do token.
+- [ ] **F.2.8** **Texto apagado com ≥ 4,5:1.** Desde a F.2.4, os antigos `text-slate-500` (56) e
+      `text-slate-600` (17) são os tokens `subtle` e `faint`: o conserto é trocar o **valor** deles no
+      `@theme` (ou fundi-los em `muted`), num lugar só — o ganho do token.
 - [ ] **F.2.9** **Cor por seção, mantida** (decisão 10c). As 8 abas seguem com cor própria, tirada da
       paleta de papéis e nunca de `danger`: o **PRD** sai do vermelho e **DADOS** sai do rosa (que virou
       `fault`). A matiz nova de cada uma é escolhida com captura no PR.
 - [ ] **F.2.10** **A trava.** `--color-*: initial` no `@theme` (a paleta padrão deixa de gerar classe;
       `black` e `white` redefinidos) e o `npm run audit:colors` no CI **exigindo zero**, fora das
       exceções nomeadas. Sem isso a paleta volta a ambiguar sozinha — a razão de fundo da F.2.2.
+      **E `--conflitos` em zero** (`scripts/migrate-colors.ts`): duas classes de cor da mesma
+      propriedade no mesmo elemento fazem o visual depender do alfabeto (achado da F.2.4) — a
+      classificação à mão da F.2.2 renomeia vermelho e rosa, e cada troca pode inverter um vencedor.
+- [ ] **F.2.11** **As barras de destaque que nunca apareceram** (achado da F.2.4). 13 cartões tinham
+      `border-l-4` com uma cor que perdia para a borda neutra, e os 4 amarelos pintavam a borda
+      inteira. A F.2.4 preservou o que se via; aqui se decide, com captura, se a barra aparece — com
+      `border-l-<cor>`, que não briga com a borda dos outros lados — ou se o desenho fica sem ela.
 
 #### F.3 — O vocabulário visual oitentista *(1 dia — PR 3; decisão 10d)*
 
@@ -1772,7 +1820,7 @@ público mudar.
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
-| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0a–f feitos (premissas, decisão 10, fontes auto-hospedadas, guardas); F.0g no ar depois do deploy; próximo: F.2.1 | — |
+| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (PR #27) e a parte mecânica da F.2 (PR 2: tokens, conversão, brilho, prova por captura) feitas; F.0g no ar depois do deploy; próximo: F.1.1 | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
@@ -1789,13 +1837,14 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **658** testes, 46 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e)* — `vitest` 4.1.11 |
+| `npx vitest run` | **669** testes, 47 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`) |
 | Chunk de entrada | 629 kB / 186 kB gzip |
-| `npm run audit:colors` | **1.879** a migrar (paleta 1.748 · `rgba` 114 · hex 17) e 108 `black`/`white` — a linha de base da F (F.0e, 30/09); zero é o critério de pronto da F.2.10 |
+| `npm run audit:colors` | **322** a migrar (paleta 285 · `rgba` 36 · hex 1) e 109 `black`/`white` — era **1.879** na F.0e; a F.2 mecânica converteu o resto, e o que sobra é o vermelho, o rosa e a escala de ferimento da F.2b. Zero é o critério de pronto da F.2.10 |
+| `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4) |
 | Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
