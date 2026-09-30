@@ -95,6 +95,12 @@ verdade antes do fim do plano. Ver o registro abaixo.
 
 Uma linha por dump. O conteúdo fica fora do repositório; aqui fica só que ele existe e foi conferido.
 
+> **`rooms` subir e descer é esperado — não é alarme.** A tabela guarda as mesas em andamento, e mesa
+> sem ninguém ativo por 24 h sai do banco: pelo coletor (B.5) e, desde a Fase E (E.03, 30/09/2026), já
+> **no boot** do servidor. A sala velha do primeiro backup (29/09) sai no primeiro boot depois da
+> suspensão de setembro — `rooms` 1 → 0 no backup de 01/10 é isso. O alarme vale para as tabelas de
+> gente: `auth.users`, `character_sheets`, `profiles` e `direct_messages`.
+
 | Data | Motivo | Linhas (principais tabelas) | Restaurado? | Observação |
 |---|---|---|---|---|
 | 29/09/2026 | Primeiro backup (R.10) | `auth.users` 0 · `character_sheets` 0 · `profiles` 0 · `rooms` 1 · `storage.buckets` 1 | Não — ver abaixo | **A produção ainda não tem usuário nenhum**: o backup existe antes do primeiro dado real, não depois de perdê-lo. 16,6 kB de `data.sql`; hashes no `MANIFEST.txt` |
