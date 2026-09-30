@@ -320,9 +320,13 @@ produção):
 - **helmet (production)** — security headers: `Content-Security-Policy`
   customizada (script só do próprio origin; estilos inline liberados para
   Tailwind/React; imagens `https:` para avatares do storage; conexões
-  `ws/wss/https` para o WebSocket das mesas e Supabase), `X-Content-Type-Options:
+  `ws/wss/https` para o WebSocket das mesas e Supabase; **fontes só do próprio
+  origin** — auto-hospedadas pelo `@fontsource` desde a F.0c, porque o `@import`
+  do Google era recusado em silêncio), `X-Content-Type-Options:
   nosniff`, `X-Frame-Options`, `Referrer-Policy`, HSTS. Em dev o helmet é
-  pulado (o Vite HMR precisa de inline/eval).
+  pulado (o Vite HMR precisa de inline/eval) — por isso o E2E
+  `e2e/fonts-csp.spec.ts`, que roda o build de produção, falha com qualquer
+  violação de CSP: é o único lugar em que o CSP do ar é exercitado antes do deploy.
 - **Logs estruturados** — JSON lines no stdout (`{"t","level","event",...}`),
   parseáveis por qualquer coletor; nunca logam segredos.
 

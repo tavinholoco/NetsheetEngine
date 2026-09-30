@@ -83,10 +83,11 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 651 testes depois da Fase E (ver "Linha de base atual" no plano)
+npx vitest run            # 658 testes depois da F.0 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
-npm run test:e2e          # Playwright, 6 testes, sobe o servidor de produção
+npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
+npm run audit:colors      # cor escrita à mão em src/ (Fase F) — o critério de pronto da F.2 é zero
 node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
 npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) — exige Docker; nunca junto do CI
 ```

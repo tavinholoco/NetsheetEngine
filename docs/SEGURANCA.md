@@ -556,7 +556,32 @@ contrato e de regra, sem achado de segurança.
 
 ### Fase F — Reestruturação visual
 
-*(a preencher)*
+**30/09/2026 — F.0 (PR 1: as fontes e as guardas).** A F vai ao ar em três PRs, e cada um publica
+sozinho — por isso uma entrada por PR, como na E. O F.5 fecha a fase inteira.
+
+1. **Entrada nova?** Nenhuma. As fontes são arquivos estáticos do build; o servidor não aceita nada novo.
+2. **Dado novo sai?** Nenhum do servidor. **Sai um dado a menos:** o navegador do jogador deixava de
+   pedir a folha ao `fonts.googleapis.com` porque o CSP a recusava — mas a intenção do código era pedir,
+   com o IP e o *referer* do jogador indo ao Google. Agora a fonte vem do próprio origin, e o
+   `font-src 'self'` passou a descrever o que o app faz, em vez de só barrar.
+3. **Autorização nova?** Nenhuma.
+4. **Jogador convidado hostil?** Nada muda para ele.
+5. **Estado novo sem limite?** Nenhum. O `dist/` cresce com 26 arquivos de fonte (13 `woff2` e 13
+   `woff`, todos os subconjuntos), mas o `unicode-range` faz o navegador baixar só o `latin` — medido: três
+   arquivos, ~15 KB cada, na ficha.
+6. **Custo por requisição a serviço externo?** Nenhum externo. A banda das fontes sai do Render: ~40–80 KB
+   por aparelho, uma vez, com o nome do arquivo com *hash*. Longe dos 5 GB do workspace.
+
+**Dependências novas:** `@fontsource/rajdhani` e `@fontsource/share-tech-mono` 5.3.0 — só CSS e fontes,
+**sem código executável** e sem dependência transitiva; licença OFL-1.1. `npm audit`: 0.
+
+**Guarda nova:** o E2E `fonts-csp` falha com **qualquer** violação de CSP nas três telas principais. Até
+aqui o CSP de produção não era exercitado por nenhum teste — o helmet é pulado em dev.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança: o ARQ-09 é um bug de
+apresentação, e o CSP ficou como estava.
+
+*F.1–F.4: a preencher no F.5.*
 
 ### Fases G, H, I e J — varreduras
 
