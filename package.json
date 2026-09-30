@@ -18,6 +18,7 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "audit:ci": "node scripts/audit-ci.mjs",
+    "audit:colors": "tsx scripts/audit-colors.ts",
     "backup:db": "tsx scripts/backup-db.ts"
   },
   "dependencies": {
