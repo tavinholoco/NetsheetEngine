@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap");
 @import "tailwindcss";
 
 /* ============================================================
@@ -7,7 +6,9 @@
    ============================================================ */
 
 @theme {
-  /* Fonte da interface (sans) e fonte de terminal (mono) */
+  /* Fonte da interface (sans) e fonte de terminal (mono). Os arquivos vêm do
+     @fontsource, importados no main.tsx (F.0c) — nada de host externo: o CSP
+     de produção só aceita fonte do próprio origin. */
   --font-sans: "Rajdhani", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Share Tech Mono", ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
 
