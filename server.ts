@@ -52,6 +52,12 @@ import {
   wasRemovedByGm,
   roomIsFullFor,
   MAX_SEATS_PER_ROOM,
+  roomsAtCapacity,
+  MAX_ROOMS,
+  roomNpcsFull,
+  MAX_NPCS_PER_ROOM,
+  sheetTooLarge,
+  MAX_SHEET_BYTES,
   verifySession,
   sanitizeText,
   isValidRoomCode,
@@ -353,6 +359,13 @@ function broadcastRoomUpdate(code: string) {
   if (clients && clients.size > 0) {
     const ssePayload = `data: ${payload}\n\n`;
     clients.forEach(res => {
+      // E.03 (SEC-15) — stream que não lê não acumula reenvios na memória.
+      if (res.writableLength > WS_LIMITS.maxBufferedBytes) {
+        logger.warn("slow_consumer_closed", { room: code.toUpperCase(), peerId: ssePeer.get(res), transport: "sse", bytes: res.writableLength });
+        clients.delete(res);
+        try { res.end(); } catch { /* já fechado */ }
+        return;
+      }
       try {
         res.write(ssePayload);
         if (typeof (res as any).flush === 'function') {
@@ -369,6 +382,15 @@ function broadcastRoomUpdate(code: string) {
   if (sockets && sockets.size > 0) {
     for (const ws of sockets) {
       if (ws.readyState === WebSocket.OPEN) {
+        // E.03 (SEC-15) — socket que não lê é fechado, em vez de o servidor
+        // guardar cada reenvio da sala para ele. `terminate`, não `close`: o
+        // aperto de mão de fechamento também ficaria preso no buffer.
+        if (ws.bufferedAmount > WS_LIMITS.maxBufferedBytes) {
+          logger.warn("slow_consumer_closed", { room: code.toUpperCase(), peerId: wsPeer.get(ws), transport: "ws", bytes: ws.bufferedAmount });
+          sockets.delete(ws);
+          ws.terminate();
+          continue;
+        }
         try {
           ws.send(payload);
         } catch (e) {
@@ -468,6 +490,15 @@ app.post("/api/rooms/create", roomLimiter, (req, res) => {
       code: "room_exists"
     });
   }
+  // E.03 (SEC-15) — salas abertas têm teto: criar não exige login no servidor,
+  // e cada sala é memória na instância de 512 MB e uma linha no banco.
+  if (roomsAtCapacity()) {
+    logger.warn("rooms_full", { max: MAX_ROOMS });
+    return res.status(503).json({
+      error: `O servidor está com o máximo de mesas abertas (${MAX_ROOMS}). Tente de novo mais tarde.`,
+      code: "rooms_full"
+    });
+  }
   const result = createRoom(code, name, gmHandle, gmPeerId);
   broadcastRoomUpdate(result.room.code);
   res.json({ room: result.room, sessionToken: result.sessionToken });
@@ -484,6 +515,10 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   }
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
     return res.status(400).json({ error: "Ficha de personagem inválida." });
+  }
+  // E.03 (SEC-15) — a ficha vai em todo reenvio da sala, a cada socket.
+  if (sheetTooLarge(sheet)) {
+    return res.status(413).json({ error: `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`, code: "sheet_too_large" });
   }
   // R.1 (SEC-07) — voltar a um assento ocupado exige o token vigente dele, no
   // mesmo header da leitura autenticada (B.3). O `peerId` sozinho é público.
@@ -547,6 +582,9 @@ app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
     return res.status(400).json({ error: "Ficha inválida." });
   }
+  if (sheetTooLarge(sheet)) {
+    return res.status(413).json({ error: `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`, code: "sheet_too_large" });
+  }
   const result = updatePlayerSheet(req.params.code, peerId, sheet);
   if (result.error || !result.room) {
     return res.status(404).json({ error: result.error || "Room or player not found" });
@@ -594,6 +632,13 @@ app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
     return res.status(401).json({ error: ERR_SESSAO_MESA });
   }
   const { archetypeId } = req.body ?? {};
+  // E.03 (SEC-15) — teto de NPCs: 409 com código, como a sala cheia (R.16).
+  if (roomNpcsFull(req.params.code)) {
+    return res.status(409).json({
+      error: `A mesa já tem ${MAX_NPCS_PER_ROOM} NPCs. Remova algum para gerar outro.`,
+      code: "npcs_full"
+    });
+  }
   const result = generateRoomNpc(req.params.code, requesterPeerId, archetypeId);
   return respondWithResult(res, result);
 });

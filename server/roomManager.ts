@@ -159,6 +159,59 @@ export function isValidRoomCode(code: string): boolean {
 // In-memory store for game rooms
 const rooms: Record<string, GameRoom> = {};
 
+// ============================================================
+// Fase E (E.03 — SEC-15) — OS TETOS DE TAMANHO
+// ============================================================
+// A R.4 e a R.16 limitaram o ritmo e os assentos; o tamanho do que o servidor
+// guarda e reenvia seguia livre. E criar sala não exige login no servidor:
+// qualquer visitante é GM da própria sala. Medido em 30/09: salas a ~4 KB
+// cada, sem limite (um IP enchia os 512 MB da instância em horas, e o banco
+// passava dos 500 MB do Supabase gratuito, que então vira só-leitura); ficha
+// saneada de até ~557 KB; NPCs e chat sem teto em todo caminho.
+
+/** Salas abertas ao mesmo tempo. A mesa do dono usa poucas; o coletor libera
+ *  a vaga 24 h depois da última atividade. `MAX_ROOMS` no painel muda sem
+ *  deploy de código — é a saída se alguém ocupar as vagas. */
+export const MAX_ROOMS = Number(process.env.MAX_ROOMS) || 30;
+/** NPCs com ficha por sala. Um tiroteio grande tem uma ou duas dezenas. */
+export const MAX_NPCS_PER_ROOM = 32;
+/** Tamanho da ficha saneada, em bytes de JSON. A do gerador tem 2,7 KB; uma
+ *  ficha cheia de verdade, ~10–15 KB. */
+export const MAX_SHEET_BYTES = 64 * 1024;
+/** Mensagens guardadas no chat da sala — o teto que já existia em dois caminhos. */
+export const MAX_CHAT_MESSAGES = 100;
+
+/** Cabe mais uma sala? */
+export function roomsAtCapacity(): boolean {
+  return Object.keys(rooms).length >= MAX_ROOMS;
+}
+
+/** A sala já tem o máximo de NPCs? */
+export function roomNpcsFull(code: string): boolean {
+  const room = getRoom(code);
+  return !!room && Object.keys(room.npcs ?? {}).length >= MAX_NPCS_PER_ROOM;
+}
+
+function sheetBytes(sheet: unknown): number {
+  return Buffer.byteLength(JSON.stringify(sheet));
+}
+
+/** A ficha, depois de saneada, passa do teto? (`false` se nem é ficha — a
+ *  validação de forma é de outro lugar.) */
+export function sheetTooLarge(sheet: unknown): boolean {
+  const validated = sanitizeCharacterSheet(sheet);
+  return !!validated && sheetBytes(validated.sheet) > MAX_SHEET_BYTES;
+}
+
+/** Guarda uma mensagem no chat com o teto — o ÚNICO caminho de escrita. Antes,
+ *  dois caminhos tinham teto e oito não; e o do jogador tirava uma só. */
+function pushChat(room: GameRoom, message: ChatMessage): void {
+  room.chatMessages.push(message);
+  if (room.chatMessages.length > MAX_CHAT_MESSAGES) {
+    room.chatMessages.splice(0, room.chatMessages.length - MAX_CHAT_MESSAGES);
+  }
+}
+
 // Fase 3 (T3.4) — timeout de isOnline por inatividade.
 // Sobrescrevível via env (ex.: ROOM_OFFLINE_TIMEOUT_MS=8000 para testes).
 export const ROOM_OFFLINE_TIMEOUT_MS =
@@ -205,23 +258,27 @@ function parseTime(value: unknown): number | null {
  *
  * Retorna os códigos recolhidos.
  */
+/**
+ * A sala está abandonada? Sem jogador, ou sem nenhum timestamp legível, cai
+ * para a criação da sala; se nem isso der, a linha é lixo. Exportada para o
+ * restore (E.03): sala abandonada não volta no boot — o coletor só roda 15 min
+ * depois, e o restore trazia tudo de volta antes dele.
+ */
+export function isRoomAbandoned(room: GameRoom, maxIdleMs: number = ROOM_ABANDONED_TIMEOUT_MS, now: number = Date.now()): boolean {
+  const players = room.players && typeof room.players === "object" ? Object.values(room.players) : [];
+  const times = players
+    .map((p) => parseTime(p?.lastActiveAt))
+    .filter((t): t is number => t !== null);
+  const lastActivity = times.length > 0 ? Math.max(...times) : parseTime(room.createdAt);
+  return lastActivity === null || now - lastActivity > maxIdleMs;
+}
+
 export function collectAbandonedRooms(maxIdleMs: number = ROOM_ABANDONED_TIMEOUT_MS): string[] {
   const now = Date.now();
   const doomed: string[] = [];
 
   for (const room of Object.values(rooms)) {
-    const players = Object.values(room.players);
-    const times = players
-      .map((p) => parseTime(p.lastActiveAt))
-      .filter((t): t is number => t !== null);
-
-    // Sem jogador, ou sem nenhum timestamp legível: cai para a criação da
-    // sala. Se nem isso der, a linha é lixo e vai embora.
-    const lastActivity = times.length > 0 ? Math.max(...times) : parseTime(room.createdAt);
-
-    if (lastActivity === null || now - lastActivity > maxIdleMs) {
-      doomed.push(room.code);
-    }
+    if (isRoomAbandoned(room, maxIdleMs, now)) doomed.push(room.code);
   }
 
   // Deletar só depois de percorrer — mutar o mapa durante a iteração é
@@ -277,6 +334,10 @@ export function createRoom(code: string, roomName: string, gmHandle: string, gmP
   // qualquer caminho futuro — chegar aqui com código em uso é bug.
   if (rooms[normalizedCode]) {
     throw new Error(`Sala ${normalizedCode} já existe — criar não sobrescreve (R.2).`);
+  }
+  // E.03 (SEC-15) — mesma defesa: a rota responde 503 antes de chegar aqui.
+  if (roomsAtCapacity()) {
+    throw new Error(`Teto de ${MAX_ROOMS} salas atingido (E.03).`);
   }
   const gmUserPeerId = sanitizeText(gmPeerId, 64) || "gm_" + Date.now().toString(36);
   const safeGmHandle = sanitizeText(gmHandle, 30) || "Mestre de Jogo";
@@ -345,6 +406,9 @@ export function restoreRoom(room: GameRoom): boolean {
   const code = room.code.trim().toUpperCase();
   if (!code || !isValidRoomCode(code)) return false;
   if (!room.players || typeof room.players !== "object") return false;
+  // E.03 (SEC-15) — o boot não traz de volta mais salas do que cabem. O
+  // restore lê as mais recentes primeiro (`updated_at` decrescente).
+  if (!rooms[code] && roomsAtCapacity()) return false;
 
   // Defaults defensivos: handlers operam nestes campos (postChatMessage
   // faz .push, updateTacticalGrid acessa .tokens, nextTurn lê a lista).
@@ -494,6 +558,8 @@ export function joinRoom(
   // partir do navegador. Sem isto, atributos e woundLevel entravam verbatim.
   const validated = sanitizeCharacterSheet(sheet);
   if (!validated) return null;
+  // E.03 (SEC-15) — a rota responde 413 antes; isto é a defesa em todo caminho.
+  if (sheetBytes(validated.sheet) > MAX_SHEET_BYTES) return null;
   if (validated.changed.length > 0) {
     logger.warn("sheet_sanitized", { at: "joinRoom", code, peerId: safePeerId, fields: validated.changed.slice(0, 20), count: validated.changed.length });
   }
@@ -562,7 +628,7 @@ export function joinRoom(
   // Mensagem de sistema: silenciosa em reconexão (evita spam de "conectou-se"
   // a cada EventSource retry). Só anuncia primeiro join ou reconexão pós-offline.
   if (!isReconnect || !existing.isOnline) {
-    room.chatMessages.push({
+    pushChat(room, {
       id: "msg_join_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
       senderHandle: "SISTEMA_NET",
       senderRole: "gm",
@@ -590,6 +656,9 @@ export function updatePlayerSheet(code: string, peerId: string, sheet: Character
   // mesa, eram persistidos e transmitidos a todos.
   const validated = sanitizeCharacterSheet(sheet);
   if (!validated) return { room: null, error: "Ficha inválida" };
+  if (sheetBytes(validated.sheet) > MAX_SHEET_BYTES) {
+    return { room: null, error: `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).` };
+  }
   if (validated.changed.length > 0) {
     logger.warn("sheet_sanitized", { at: "updatePlayerSheet", code, peerId, fields: validated.changed.slice(0, 20), count: validated.changed.length });
   }
@@ -689,6 +758,10 @@ export function generateRoomNpc(
   if (!checkIsGm(room, requesterPeerId)) {
     return { room: null, error: "Acesso Negado! Apenas o Mestre da Mesa pode gerar NPCs." };
   }
+  // E.03 (SEC-15) — cada NPC é uma ficha a mais em todo reenvio da sala.
+  if (roomNpcsFull(room.code)) {
+    return { room: null, error: `A mesa já tem ${MAX_NPCS_PER_ROOM} NPCs. Remova algum para gerar outro.` };
+  }
 
   const sheet = generateRandomNpc(archetypeId);
   const npcPlayer: RoomPlayer = {
@@ -722,7 +795,7 @@ export function generateRoomNpc(
     });
   }
 
-  room.chatMessages.push({
+  pushChat(room, {
     id: "msg_npc_gen_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
     senderHandle: "SISTEMA_NET",
     senderRole: "gm",
@@ -780,7 +853,7 @@ export function generateRoomPlayerEdgerunner(
     });
   }
 
-  room.chatMessages.push({
+  pushChat(room, {
     id: "msg_edgerunner_gen_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
     senderHandle: "SISTEMA_NET",
     senderRole: "gm",
@@ -841,7 +914,7 @@ export function deleteRoomNpc(
   );
 
   if (removedHandle) {
-    room.chatMessages.push({
+    pushChat(room, {
       id: "msg_npc_del_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
       senderHandle: "SISTEMA_NET",
       senderRole: "gm",
@@ -910,7 +983,7 @@ export function deleteGeneratedPlayer(
         i => i.playerId !== targetPeerId && i.playerId !== actualPeerId && i.playerId !== targetKey
       );
 
-      room.chatMessages.push({
+      pushChat(room, {
         id: "msg_plr_del_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
         senderHandle: "SISTEMA_NET",
         senderRole: "gm",
@@ -1001,11 +1074,7 @@ export function postChatMessage(
     rollResult
   };
 
-  room.chatMessages.push(newMsg);
-  // Keep last 100 messages
-  if (room.chatMessages.length > 100) {
-    room.chatMessages.shift();
-  }
+  pushChat(room, newMsg);
 
   return { room };
 }
@@ -1110,7 +1179,7 @@ const chatTime = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit",
 
 /** Mensagem do sistema no chat da mesa, com o mesmo teto de 100 do `postChatMessage`. */
 function pushSystemMessage(room: GameRoom, prefix: string, text: string, rollResult?: RollResult): void {
-  room.chatMessages.push({
+  pushChat(room, {
     id: `msg_${prefix}_` + Date.now() + "_" + crypto.randomBytes(3).toString("hex"),
     senderHandle: "SISTEMA_NET",
     senderRole: "gm",
@@ -1119,7 +1188,6 @@ function pushSystemMessage(room: GameRoom, prefix: string, text: string, rollRes
     isDiceRoll: !!rollResult,
     rollResult
   });
-  if (room.chatMessages.length > 100) room.chatMessages.splice(0, room.chatMessages.length - 100);
 }
 
 /**
@@ -1519,7 +1587,7 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
         const newGm = remainingOnline[0];
         room.gmPeerId = newGm.peerId;
         room.gmHandle = newGm.handle;
-        room.chatMessages.push({
+        pushChat(room, {
           id: "msg_gm_transfer_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
           senderHandle: "SISTEMA_NET",
           senderRole: "gm",
@@ -1528,7 +1596,7 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
         });
       } else {
         room.gmPeerId = undefined;
-        room.chatMessages.push({
+        pushChat(room, {
           id: "msg_gm_left_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
           senderHandle: "SISTEMA_NET",
           senderRole: "gm",
@@ -1538,7 +1606,7 @@ export function leaveRoom(code: string, peerId: string): { room: GameRoom | null
       }
     }
 
-    room.chatMessages.push({
+    pushChat(room, {
       id: "msg_leave_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
       senderHandle: "SISTEMA_NET",
       senderRole: "gm",

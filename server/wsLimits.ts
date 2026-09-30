@@ -22,6 +22,14 @@ export const WS_LIMITS = {
   maxAwarenessBytes: 4 * 1024,
   /** Uma aba recarregando convive com a anterior por um instante; 3 cobre isso. */
   maxSocketsPerPeer: 3,
+  /**
+   * E.03 (SEC-15) — reenvios esperando no buffer de um socket que não lê. Cada
+   * reenvio é a sala inteira; sem teto, o servidor guardava todos (medido: com
+   * 3 sockets parados, o heap vivo foi de 49 a 156 MB em 100 reenvios). Uma
+   * sala de verdade tem ~50–400 KB: 1 MiB são alguns reenvios atrasados — quem
+   * passa disso está parado, e é fechado; o cliente reconecta sozinho.
+   */
+  maxBufferedBytes: 1024 * 1024,
   /** Janela das contas abaixo. */
   windowMs: 60_000,
   perWindow: {
