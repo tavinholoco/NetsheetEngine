@@ -84,7 +84,7 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user,
   return (
     <div className="space-y-5 font-mono animate-fadeIn">
       {/* Header */}
-      <div className="bg-slate-950/90 border-l-4 border-purple-500 border-y border-r border-slate-800 rounded-xl p-5 flex items-center justify-between relative overflow-hidden">
+      <div className="bg-slate-950/90 border-l-4 border-y border-r border-slate-800 rounded-xl p-5 flex items-center justify-between relative overflow-hidden">
         <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-purple-500 select-none">
           NETRUNNER
         </div>

@@ -137,7 +137,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   return (
     <div className="space-y-5 font-mono animate-fadeIn">
       {/* Cartão do perfil */}
-      <div className="bg-slate-950/90 border-l-4 border-amber-400 border-y border-r border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+      <div className="bg-slate-950/90 border-l-4 border-y border-r border-slate-800 rounded-2xl p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-amber-400 select-none">
           PROFILE
         </div>

@@ -89,7 +89,7 @@ export const PrdViewer: React.FC = () => {
       {activeSection === 'overview' && (
         <div className="space-y-4">
           {doc.overview.map((section) => (
-            <div key={section.id} className="bg-slate-950/80 border-l-4 border-cyan-500 border-y border-r border-slate-800 rounded-xl p-5">
+            <div key={section.id} className="bg-slate-950/80 border-l-4 border-y border-r border-slate-800 rounded-xl p-5">
               <h3 className="text-sm font-black text-cyan-400 uppercase tracking-widest mb-2">{section.title}</h3>
               <p className="text-xs text-slate-300 leading-relaxed">{section.content}</p>
               {section.items && (
@@ -110,7 +110,7 @@ export const PrdViewer: React.FC = () => {
       {activeSection === 'modules' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {doc.modules.map((mod) => (
-            <div key={mod.id} className="bg-slate-950/80 border-l-4 border-yellow-500 border-y border-r border-slate-800 rounded-xl p-5 hover:shadow-[0_0_15px_rgba(234,179,8,0.12)] transition-all">
+            <div key={mod.id} className="bg-slate-950/80 border-l-4 border-yellow-500 border-y border-r rounded-xl p-5 hover:shadow-[0_0_15px_rgba(234,179,8,0.12)] transition-all">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-black text-yellow-400 uppercase tracking-widest">{mod.name}</h3>
                 <StatusBadge status={mod.status} />
@@ -136,7 +136,7 @@ export const PrdViewer: React.FC = () => {
             const done = phase.tasks.filter((t) => t.status === 'concluído').length;
             const pct = applicable ? Math.round((done / applicable) * 100) : 0;
             return (
-              <div key={phase.id} className="bg-slate-950/80 border-l-4 border-red-500 border-y border-r border-slate-800 rounded-xl p-5">
+              <div key={phase.id} className="bg-slate-950/80 border-l-4 border-y border-r border-slate-800 rounded-xl p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <div className="flex items-center space-x-2">
                     <span className={`text-[9px] px-1.5 py-0.5 border rounded font-black ${PRIORITY_STYLE[phase.priority]} font-mono`}>

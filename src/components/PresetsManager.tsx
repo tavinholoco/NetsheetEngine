@@ -91,7 +91,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
   return (
     <div className="space-y-5 font-mono animate-fadeIn">
       {/* Header */}
-      <div className="bg-slate-950/90 border-l-4 border-yellow-500 border-y border-r border-slate-800 rounded-xl p-5 flex flex-wrap items-center justify-between gap-3 relative overflow-hidden">
+      <div className="bg-slate-950/90 border-l-4 border-yellow-500 border-y border-r rounded-xl p-5 flex flex-wrap items-center justify-between gap-3 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-yellow-500 select-none">
           LEGENDS
         </div>

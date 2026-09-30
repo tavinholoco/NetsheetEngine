@@ -69,7 +69,7 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
   ];
 
   return (
-    <div className="bg-slate-900/70 border-l-4 border-emerald-500 border-y border-r border-slate-800 rounded-lg p-5 shadow-[0_0_20px_rgba(16,185,129,0.1)] space-y-4 relative overflow-hidden">
+    <div className="bg-slate-900/70 border-l-4 border-y border-r border-slate-800 rounded-lg p-5 shadow-[0_0_20px_rgba(16,185,129,0.1)] space-y-4 relative overflow-hidden">
       <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-emerald-500 select-none">
         LIFEPATH
       </div>

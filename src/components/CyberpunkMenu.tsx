@@ -461,7 +461,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
           {/* Integrated Expandable Patch Notes Accordion */}
           <div className="pt-1">
             <div
-              className={`w-full bg-slate-900/80 border transition-all duration-300 rounded-xl overflow-hidden ${
+              className={`w-full border transition-all duration-300 rounded-xl overflow-hidden ${
                 showPatchNotes
                   ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)] bg-slate-950/95'
                   : 'border-slate-800 hover:border-red-500/60'
@@ -502,7 +502,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                       {APP_VERSION}
                     </span>
                     <ChevronDown
-                      className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${
+                      className={`w-4 h-4 transition-transform duration-300 ${
                         showPatchNotes ? 'rotate-180 text-yellow-400' : 'group-hover:text-yellow-400'
                       }`}
                     />

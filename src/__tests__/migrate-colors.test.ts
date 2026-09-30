@@ -10,7 +10,7 @@
  */
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { converter, lerMapa } from '../../scripts/migrate-colors';
+import { contextos, conflitosEm, converter, lerMapa, resolverConflitos } from '../../scripts/migrate-colors';
 
 const mapa = lerMapa();
 const conv = (s: string) => converter(s, mapa).texto;
@@ -52,4 +52,41 @@ describe('brilho → escala do @theme + cor do token', () => {
 it('é idempotente: converter duas vezes dá o mesmo que uma', () => {
   const s = 'bg-slate-950 text-cyan-400 shadow-[0_0_20px_rgba(16,185,129,0.35)] text-red-400';
   expect(conv(conv(s))).toBe(conv(s));
+});
+
+/*
+ * Achado da F.2.6: duas classes de cor da mesma propriedade no mesmo elemento
+ * (`border-emerald-500 … border-slate-800`). O Tailwind 4 decide pela ordem
+ * alfabética do nome — e a conversão, renomeando, invertia o vencedor: a borda
+ * verde tomou o cartão inteiro da sala. O conflito se resolve ANTES de
+ * converter, tirando a classe que perdia (nunca pintou nada).
+ */
+describe('conflitos de cor no mesmo elemento', () => {
+  const resolver = (s: string) => resolverConflitos(s);
+
+  it('no mesmo literal, sai a classe que perde (a de nome alfabeticamente menor)', () => {
+    const r = resolver('<div className="border-l-4 border-emerald-500 border-y border-slate-800 p-4">');
+    expect(r.removidas).toEqual(['border-emerald-500']);
+    expect(r.texto).toBe('<div className="border-l-4 border-y border-slate-800 p-4">');
+    expect(resolver('"border-yellow-500 border-slate-800"').removidas).toEqual(['border-slate-800']);
+  });
+
+  it('alternativas de um ternário não brigam entre si', () => {
+    const s = 'className={`rounded ${ativo ? "border-red-500 text-red-300" : "border-slate-800 text-slate-500"}`}';
+    expect(conflitosEm(contextos(s).flat())).not.toHaveLength(0); // juntas, brigariam…
+    expect(resolver(s).removidas).toEqual([]); // …mas nunca estão no mesmo elemento
+  });
+
+  it('a parte fixa que vence num ramo e perde noutro fica; sai só o que perde sempre', () => {
+    const s = 'className={`border-slate-800 ${c ? "border-red-500" : "border-yellow-400"}`}';
+    expect(resolver(s).removidas).toEqual(['border-red-500']);
+  });
+
+  it('variante diferente não é conflito', () => {
+    expect(resolver('"hover:border-red-500 border-slate-800 focus:text-cyan-400 text-slate-400"').removidas).toEqual([]);
+  });
+
+  it('comentário não vira classe', () => {
+    expect(resolver('// "border-red-500 border-slate-800"\nconst x = 1;').removidas).toEqual([]);
+  });
 });

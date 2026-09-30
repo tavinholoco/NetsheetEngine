@@ -47,7 +47,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
   const runMove = runFromMa(stats.MA);
 
   return (
-    <div className="bg-slate-900/70 border-l-4 border-cyan-500 border-y border-r border-slate-800 rounded-lg p-5 shadow-[0_0_20px_rgba(6,182,212,0.1)] space-y-4 relative overflow-hidden">
+    <div className="bg-slate-900/70 border-l-4 border-y border-r border-slate-800 rounded-lg p-5 shadow-[0_0_20px_rgba(6,182,212,0.1)] space-y-4 relative overflow-hidden">
       <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-cyan-400 select-none">
         STATS
       </div>

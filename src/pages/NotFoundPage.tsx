@@ -9,7 +9,7 @@ export const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="bg-slate-950/90 border-l-4 border-red-500 border-y border-r border-slate-800 rounded-2xl p-10 text-center font-mono animate-fadeIn">
+    <div className="bg-slate-950/90 border-l-4 border-y border-r border-slate-800 rounded-2xl p-10 text-center font-mono animate-fadeIn">
       <div className="text-[80px] font-black text-red-500/30 select-none leading-none">404</div>
       <h2 className="text-xl font-black text-red-400 uppercase tracking-widest mt-2">// ROTA NÃO ENCONTRADA</h2>
       <p className="text-xs text-slate-400 mt-3 max-w-md mx-auto">
