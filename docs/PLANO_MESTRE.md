@@ -838,6 +838,39 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       *(29/09/2026 — PR #14 mergeado; CI do `master` verde nos 5 jobs, e o `db-sync` conectou: "Remote
       database is up to date", como esperado sem migration. R.16, R.7, R.8 e R.9 no PR seguinte, um
       commit por item. Fica aberto o que é do dono: R.10, R.11 e R.13.)*
+      *(29/09–30/09/2026 — os PRs #15 a #18 mergeados; CI do `master` verde depois do último — os 4
+      jobs, Node 24, 590 testes + 1 só-Windows pulado, E2E 6/6, `db-sync` em dia. **Todo o código do
+      bloco R está no `master`.** O que falta é a verificação no ar, no checklist abaixo.)*
+
+      > **Isto NÃO bloqueia a Fase E.** O R.15 fecha em 01/10, pela tarefa agendada e pelos dois itens
+      > do dono. **A próxima sessão abre a Fase E (E.1)** — decisão do dono em 30/09/2026.
+
+      **Checklist de 01/10/2026 — quando a API voltar.** O Render suspendeu o serviço em setembro
+      (incidente no [contrato de custo zero](#-contrato-de-custo-zero)); ele volta na virada do mês e
+      publica o `master`. Os itens automáticos rodam num comando só —
+      **`node scripts/verify-prod.mjs`** —, que a tarefa agendada `verificar-render-netsheet-01-10`
+      (app do Claude, 01/10 às 11:30) executa e registra num PR. O backup mensal roda antes, às 10:00.
+      - [ ] **01.1** O serviço voltou: `/api/health` responde JSON, não `503 Service Suspended`.
+      - [ ] **01.2** A versão publicada é a do `package.json` (`0.4.3`) — o deploy é o último commit
+            (R.9). Se não for: painel do Render → *Manual Deploy → Deploy latest commit* (dono).
+      - [ ] **01.3** O `clientIp` do health é o IP público de quem pergunta (R.5, `trust proxy`). Registrar
+            só se **bateu** — nunca o IP. Se não bateu: `TRUST_PROXY` no [`DEPLOY.md`](./DEPLOY.md).
+      - [ ] **01.4** O site carrega e a interface mostra `v0.4.3` (continuação do R.9).
+      - [ ] **01.5** `/api/nao-existe` → 404 em JSON, não a SPA.
+      - [ ] **01.6** `GET /api/rooms` → 404: o lobby não lista salas (R.11).
+      - [ ] **01.7** `POST /api/gemini` sem login → 401 (SEC-01).
+      - [ ] **01.8** Os contratos da revisão, com uma sala de teste que o script apaga no fim: código de
+            convite aceito; `join` com o `gmPeerId` sem o token → 409 `seat_taken` (R.1); `create` com
+            código em uso → 409 `room_exists` (R.2).
+      - [ ] **01.9** O E2E de WebSocket contra o ar: chat, rolagem e Yjs, 5/5.
+      - [ ] **01.10** *(dono)* Painel do Render → *Events* → log do build: **Node 24.x** (R.8, OPS-02). O
+            CLI do Render desta máquina está deslogado, e o login é do dono.
+      - [ ] **01.11** *(dono)* Painel do Render → uso do workspace: anotar horas e banda do NetSheet —
+            a linha de base que troca a estimativa do contrato de custo zero pelo número real.
+      - [ ] **01.12** *(dono)* Mergear o PR que a tarefa abrir com o resultado (e o do backup mensal).
+      Com tudo marcado, o R.15 e o bloco R fecham. *Provado antes de 01/10:* o script passa os 12
+      checagens contra o build de produção local e **acusa falha** (sai com erro) contra um servidor
+      fora do ar.
 - [x] **R.16** **SEC-13 — teto de assentos por sala** *(achado do portão das R, 29/09/2026)*. Cada
       `join` com `peerId` novo cria um assento, cada assento abre até 3 sockets (R.4), e o `join` só
       tem o limitador de sala (120/min por IP): dezenas de assentos multiplicam cada reenvio da sala —
@@ -1353,6 +1386,8 @@ o do commit mais recente do `master` — se não for, *Manual Deploy → Deploy 
 o site pode voltar, a mesa espera. *(29/09: R.1–R.6 estão no PR da revisão; com ele mergeado, o passo
 novo é conferir o `clientIp` do `/api/health` contra o seu IP público — R.5. Com o PR seguinte, o
 log do deploy deve dizer **Node 24.x** (R.8) e o health, `"version":"0.4.3"` (R.9).)*
+**30/09: tudo isso virou o checklist de 01/10 no R.15** — um lugar só, com um comando
+(`node scripts/verify-prod.mjs`) e uma tarefa agendada que o executa.
 
 **Avisos de descontinuação no log do CI** (vistos no merge da Fase C, 26/09/2026). Hoje são só aviso —
 o run está verde. **ADIAR**, cada um com gatilho datado; o passo 3b do ritual de abertura pega o

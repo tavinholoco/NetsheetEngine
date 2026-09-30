@@ -255,6 +255,22 @@ BASE_URL=https://netsheet.app node scripts/test-ws-e2e.mjs
 
 ## Verificação pós-deploy
 
+**Um comando só (desde 30/09/2026):**
+
+```bash
+node scripts/verify-prod.mjs                       # padrão: https://netsheetengine.onrender.com
+node scripts/verify-prod.mjs http://127.0.0.1:3000 # contra um build de produção local
+```
+
+Ele roda as checagens abaixo **e** as da revisão pós-D — versão publicada = `package.json` (R.9),
+`clientIp` = seu IP (R.5, sem imprimir IP), versão certa na interface, lobby fechado
+(`GET /api/rooms` → 404, R.11), `join` sem prova → 409 `seat_taken` (R.1), `create` com código em uso
+→ 409 `room_exists` (R.2) e o E2E de WebSocket —, com uma sala de teste que ele apaga no fim. Uma
+requisição por passo (só o health tenta 3 vezes, porque o serviço dorme). Sai com erro se algo falhar.
+Fora dele, só no painel do Render: a **versão do Node** no log do build e o uso do workspace.
+
+Os mesmos passos, à mão:
+
 ```bash
 # 1. Healthcheck — e o `clientIp` tem de ser o seu IP público (R.5, trust proxy).
 #    Compare com: curl -s https://api.ipify.org
@@ -275,6 +291,9 @@ BASE_URL=https://SEU-DOMINIO node scripts/test-ws-e2e.mjs
 curl -s -o /dev/null -w "%{http_code}\n" -X POST https://SEU-DOMINIO/api/gemini \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Diga oi"}'          # esperado: 401
+
+# 6. Lobby fechado (R.11) — ninguém lista as salas
+curl -s -o /dev/null -w "%{http_code}\n" https://SEU-DOMINIO/api/rooms   # esperado: 404
 ```
 
 ## Hardening (T10.6)
