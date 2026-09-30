@@ -581,7 +581,22 @@ aqui o CSP de produção não era exercitado por nenhum teste — o helmet é pu
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança: o ARQ-09 é um bug de
 apresentação, e o CSP ficou como estava.
 
-*F.1–F.4: a preencher no F.5.*
+**30/09/2026 — F.2 mecânica (PR 2: os tokens, a conversão e o brilho).**
+
+1. **Entrada nova?** Nenhuma. Só nomes de classe e variáveis de CSS.
+2. **Dado novo sai?** Nenhum.
+3. **Autorização nova?** Nenhuma.
+4. **Jogador convidado hostil?** Nada muda para ele.
+5. **Estado novo sem limite?** Nenhum. O CSS cresce ~7 kB (de 15,8 para 16,8 kB com gzip) com as rampas.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**Scripts novos** (`scripts/migrate-colors.ts`, `scripts/color-map.json`): rodam só na máquina de
+quem migra, leem e escrevem arquivos de `src/`, sem rede e sem segredo. Não entram no build.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança: é refatoração visual,
+provada por captura sem mudança de tela.
+
+*F.1, F.2b, F.3 e F.4: a preencher no F.5.*
 
 ### Fases G, H, I e J — varreduras
 

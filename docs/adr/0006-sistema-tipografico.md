@@ -127,6 +127,12 @@ premissas caíram**, e o dono respondeu às perguntas que elas abriram — a dec
 O critério de pronto ganhou comando: `npm run audit:colors` em zero no CI, e o E2E das fontes com o
 helmet ativo.
 
+**Na execução da F.2 (30/09/2026)**, os usos corrigiram três nomes da rampa — o roxo é **`cyber`**
+(Netrunner/IA e cyberware), o âmbar ganhou papel próprio (**`caution`**) e o rosa de hoje (DADOS e
+armas) **não** é `fault` — e mostraram um defeito de cascata: com duas classes de cor da mesma
+propriedade no mesmo elemento, o Tailwind 4 decide pelo alfabeto do nome, e renomear inverte o
+vencedor. A tabela de conversão é `scripts/color-map.json`; o detector, `migrate-colors --conflitos`.
+
 ## Histórico de revisões
 
 **Versão 1 — migrar para o Cyberpunk 2077.** Proposta a partir da galeria
