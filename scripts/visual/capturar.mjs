@@ -77,10 +77,18 @@ const res = await fetch(`${BASE}/api/rooms/create`, {
 const { sessionToken: gmToken } = await res.json();
 if (!gmToken) throw new Error(`semear a sala falhou (${res.status}) — o servidor precisa ser recém-subido`);
 
-async function entrar(page) {
-  await page.goto(BASE + "/multiplayer");
-  await page.getByPlaceholder("Digite o código da sala").fill(code);
-  await page.getByRole("button", { name: /Entrar na Mesa/i }).click();
+// O GM entra pelo deep link: só ele hidrata a sessão (peerId e token) do
+// sessionStorage, e desde a R.1 o `join` prova o assento com o token. Pelo
+// lobby, o cliente gera um peerId novo e entra como jogador — foi assim até a
+// F.4: a "mesa do GM" das capturas da F.2.6 e da F.1 era a visão de jogador.
+async function entrar(page, comoGm = false) {
+  if (comoGm) {
+    await page.goto(BASE + "/room/" + code);
+  } else {
+    await page.goto(BASE + "/multiplayer");
+    await page.getByPlaceholder("Digite o código da sala").fill(code);
+    await page.getByRole("button", { name: /Entrar na Mesa/i }).click();
+  }
   await page.getByPlaceholder("Mensagem para a mesa...").waitFor();
 }
 
@@ -91,7 +99,9 @@ const gm = await novaPagina({
   },
   arg: [gmToken]
 });
-await entrar(gm.page);
+await entrar(gm.page, true);
+// Prova de que a página é do GM: a etiqueta "GM" do cabeçalho da sala só aparece para ele.
+await gm.page.getByText("GM", { exact: true }).first().waitFor();
 const jogador = await novaPagina({ fn: () => sessionStorage.setItem("cyberpunk_peer_id", "snap_jogador"), arg: undefined });
 await entrar(jogador.page);
 await gm.page.waitForTimeout(800);
