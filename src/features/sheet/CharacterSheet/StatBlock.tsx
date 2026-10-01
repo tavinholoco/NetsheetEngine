@@ -82,7 +82,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
               <div className="flex items-center justify-between space-x-1">
                 <button
                   onClick={() => handleChange(stat, -1)}
-                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-bold transition-all cursor-pointer"
+                  className="w-7 h-7 shrink-0 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-bold transition-all cursor-pointer"
                 >
                   −
                 </button>
@@ -90,11 +90,11 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
                   type="number"
                   value={val}
                   onChange={(e) => handleSet(stat, parseInt(e.target.value))}
-                  className="w-12 bg-raised border border-accent-700 text-center text-xl font-mono text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
+                  className="w-12 min-w-0 bg-raised border border-accent-700 text-center text-xl font-mono text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
                 />
                 <button
                   onClick={() => handleChange(stat, 1)}
-                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-bold transition-all cursor-pointer"
+                  className="w-7 h-7 shrink-0 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-bold transition-all cursor-pointer"
                 >
                   +
                 </button>

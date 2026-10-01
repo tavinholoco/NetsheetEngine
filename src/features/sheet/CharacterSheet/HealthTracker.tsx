@@ -66,7 +66,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
 
       {/* Trilha do livro: 10 níveis × 4 caixas de 1 ponto */}
       <div className="relative z-10 space-y-2">
-        <div className="grid grid-cols-5 sm:grid-cols-10 gap-x-1.5 gap-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 2xl:grid-cols-10 gap-x-1.5 gap-y-2">
           {WOUND_TRACK.slice(1).map((row) => (
             <div key={row.level} className="flex flex-col items-center gap-1">
               <span className="text-micro uppercase text-subtle">{shortName(row.level)}</span>
