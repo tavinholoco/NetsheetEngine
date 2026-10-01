@@ -104,6 +104,7 @@ Uma linha por dump. O conteúdo fica fora do repositório; aqui fica só que ele
 | Data | Motivo | Linhas (principais tabelas) | Restaurado? | Observação |
 |---|---|---|---|---|
 | 29/09/2026 | Primeiro backup (R.10) | `auth.users` 0 · `character_sheets` 0 · `profiles` 0 · `rooms` 1 · `storage.buckets` 1 | Não — ver abaixo | **A produção ainda não tem usuário nenhum**: o backup existe antes do primeiro dado real, não depois de perdê-lo. 16,6 kB de `data.sql`; hashes no `MANIFEST.txt` |
+| 01/10/2026 | Mensal | `auth.users` 0 · `character_sheets` 0 · `profiles` 0 · `rooms` 0 · `direct_messages` 0 | Não | Ainda sem usuário. `rooms` 1 → 0 é a sala velha recolhida no boot (nota acima). `auth.flow_state` 2: login OAuth começado e não concluído, sem conta criada. 12,0 kB de `data.sql`. O Docker não subiu (`sailor-ingest.sock`) e o contorno abaixo resolveu de novo |
 
 **A restauração de teste espera o primeiro dado real.** O alvo certo é um projeto Supabase **novo**
 (o gratuito permite dois), com as mesmas versões do schema `auth` da produção. O Supabase local do
