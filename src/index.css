@@ -44,6 +44,7 @@
           ok      verde — sucesso, online, a seção JOGAR
           cyber   roxo — Netrunner e IA, cyberware e humanidade
           caution âmbar — ação de combate, perigo no grid, inativo
+          roll    azul — rolagem de dado, a seção DADOS, armas (F.2.2)
           fault   magenta — erro, ação destrutiva, hostil (F.2.2)
           danger  vermelho — SÓ dano (decisão 10b; F.2.2 e F.2.7)
      2) Nomes semânticos para os neutros mais usados (abaixo).
@@ -119,6 +120,20 @@
   --color-caution-800: oklch(47.3% 0.137 46.201);
   --color-caution-900: oklch(41.4% 0.112 45.904);
   --color-caution-950: oklch(27.9% 0.077 45.635);
+
+  /* A matiz de DADOS (F.2.2/F.2.9): o rosa de antes é a rampa do fault, e
+     nenhum papel sobrava — os outros já são de outra seção. Do blue. */
+  --color-roll-50: oklch(97% 0.014 254.604);
+  --color-roll-100: oklch(93.2% 0.032 255.585);
+  --color-roll-200: oklch(88.2% 0.059 254.128);
+  --color-roll-300: oklch(80.9% 0.105 251.813);
+  --color-roll-400: oklch(70.7% 0.165 254.624);
+  --color-roll-500: oklch(62.3% 0.214 259.815);
+  --color-roll-600: oklch(54.6% 0.245 262.881);
+  --color-roll-700: oklch(48.8% 0.243 264.376);
+  --color-roll-800: oklch(42.4% 0.199 265.638);
+  --color-roll-900: oklch(37.9% 0.146 265.522);
+  --color-roll-950: oklch(28.2% 0.091 267.935);
 
   --color-fault-50: oklch(97.1% 0.014 343.198);
   --color-fault-100: oklch(94.8% 0.028 342.258);

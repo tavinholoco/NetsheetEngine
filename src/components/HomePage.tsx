@@ -23,10 +23,10 @@ interface HomePageProps {
 const MODULE_CARDS: { tab: TabType; title: string; desc: string; icon: React.ComponentType<{ className?: string }>; accent: string; border: string; bg: string }[] = [
   { tab: 'sheet', title: 'FICHA', desc: 'Crie e gerencie fichas de edgerunner com atributos, perícias, cromo e armas.', icon: Cpu, accent: 'text-accent-400', border: 'hover:border-accent-500/60', bg: 'bg-accent-950/20' },
   { tab: 'multiplayer', title: 'JOGAR', desc: 'Mesas multiplayer em tempo real com grid tático, iniciativa e poderes de GM.', icon: Radio, accent: 'text-ok-400', border: 'hover:border-ok-500/60', bg: 'bg-ok-950/20' },
-  { tab: 'dice', title: 'DADOS', desc: 'Rolador FNFF: perícia, dano e death save com crítico explosivo e fumble.', icon: Dice5, accent: 'text-pink-400', border: 'hover:border-pink-500/60', bg: 'bg-pink-950/20' },
+  { tab: 'dice', title: 'DADOS', desc: 'Rolador FNFF: perícia, dano e death save com crítico explosivo e fumble.', icon: Dice5, accent: 'text-roll-400', border: 'hover:border-roll-500/60', bg: 'bg-roll-950/20' },
   { tab: 'ai', title: 'NETRUNNER IA', desc: 'Assistente inteligente para diagnóstico de build, regras e lifepath.', icon: Bot, accent: 'text-cyber-400', border: 'hover:border-cyber-500/60', bg: 'bg-cyber-950/20' },
   { tab: 'presets', title: 'LENDAS', desc: 'Biblioteca de presets de Night City com clonagem 1-clique.', icon: Swords, accent: 'text-signal-400', border: 'hover:border-signal-500/60', bg: 'bg-signal-950/20' },
-  { tab: 'prd', title: 'PRD', desc: 'Especificação do produto, roadmap de 13 fases e arquitetura técnica.', icon: FileText, accent: 'text-red-400', border: 'hover:border-red-500/60', bg: 'bg-red-950/20' },
+  { tab: 'prd', title: 'PRD', desc: 'Especificação do produto, roadmap de 13 fases e arquitetura técnica.', icon: FileText, accent: 'text-fg-strong', border: 'hover:border-night-400/60', bg: 'bg-night-800/20' },
   { tab: 'profile', title: 'PERFIL', desc: 'Seu perfil de edgerunner, ID Cyberpunk e fichas salvas na nuvem.', icon: UserIcon, accent: 'text-caution-400', border: 'hover:border-caution-500/60', bg: 'bg-caution-950/20' }
 ];
 
@@ -34,13 +34,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Hero */}
-      <div className="relative overflow-hidden bg-surface/90 border-2 border-red-600/40 rounded-2xl p-8 shadow-[0_0_30px_rgba(239,68,68,0.15)]">
-        <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-red-500 via-signal-500 to-accent-500" />
+      <div className="relative overflow-hidden bg-surface/90 border-2 border-accent-600/40 rounded-2xl p-8 shadow-glow-30 shadow-accent-500/15">
+        <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-signal-500 to-accent-500" />
         <div className="absolute inset-0 crt-scanlines opacity-30 pointer-events-none" />
         <div className="relative z-10 pl-3 space-y-4">
           <div className="flex items-center space-x-2">
             <Shield className="w-5 h-5 text-signal-400 animate-pulse-glow" />
-            <span className="font-mono text-mini tracking-caps text-red-500 uppercase">
+            <span className="font-mono text-mini tracking-caps text-accent-400 uppercase">
               NETSHEET ENGINE // TERMINAL ONLINE
             </span>
           </div>

@@ -9,6 +9,7 @@
     "emerald": "ok",
     "purple": "cyber",
     "amber": "caution",
+    "blue": "roll",
     "pink": "fault",
     "red": "danger"
   },
@@ -21,6 +22,7 @@
     "ok": "verde — sucesso, online, a seção JOGAR",
     "cyber": "roxo — o que é tecnologia: Netrunner e IA, cyberware e humanidade",
     "caution": "âmbar — ação de combate, perigo no grid, status inativo",
+    "roll": "azul — rolagem de dado, a seção DADOS, armas (F.2.2/F.2.9: o rosa de antes é a rampa do fault, e nenhum papel sobrava)",
     "fault": "magenta — erro, ação destrutiva, falha crítica, NPC hostil (decisão 10b; usado a partir da F.2.2)",
     "danger": "vermelho — SÓ dano (decisão 10b; a escala wound-* vem da F.2.7)"
   },

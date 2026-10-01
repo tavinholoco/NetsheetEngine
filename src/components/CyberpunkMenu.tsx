@@ -105,7 +105,7 @@ const MENU_ITEMS = [
   { id: 'sheet' as TabType, label: 'FICHA', icon: Cpu, accent: 'text-accent-400' },
   { id: 'presets' as TabType, label: 'LENDAS', icon: Swords, accent: 'text-signal-400' },
   { id: 'ai' as TabType, label: 'NETRUNNER IA', icon: Bot, accent: 'text-cyber-400' },
-  { id: 'dice' as TabType, label: 'DADOS', icon: Dice5, accent: 'text-caution-500' },
+  { id: 'dice' as TabType, label: 'DADOS', icon: Dice5, accent: 'text-roll-400' },
   { id: 'prd' as TabType, label: 'PRD', icon: FileText, accent: 'text-fg-strong' }
 ];
 
