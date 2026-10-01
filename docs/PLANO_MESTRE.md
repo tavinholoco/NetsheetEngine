@@ -243,7 +243,7 @@ porque o portão pergunta sobre *o que a fase mudou*, e ali mudou quem **usa** a
 ## ⚖️ Decisões tomadas (02/09/2026)
 
 Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo. *(1 a 3 em
-02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09; 8 em 29/09; 9 e 10 em 30/09/2026.)*
+02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09; 8 em 29/09; 9, 10 e 11 em 30/09/2026.)*
 
 | # | Pergunta | Decisão | Consequência |
 |---|---|---|---|
@@ -255,8 +255,9 @@ Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem mo
 | 6 | Na cabeça, o dano dobra antes ou depois do BTM? | **Depois — opção A: armadura → BTM (mín. 1) → ×2** | O livro dá a regra e não diz quando; A é a ordem do texto e a das implementações de fãs. B seria mais letal pelo valor do BTM. Pesquisa e números na [conferência](./CONFERENCIA_CP2020.md#dano--a-ordem-do-pipeline-para-a-fase-d) |
 | 7 | As quatro perguntas da D.0: quem escreve o ferimento na mesa, pontos × nível, token sem ficha, penetração escalonada | **(a)** Na mesa, **só o servidor e o GM** escrevem o ferimento — a sincronia da ficha deixa de levá-lo. **(b)** A ficha **guarda pontos** (0–40), e o nível é derivado; junto nasce o estado **Morto**. **(c)** Token sem ficha **não recebe dano**. **(d)** Penetração escalonada: **ADIAR** | (a) fecha o achado do portão C.14. (b) é fidelidade estrita: o livro conta pontos, e o nível sozinho perde o resto da caixa. Sem migration SQL — a ficha mora no `data` jsonb. (c) e (d) são as versões menores, com gatilho na [conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu). Detalhe na D.0 |
 | 8 | Como fazer backup, se o plano gratuito não faz nenhum? (R.10 — reabre a premissa da decisão 4) | **Dump manual** com o CLI (`npm run backup:db`), **todo mês e antes de toda migration**, guardado **fora do repositório** e fora da máquina, de preferência cifrado | Custo zero, e é o que a doc do Supabase recomenda ao gratuito. O repo é **público**: o script recusa destino dentro dele, e o `.gitignore` barra o dump à mão. Os arquivos do Storage (avatares) ficam de fora. Runbook e registro em [`BACKUP.md`](./BACKUP.md). **Gatilho para rever:** perder dado entre dois dumps, ou o volume de fichas tornar o mês de perda inaceitável — aí o workflow com dump cifrado (opção 2 da R.10) |
-| 9 | Quanto de netrunning entra na K? (K.0b — a revisão de robustez mediu que a Net inteira não cabe na K) | **O netrunner na ficha** — deck, programas e MU como dado — entra na K.5. **A Net jogável na mesa** (mapa, turnos, fortalezas de dados) fica **fora da K: ADIAR**, como fase própria depois da L | A K volta a caber na estimativa. **Gatilho** da Net na mesa: alguém da mesa do dono jogar de netrunner. As regras vêm do livro, que o dono tem (30/09) — o cuidado com o RED, que mudou quase tudo no netrunning, vale em dobro |
-| 10 | As quatro perguntas que a medição da F abriu (F.0b): a voz do texto, o vermelho que não é dano, a cor por seção, o livro como referência visual | **(a)** **Rajdhani** nos rótulos, na navegação e no texto corrido; a **mono** só em número, dado e momento de terminal, **sem negrito**; piso de **10 px**. **(b)** **Vermelho só dano**; marca, menu e PRD vão para amarelo ou ciano, o GM para amarelo, e erro, ação destrutiva, *fumble* e NPC hostil para um papel novo, **`fault`** (magenta). **(c)** A **cor por seção fica**; o PRD sai do vermelho e DADOS sai do rosa. **(d)** O livro do dono é **preto e branco**: referência de **diagramação e tipografia**; a cor vem da linguagem da época | (a) segue a ADR 0006 — a premissa "Rajdhani já em uso" era falsa: 96% do texto da ficha é mono, e a Share Tech Mono só tem o peso 400 (negrito sintético em 99 elementos). (b) é o invariante do `CLAUDE.md` aplicado aos 244 usos medidos. (c) não tinha recomendação explícita na análise; foi registrada como **manter** — a leitura de menor mudança, que o merge do PR confirma ou corrige. (d) as três premissas da F.3 (barra preta, faixas, numeração) são de diagramação, que o P&B responde: F.3.0. Detalhe na [F.0a](#-o-que-o-f0a-mediu-30092026) e na [ADR 0006](./adr/0006-sistema-tipografico.md) |
+| 9 | Quanto de netrunning entra na K? (K.0b — a revisão de robustez mediu que a Net inteira não cabe na K) | **O netrunner na ficha** — deck, programas e MU como dado — entra na K.5. **A Net jogável na mesa** (mapa, turnos, fortalezas de dados) fica **fora da K: ADIAR**, como fase própria depois da L | A K volta a caber na estimativa. **Gatilho** da Net na mesa: alguém da mesa do dono jogar de netrunner. ~~As regras vêm do livro, que o dono tem (30/09)~~ **⚠️ Corrigido no mesmo dia (decisão 11):** o dono não tem o livro — as regras vêm das fontes secundárias, com duas concordando. O cuidado com o RED, que mudou quase tudo no netrunning, vale em dobro — e pesa mais sem o livro para desempatar |
+| 10 | As quatro perguntas que a medição da F abriu (F.0b): a voz do texto, o vermelho que não é dano, a cor por seção, o livro como referência visual | **(a)** **Rajdhani** nos rótulos, na navegação e no texto corrido; a **mono** só em número, dado e momento de terminal, **sem negrito**; piso de **10 px**. **(b)** **Vermelho só dano**; marca, menu e PRD vão para amarelo ou ciano, o GM para amarelo, e erro, ação destrutiva, *fumble* e NPC hostil para um papel novo, **`fault`** (magenta). **(c)** A **cor por seção fica**; o PRD sai do vermelho e DADOS sai do rosa. **(d)** ~~O livro do dono é~~ O interior do livro de 1990 é **preto e branco**: referência de **diagramação e tipografia**; a cor vem da linguagem da época. **⚠️ Corrigido no mesmo dia (decisão 11):** o dono não tem o livro — a diagramação vem do que as fontes públicas mostram do interior (F.3.0) | (a) segue a ADR 0006 — a premissa "Rajdhani já em uso" era falsa: 96% do texto da ficha é mono, e a Share Tech Mono só tem o peso 400 (negrito sintético em 99 elementos). (b) é o invariante do `CLAUDE.md` aplicado aos 244 usos medidos. (c) não tinha recomendação explícita na análise; foi registrada como **manter** — a leitura de menor mudança, que o merge do PR confirma ou corrige. (d) as três premissas da F.3 (barra preta, faixas, numeração) são de diagramação, que o P&B responde: F.3.0. Detalhe na [F.0a](#-o-que-o-f0a-mediu-30092026) e na [ADR 0006](./adr/0006-sistema-tipografico.md) |
+| 11 | De onde vêm as regras e a diagramação, se o dono **não tem o livro**? *(Correção do dono, 30/09/2026 à noite: o registro "o dono tem o livro físico", do mesmo dia, estava errado — e as decisões 9 e 10d, a F.3.0 e as "Perguntas para o livro" se apoiavam nele)* | **Fontes secundárias**, pelo método da [conferência](./CONFERENCIA_CP2020.md#fontes-e-o-quanto-confiar-nelas): regra aceita com **duas fontes independentes** concordando; o que não fecha e bloqueia trabalho vai ao dono como decisão, com a pesquisa e uma opção recomendada — como a decisão 6. **Comprar o PDF oficial** (R. Talsorian, *Cyberpunk 2.0.2.0, Second Edition, Version 2.01*, no [DriveThruRPG](https://legacy.drivethrurpg.com/product/50354/Cyberpunk-2020-The-Second-Edition-Version-201), US$ 15 em 30/09): **ADIAR**. **Cópia do livro sem licença não é fonte** | Os gatilhos "o dono confirmar no livro" da conferência viram "uma segunda fonte independente" — sem isso nunca disparariam, o DESCARTAR disfarçado que a M.0 já previa. A F.3.0 passa a ser pesquisa em fonte pública. **Gatilho da compra:** uma pergunta para o livro bloquear o trabalho de uma fase e as secundárias não fecharem — a K.0 (criação, IP, netrunning) é a candidata mais provável. O contrato de custo zero é sobre a infraestrutura; a compra é decisão do dono. Se houver PDF, ele fica **fora do repositório**, como o backup |
 
 ---
 
@@ -1097,10 +1098,11 @@ Isso é **outra coisa** do Cyberpunk 2077 (jogo, 2020) e do Cyberpunk RED (siste
 compartilham uma linguagem moderna: limpa, sistemática, militar, vermelho primário, fios finos, HUD
 curvo. A migração para o 2077 foi **descartada** — ver ADR 0006.
 
-**O livro do dono é preto e branco** *(30/09/2026)* — como o interior do livro de 1990, pelas resenhas
-(duas colunas justificadas, arte a traço, *sidebars*, tabelas agrupadas, *screamsheets*). Ele é a
-referência de **diagramação e tipografia**; a **cor** vem da linguagem da época — capa, neon, CRT —,
-como a ADR 0006 já dizia (decisão 10d).
+**O interior do livro de 1990 é preto e branco**, pelas resenhas (duas colunas justificadas, arte a
+traço, *sidebars*, tabelas agrupadas, *screamsheets*). Ele é a referência de **diagramação e
+tipografia**; a **cor** vem da linguagem da época — capa, neon, CRT —, como a ADR 0006 já dizia
+(decisão 10d). *(30/09/2026 — corrigido no mesmo dia: o dono **não tem o livro** (decisão 11). A
+diagramação vem do que as fontes públicas mostram do interior, e é a F.3.0 que as procura.)*
 
 #### ⚠️ Honestidade sobre as fontes originais
 
@@ -1357,8 +1359,9 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 #### F.2b — Cor com significado *(meio dia — PR 3b)*
 
 > **Para a sessão que abrir o PR 3b** *(fim da sessão de 30/09/2026)*. O que esta parte herda:
-> - **Comece pela F.3.0 — perguntar ao dono** as três respostas do livro (barra preta, faixas,
->   numeração). A F.3 inteira depende delas; a F.2b e a F.4 não, e podem andar enquanto ele confere.
+> - **Comece pela F.3.0 — a pesquisa em fonte pública** das três perguntas de diagramação (barra
+>   preta, faixas, numeração): o dono **não tem o livro** (decisão 11). A F.3 inteira depende delas; a
+>   F.2b e a F.4 não, e podem andar enquanto o dono decide o que ficar sem fonte.
 > - **Renomear cor pode inverter o visual** (achado da F.2.4): com duas classes de cor da mesma
 >   propriedade no mesmo elemento, o Tailwind 4 decide pela ordem **alfabética** do nome. A F.2.2
 >   renomeia vermelho e rosa à mão — rode `npx tsx scripts/migrate-colors.ts --conflitos` depois de cada
@@ -1417,12 +1420,15 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 
 A tipografia é metade. A outra metade é o repertório gráfico do livro impresso.
 
-- [ ] **F.3.0** 🧑‍⚖️ **Conferir no livro** (o dono, com o livro na mão). As três perguntas são de
-      diagramação, e o P&B responde: **(1)** títulos de seção em barra preta com texto branco em caixa
-      alta? **(2)** faixas de perigo diagonais? **(3)** numeração de seção ou rótulos técnicos? A
-      resposta vai com a página, **sem copiar arte nem texto** (o repositório é público). O que o livro
-      não mostrar **sai da F.3**, com uma linha de razão — a não ser que o dono queira mantê-lo como
-      "linguagem da época", item a item.
+- [ ] **F.3.0** 🔍 **Conferir em fonte pública** — o dono **não tem o livro** (decisão 11; o texto
+      anterior pedia "o dono, com o livro na mão"). As três perguntas são de diagramação: **(1)**
+      títulos de seção em barra preta com texto branco em caixa alta? **(2)** faixas de perigo
+      diagonais? **(3)** numeração de seção ou rótulos técnicos? Vale o que as fontes públicas mostram
+      do interior do livro de 1990: uma imagem do interior é prova; descrição de resenha sozinha precisa
+      de duas. A resposta vai com o link, **sem copiar arte nem texto** (o repositório é público). A
+      F.0a já não achou fonte pública para as três (ADR 0006): **o que nenhuma fonte mostrar sai da
+      F.3**, com uma linha de razão — a não ser que o dono queira mantê-lo como "linguagem da época",
+      item a item (🧑‍⚖️, com uma opção recomendada).
 - [ ] **F.3.1** **`scanline` e `glitch` com intenção, dentro do 2.2.2:** a scanline **estática** (a
       `.crt-scanlines` que já existe, 1 uso) no lugar da animação de 8 s em loop; o `glitch` **só em
       evento** e uma vez (menos de 1 s) — entrar em Mortal, trocar de tela. Nunca em loop numa tela de
@@ -1757,9 +1763,12 @@ verdade), netrunning por último (é meio jogo à parte).
           JSON das fichas salvas.
         - **A K.7 esqueceu uma perícia:** a conferência lista **oito** faltando — Cyberdeck Design
           (TECH) também, e ela não está em `cyberpunkData.ts:234`.
-      - **O dono tem o livro** *(30/09/2026)*. Ele é a fonte primária da K: onde as fontes secundárias
-        divergem (criação, IP, netrunning), a regra sai do livro, com a página. As perguntas estão em
-        [Perguntas para o livro](./CONFERENCIA_CP2020.md#perguntas-para-o-livro), na conferência.
+      - ~~**O dono tem o livro** *(30/09/2026)*. Ele é a fonte primária da K.~~ **Corrigido no mesmo
+        dia (decisão 11): o dono não tem o livro.** Onde as fontes secundárias divergem (criação, IP,
+        netrunning), vale a regra de duas fontes; o que não fechar vai ao dono como decisão com
+        recomendação — e é aqui que o gatilho da compra do PDF oficial tem mais chance de disparar. As
+        perguntas estão em [Perguntas para o livro](./CONFERENCIA_CP2020.md#perguntas-para-o-livro), na
+        conferência.
 - [ ] **K.0b** 🧑‍⚖️ **Decisão do dono — o tamanho da K.5 e o método da K.6.**
       - **K.5**, em ordem de tamanho: *(1, recomendada)* **o netrunner na ficha** — deck, programas e MU
         como dado, sem a Net jogável; *(2)* **a Net na mesa**, com mapa e turnos — fase própria, depois da
@@ -1768,8 +1777,8 @@ verdade), netrunning por último (é meio jogo à parte).
         *(30/09/2026 — **o dono escolheu a recomendação:** a 1 na K.5, e a 2 como ADIAR com o gatilho
         da 3. Virou a [decisão 9](#-decisões-tomadas-02092026).)*
       - **K.6:** quais métodos de atributo a criação oferece (rolagem, bolo de 9d10, pontos), e se a
-        evolução por IP entra junto ou depois. **Ainda aberta** — decidir na K.0, com o livro na mão:
-        os métodos que ele oferece são o cardápio.
+        evolução por IP entra junto ou depois. **Ainda aberta** — decidir na K.0, com as fontes
+        secundárias (decisão 11): os métodos que duas delas confirmam são o cardápio.
 - [ ] **K.1** *(era T11.5)* Export/import de ficha (JSON + impressão em PDF) — reaproveita o validador
       de `src/rules/sheetSchema.ts`. *Versão 10× menor do PDF:* folha de estilo de impressão
       (`@media print` e o "Salvar como PDF" do navegador), sem biblioteca de PDF no bundle nem no CSP.
@@ -1850,10 +1859,12 @@ público mudar.
       (contado antes desta revisão), e só **20** linhas traziam o gatilho na mesma linha — a M.3 começa por `grep -rn ADIAR docs/` (fora
       de `historico/` e `legacy/`) e classifica cada um. Dois têm gatilho **"o dono confirmar no livro"**
       ([conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu)): se o dono não tem o livro, o
-      gatilho nunca dispara — é DESCARTAR disfarçado, e a M.3 os resolve. *(30/09: **o dono tem o
+      gatilho nunca dispara — é DESCARTAR disfarçado, e a M.3 os resolve. *(30/09: ~~**o dono tem o
       livro.** Os dois gatilhos são executáveis e viraram
       [Perguntas para o livro](./CONFERENCIA_CP2020.md#perguntas-para-o-livro) — não precisam esperar
-      a M.)*
+      a M.~~ **Corrigido no mesmo dia (decisão 11): o dono não tem o livro** — exatamente o caso que
+      este item previa. Os dois gatilhos foram reescritos na conferência para "uma segunda fonte
+      independente", que dispara sem o livro.)*
 - [ ] **M.1** Suíte completa: `tsc --noEmit`, build, unit, integração, E2E, RLS, `npm audit`.
       *(é a T12.2 do plano antigo)*
 - [ ] **M.2** **Uma sessão de jogo real**, 2+ pessoas, do zero ao combate. É o teste que nenhuma suíte

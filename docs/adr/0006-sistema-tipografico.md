@@ -122,10 +122,17 @@ premissas caíram**, e o dono respondeu às perguntas que elas abriram — a dec
 | 7 tokens por papel; migração mecânica | 129 combinações prefixo × cor × tom; 727 usos de `slate` em ~10 tons | Duas camadas: **rampa por papel** (mecânica) e **nomes semânticos para os neutros**, com a tabela de conversão versionada |
 | Vermelho só dano | 244 usos, a maioria marca, menu, GM, erro e ação destrutiva | **(b)** Papel novo **`fault`** (magenta) para erro, ação destrutiva, *fumble* e NPC hostil; marca e GM para amarelo ou ciano. **(c)** A cor por seção fica, sem vermelho |
 | `prefers-reduced-motion` respeitado | Não é técnica suficiente do WCAG 2.2.2 (nível A) | Animação decorativa **para em ≤ 5 s**; a preferência do sistema zera o resto |
-| Vocabulário gráfico da diagramação da Talsorian | Sem fonte pública para barra preta, faixas ou numeração | **(d)** O livro do dono (interior em P&B) responde: é a referência de diagramação e tipografia; a cor vem da época |
+| Vocabulário gráfico da diagramação da Talsorian | Sem fonte pública para barra preta, faixas ou numeração | **(d)** ~~O livro do dono~~ O interior do livro (em P&B) é a referência de diagramação e tipografia; a cor vem da época. *Corrigido no mesmo dia (decisão 11): o dono não tem o livro — ver abaixo* |
 
 O critério de pronto ganhou comando: `npm run audit:colors` em zero no CI, e o E2E das fontes com o
 helmet ativo.
+
+**Correção de 30/09/2026 (decisão 11 do plano).** A (d) supunha que o dono tinha o livro e
+responderia às três perguntas de diagramação — barra preta, faixas, numeração — com ele na mão. **Ele
+não tem.** A F.3.0 passa a ser pesquisa em fonte pública, e a medição acima já não tinha achado
+nenhuma para as três: o que continuar sem fonte sai da F.3, a não ser que o dono o mantenha como
+linguagem da época, item a item. A direção desta ADR não muda — o alvo segue sendo o livro de 1990, e
+a cor segue vindo da época.
 
 **Na execução da F.2 (30/09/2026)**, os usos corrigiram três nomes da rampa — o roxo é **`cyber`**
 (Netrunner/IA e cyberware), o âmbar ganhou papel próprio (**`caution`**) e o rosa de hoje (DADOS e
