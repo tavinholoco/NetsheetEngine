@@ -64,13 +64,13 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
   };
 
   const label = 'text-micro uppercase text-muted';
-  const input = 'w-full bg-surface border border-line-strong rounded px-1.5 py-1 text-mini text-fg font-mono';
+  const input = 'w-full bg-surface border border-field rounded px-1.5 py-1 text-mini text-fg font-mono';
 
   return (
     <div className="space-y-2 border-t border-line pt-2">
       {/* Estado do alvo (D.1/D.5) */}
       <div className="flex items-center justify-between gap-2 text-micro font-mono">
-        <span className={status.isDead ? 'text-red-400' : 'text-fg-soft'}>
+        <span className={status.isDead ? 'text-danger-400' : 'text-fg-soft'}>
           {status.isDead ? '💀 MORTO' : status.label} · {status.points}/{WOUND_TRACK_POINTS}
           {status.isStabilized && !status.isDead && <span className="text-ok-400"> · estabilizado</span>}
         </span>
@@ -150,7 +150,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
 
       {/* Aplicar dano */}
       <details className="group bg-raised/90 rounded-lg border border-line">
-        <summary className="flex items-center gap-1 p-2 text-mini font-bold text-red-300 uppercase cursor-pointer select-none">
+        <summary className="flex items-center gap-1 p-2 text-mini font-bold text-danger-300 uppercase cursor-pointer select-none">
           <Droplet className="w-3.5 h-3.5" /> Aplicar dano em {targetName}
         </summary>
         <div className="space-y-1.5 px-2 pb-2">
@@ -181,7 +181,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
           type="button"
           onClick={() => onApplyDamage(targetId, raw, location)}
           disabled={!(raw > 0)}
-          className="w-full py-1.5 rounded bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-mini uppercase cursor-pointer"
+          className="w-full py-1.5 rounded bg-danger-700 hover:bg-danger-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-mini uppercase cursor-pointer"
         >
           Aplicar {raw > 0 ? raw : ''} de dano
         </button>

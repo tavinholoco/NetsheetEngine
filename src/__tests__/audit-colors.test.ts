@@ -9,7 +9,7 @@
  */
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { aplicarExcecoes, contarTexto, monoComNegrito, type Excecao } from '../../scripts/audit-colors';
+import { aplicarExcecoes, codigoDeSaida, contarTexto, monoComNegrito, type Excecao } from '../../scripts/audit-colors';
 
 describe('contarTexto — código (.ts/.tsx)', () => {
   it('conta utilitário da paleta com variante e opacidade, e ignora token e cor sem tom', () => {
@@ -86,5 +86,27 @@ describe('monoComNegrito — negrito pedido à mono', () => {
 
   it('alternativas de ternário não se somam', () => {
     expect(monoComNegrito('className={`x ${a ? "font-mono" : "font-bold"}`}')).toBe(0);
+  });
+});
+
+/**
+ * F.2.10 — a trava: o CI roda o contador e ele tem de sair com erro quando
+ * sobra cor à mão ou negrito na mono. `black`/`white` não contam.
+ */
+describe('codigoDeSaida — a trava do CI', () => {
+  const zero = { paleta: 0, rgba: 0, hex: 0, pretoBranco: 0 };
+
+  it('zero cor à mão e zero negrito na mono: passa, mesmo com black/white', () => {
+    expect(codigoDeSaida({ ...zero, pretoBranco: 109 }, 0)).toBe(0);
+  });
+
+  it('uma cor de paleta, um rgba ou um hex: falha', () => {
+    expect(codigoDeSaida({ ...zero, paleta: 1 }, 0)).toBe(1);
+    expect(codigoDeSaida({ ...zero, rgba: 1 }, 0)).toBe(1);
+    expect(codigoDeSaida({ ...zero, hex: 1 }, 0)).toBe(1);
+  });
+
+  it('negrito pedido à mono: falha', () => {
+    expect(codigoDeSaida(zero, 1)).toBe(1);
   });
 });

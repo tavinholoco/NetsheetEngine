@@ -67,9 +67,9 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
   // SP por localização vem da regra pura em src/utils/derivedStats.ts
 
   return (
-    <div className="bg-raised/70 border-l-4 border-signal-500 border-y border-r rounded-lg p-5 shadow-glow-20 shadow-signal-500/10 space-y-4 relative overflow-hidden">
+    <div className="bg-raised/70 border-l-4 border-l-signal-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-signal-500/10 space-y-4 relative overflow-hidden">
       {/* Background HUD Accent */}
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-signal-500 select-none">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-signal-500 select-none">
         COMBAT_KIT
       </div>
 
@@ -87,7 +87,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
             onClick={() => setActiveTab('weapons')}
             className={`px-3 py-1.5 rounded transition-all font-bold uppercase tracking-caps ${
               activeTab === 'weapons'
-                ? 'bg-pink-600 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
+                ? 'bg-roll-600 text-white shadow-glow-10 shadow-roll-500/50'
                 : 'bg-surface text-muted hover:text-white'
             }`}
           >
@@ -111,7 +111,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
         <div className="space-y-4 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {sheet.weapons.map((w) => (
-              <div key={w.id} className="bg-surface/80 p-4 rounded-lg border-l-2 border-l-pink-500 border-y border-r border-line hover:border-pink-500/50 transition-all space-y-3">
+              <div key={w.id} className="bg-surface/80 p-4 rounded-lg border-l-2 border-l-roll-500 border-y border-r border-line hover:border-roll-500/50 transition-all space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-sm font-bold text-white block uppercase">{w.name}</span>
@@ -122,7 +122,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
 
                   <button
                     onClick={() => handleRemoveWeapon(w.id)}
-                    className="p-1 rounded bg-raised hover:bg-pink-950 text-subtle hover:text-pink-400 border border-line transition-all"
+                    className="p-1 rounded bg-raised hover:bg-fault-950 text-subtle hover:text-fault-400 border border-line transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -145,7 +145,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
                     <span className="text-muted uppercase text-micro">Munição:</span>
                     <span
                       className={`font-mono ${
-                        w.currentShots === 0 ? 'text-pink-500 animate-pulse' : 'text-ok-400'
+                        w.currentShots === 0 ? 'text-caution-400 animate-pulse' : 'text-ok-400'
                       }`}
                     >
                       {w.currentShots} / {w.shots}
@@ -153,7 +153,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
                     <button
                       onClick={() => handleShotFired(w.id)}
                       disabled={w.currentShots <= 0}
-                      className="px-2 py-0.5 rounded bg-pink-950/80 border border-pink-800 text-pink-300 font-bold hover:bg-pink-900 disabled:opacity-40 uppercase text-micro"
+                      className="px-2 py-0.5 rounded bg-roll-950/80 border border-roll-800 text-roll-300 font-bold hover:bg-roll-900 disabled:opacity-40 uppercase text-micro"
                     >
                       Atirar
                     </button>
@@ -168,7 +168,7 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
                   <div className="flex items-center space-x-1">
                     <button
                       onClick={() => onRollWeaponAttack(w)}
-                      className="px-2 py-1 bg-pink-600 hover:bg-pink-500 text-white rounded font-bold text-micro flex items-center space-x-1 uppercase tracking-caps shadow-[0_0_8px_rgba(236,72,153,0.4)]"
+                      className="px-2 py-1 bg-roll-600 hover:bg-roll-700 text-white rounded font-bold text-micro flex items-center space-x-1 uppercase tracking-caps shadow-glow-8 shadow-roll-500/40"
                     >
                       <Dice5 className="w-3 h-3" />
                       <span>Atacar</span>

@@ -20,6 +20,7 @@ import { useUiStore } from '../../stores/useUiStore';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
 import { apiUrl, wsUrl } from '../../api/base';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '../../components/ui/dialog';
 import {
   Radio,
   Users,
@@ -98,6 +99,21 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const [initiativeScore, setInitiativeScore] = useState(10);
   const [selectedHealthPlayer, setSelectedHealthPlayer] = useState<RoomPlayer | null>(null);
   const [inspectedPlayer, setInspectedPlayer] = useState<RoomPlayer | null>(null);
+  // F.4.2 — os modais abrem por estado, sem DialogTrigger: o Radix não sabe a
+  // quem devolver o foco ao fechar. Guarda quem o tinha ao abrir.
+  const quemAbriuModal = useRef<HTMLElement | null>(null);
+  const abrirSaude = (p: RoomPlayer) => {
+    quemAbriuModal.current = document.activeElement as HTMLElement | null;
+    setSelectedHealthPlayer(p);
+  };
+  const abrirInspecao = (p: RoomPlayer) => {
+    quemAbriuModal.current = document.activeElement as HTMLElement | null;
+    setInspectedPlayer(p);
+  };
+  const devolverFoco = (e: Event) => {
+    e.preventDefault();
+    quemAbriuModal.current?.focus();
+  };
   // R.11 — o convite que o GM copia (o link /room/CÓDIGO). Se o navegador não
   // deixar copiar, o link aparece para seleção manual.
   const [inviteState, setInviteState] = useState<'idle' | 'copied' | 'manual'>('idle');
@@ -490,8 +506,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   if (view === 'lobby') {
     return (
       <div className="space-y-5 animate-fadeIn">
-        <div className="bg-surface/90 border-l-4 border-y border-r border-line rounded-2xl p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-ok-500 select-none">
+        <div className="bg-surface/90 border-l-4 border-l-ok-500 border-y border-r border-line rounded-2xl p-6 relative overflow-hidden">
+          <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-ok-500 select-none">
             NET_LOBBY
           </div>
           <div className="flex items-center space-x-3 relative z-10">
@@ -526,7 +542,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
               placeholder="Prefixo do código (ex.: NC-2020)"
-              className="w-full bg-raised border border-line-strong text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-ok-400 focus:outline-none uppercase"
+              className="w-full bg-raised border border-field text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-ok-400 focus:outline-none uppercase"
             />
             <p className="text-micro text-subtle leading-relaxed">
               O código ganha um final aleatório (ex.: NC-2020-K7Q9XD) — é ele o convite, e ninguém o adivinha.
@@ -536,7 +552,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               value={roomName}
               onChange={(e) => setRoomName(e.target.value)}
               placeholder="Nome da mesa"
-              className="w-full bg-raised border border-line-strong text-xs text-fg-strong px-3 py-2 rounded focus:border-ok-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs text-fg-strong px-3 py-2 rounded focus:border-ok-400 focus:outline-none"
             />
             <button
               onClick={createRoom}
@@ -557,7 +573,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
               placeholder="Digite o código da sala"
-              className="w-full bg-raised border border-line-strong text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-accent-400 focus:outline-none uppercase"
+              className="w-full bg-raised border border-field text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-accent-400 focus:outline-none uppercase"
             />
             <button
               onClick={() => joinRoom()}
@@ -572,7 +588,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         </div>
 
         {errorMsg && (
-          <div className="bg-red-950/60 border border-red-500/50 p-3 rounded text-mini text-red-300">{errorMsg}</div>
+          <div className="bg-fault-950/60 border border-fault-500/50 p-3 rounded text-mini text-fault-300">{errorMsg}</div>
         )}
       </div>
     );
@@ -588,12 +604,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   return (
     <div className="space-y-4 animate-fadeIn">
       {errorMsg && (
-        <div className="bg-red-950/70 border border-red-500/50 p-3 rounded-lg text-mini text-red-300 animate-fadeIn">
+        <div className="bg-fault-950/70 border border-fault-500/50 p-3 rounded-lg text-mini text-fault-300 animate-fadeIn">
           {errorMsg}
         </div>
       )}
       {/* Header da sala */}
-      <div className="bg-surface/90 border-l-4 border-y border-r border-line rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-surface/90 border-l-4 border-l-ok-500 border-y border-r border-line rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-lg bg-ok-950 border border-ok-500/60 flex items-center justify-center">
             <Radio className="w-5 h-5 text-ok-400" />
@@ -614,7 +630,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 </button>
               )}
               {isGm && (
-                <span className="text-micro px-1.5 py-0.5 rounded bg-red-950 border border-red-500/60 text-red-300 font-black uppercase">
+                <span className="text-micro px-1.5 py-0.5 rounded bg-signal-950 border border-signal-500/60 text-signal-300 font-black uppercase">
                   GM
                 </span>
               )}
@@ -632,7 +648,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           </span>
           <button
             onClick={leaveRoom}
-            className="px-3 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-600/60 text-red-300 rounded font-bold text-micro uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
+            className="px-3 py-1.5 bg-raised hover:bg-raised-strong border border-line-strong hover:border-accent-500 text-fg-soft hover:text-accent-400 rounded font-bold text-micro uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
           >
             <LogOut className="w-3 h-3" />
             <span>Sair</span>
@@ -681,14 +697,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                   ) : (
                     <div className="max-w-[85%] space-y-0.5">
                       <div className="flex items-center space-x-1.5 text-micro font-mono">
-                        <span className={msg.senderRole === 'gm' ? 'text-red-400' : 'text-accent-300'}>
+                        <span className={msg.senderRole === 'gm' ? 'text-signal-400' : 'text-accent-300'}>
                           {msg.senderRole === 'gm' ? '👑' : '🔹'} {msg.senderHandle}
                         </span>
                         <span className="text-faint">{msg.timestamp}</span>
                       </div>
                       <div className={`px-3 py-2 rounded-lg text-xs leading-relaxed font-sans ${
                         msg.senderRole === 'gm'
-                          ? 'bg-red-950/50 border border-red-800/60 text-red-100'
+                          ? 'bg-signal-950/50 border border-signal-800/60 text-signal-100'
                           : 'bg-raised border border-line-strong text-fg'
                       }`}>
                         {msg.isDiceRoll && msg.rollResult ? (
@@ -717,7 +733,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendChat()}
                 placeholder="Mensagem para a mesa..."
-                className="flex-1 bg-raised border border-line-strong text-fg-strong text-xs px-3 py-2.5 rounded focus:border-accent-400 focus:outline-none placeholder:text-faint"
+                className="flex-1 bg-raised border border-field text-fg-strong text-xs px-3 py-2.5 rounded focus:border-accent-400 focus:outline-none placeholder:text-faint"
               />
               <button
                 onClick={() => sendChat()}
@@ -735,7 +751,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               <button
                 onClick={rollTableDamage}
                 title="💥 Dano da arma + local de impacto (RNG no servidor)"
-                className="px-3 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded font-black uppercase cursor-pointer transition-all"
+                className="px-3 py-2.5 bg-danger-600 hover:bg-danger-700 text-white rounded font-black uppercase cursor-pointer transition-all"
               >
                 <Zap className="w-4 h-4" />
               </button>
@@ -750,7 +766,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               <button
                 onClick={rollTableSave}
                 title="🩸 Death Save — 1d10 ≤ BODY − nível Mortal (RNG no servidor)"
-                className="px-3 py-2.5 bg-pink-600 hover:bg-pink-500 text-white rounded font-black uppercase cursor-pointer transition-all"
+                className="px-3 py-2.5 bg-danger-800 hover:bg-danger-700 border border-danger-500 text-white rounded font-black uppercase cursor-pointer transition-all"
               >
                 <HeartPulse className="w-4 h-4" />
               </button>
@@ -785,7 +801,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                     </div>
                     <div className="flex items-center space-x-1 shrink-0">
                       <button
-                        onClick={() => setInspectedPlayer(p)}
+                        onClick={() => abrirInspecao(p)}
                         title="Inspecionar ficha"
                         className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-accent-400 cursor-pointer"
                       >
@@ -793,9 +809,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                       </button>
                       {isGm && p.peerId !== peerId && (
                         <button
-                          onClick={() => setSelectedHealthPlayer(p)}
+                          onClick={() => abrirSaude(p)}
                           title="Editar bio-monitor"
-                          className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-red-400 cursor-pointer"
+                          className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-danger-400 cursor-pointer"
                         >
                           <Crosshair className="w-3 h-3" />
                         </button>
@@ -807,12 +823,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             </div>
 
             {isGm && (
-              <div className="bg-surface/80 border border-red-500/40 rounded-xl p-3 space-y-2">
-                <span className="text-micro font-black text-red-400 uppercase tracking-caps block">Poderes do GM</span>
+              <div className="bg-surface/80 border border-signal-500/40 rounded-xl p-3 space-y-2">
+                <span className="text-micro font-black text-signal-400 uppercase tracking-caps block">Poderes do GM</span>
                 <div className="grid grid-cols-2 gap-1.5">
                   <button
                     onClick={() => generateNpc()}
-                    className="px-2 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-300 rounded font-bold text-micro uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
+                    className="px-2 py-1.5 bg-fault-950/80 hover:bg-fault-900 border border-fault-700/60 text-fault-300 rounded font-bold text-micro uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
                   >
                     <Skull className="w-3 h-3" />
                     <span>Gerar NPC</span>
@@ -829,11 +845,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                   <span className="text-micro text-subtle uppercase">NPCs ({Object.keys(npcs).length})</span>
                   {Object.values(npcs).map((n) => (
                     <div key={n.peerId} className="bg-raised/70 border border-line rounded px-2 py-1.5 flex items-center justify-between">
-                      <span className="text-micro text-red-200 font-bold truncate">{n.handle}</span>
+                      <span className="text-micro text-fault-200 font-bold truncate">{n.handle}</span>
                       <div className="flex items-center space-x-1 shrink-0">
                         <button
                           onClick={() => updateNpcHealth(n.peerId, Math.min(10, n.sheet.woundLevel + 1))}
-                          className="text-micro px-1 py-0.5 rounded bg-surface border border-line-strong text-red-400 cursor-pointer"
+                          className="text-micro px-1 py-0.5 rounded bg-surface border border-line-strong text-danger-400 cursor-pointer"
                         >
                           +
                         </button>
@@ -870,8 +886,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             peerId={peerId}
             players={players}
             onUpdateGrid={updateGrid}
-            onSelectPlayerForHealthEdit={isGm ? (p) => setSelectedHealthPlayer(p) : undefined}
-            onInspectPlayer={(p) => setInspectedPlayer(p)}
+            onSelectPlayerForHealthEdit={isGm ? abrirSaude : undefined}
+            onInspectPlayer={abrirInspecao}
             remoteCursors={remoteCursors}
             onCursorMove={handleGmCursorMove}
             renderTokenCombat={isGm ? renderTokenCombat : undefined}
@@ -941,13 +957,13 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               value={initiativeName}
               onChange={(e) => setInitiativeName(e.target.value)}
               placeholder="Nome / handle"
-              className="w-full bg-raised border border-line-strong text-xs text-fg-strong px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs text-fg-strong px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
             />
             <input
               type="number"
               value={initiativeScore}
               onChange={(e) => setInitiativeScore(parseInt(e.target.value) || 0)}
-              className="font-mono w-full bg-raised border border-line-strong text-xs text-signal-400 px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
+              className="font-mono w-full bg-raised border border-field text-xs text-signal-400 px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
             />
             <button
               onClick={addInitiative}
@@ -960,69 +976,74 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         </div>
       )}
 
+      {/* Os dois modais da mesa no Dialog do Radix (F.4.2): foco preso dentro,
+          Esc fecha, role="dialog" com o título ligado. Eram feitos à mão. */}
+
       {/* Modal: editar saúde (GM) */}
-      {selectedHealthPlayer && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedHealthPlayer(null)}>
-          <div className="bg-surface border-2 border-red-500/60 rounded-2xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-fadeIn" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-display text-sm font-black text-red-400 uppercase tracking-display mb-3">
-              Bio-Monitor // {selectedHealthPlayer.handle}
-            </h3>
-            <div className="grid grid-cols-5 gap-1.5 mb-4">
-              {Array.from({ length: 11 }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => updatePlayerHealth(selectedHealthPlayer.peerId, i)}
-                  className={`aspect-square rounded border-2 text-micro font-mono cursor-pointer transition-all ${
-                    i <= selectedHealthPlayer.sheet.woundLevel
-                      ? 'border-red-500 bg-red-950/80 text-red-300'
-                      : 'border-line bg-raised text-subtle hover:border-red-500/50'
-                  }`}
-                >
-                  {i}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setSelectedHealthPlayer(null)}
-              className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      )}
+      <Dialog open={selectedHealthPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setSelectedHealthPlayer(null); }}>
+        <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-sm border-2 border-danger-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-danger-500/30 font-sans">
+          {selectedHealthPlayer && (
+            <>
+              <DialogTitle className="text-sm font-black text-danger-400 pr-6">
+                Bio-Monitor // {selectedHealthPlayer.handle}
+              </DialogTitle>
+              <DialogDescription className="sr-only">Escolha o nível de ferimento, de 0 a 10.</DialogDescription>
+              <div className="grid grid-cols-5 gap-1.5">
+                {Array.from({ length: 11 }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => updatePlayerHealth(selectedHealthPlayer.peerId, i)}
+                    className={`aspect-square rounded border-2 text-micro font-mono cursor-pointer transition-all ${
+                      i <= selectedHealthPlayer.sheet.woundLevel
+                        ? 'border-danger-500 bg-danger-950/80 text-danger-300'
+                        : 'border-line bg-raised text-subtle hover:border-danger-500/50'
+                    }`}
+                  >
+                    {i}
+                  </button>
+                ))}
+              </div>
+              <DialogClose className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer">
+                Fechar
+              </DialogClose>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Modal: inspecionar ficha */}
-      {inspectedPlayer && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setInspectedPlayer(null)}>
-          <div className="bg-surface border-2 border-accent-500/60 rounded-2xl p-6 w-full max-w-md shadow-glow-30 shadow-accent-500/30 max-h-[80vh] overflow-y-auto custom-scrollbar animate-fadeIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display text-sm font-black text-accent-400 uppercase tracking-display">{inspectedPlayer.handle}</h3>
-              <span className="text-micro px-2 py-0.5 rounded bg-raised border border-line-strong text-signal-400">{inspectedPlayer.role}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5 mb-3">
-              {(Object.keys(inspectedPlayer.sheet.stats) as (keyof typeof inspectedPlayer.sheet.stats)[]).map((k) => (
-                <div key={k} className="bg-raised border border-line rounded p-1.5 text-center">
-                  <span className="text-micro text-subtle block">{k}</span>
-                  <span className="font-mono text-xs text-signal-400">{inspectedPlayer.sheet.stats[k]}</span>
-                </div>
-              ))}
-            </div>
-            <div className="font-mono text-micro text-muted space-y-1">
-              <p>💥 Ferimento: <span className="text-red-300">{inspectedPlayer.sheet.woundLevel}/10</span></p>
-              <p>💰 €$ {inspectedPlayer.sheet.eurodollars.toLocaleString()}</p>
-              <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
-              <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>
-            </div>
-            <button
-              onClick={() => setInspectedPlayer(null)}
-              className="w-full mt-4 py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      )}
+      <Dialog open={inspectedPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setInspectedPlayer(null); }}>
+        <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-md border-2 border-accent-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-accent-500/30 max-h-[80vh] overflow-y-auto custom-scrollbar font-sans">
+          {inspectedPlayer && (
+            <>
+              <div className="flex items-center justify-between gap-2 pr-6">
+                <DialogTitle className="text-sm font-black">{inspectedPlayer.handle}</DialogTitle>
+                <span className="text-micro px-2 py-0.5 rounded bg-raised border border-line-strong text-signal-400">{inspectedPlayer.role}</span>
+              </div>
+              <DialogDescription className="sr-only">
+                Ficha de {inspectedPlayer.handle}: atributos, ferimento, verba, armas e cyberware.
+              </DialogDescription>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(Object.keys(inspectedPlayer.sheet.stats) as (keyof typeof inspectedPlayer.sheet.stats)[]).map((k) => (
+                  <div key={k} className="bg-raised border border-line rounded p-1.5 text-center">
+                    <span className="text-micro text-subtle block">{k}</span>
+                    <span className="font-mono text-xs text-signal-400">{inspectedPlayer.sheet.stats[k]}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="font-mono text-micro text-muted space-y-1">
+                <p>💥 Ferimento: <span className="text-danger-300">{inspectedPlayer.sheet.woundLevel}/10</span></p>
+                <p>💰 €$ {inspectedPlayer.sheet.eurodollars.toLocaleString()}</p>
+                <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
+                <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>
+              </div>
+              <DialogClose className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer">
+                Fechar
+              </DialogClose>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

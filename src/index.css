@@ -44,10 +44,20 @@
           ok      verde — sucesso, online, a seção JOGAR
           cyber   roxo — Netrunner e IA, cyberware e humanidade
           caution âmbar — ação de combate, perigo no grid, inativo
+          roll    azul — rolagem de dado, a seção DADOS, armas (F.2.2)
           fault   magenta — erro, ação destrutiva, hostil (F.2.2)
           danger  vermelho — SÓ dano (decisão 10b; F.2.2 e F.2.7)
      2) Nomes semânticos para os neutros mais usados (abaixo).
+
+     A TRAVA (F.2.10): a paleta padrão do Tailwind sai — `text-red-500` não
+     gera mais CSS — e só existe a cor que mora aqui. Sem isso a paleta volta
+     a ambiguar sozinha. O `npm run audit:colors` no CI pega o resto (rgba e
+     hex escritos à mão). Preto e branco ficam, como neutros absolutos.
      --------------------------------------------------------------- */
+  --color-*: initial;
+  --color-black: #000;
+  --color-white: #fff;
+
   --color-night-50: oklch(98.4% 0.003 247.858);
   --color-night-100: oklch(96.8% 0.007 247.896);
   --color-night-200: oklch(92.9% 0.013 255.508);
@@ -120,6 +130,20 @@
   --color-caution-900: oklch(41.4% 0.112 45.904);
   --color-caution-950: oklch(27.9% 0.077 45.635);
 
+  /* A matiz de DADOS (F.2.2/F.2.9): o rosa de antes é a rampa do fault, e
+     nenhum papel sobrava — os outros já são de outra seção. Do blue. */
+  --color-roll-50: oklch(97% 0.014 254.604);
+  --color-roll-100: oklch(93.2% 0.032 255.585);
+  --color-roll-200: oklch(88.2% 0.059 254.128);
+  --color-roll-300: oklch(80.9% 0.105 251.813);
+  --color-roll-400: oklch(70.7% 0.165 254.624);
+  --color-roll-500: oklch(62.3% 0.214 259.815);
+  --color-roll-600: oklch(54.6% 0.245 262.881);
+  --color-roll-700: oklch(48.8% 0.243 264.376);
+  --color-roll-800: oklch(42.4% 0.199 265.638);
+  --color-roll-900: oklch(37.9% 0.146 265.522);
+  --color-roll-950: oklch(28.2% 0.091 267.935);
+
   --color-fault-50: oklch(97.1% 0.014 343.198);
   --color-fault-100: oklch(94.8% 0.028 342.258);
   --color-fault-200: oklch(89.9% 0.061 343.231);
@@ -144,6 +168,24 @@
   --color-danger-900: oklch(39.6% 0.141 25.723);
   --color-danger-950: oklch(25.8% 0.092 26.042);
 
+  /* A escala de dano (F.2.7): um tom por nível de ferimento, o índice 0..10 do
+     WOUND_LEVEL_NAMES (src/utils/injuryRules.ts). No fundo escuro a gravidade
+     CLAREIA: do Crítico à Morte Iminente o tom sobe pelos claros do danger.
+     Antes descia (red-500 → rose-700), e Mortal 2–6 ficava em 2,9–4,5:1 —
+     quanto mais perto da morte, menos legível. Todo tom com ≥ 4,5:1 sobre
+     surface e raised: o theme-contrast.test confere. */
+  --color-wound-0: var(--color-ok-400);           /* Saudável */
+  --color-wound-1: var(--color-signal-400);       /* Leve */
+  --color-wound-2: oklch(75% 0.183 55.934);       /* Sério — o orange-400 */
+  --color-wound-3: var(--color-danger-500);       /* Crítico */
+  --color-wound-4: var(--color-danger-400);       /* Mortal 0 */
+  --color-wound-5: var(--color-danger-400);       /* Mortal 1 */
+  --color-wound-6: var(--color-danger-300);       /* Mortal 2 */
+  --color-wound-7: var(--color-danger-300);       /* Mortal 3 */
+  --color-wound-8: var(--color-danger-200);       /* Mortal 4 */
+  --color-wound-9: var(--color-danger-200);       /* Mortal 5 */
+  --color-wound-10: var(--color-danger-100);      /* Mortal 6 — morte iminente */
+
   /* Neutros com nome — pelo tipo de uso × tom (color-map.json, "neutros"). */
   --color-surface: var(--color-night-950);       /* fundo da página e dos painéis */
   --color-raised: var(--color-night-900);        /* painel elevado, campo */
@@ -155,8 +197,17 @@
   --color-fg: var(--color-night-200);            /* texto do corpo */
   --color-fg-soft: var(--color-night-300);
   --color-muted: var(--color-night-400);         /* texto secundário */
-  --color-subtle: var(--color-night-500);        /* abaixo de 4,5:1 — F.2.8 */
-  --color-faint: var(--color-night-600);         /* abaixo de 4,5:1 — F.2.8 */
+  /* Texto apagado (F.2.8). Eram o night-500 e o night-600: 3,7–4,2:1 e
+     2,4–2,7:1, abaixo do 4,5:1 do WCAG 1.4.3. O subtle sobe para o menor tom
+     da rampa que passa sobre raised com folga (~4,9:1), e o faint se funde
+     nele — dois degraus abaixo de 4,5:1 não existem. */
+  --color-subtle: oklch(62% 0.045 257.4);
+  --color-faint: var(--color-subtle);
+
+  /* Borda de campo de formulário (F.4.2, WCAG 1.4.11): é ela que mostra onde o
+     campo está — o preenchimento difere do painel em ~1,1:1 —, então pede
+     3:1 sobre surface e raised. O line-strong dava 1,7–2,0:1. */
+  --color-field: var(--color-night-500);
 
   /* Brilho neon (F.2.5): a geometria aqui, a cor pelo token —
      `shadow-glow-15 shadow-accent-500/40`. O currentColor é só o padrão:
@@ -178,11 +229,20 @@
   --drop-shadow-glow-18: 0 0 18px currentColor;
   --drop-shadow-glow-20: 0 0 20px currentColor;
 
-  /* Animações HUD */
+  /* Animações HUD. Nada decorativo em loop (WCAG 2.2.2, nível A): a
+     scanline é estática (.crt-scanlines) e o glitch é de evento — uma vez,
+     em 0,75 s, com três mudanças, abaixo dos três flashes por segundo do
+     2.3.1 (F.3.1). */
   --animate-fadeIn: fadeIn 0.3s ease-out;
-  --animate-scanline: scanline 8s linear infinite;
-  --animate-glitch: glitch 2.5s infinite;
-  --animate-pulse-glow: pulseGlow 2s ease-in-out infinite;
+  --animate-glitch: glitch 0.75s steps(1, end) 1;
+  --animate-pulse-glow: pulseGlow 2s ease-in-out 2;
+
+  /* As do Tailwind vêm em loop; aqui param em ≤ 5 s (F.4.2) — um lugar para
+     os 18 pulse, os 2 ping e o bounce do aviso. O spin de carregando é
+     essencial e fica como o Tailwind o define. O theme-motion.test confere. */
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 2;
+  --animate-ping: ping 1s cubic-bezier(0, 0, 0.2, 1) 4;
+  --animate-bounce: bounce 1s 3;
 }
 
 @keyframes fadeIn {
@@ -196,33 +256,22 @@
   }
 }
 
-@keyframes scanline {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
-}
-
+/* O glitch de evento (F.3.1): dois saltos e a volta, cada estado parado por
+   um terço da duração (steps). Quem dispara é o React — a `key` remonta o
+   elemento a cada evento: trocar de tela, entrar em Mortal. */
 @keyframes glitch {
-  0%,
-  92%,
-  100% {
-    transform: translate(0, 0);
-    clip-path: inset(0 0 0 0);
-  }
-  93% {
+  0% {
     transform: translate(-2px, 1px);
     clip-path: inset(20% 0 40% 0);
   }
-  95% {
+  33% {
     transform: translate(2px, -1px);
     clip-path: inset(60% 0 10% 0);
   }
-  97% {
-    transform: translate(-1px, 0);
-    clip-path: inset(30% 0 30% 0);
+  66%,
+  100% {
+    transform: translate(0, 0);
+    clip-path: inset(0 0 0 0);
   }
 }
 
@@ -284,6 +333,20 @@
   }
 }
 
+/* Quem pede menos movimento no sistema não recebe animação nem transição —
+   fora o spin de carregando, que é essencial (F.4.2). É boa prática, não o
+   critério 2.2.2: este é o das animações finitas no @theme. */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.animate-spin),
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Scrollbar custom para painéis internos (chat, listas, feeds) */
 .custom-scrollbar {
   scrollbar-width: thin;
@@ -318,29 +381,18 @@
   );
 }
 
-/* Glitch flicker para títulos neon */
-.glitch-text {
-  position: relative;
-  display: inline-block;
+/* Fósforo do CRT — linha de varredura de 4 px e a franja de cor de 3 px (o
+   fundo do menu). A franja era vermelho e azul em rgba; virou magenta e ciano,
+   o par de aberração do glitch: vermelho é só dano (F.2.2). */
+.crt-phosphor {
+  background-image:
+    linear-gradient(transparent 50%, color-mix(in oklab, var(--color-black) 35%, transparent) 50%),
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--color-fault-500) 8%, transparent),
+      transparent,
+      color-mix(in oklab, var(--color-accent-500) 4%, transparent)
+    );
+  background-size: 100% 4px, 3px 100%;
 }
 
-.glitch-text::before,
-.glitch-text::after {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.glitch-text::before {
-  color: var(--color-accent-400);
-  animation: glitch 2.5s infinite;
-  z-index: -1;
-}
-
-.glitch-text::after {
-  color: #ef4444;
-  animation: glitch 3s infinite reverse;
-  z-index: -2;
-}

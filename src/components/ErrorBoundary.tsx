@@ -35,21 +35,21 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-surface flex items-center justify-center p-6 font-mono">
-          <div className="max-w-lg w-full bg-raised/80 border-2 border-red-600/50 rounded-2xl p-8 text-center shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+          <div className="max-w-lg w-full bg-raised/80 border-2 border-fault-600/50 rounded-2xl p-8 text-center shadow-glow-30 shadow-fault-500/20">
             <div className="text-5xl mb-4">⚠️</div>
-            <h1 className="font-display text-xl font-black text-red-400 uppercase tracking-display mb-2">
+            <h1 className="font-display text-xl font-black text-fault-400 uppercase tracking-display mb-2">
               Erro Crítico no Terminal
             </h1>
             <p className="text-xs text-muted mb-1">
               A NETSHEET ENGINE encontrou uma falha inesperada no processamento.
             </p>
-            <p className="text-micro text-red-300/70 bg-red-950/40 border border-red-800/50 rounded p-2 mb-5 break-words">
+            <p className="text-micro text-fault-300/70 bg-fault-950/40 border border-fault-800/50 rounded p-2 mb-5 break-words">
               {this.state.error?.message || 'Erro desconhecido'}
             </p>
             <div className="flex justify-center space-x-3">
               <button
                 onClick={this.handleReload}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase rounded transition-all cursor-pointer"
+                className="px-4 py-2 bg-fault-600 hover:bg-fault-700 text-white font-black text-xs uppercase rounded transition-all cursor-pointer"
               >
                 Reiniciar Terminal
               </button>

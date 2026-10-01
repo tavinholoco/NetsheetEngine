@@ -43,26 +43,30 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
   const clickBox = (point: number) => setPoints(point === damagePoints ? point - 1 : point);
 
   return (
-    <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-[0_0_20px_rgba(239,68,68,0.1)] space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-red-500 select-none">
+    <div className="bg-raised/70 border-l-4 border-l-danger-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-danger-500/10 space-y-4 relative overflow-hidden">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-danger-500 select-none">
         BIOMON
       </div>
 
       <div className="flex items-center justify-between border-b border-line pb-3 relative z-10">
         <div className="flex items-center space-x-2">
-          <HeartPulse className="w-5 h-5 text-red-400" />
-          <h2 className="text-base sm:text-lg font-display font-bold text-red-400 uppercase tracking-display">
+          <HeartPulse className="w-5 h-5 text-danger-400" />
+          <h2 className="text-base sm:text-lg font-display font-bold text-danger-400 uppercase tracking-display">
             Bio-Monitor // Ferimentos
           </h2>
         </div>
-        <span className={`text-xs font-mono px-2.5 py-1 rounded border ${isDead || lastBox ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-surface border-line-strong text-fg'}`}>
-          {isDead ? 'MORTO' : current.name}
+        <span className={`text-xs font-mono px-2.5 py-1 rounded border ${isDead || lastBox ? 'bg-danger-950 border-danger-500 text-danger-300 animate-pulse' : 'bg-surface border-line-strong text-fg'}`}>
+          {/* F.3.1: o glitch é de evento — a key remonta o texto a cada nível, e ele
+              só pisca uma vez ao entrar (ou piorar) em Mortal e ao morrer. */}
+          <span key={isDead ? 'morto' : woundLevel} className={isDead || mortal !== null ? 'inline-block animate-glitch' : undefined}>
+            {isDead ? 'MORTO' : current.name}
+          </span>
         </span>
       </div>
 
       {/* Trilha do livro: 10 níveis × 4 caixas de 1 ponto */}
       <div className="relative z-10 space-y-2">
-        <div className="grid grid-cols-5 sm:grid-cols-10 gap-x-1.5 gap-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 2xl:grid-cols-10 gap-x-1.5 gap-y-2">
           {WOUND_TRACK.slice(1).map((row) => (
             <div key={row.level} className="flex flex-col items-center gap-1">
               <span className="text-micro uppercase text-subtle">{shortName(row.level)}</span>
@@ -80,7 +84,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
                       title={`${point} ponto(s) — ${row.name}`}
                       className={`aspect-square rounded-sm border transition-colors disabled:cursor-not-allowed ${
                         filled
-                          ? 'border-red-500 bg-red-600/80'
+                          ? 'border-danger-500 bg-danger-600/80'
                           : 'border-line-strong bg-surface/80 enabled:hover:border-night-500'
                       }`}
                     />
@@ -108,7 +112,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
                 type="button"
                 onClick={() => onChange({ isDead: !isDead })}
                 aria-pressed={isDead}
-                className={`px-2 py-0.5 rounded border cursor-pointer ${isDead ? 'border-red-500 text-red-300' : 'border-line-strong hover:border-night-500 text-fg-soft'}`}
+                className={`px-2 py-0.5 rounded border cursor-pointer ${isDead ? 'border-danger-500 text-danger-300' : 'border-line-strong hover:border-night-500 text-fg-soft'}`}
               >
                 {isDead ? 'Desmarcar morte' : 'Marcar morte'}
               </button>
@@ -124,7 +128,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
             <Activity className="w-3.5 h-3.5 text-signal-400" />
             <span className="text-micro text-muted uppercase">Estado</span>
           </div>
-          <span className={`font-mono text-sm ${isDead ? 'text-red-400' : current.color}`}>{isDead ? 'Morto' : current.name}</span>
+          <span className={`font-mono text-sm ${isDead ? 'text-danger-400' : current.color}`}>{isDead ? 'Morto' : current.name}</span>
           {sheet.isStabilized && !isDead && mortal !== null && (
             <span className="block text-micro text-ok-400 mt-0.5">Estabilizado — sem death save por turno</span>
           )}
@@ -132,15 +136,15 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
 
         <div className="bg-surface/80 p-3 rounded-lg border border-line">
           <div className="flex items-center space-x-1.5 mb-1">
-            <Skull className="w-3.5 h-3.5 text-red-400" />
+            <Skull className="w-3.5 h-3.5 text-danger-400" />
             <span className="text-micro text-muted uppercase">Efeito nos atributos</span>
           </div>
-          <span className="font-mono text-sm text-red-300">
+          <span className="font-mono text-sm text-danger-300">
             {woundEffectText(woundLevel)}
           </span>
         </div>
 
-        <div className="bg-surface/80 p-3 rounded-lg border border-red-500/40 flex flex-col justify-between">
+        <div className="bg-surface/80 p-3 rounded-lg border border-danger-500/40 flex flex-col justify-between">
           <div className="flex items-center space-x-1.5 mb-1">
             <Zap className="w-3.5 h-3.5 text-signal-400" />
             <span className="text-micro text-muted uppercase">Saves</span>

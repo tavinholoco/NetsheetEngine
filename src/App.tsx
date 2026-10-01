@@ -194,7 +194,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_center,_rgba(15,23,42,1)_0%,_rgba(2,6,23,1)_100%)] text-fg font-sans selection:bg-accent-500 selection:text-black relative">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_center,_var(--color-raised)_0%,_var(--color-surface)_100%)] text-fg font-sans selection:bg-accent-500 selection:text-black relative">
       {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
@@ -250,30 +250,30 @@ export default function App() {
               sheet: { category: 'FICHA', title: 'CRIADOR & GESTOR DE FICHA', color: 'text-accent-400' },
               presets: { category: 'LENDAS', title: 'BIBLIOTECA DE LENDAS DE NIGHT CITY', color: 'text-signal-400' },
               ai: { category: 'NETRUNNER', title: 'ASSISTENTE NETRUNNER IA & LIFEPATH', color: 'text-cyber-400' },
-              dice: { category: 'DADOS', title: 'ROLADOR DE DADOS FNFF & COMBATE', color: 'text-pink-400' },
-              prd: { category: 'PRD', title: 'ESPECIFICAÇÃO PRD & ROADMAP', color: 'text-red-400' },
+              dice: { category: 'DADOS', title: 'ROLADOR DE DADOS FNFF & COMBATE', color: 'text-roll-400' },
+              prd: { category: 'PRD', title: 'ESPECIFICAÇÃO PRD & ROADMAP', color: 'text-fg-strong' },
               profile: { category: 'PERFIL', title: 'PERFIL DO EDGERUNNER', color: 'text-caution-400' },
             };
             const currentPage = pageInfoMap[activeTab] || pageInfoMap['home'];
 
             return (
-              <div className="bg-surface/90 border-2 border-red-600/40 rounded-xl p-4 md:p-5 backdrop-blur-md shadow-[0_0_20px_rgba(239,68,68,0.15)] relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-red-500 via-signal-500 to-accent-500"></div>
+              <div className="bg-surface/90 border-2 border-accent-600/40 rounded-xl p-4 md:p-5 backdrop-blur-md shadow-glow-20 shadow-accent-500/15 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-signal-500 to-accent-500"></div>
                 <div className="pl-3 space-y-1">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2.5 h-2.5 bg-red-500 animate-pulse rounded-full shadow-[0_0_8px_rgba(239,68,68,1)]"></div>
-                    <span className="font-mono text-mini tracking-caps text-red-500 uppercase">
+                    <div className="w-2.5 h-2.5 bg-accent-400 animate-pulse rounded-full shadow-glow-8 shadow-accent-400"></div>
+                    <span className="font-mono text-mini tracking-caps text-accent-400 uppercase">
                       SISTEMA // {currentPage.category}
                     </span>
                   </div>
-                  <h1 className={`font-display text-xl sm:text-2xl md:text-3xl font-black italic tracking-display uppercase ${currentPage.color} drop-shadow-glow-12 drop-shadow-white/15 leading-tight`}>
+                  <h1 key={activeTab} className={`animate-glitch font-display text-xl sm:text-2xl md:text-3xl font-black italic tracking-display uppercase ${currentPage.color} drop-shadow-glow-12 drop-shadow-white/15 leading-tight`}>
                     {currentPage.title}
                   </h1>
                   {user && (
-                    <p className="text-xs text-fg-soft font-medium pt-1 flex items-center space-x-1.5">
+                    <p className="text-xs text-fg-soft pt-1 flex items-center space-x-1.5">
                       <span className="text-muted">FICHA ATIVA:</span>
                       <strong className="text-signal-400 font-bold">{sheet.handle || 'Edgerunner'}</strong>
-                      <span className="text-accent-400 font-semibold">({sheet.role || 'Solo'})</span>
+                      <span className="text-accent-400 font-bold">({sheet.role || 'Solo'})</span>
                     </p>
                   )}
                 </div>

@@ -137,8 +137,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* Cartão do perfil */}
-      <div className="bg-surface/90 border-l-4 border-y border-r border-line rounded-2xl p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-caution-400 select-none">
+      <div className="bg-surface/90 border-l-4 border-l-caution-400 border-y border-r border-line rounded-2xl p-6 relative overflow-hidden">
+        <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-caution-400 select-none">
           PROFILE
         </div>
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
@@ -168,7 +168,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
           </div>
           <button
             onClick={onLogout}
-            className="px-4 py-2 bg-red-950/80 hover:bg-red-900 border border-red-600/60 text-red-300 rounded font-bold text-micro uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
+            className="px-4 py-2 bg-raised hover:bg-raised-strong border border-line-strong hover:border-accent-500 text-fg-soft hover:text-accent-400 rounded font-bold text-micro uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sair</span>
@@ -223,7 +223,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 <span className="font-mono text-micro text-faint">{new Date(meta.updatedAt).toLocaleDateString()}</span>
                 <button
                   onClick={() => onDeleteSheet(meta.id)}
-                  className="p-1.5 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
+                  className="p-1.5 rounded bg-raised hover:bg-fault-950 border border-line hover:border-fault-500 text-subtle hover:text-fault-400 transition-all cursor-pointer"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -279,7 +279,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 <button
                   onClick={handleRemoveAvatar}
                   disabled={isUploading}
-                  className="px-3 py-1.5 bg-raised hover:bg-red-950 border border-line-strong hover:border-red-500 text-muted hover:text-red-400 rounded font-black text-micro uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
+                  className="px-3 py-1.5 bg-raised hover:bg-fault-950 border border-line-strong hover:border-fault-500 text-muted hover:text-fault-400 rounded font-black text-micro uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
                 >
                   <XCircle className="w-3.5 h-3.5" />
                   <span>Remover</span>
@@ -290,7 +290,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               PNG, JPEG, WebP ou GIF · até 5 MB. O avatar aparece no menu e no perfil.
             </p>
             {avatarError && (
-              <p className="text-micro text-red-400 font-bold">⚠ {avatarError}</p>
+              <p className="text-micro text-fault-400 font-bold">⚠ {avatarError}</p>
             )}
           </div>
         </div>

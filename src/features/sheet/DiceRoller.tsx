@@ -74,8 +74,8 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
             onClick={() => setTab(id)}
             className={`px-3.5 py-2 rounded-lg border-2 transition-all flex items-center space-x-1.5 uppercase font-black tracking-caps cursor-pointer ${
               tab === id
-                ? 'bg-pink-600 text-white border-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.5)]'
-                : 'bg-surface text-muted border-line hover:border-pink-500/50 hover:text-white'
+                ? 'bg-roll-600 text-white border-roll-400 shadow-glow-12 shadow-roll-500/50'
+                : 'bg-surface text-muted border-line hover:border-roll-500/50 hover:text-white'
             }`}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -85,16 +85,16 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
       </div>
 
       {/* Panel */}
-      <div className="bg-raised/80 border-l-4 border-y border-r border-line rounded-xl p-6 shadow-[0_0_25px_rgba(236,72,153,0.12)] relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[60px] font-black text-pink-500 select-none">
+      <div className="bg-raised/80 border-l-4 border-l-roll-500 border-y border-r border-line rounded-xl p-6 shadow-glow-25 shadow-roll-500/12 relative overflow-hidden">
+        <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[60px] font-black text-roll-500 select-none">
           FNFF
         </div>
 
         {tab === 'skill' && (
           <div className="space-y-4 relative z-10">
             <div className="flex items-center space-x-2 border-b border-line pb-3">
-              <Dice5 className="w-5 h-5 text-pink-400" />
-              <h2 className="font-display text-base sm:text-lg font-bold text-pink-400 uppercase tracking-display">Rolagem de Perícia</h2>
+              <Dice5 className="w-5 h-5 text-roll-400" />
+              <h2 className="font-display text-base sm:text-lg font-bold text-roll-400 uppercase tracking-display">Rolagem de Perícia</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
@@ -103,7 +103,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                   type="text"
                   value={skillName}
                   onChange={(e) => setSkillName(e.target.value)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-fg-strong px-2.5 py-2 rounded focus:border-pink-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-fg-strong px-2.5 py-2 rounded focus:border-roll-400 focus:outline-none"
                 />
               </div>
               <div>
@@ -111,7 +111,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                 <select
                   value={skillStat}
                   onChange={(e) => setSkillStat(e.target.value as StatName)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-accent-300 px-2.5 py-2 rounded focus:border-pink-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-accent-300 px-2.5 py-2 rounded focus:border-roll-400 focus:outline-none"
                 >
                   {STATS.map((s) => (
                     <option key={s} value={s}>{s} ({sheet.stats[s] || 0})</option>
@@ -126,13 +126,13 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                   max={10}
                   value={skillRank}
                   onChange={(e) => setSkillRank(parseInt(e.target.value) || 0)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-signal-400 px-2.5 py-2 rounded focus:border-pink-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-signal-400 px-2.5 py-2 rounded focus:border-roll-400 focus:outline-none"
                 />
               </div>
             </div>
             <button
               onClick={rollSkill}
-              className="w-full py-3 bg-pink-600 hover:bg-pink-500 text-white font-black text-xs uppercase rounded shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all cursor-pointer"
+              className="w-full py-3 bg-roll-600 hover:bg-roll-700 text-white font-black text-xs uppercase rounded shadow-glow-15 shadow-roll-500/40 transition-all cursor-pointer"
             >
               🎲 Rolar 1d10 + {skillStat} + Perícia
             </button>
@@ -152,7 +152,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                   type="text"
                   value={weaponName}
                   onChange={(e) => setWeaponName(e.target.value)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-fg-strong px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-fg-strong px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none"
                 />
               </div>
               <div>
@@ -161,7 +161,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                   type="text"
                   value={damageFormula}
                   onChange={(e) => setDamageFormula(e.target.value)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-signal-400 px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-signal-400 px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -177,8 +177,8 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
         {tab === 'save' && (
           <div className="space-y-4 relative z-10">
             <div className="flex items-center space-x-2 border-b border-line pb-3">
-              <HeartPulse className="w-5 h-5 text-red-400" />
-              <h2 className="font-display text-base sm:text-lg font-bold text-red-400 uppercase tracking-display">Stun &amp; Death Save</h2>
+              <HeartPulse className="w-5 h-5 text-danger-400" />
+              <h2 className="font-display text-base sm:text-lg font-bold text-danger-400 uppercase tracking-display">Stun &amp; Death Save</h2>
             </div>
             <p className="text-xs text-muted">
               Role 1d10: passa com resultado menor ou igual ao alvo. O alvo é o seu
@@ -196,7 +196,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
               onClick={rollDeathSave}
               disabled={mortal === null}
               title={mortal === null ? 'O death save só é exigido em ferimento Mortal' : undefined}
-              className="w-full py-3 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-xs uppercase rounded shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all cursor-pointer"
+              className="w-full py-3 bg-danger-600 hover:bg-danger-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-xs uppercase rounded shadow-glow-15 shadow-danger-500/40 transition-all cursor-pointer"
             >
               🩸 Death · 1d10 ≤ {deathSaveTarget(body, sheet.woundLevel)}
             </button>
@@ -213,7 +213,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
           </div>
           <button
             onClick={onClearHistory}
-            className="px-2 py-1 text-micro text-red-400 hover:text-red-300 flex items-center space-x-1 uppercase cursor-pointer transition-all"
+            className="px-2 py-1 text-micro text-fault-400 hover:text-fault-300 flex items-center space-x-1 uppercase cursor-pointer transition-all"
           >
             <Trash2 className="w-3 h-3" />
             <span>Limpar</span>
@@ -238,7 +238,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                   <span className="font-mono text-micro text-faint">{roll.timestamp}</span>
                 </div>
                 <div className="shrink-0 text-right">
-                  <span className={`font-mono text-xl ${roll.isCriticalSuccess ? 'text-ok-400' : roll.isCriticalFailure ? 'text-red-500' : 'text-signal-400'}`}>
+                  <span className={`font-mono text-xl ${roll.isCriticalSuccess ? 'text-ok-400' : roll.isCriticalFailure ? 'text-fault-500' : 'text-signal-400'}`}>
                     {roll.total}
                   </span>
                 </div>

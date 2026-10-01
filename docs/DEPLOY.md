@@ -44,7 +44,7 @@ payload é rico para monitoramento:
 {
   "status": "online",
   "system": "NETSHEET ENGINE — Cyberpunk 2020 Multiplayer API",
-  "version": "0.4.3",          // versão do build (do package.json) — anda junto com a tag (R.9)
+  "version": "0.4.4",          // versão do build (do package.json) — anda junto com a tag (R.9)
   "uptime": 48213,             // segundos desde o boot do processo
   "timestamp": "2026-08-10T…Z",
   "env": "production",

@@ -51,8 +51,8 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
   };
 
   return (
-    <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-cyber-500/10 space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-cyber-500 select-none">
+    <div className="bg-raised/70 border-l-4 border-l-cyber-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-cyber-500/10 space-y-4 relative overflow-hidden">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-cyber-500 select-none">
         CHROME
       </div>
 
@@ -67,7 +67,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
           <span className="px-2 py-1 rounded bg-surface border border-line-strong text-fg-soft">
             Empatia: <strong className="font-mono font-normal text-cyber-400">{maxHumanity}</strong>
           </span>
-          <span className={`px-2 py-1 rounded border ${humanityLeft < 3 ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-surface border-line-strong text-fg-soft'}`}>
+          <span className={`px-2 py-1 rounded border ${humanityLeft < 3 ? 'bg-fault-950 border-fault-500 text-fault-300 animate-pulse' : 'bg-surface border-line-strong text-fg-soft'}`}>
             Restante: <strong className="font-mono font-normal">{humanityLeft}</strong>
           </span>
         </div>
@@ -115,7 +115,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
                 </button>
                 <button
                   onClick={() => removeCyberware(cw.id)}
-                  className="p-2 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
+                  className="p-2 rounded bg-raised hover:bg-fault-950 border border-line hover:border-fault-500 text-subtle hover:text-fault-400 transition-all cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -127,8 +127,8 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
 
       {/* Aviso de humanidade */}
       {humanityLeft <= 0 && (
-        <div className="flex items-center space-x-2 bg-red-950/60 border border-red-500/50 p-2.5 rounded text-mini text-red-300 relative z-10">
-          <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+        <div className="flex items-center space-x-2 bg-fault-950/60 border border-fault-500/50 p-2.5 rounded text-mini text-fault-300 relative z-10">
+          <AlertTriangle className="w-4 h-4 text-fault-400 shrink-0" />
           <span>
             Perda de humanidade total: você pode estar sofrendo de cyberpsychose! (EMP zerado)
           </span>
@@ -152,12 +152,12 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Kerenzikov Speedware (+2 REF)"
-              className="w-full bg-raised border border-line-strong text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
             />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-raised border border-line-strong text-xs font-mono text-cyber-300 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs font-mono text-cyber-300 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -169,7 +169,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
                 type="number"
                 value={costEb}
                 onChange={(e) => setCostEb(parseInt(e.target.value) || 0)}
-                className="w-full bg-raised border border-line-strong text-xs font-mono text-ok-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+                className="w-full bg-raised border border-field text-xs font-mono text-ok-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -178,7 +178,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
                 type="text"
                 value={humanityLoss}
                 onChange={(e) => setHumanityLoss(e.target.value)}
-                className="w-full bg-raised border border-line-strong text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+                className="w-full bg-raised border border-field text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
               />
             </div>
           </div>

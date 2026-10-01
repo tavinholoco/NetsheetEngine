@@ -152,8 +152,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         {errorMsg && (
-          <div className="bg-red-950/80 border border-red-800 p-3 rounded text-xs text-red-300 flex items-center space-x-2">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-400" />
+          <div className="bg-fault-950/80 border border-fault-800 p-3 rounded text-xs text-fault-300 flex items-center space-x-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-fault-400" />
             <span>{errorMsg}</span>
           </div>
         )}

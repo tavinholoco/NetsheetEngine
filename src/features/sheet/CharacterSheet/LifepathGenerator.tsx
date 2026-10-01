@@ -69,8 +69,8 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
   ];
 
   return (
-    <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-ok-500/10 space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-ok-500 select-none">
+    <div className="bg-raised/70 border-l-4 border-l-ok-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-ok-500/10 space-y-4 relative overflow-hidden">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-ok-500 select-none">
         LIFEPATH
       </div>
 
@@ -114,7 +114,7 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
               type="text"
               value={lifepath[key] || ''}
               onChange={(e) => setField(key, e.target.value)}
-              className="w-full bg-surface border border-line text-xs font-mono text-ok-200 px-2.5 py-1.5 rounded focus:border-ok-400 focus:outline-none"
+              className="w-full bg-surface border border-field text-xs font-mono text-ok-200 px-2.5 py-1.5 rounded focus:border-ok-400 focus:outline-none"
             />
           </div>
         ))}
@@ -138,11 +138,11 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
                 value={ev}
                 onChange={(e) => updateLifeEvent(idx, e.target.value)}
                 placeholder={`Evento ${idx + 1}`}
-                className="w-full bg-raised border border-line text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-ok-400 focus:outline-none"
+                className="w-full bg-raised border border-field text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-ok-400 focus:outline-none"
               />
               <button
                 onClick={() => removeLifeEvent(idx)}
-                className="p-1.5 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
+                className="p-1.5 rounded bg-raised hover:bg-fault-950 border border-line hover:border-fault-500 text-subtle hover:text-fault-400 transition-all cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

@@ -12,9 +12,9 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
   const currentRoleObj = OFFICIAL_ROLES.find(r => r.name === sheet.role) || OFFICIAL_ROLES[0];
 
   return (
-    <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-accent-500/10 space-y-4 relative overflow-hidden">
+    <div className="bg-raised/70 border-l-4 border-l-accent-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-accent-500/10 space-y-4 relative overflow-hidden">
       {/* Background HUD Grid Accent */}
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[60px] font-black text-accent-400 select-none">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[60px] font-black text-accent-400 select-none">
         EDGERUNNER
       </div>
 
@@ -54,7 +54,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
               value={sheet.avatarUrl}
               onChange={(e) => onChange({ avatarUrl: e.target.value })}
               placeholder="https://..."
-              className="w-full bg-raised border border-line text-xs text-fg-soft font-mono px-2 py-1 rounded focus:border-accent-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs text-fg-soft font-mono px-2 py-1 rounded focus:border-accent-400 focus:outline-none"
             />
           </div>
         </div>
@@ -67,7 +67,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
               type="text"
               value={sheet.handle}
               onChange={(e) => onChange({ handle: e.target.value })}
-              className="w-full bg-surface border border-accent-800/80 text-sm font-mono text-signal-400 px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none shadow-inner"
+              className="w-full bg-surface border border-accent-700 text-sm font-mono text-signal-400 px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none shadow-inner"
               placeholder="Ex: Silverhand, V, Spider"
             />
           </div>
@@ -78,7 +78,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
               type="text"
               value={sheet.realName}
               onChange={(e) => onChange({ realName: e.target.value })}
-              className="w-full bg-surface border border-line text-xs font-mono text-fg px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none"
+              className="w-full bg-surface border border-field text-xs font-mono text-fg px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none"
               placeholder="Ex: Robert John Linder"
             />
           </div>
@@ -90,7 +90,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
                 type="number"
                 value={sheet.age}
                 onChange={(e) => onChange({ age: parseInt(e.target.value) || 0 })}
-                className="w-full bg-surface border border-line text-xs font-mono text-fg px-2 py-1.5 rounded focus:border-accent-400 focus:outline-none text-center"
+                className="w-full bg-surface border border-field text-xs font-mono text-fg px-2 py-1.5 rounded focus:border-accent-400 focus:outline-none text-center"
               />
             </div>
             <div>
@@ -99,7 +99,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
                 type="text"
                 value={sheet.sex}
                 onChange={(e) => onChange({ sex: e.target.value })}
-                className="w-full bg-surface border border-line text-xs font-mono text-fg px-2 py-1.5 rounded focus:border-accent-400 focus:outline-none text-center"
+                className="w-full bg-surface border border-field text-xs font-mono text-fg px-2 py-1.5 rounded focus:border-accent-400 focus:outline-none text-center"
               />
             </div>
           </div>
@@ -119,7 +119,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
                   specialAbilityName: rObj ? rObj.specialAbility : sheet.specialAbilityName
                 });
               }}
-              className="w-full bg-surface border border-accent-800/80 text-xs font-mono text-accent-300 px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none"
+              className="w-full bg-surface border border-accent-700 text-xs font-mono text-accent-300 px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none"
             >
               {OFFICIAL_ROLES.map((r) => (
                 <option key={r.name} value={r.name}>
@@ -164,7 +164,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
               type="number"
               value={sheet.eurodollars}
               onChange={(e) => onChange({ eurodollars: parseInt(e.target.value) || 0 })}
-              className="w-full bg-raised border border-ok-800/80 text-xl font-mono text-ok-400 px-3 py-1.5 rounded focus:border-ok-400 focus:outline-none text-right shadow-glow-10 shadow-ok-500/10"
+              className="w-full bg-raised border border-ok-700 text-xl font-mono text-ok-400 px-3 py-1.5 rounded focus:border-ok-400 focus:outline-none text-right shadow-glow-10 shadow-ok-500/10"
             />
           </div>
 

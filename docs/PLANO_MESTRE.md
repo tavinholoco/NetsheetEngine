@@ -256,7 +256,7 @@ Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem mo
 | 7 | As quatro perguntas da D.0: quem escreve o ferimento na mesa, pontos × nível, token sem ficha, penetração escalonada | **(a)** Na mesa, **só o servidor e o GM** escrevem o ferimento — a sincronia da ficha deixa de levá-lo. **(b)** A ficha **guarda pontos** (0–40), e o nível é derivado; junto nasce o estado **Morto**. **(c)** Token sem ficha **não recebe dano**. **(d)** Penetração escalonada: **ADIAR** | (a) fecha o achado do portão C.14. (b) é fidelidade estrita: o livro conta pontos, e o nível sozinho perde o resto da caixa. Sem migration SQL — a ficha mora no `data` jsonb. (c) e (d) são as versões menores, com gatilho na [conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu). Detalhe na D.0 |
 | 8 | Como fazer backup, se o plano gratuito não faz nenhum? (R.10 — reabre a premissa da decisão 4) | **Dump manual** com o CLI (`npm run backup:db`), **todo mês e antes de toda migration**, guardado **fora do repositório** e fora da máquina, de preferência cifrado | Custo zero, e é o que a doc do Supabase recomenda ao gratuito. O repo é **público**: o script recusa destino dentro dele, e o `.gitignore` barra o dump à mão. Os arquivos do Storage (avatares) ficam de fora. Runbook e registro em [`BACKUP.md`](./BACKUP.md). **Gatilho para rever:** perder dado entre dois dumps, ou o volume de fichas tornar o mês de perda inaceitável — aí o workflow com dump cifrado (opção 2 da R.10) |
 | 9 | Quanto de netrunning entra na K? (K.0b — a revisão de robustez mediu que a Net inteira não cabe na K) | **O netrunner na ficha** — deck, programas e MU como dado — entra na K.5. **A Net jogável na mesa** (mapa, turnos, fortalezas de dados) fica **fora da K: ADIAR**, como fase própria depois da L | A K volta a caber na estimativa. **Gatilho** da Net na mesa: alguém da mesa do dono jogar de netrunner. ~~As regras vêm do livro, que o dono tem (30/09)~~ **⚠️ Corrigido no mesmo dia (decisão 11):** o dono não tem o livro — as regras vêm das fontes secundárias, com duas concordando. O cuidado com o RED, que mudou quase tudo no netrunning, vale em dobro — e pesa mais sem o livro para desempatar |
-| 10 | As quatro perguntas que a medição da F abriu (F.0b): a voz do texto, o vermelho que não é dano, a cor por seção, o livro como referência visual | **(a)** **Rajdhani** nos rótulos, na navegação e no texto corrido; a **mono** só em número, dado e momento de terminal, **sem negrito**; piso de **10 px**. **(b)** **Vermelho só dano**; marca, menu e PRD vão para amarelo ou ciano, o GM para amarelo, e erro, ação destrutiva, *fumble* e NPC hostil para um papel novo, **`fault`** (magenta). **(c)** A **cor por seção fica**; o PRD sai do vermelho e DADOS sai do rosa. **(d)** ~~O livro do dono é~~ O interior do livro de 1990 é **preto e branco**: referência de **diagramação e tipografia**; a cor vem da linguagem da época. **⚠️ Corrigido no mesmo dia (decisão 11):** o dono não tem o livro — a diagramação vem do que as fontes públicas mostram do interior (F.3.0) | (a) segue a ADR 0006 — a premissa "Rajdhani já em uso" era falsa: 96% do texto da ficha é mono, e a Share Tech Mono só tem o peso 400 (negrito sintético em 99 elementos). (b) é o invariante do `CLAUDE.md` aplicado aos 244 usos medidos. (c) não tinha recomendação explícita na análise; foi registrada como **manter** — a leitura de menor mudança, que o merge do PR confirma ou corrige. (d) as três premissas da F.3 (barra preta, faixas, numeração) são de diagramação, que o P&B responde: F.3.0. Detalhe na [F.0a](#-o-que-o-f0a-mediu-30092026) e na [ADR 0006](./adr/0006-sistema-tipografico.md) |
+| 10 | As quatro perguntas que a medição da F abriu (F.0b): a voz do texto, o vermelho que não é dano, a cor por seção, o livro como referência visual | **(a)** **Rajdhani** nos rótulos, na navegação e no texto corrido; a **mono** só em número, dado e momento de terminal, **sem negrito**; piso de **10 px**. **(b)** **Vermelho só dano**; marca, menu e PRD vão para amarelo ou ciano, o GM para amarelo, e erro, ação destrutiva, *fumble* e NPC hostil para um papel novo, **`fault`** (magenta). **(c)** A **cor por seção fica**; o PRD sai do vermelho e DADOS sai do rosa. **(d)** ~~O livro do dono é~~ O interior do livro de 1990 é **preto e branco**: referência de **diagramação e tipografia**; a cor vem da linguagem da época. **⚠️ Corrigido no mesmo dia (decisão 11):** o dono não tem o livro — a diagramação vem do que as fontes públicas mostram do interior (F.3.0) | (a) segue a ADR 0006 — a premissa "Rajdhani já em uso" era falsa: 96% do texto da ficha é mono, e a Share Tech Mono só tem o peso 400 (negrito sintético em 99 elementos). (b) é o invariante do `CLAUDE.md` aplicado aos 244 usos medidos. (c) não tinha recomendação explícita na análise; foi registrada como **manter** — a leitura de menor mudança, que o merge do PR confirma ou corrige. *(01/10/2026: **confirmada** — o dono aprovou as capturas do PR 3b, com a cor de cada seção.)* (d) as três premissas da F.3 (barra preta, faixas, numeração) são de diagramação, que o P&B responde: F.3.0. Detalhe na [F.0a](#-o-que-o-f0a-mediu-30092026) e na [ADR 0006](./adr/0006-sistema-tipografico.md) |
 | 11 | De onde vêm as regras e a diagramação, se o dono **não tem o livro**? *(Correção do dono, 30/09/2026 à noite: o registro "o dono tem o livro físico", do mesmo dia, estava errado — e as decisões 9 e 10d, a F.3.0 e as "Perguntas para o livro" se apoiavam nele)* | **Fontes secundárias**, pelo método da [conferência](./CONFERENCIA_CP2020.md#fontes-e-o-quanto-confiar-nelas): regra aceita com **duas fontes independentes** concordando; o que não fecha e bloqueia trabalho vai ao dono como decisão, com a pesquisa e uma opção recomendada — como a decisão 6. **Comprar o PDF oficial** (R. Talsorian, *Cyberpunk 2.0.2.0, Second Edition, Version 2.01*, no [DriveThruRPG](https://legacy.drivethrurpg.com/product/50354/Cyberpunk-2020-The-Second-Edition-Version-201), US$ 15 em 30/09): **ADIAR**. **Cópia do livro sem licença não é fonte** | Os gatilhos "o dono confirmar no livro" da conferência viram "uma segunda fonte independente" — sem isso nunca disparariam, o DESCARTAR disfarçado que a M.0 já previa. A F.3.0 passa a ser pesquisa em fonte pública. **Gatilho da compra:** uma pergunta para o livro bloquear o trabalho de uma fase e as secundárias não fecharem — a K.0 (criação, IP, netrunning) é a candidata mais provável. O contrato de custo zero é sobre a infraestrutura; a compra é decisão do dono. Se houver PDF, ele fica **fora do repositório**, como o backup |
 
 ---
@@ -893,10 +893,12 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
 
       > **Isto NÃO bloqueia a Fase F.** O R.15 fecha em 01/10, pela tarefa agendada e pelos itens do dono.
       > A Fase E abriu e fechou em 30/09 com ele aberto, e a Fase F andou com ele aberto: em 30/09
-      > entraram no `master` a F.0, a F.2 mecânica e a F.1 (#26 a #29). **A próxima sessão segue a F
-      > pelo PR 3b** — ver [a F.2b](#f2b--cor-com-significado-meio-dia--pr-3b). Exceção: se o checklist de
-      > 01/10 falhou (algo ❌ no PR `claude/verificacao-01-10` ou no resumo da tarefa), esse vermelho vem
-      > primeiro.
+      > entraram no `master` a F.0, a F.2 mecânica e a F.1 (#26 a #29). *(30/09, à noite: o PR 3b — F.2b,
+      > F.3 e F.4 — foi aberto, o #32. 01/10: o #31 da decisão 11 entrou, e o dono aprovou as capturas
+      > do #32. **A próxima sessão — a API voltou em 01/10 — roda o checklist abaixo e, com o #32 no
+      > ar, confere a F.0g e a F.4.4; então abre a [Fase G](#fase-g---varredura-frontend-12-dias).)*
+      > Exceção: se o checklist de 01/10 falhou (algo ❌ no PR `claude/verificacao-01-10` ou no resumo da
+      > tarefa), esse vermelho vem primeiro.
 
       **Checklist de 01/10/2026 — quando a API voltar.** O Render suspendeu o serviço em setembro
       (incidente no [contrato de custo zero](#-contrato-de-custo-zero)); ele volta na virada do mês e
@@ -904,11 +906,12 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       **`node scripts/verify-prod.mjs`** —, que a tarefa agendada `verificar-render-netsheet-01-10`
       (app do Claude, 01/10 às 11:30) executa e registra num PR. O backup mensal roda antes, às 10:00.
       - [ ] **01.1** O serviço voltou: `/api/health` responde JSON, não `503 Service Suspended`.
-      - [ ] **01.2** A versão publicada é a do `package.json` (`0.4.3`) — o deploy é o último commit
+      - [ ] **01.2** A versão publicada é a do `package.json` (`0.4.3`; `0.4.4` se o PR 3b da F entrar
+            antes — o script lê o `package.json`) — o deploy é o último commit
             (R.9). Se não for: painel do Render → *Manual Deploy → Deploy latest commit* (dono).
       - [ ] **01.3** O `clientIp` do health é o IP público de quem pergunta (R.5, `trust proxy`). Registrar
             só se **bateu** — nunca o IP. Se não bateu: `TRUST_PROXY` no [`DEPLOY.md`](./DEPLOY.md).
-      - [ ] **01.4** O site carrega e a interface mostra `v0.4.3` (continuação do R.9).
+      - [ ] **01.4** O site carrega e a interface mostra a versão do `package.json` (continuação do R.9).
       - [ ] **01.5** `/api/nao-existe` → 404 em JSON, não a SPA.
       - [ ] **01.6** `GET /api/rooms` → 404: o lobby não lista salas (R.11).
       - [ ] **01.7** `POST /api/gemini` sem login → 401 (SEC-01).
@@ -1160,7 +1163,7 @@ mecânica da F.2 vem **antes** da F.1 — os IDs ficaram os de 02/09, que o rest
 | **1** | F.0 | O único **bug** que o jogador vê vai ao ar sozinho, com as guardas — ✅ **#27**, mergeado em 30/09 |
 | **2** | F.2, parte mecânica (F.2.1, F.2.4–F.2.6) | Encanamento sem mudança visual, provado por captura: a revisão do dono é "nada mudou" — ✅ **#28**, 30/09 |
 | **3a** | F.1 | A tipografia: as três vozes, mono sem negrito, piso de 10 px — ✅ **#29**, 30/09 |
-| **3b** | F.2b, F.3, F.4 | A cor com significado, o vocabulário visual e a acessibilidade; fecha a fase com a tag — **o próximo** |
+| **3b** | F.2b, F.3, F.4 | A cor com significado, o vocabulário visual e a acessibilidade; fecha a fase com a tag — **#32**, aberto em 30/09; capturas **aprovadas pelo dono em 01/10**. O #31 (decisão 11), em que ele estava empilhado, entrou em 01/10 |
 
 *(30/09/2026 — o PR 3 virou dois. A ideia era a identidade chegar "de uma vez", mas a F.1 sozinha
 toca as 29 telas e componentes, e a produção ainda não tem jogador: duas ondas não custam nada a
@@ -1358,6 +1361,11 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 
 #### F.2b — Cor com significado *(meio dia — PR 3b)*
 
+> *(30/09/2026, à noite — **o PR 3b foi feito nesta mesma data**; as notas abaixo ficam como o que a
+> sessão herdou. As ferramentas e as travas continuam valendo para qualquer mudança visual: o
+> `audit:colors` e o `--conflitos` agora rodam no CI, e o `capturar.mjs` faz o GM entrar pelo deep
+> link — antes ele virava jogador.)*
+>
 > **Para a sessão que abrir o PR 3b** *(fim da sessão de 30/09/2026)*. O que esta parte herda:
 > - **Comece pela F.3.0 — a pesquisa em fonte pública** das três perguntas de diagramação (barra
 >   preta, faixas, numeração): o dono **não tem o livro** (decisão 11). A F.3 inteira depende delas; a
@@ -1376,7 +1384,7 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 > - **Contraste:** a medida da F.0a (`text-slate-500` 3,7–4,2:1, Mortal 2–6 3,0–4,5:1) foi feita com a
 >   cor computada contra o fundo composto — refazer igual depois de mudar `subtle`, `faint` e `wound-*`.
 
-- [ ] **F.2.2** **Regra de política: vermelho significa exclusivamente dano** (decisão 10b). Os 244
+- [x] **F.2.2** **Regra de política: vermelho significa exclusivamente dano** (decisão 10b). Os 244
       usos, classificados à mão:
 
   | Hoje em vermelho | Vai para |
@@ -1391,36 +1399,91 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 
   *O NPC:* muda nas classes do `TacticalGrid`; o campo `color` persistido fica como está (sem
   leitor — pista da G). Os grids já gravados seguem válidos.
+
+  *(30/09/2026 — feito, um commit por lote, cada um com `--conflitos` em 0. Medido antes: **285**
+  utilitários (238 `red`, 38 `pink`, 9 das famílias pequenas), **36** `rgba` e **1** hex. O que cada
+  vermelho virou:*
+  - ***A moldura da marca** (menu, gaveta do celular, cabeçalho de página, herói da página inicial,
+    feed de notas, lista de amigos) → `accent`. A marca fica no par amarelo e ciano; a barra
+    vermelho-amarelo-ciano virou amarelo-ciano. **O item ativo** (menu e abas da PRD) → `signal`: com
+    a moldura ciano, o ativo precisa de outra cor.*
+  - ***`fault`:** erro (404, ErrorBoundary, login, busca, avatar, sala), ação destrutiva (apagar
+    ficha, preset, perícia, cyberware, arma, evento, avatar; recusar pedido, desfazer amizade, limpar
+    histórico, remover do grid), o *fumble*, o alerta de humanidade, o NPC hostil no grid, "Gerar
+    NPC", a variante `destructive` do botão, o "cancelado" e o P0 da PRD, o avatar caveira.*
+  - ***`danger`:** o Bio-Monitor da ficha e do GM, rolar dano, stun e death save (no rolador e na
+    mesa), editar saúde, aplicar dano, o ponto de token ferido, "MORTO".*
+  - ***`signal`:** o GM — etiqueta, nome e balão no chat, "Poderes do GM".*
+  - ***Neutro:** "Sair" do perfil e da mesa (sair não perde dado), o "fechar" (X) vai a `accent`, e
+    o "−" de atributo e perícia também (o "+" já era).*
+  - ***O rosa** (DADOS, rolagem, armas) → a rampa nova **`roll`** (F.2.9). "Sem munição" → `caution`.
+    Atributos: ATTR `roll`, MA `caution-600` (LUCK é o 400), BODY neutro, EMP `cyber-300` (a EMP gera
+    a Humanidade). O tema de grid azul (`sky`) → `roll`.*
+  - ***O tema de grid "Alerta de Combate (Vermelho)"** vira "(Magenta)", em `fault`: um grid inteiro
+    vermelho competiria com a trilha de ferimento. A chave gravada (`redalert`) não muda.*
+  - ***O fósforo do CRT** do menu saiu do `bg-[…rgba…]` para a classe `.crt-phosphor`, lendo os
+    tokens: a franja vermelho/azul virou magenta/ciano, o par do `.glitch-text` — cujo `::after` era o
+    hex do vermelho e virou `fault-500`. O gradiente do fundo do App lê `raised` e `surface`.*
+  - ***De carona, um resto da F.1:** `tracking-displayer` em 2 títulos (a troca de `tracking-tighter`
+    deixou o `er`) — classe que não gera CSS. Virou `tracking-display`.*
+
+  ***`audit:colors`: 322 → 0.** Prova por captura: as cinco telas antes e depois, no `netsheet-prod`.)*
 - [x] **F.2.3** `font-variant-numeric: tabular-nums` em toda coluna de número da ficha (atributos, SP,
       dano, iniciativa) — hoje os dígitos dançam quando o valor muda.
       *(30/09/2026 — **descartado, com medição** (F.1.4): o Rajdhani não tem algarismos tabulares, e
       `tabular-nums` nele não muda nada. Os números foram para a mono, que tem largura fixa — o
       sintoma (dígito que dança) acabou por outro caminho.)*
-- [ ] **F.2.7** **A escala de dano, `wound-*`, com contraste.** No fundo escuro, a gravidade tem que
+- [x] **F.2.7** **A escala de dano, `wound-*`, com contraste.** No fundo escuro, a gravidade tem que
       **clarear**, não escurecer: hoje Mortal 2–6 fica entre 3,0 e 4,5:1. Todo tom da escala com
       **≥ 4,5:1** sobre `surface` e `raised`, medido com a cor computada.
-- [ ] **F.2.8** **Texto apagado com ≥ 4,5:1.** Desde a F.2.4, os antigos `text-slate-500` (56) e
+      *(30/09/2026 — 11 tokens no `@theme`, `wound-0` a `wound-10` (o índice do
+      `WOUND_LEVEL_NAMES`). Do Crítico à Morte Iminente o tom sobe pelos claros do `danger` (500 → 100):
+      sobre `raised`, Mortal 2–3 foi de 3,7 a 9,3:1 e Mortal 5–6, de 2,9 a 12,3–14,6:1. **A trava é
+      um teste,** `theme-contrast.test`: lê o `@theme`, converte oklch → sRGB e exige 4,5:1 de cada
+      `wound-N` e de cada texto neutro sobre `surface` e `raised`, e que a escala clareie. Os números
+      dele batem com a medição da F.0a no navegador. **Provado** com os valores de antes: 16 falham.)*
+- [x] **F.2.8** **Texto apagado com ≥ 4,5:1.** Desde a F.2.4, os antigos `text-slate-500` (56) e
       `text-slate-600` (17) são os tokens `subtle` e `faint`: o conserto é trocar o **valor** deles no
       `@theme` (ou fundi-los em `muted`), num lugar só — o ganho do token.
-- [ ] **F.2.9** **Cor por seção, mantida** (decisão 10c). As 8 abas seguem com cor própria, tirada da
+      *(30/09/2026 — `subtle` sobe para oklch(62% …): 4,9:1 sobre `raised` (era 3,7) e 5,5 sobre
+      `surface`. O `faint` (2,4:1) se funde nele: dois degraus abaixo de 4,5:1 não existem. Os dois só
+      eram cor de texto. Travado pelo mesmo teste da F.2.7.)*
+- [x] **F.2.9** **Cor por seção, mantida** (decisão 10c). As 8 abas seguem com cor própria, tirada da
       paleta de papéis e nunca de `danger`: o **PRD** sai do vermelho e **DADOS** sai do rosa (que virou
       `fault`). A matiz nova de cada uma é escolhida com captura no PR.
-- [ ] **F.2.10** **A trava.** `--color-*: initial` no `@theme` (a paleta padrão deixa de gerar classe;
+      *(30/09/2026 — **DADOS ganha uma rampa nova, `roll` (azul, do `blue`):** nenhum papel sobrava —
+      accent é FICHA, ok é JOGAR, cyber é NETRUNNER IA, signal é INÍCIO e LENDAS, caution é PERFIL —, e
+      o `caution-500` tentado primeiro quase não se distingue do âmbar de PERFIL. **A PRD vai para o
+      neutro** (`fg-strong`): o documento, em P&B. As abas: INÍCIO e LENDAS `signal`, JOGAR `ok`, FICHA
+      `accent`, NETRUNNER IA `cyber`, DADOS `roll`, PRD neutro, PERFIL `caution`. O `color-map.json`
+      ganhou `blue → roll`.)* *(01/10/2026 — **aprovado pelo dono**, com as capturas do #32.)*
+- [x] **F.2.10** **A trava.** `--color-*: initial` no `@theme` (a paleta padrão deixa de gerar classe;
       `black` e `white` redefinidos) e o `npm run audit:colors` no CI **exigindo zero**, fora das
       exceções nomeadas. Sem isso a paleta volta a ambiguar sozinha — a razão de fundo da F.2.2.
       **E `--conflitos` em zero** (`scripts/migrate-colors.ts`): duas classes de cor da mesma
       propriedade no mesmo elemento fazem o visual depender do alfabeto (achado da F.2.4) — a
       classificação à mão da F.2.2 renomeia vermelho e rosa, e cada troca pode inverter um vencedor.
-- [ ] **F.2.11** **As barras de destaque que nunca apareceram** (achado da F.2.4). 13 cartões tinham
+      *(30/09/2026 — `--color-*: initial`, com `black` e `white` redefinidos; no build, as 101
+      variáveis de cor usadas estão todas definidas e `text-red-500` não existe mais no CSS. O
+      `audit:colors` sai com erro (`codigoDeSaida`, com teste) e o `--conflitos` também; o job de
+      validação do CI roda os dois depois do typecheck. **Provado:** com um `text-red-500` e um par
+      `border-accent-500 border-line` plantados, os dois saem com 1. **Não muda a tela:** as cinco
+      capturas antes e depois da trava são iguais, fora o ruído conhecido da ficha.)*
+- [x] **F.2.11** **As barras de destaque que nunca apareceram** (achado da F.2.4). 13 cartões tinham
       `border-l-4` com uma cor que perdia para a borda neutra, e os 4 amarelos pintavam a borda
       inteira. A F.2.4 preservou o que se via; aqui se decide, com captura, se a barra aparece — com
       `border-l-<cor>`, que não briga com a borda dos outros lados — ou se o desenho fica sem ela.
+      *(30/09/2026 — **a barra aparece**, com a cor da seção pela F.2.2 (o Bio-Monitor em `danger`;
+      a PRD com visão em `accent`, módulos em `signal` e roadmap neutro), como os cartões de item já
+      faziam. Os 4 amarelos perdem a borda inteira e ganham a barra. A captura vai no PR para o dono
+      confirmar.)* *(01/10/2026 — **aprovado pelo dono**, pelas capturas antes e depois das cinco telas
+      no PR #32.)*
 
 #### F.3 — O vocabulário visual oitentista *(1 dia — PR 3b; decisão 10d)*
 
 A tipografia é metade. A outra metade é o repertório gráfico do livro impresso.
 
-- [ ] **F.3.0** 🔍 **Conferir em fonte pública** — o dono **não tem o livro** (decisão 11; o texto
+- [x] **F.3.0** 🔍 **Conferir em fonte pública** — o dono **não tem o livro** (decisão 11; o texto
       anterior pedia "o dono, com o livro na mão"). As três perguntas são de diagramação: **(1)**
       títulos de seção em barra preta com texto branco em caixa alta? **(2)** faixas de perigo
       diagonais? **(3)** numeração de seção ou rótulos técnicos? Vale o que as fontes públicas mostram
@@ -1429,24 +1492,45 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
       F.0a já não achou fonte pública para as três (ADR 0006): **o que nenhuma fonte mostrar sai da
       F.3**, com uma linha de razão — a não ser que o dono queira mantê-lo como "linguagem da época",
       item a item (🧑‍⚖️, com uma opção recomendada).
-- [ ] **F.3.1** **`scanline` e `glitch` com intenção, dentro do 2.2.2:** a scanline **estática** (a
+      *(30/09/2026 — pesquisado: a resenha do RPG.net (lida pelo resumo da busca — o arquivo antigo do
+      site redireciona para o fórum), a [revisão da série OSSR no The Gaming Den](http://www.tgdmb.com/phpBB3/viewtopic.php?t=57550)
+      e o [artigo da R. Talsorian sobre a diagramação do RED](https://rtalsoriangames.com/2020/11/13/cyberpunk-red-alert-layout-and-launch/),
+      que não fala do 2020. **Nenhuma das três aparece.** O que as fontes confirmam do interior: duas
+      colunas justificadas, face sem serifa, *sidebars*, arte a traço em P&B, o nome do capítulo no
+      alto da página e o número embaixo. **O dono decidiu pelas recomendações:** a F.3.2 e a F.3.4
+      saem, e a F.3.3 vira ADIAR com gatilho.)*
+- [x] **F.3.1** **`scanline` e `glitch` com intenção, dentro do 2.2.2:** a scanline **estática** (a
       `.crt-scanlines` que já existe, 1 uso) no lugar da animação de 8 s em loop; o `glitch` **só em
       evento** e uma vez (menos de 1 s) — entrar em Mortal, trocar de tela. Nunca em loop numa tela de
       leitura.
-- [ ] **F.3.2** **Barras pretas com caixa alta reversa** — um componente de cabeçalho de seção, não uma
-      classe repetida. *Se o F.3.0 confirmar.*
-- [ ] **F.3.3** **Faixas de perigo amarelo-e-preto** (`signal`) para estados de alerta (turno do
-      jogador, sala em combate). *Se o F.3.0 confirmar.*
-- [ ] **F.3.4** **Numeração de seção e rótulos técnicos.** *Se o F.3.0 confirmar* — e no formato do
-      livro. O `FICHA_01` com underscore, sem o livro, sai. O app já usa `SISTEMA // FICHA`.
-- [ ] **F.3.5** *(opcional, sob o filtro)* Textura de impressão/xerox e aberração cromática sutil.
+      *(30/09/2026 — medido: a scanline animada, o glitch e o `.glitch-text` tinham **0 usos**, todos em
+      loop infinito. A animada e o `.glitch-text` saem; o glitch vira `glitch 0.75s steps(1, end) 1` —
+      dois saltos e a volta, três mudanças. Quem dispara é a `key` do React: o título da página a cada
+      troca de tela, e o estado do Bio-Monitor ao entrar ou piorar em Mortal e ao morrer. Conferido no
+      navegador: 0,75 s, 1 iteração.)*
+- [x] ~~**F.3.2** **Barras pretas com caixa alta reversa** — um componente de cabeçalho de seção, não
+      uma classe repetida. *Se o F.3.0 confirmar.*~~ **Saiu (F.3.0, 30/09/2026):** sem fonte, e o
+      sintoma que ela resolveria — seções que não se distinguem — a F.1.3 já resolveu com o Orbitron.
+- [x] **F.3.3** **Faixas de perigo amarelo-e-preto** (`signal`) para estados de alerta (turno do
+      jogador, sala em combate). *Se o F.3.0 confirmar.* **ADIAR (F.3.0, 30/09/2026):** sem fonte e
+      sem sintoma — nenhuma sessão em produção ainda. **Gatilho:** alguém da mesa perder a vez por não
+      perceber que era o turno dele, anotado no [registro de sessões](#registro-de-sessões).
+- [x] ~~**F.3.4** **Numeração de seção e rótulos técnicos.** *Se o F.3.0 confirmar* — e no formato do
+      livro. O `FICHA_01` com underscore, sem o livro, sai.~~ **Saiu (F.3.0, 30/09/2026):** sem fonte;
+      fica o `SISTEMA // FICHA` que o app já usa.
+- [x] **F.3.5** *(opcional, sob o filtro)* Textura de impressão/xerox e aberração cromática sutil.
       **ADIAR** por padrão — "falta sujeira analógica" é gosto, não sintoma. Qualquer textura passa no
-      F.4.2.
+      F.4.2. *(30/09/2026 — **ADIAR**, como o item previa. **Gatilho:** o dono pedir a textura depois de
+      ver a F no ar. A aberração sutil que já existe é a franja magenta/ciano do `.crt-phosphor`.)*
 
 #### F.4 — Aplicar e verificar *(meio dia a 1 dia — PR 3b)*
 
-- [ ] **F.4.1** Aplicar começando pela ficha (maior superfície visual) e terminando na mesa.
-- [ ] **F.4.2** **Acessibilidade — não negociável.** Critérios do [WCAG 2.2](https://www.w3.org/TR/WCAG22/):
+- [x] **F.4.1** Aplicar começando pela ficha (maior superfície visual) e terminando na mesa.
+      *(30/09/2026 — aplicado pela F.2b em lotes, da moldura e da interface à ficha e à mesa, cada um
+      com `--conflitos` em 0; prova pelas cinco capturas antes e depois no `netsheet-prod`, que vão no
+      PR. A ferramenta de captura tinha um defeito: a "mesa do GM" entrava pelo lobby e virava jogador
+      desde a R.1 — consertada, o GM entra pelo deep link.)*
+- [x] **F.4.2** **Acessibilidade — não negociável.** Critérios do [WCAG 2.2](https://www.w3.org/TR/WCAG22/):
       - **2.2.2 Pausar, parar, ocultar (A)** — a versão 10× menor **certa**: no `@theme`,
         `--animate-pulse` e `--animate-ping` com **iterações finitas** (param em ≤ 5 s) — um lugar para
         os 18 `pulse` e os 2 `ping`. O `spin` de carregando é essencial e fica. **E** a regra
@@ -1461,15 +1545,48 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
       - As **12 marcas d'água** decorativas ganham `aria-hidden`.
       - **2.5.8 Tamanho do alvo (AA, 24 px):** 44 dos 111 alvos da ficha têm menos de 24 px. Os 40 da
         trilha (20 × 20, com 4 px de vão) passam pela exceção de espaçamento; conferir os outros.
-- [ ] **F.4.3** Peso das fontes: só os pesos usados. Linha de base (`latin`, `woff2`): Rajdhani 14–15 KB
+      *(30/09/2026 — feito, cada parte com teste ou prova por script:*
+      - ***2.2.2:** `pulse` (2 s × 2), `ping` (1 s × 4), `bounce` (1 s × 3) e `pulse-glow` (2 s × 2) no
+        `@theme`, finitos; o `spin` fica. `prefers-reduced-motion` zera o resto, fora o spin. Trava:
+        `theme-motion.test` (provado: 6 de 8 falhavam antes).*
+      - ***2.3.1:** o glitch tem três mudanças em 0,75 s (F.3.1).*
+      - ***1.4.3:** pelos tokens (F.2.7, F.2.8). **1.4.11 — achado ao medir:** a borda dos campos de
+        formulário ficava em 1,27–2,14:1 (borda de cartão é decoração e fica). Token novo `field`
+        (night-500) e o 700 da rampa nos campos coloridos: pior caso 3,53:1. Trava no
+        `theme-contrast.test` (provado: o valor de antes dá 1,95 e 1,73:1).*
+      - ***Modais:** os dois da mesa no `Dialog` do Radix, com o foco devolvido a quem abriu (eles
+        abrem por estado). Prova com o build de produção, GM e jogador: `role="dialog"` com título, foco
+        preso por 20 Tabs, Esc fecha, foco volta. Do `dialog.tsx` saíram os `animate-in/out`, `zoom-*`,
+        `slide-*` (do plugin que não está instalado); o conteúdo entra com o `fadeIn`.*
+      - ***Marcas d'água:** as 12 com `aria-hidden`.*
+      - ***2.5.8 — medido em 9 larguras, de 375 a 1920 px:** a 375 px os 40 quadrados da trilha eram
+        12×12 e falhavam (a medida de 20×20 era a do desktop); a 1024 px os "−"/"+" dos atributos
+        encolhiam para 14×28. A trilha passa a 2 níveis por linha no celular, 5 a partir de 640 px e
+        os 10 do livro a partir de 1536 px (quadrado de 25 a 48 px); os botões, `shrink-0`. **0** alvos
+        fora do critério nas 9 larguras.*
+      - ***Achado ao converter os modais — o `cn` apagava classes:** o `tailwind-merge` não lê o
+        `@theme` e tomava `shadow-glow-*`, `text-micro`/`text-mini` por cor; o modal de login perdera o
+        brilho desde a F.2.5. `extendTailwindMerge` com os tokens de tamanho, e o `cn-theme.test`
+        deriva a lista do `@theme` (provado: 20 de 21 falhavam).)*
+- [x] **F.4.3** Peso das fontes: só os pesos usados. Linha de base (`latin`, `woff2`): Rajdhani 14–15 KB
       por peso, Share Tech Mono 13 KB, Orbitron variável 11,5 KB. Uma vez por aparelho — ~40–80 KB,
       nada perto dos 5 GB de banda do workspace.
+      *(30/09/2026 — o Rajdhani 500 e o 600 tinham **um** uso cada, na linha "FICHA ATIVA" do
+      cabeçalho; viraram 400 e 700, e os dois imports saem. Ficam Rajdhani 400 e 700, Share Tech Mono
+      400 e o Orbitron variável; o build passa de 13 para 7 `woff2` do Rajdhani e da mono, mais o do
+      Orbitron.)*
 - [ ] **F.4.4** Produção com helmet ativo — coberta pelo E2E da F.0d a cada PR. Conferir no ar uma vez,
       depois do último deploy (como na F.0g).
-- [ ] **F.4.5** `git tag v0.4.4`, com o `package.json` em `0.4.4` (a regra do R.9).
-- [ ] **F.5** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.** *(Prévia de 30/09: nenhuma entrada, saída ou autorização nova; o CSP continua `'self'`; custo novo só a banda das fontes.)*
-- [ ] **F.6** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase F concluída em:** ____/____/______
+      *(30/09/2026 — o E2E `fonts-csp` passou neste PR, 7/7. A visita ao ar é depois do merge, junto
+      com a F.0g.)*
+- [x] **F.4.5** `git tag v0.4.4`, com o `package.json` em `0.4.4` (a regra do R.9).
+      *(30/09/2026 — `npm version 0.4.4 --no-git-tag-version`; a tag `v0.4.4` está no commit que fechou
+      a construção (`41d3305`), como a `v0.4.3` no da D. O registro da aprovação, de 01/10, veio depois e
+      é só documento — a tag publicada não foi movida.)*
+- [x] **F.5** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.** *(Prévia de 30/09: nenhuma entrada, saída ou autorização nova; o CSP continua `'self'`; custo novo só a banda das fontes.)* *(30/09/2026 — registrado em [`SEGURANCA.md`](./SEGURANCA.md#fase-f--reestruturação-visual), para o PR 3b e para a fase inteira: nada novo nas seis; a banda cai com os dois pesos a menos; o CI roda dois scripts que só leem `src/`. Nenhum diagrama mudou de forma — o das camadas de token segue ADIAR, sem o gatilho disparado.)*
+- [x] **F.6** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+- [ ] ✅ **Fase F concluída em:** ____/____/______ *(a construção fechou em 30/09/2026, no PR 3b; a data
+      entra quando a F.0g e a F.4.4 — a visita ao ar depois do deploy — estiverem marcadas)*
 
 > **Critério de pronto:** duas medidas objetivas, não "está bonito" — e as duas com comando.
 > (1) `npm run audit:colors` em **zero** no CI, fora das exceções nomeadas (F.2.10). (2) O E2E das
@@ -1891,7 +2008,7 @@ público mudar.
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
-| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28) e a F.1 (#29) no `master`; falta a F.0g (no ar) e o PR 3b — próximo: F.2.2 | — |
+| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28) e a F.1 (#29) no `master`; o PR 3b (F.2b, F.3, F.4, tag `v0.4.4`) aberto em 30/09. Falta a visita ao ar: F.0g e F.4.4 | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
@@ -1904,20 +2021,20 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Depois da F.1 (30/09/2026 — a Fase F em andamento) |
+| Verificação | Depois do PR 3b da F (30/09/2026 — a construção da F fechada; falta a visita ao ar) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **671** testes, 47 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1)* — `vitest` 4.1.11 |
+| `npx vitest run` | **744** testes, 50 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`) |
-| Chunk de entrada | 628 kB / 186 kB gzip; CSS 119 kB / 16,9 kB gzip *(F.1)* |
-| Fontes (F.0c, F.1.3) | Rajdhani 400–700, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
+| Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
+| Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
 | `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
-| `npm run audit:colors` | **322** a migrar (paleta 285 · `rgba` 36 · hex 1) e 109 `black`/`white` — era **1.879** na F.0e; a F.2 mecânica converteu o resto, e o que sobra é o vermelho, o rosa e a escala de ferimento da F.2b. Zero é o critério de pronto da F.2.10 |
-| `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4) |
+| `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 107 `black`/`white`, à parte. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
+| `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4), e **o CI exige** (F.2.10) |
 | Mono com negrito (`audit:colors`, coluna `mono+b`) | **0** (F.1.2) — e 0 no navegador, em 12 telas |
 | Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 

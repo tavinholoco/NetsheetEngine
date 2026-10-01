@@ -51,9 +51,9 @@ const THEME_STYLES: Record<string, ThemeConfig> = {
   },
   corpo: {
     bg: 'bg-raised',
-    border: 'border-sky-500/50',
-    gridColor: 'border-sky-900/60',
-    colorDot: 'bg-sky-400',
+    border: 'border-roll-500/50',
+    gridColor: 'border-roll-900/60',
+    colorDot: 'bg-roll-400',
     name: 'Praça Arasaka (Azul)'
   },
   netrunner: {
@@ -78,11 +78,11 @@ const THEME_STYLES: Record<string, ThemeConfig> = {
     name: 'Boate Totentanz (Roxo)'
   },
   redalert: {
-    bg: 'bg-red-950',
-    border: 'border-red-500/50',
-    gridColor: 'border-red-900/60',
-    colorDot: 'bg-red-500',
-    name: 'Alerta de Combate (Vermelho)'
+    bg: 'bg-fault-950',
+    border: 'border-fault-500/50',
+    gridColor: 'border-fault-900/60',
+    colorDot: 'bg-fault-500',
+    name: 'Alerta de Combate (Magenta)'
   }
 };
 
@@ -373,7 +373,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                 placeholder="Ex: Barricada, Inimigo A, Fogo..."
                 value={newTokenName}
                 onChange={(e) => setNewTokenName(e.target.value)}
-                className="w-full bg-surface border border-line-strong rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
+                className="w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
               />
             </div>
 
@@ -382,7 +382,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
               <select
                 value={newTokenType}
                 onChange={(e) => setNewTokenType(e.target.value as any)}
-                className="w-full bg-surface border border-line-strong rounded px-2.5 py-1 text-xs text-accent-300 focus:outline-none focus:border-accent-500"
+                className="w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-accent-300 focus:outline-none focus:border-accent-500"
               >
                 <option value="npc">👾 Inimigo / NPC</option>
                 <option value="cover">🛡️ Cobertura (Blindagem/Barricada)</option>
@@ -399,7 +399,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                   max="100"
                   value={newTokenSp}
                   onChange={(e) => setNewTokenSp(Number(e.target.value))}
-                  className="font-mono w-full bg-surface border border-line-strong rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
+                  className="font-mono w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
                 />
               </div>
             ) : (
@@ -531,8 +531,8 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                       const canDragToken = roleMode === 'gm' || token.peerId === peerId;
 
                       let badgeBg = 'bg-accent-950/95 text-accent-300 border-accent-400 shadow-glow-8 shadow-accent-500/60';
-                      if (token.type === 'npc') badgeBg = 'bg-red-950/95 text-red-300 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]';
-                      if (token.type === 'cover') badgeBg = 'bg-raised/95 text-fg border-night-500 shadow-[0_0_6px_rgba(148,163,184,0.4)]';
+                      if (token.type === 'npc') badgeBg = 'bg-fault-950/95 text-fault-300 border-fault-500 shadow-glow-8 shadow-fault-500/60';
+                      if (token.type === 'cover') badgeBg = 'bg-raised/95 text-fg border-night-500 shadow-glow-6 shadow-night-400/40';
                       if (token.type === 'hazard') badgeBg = 'bg-caution-950/95 text-caution-300 border-caution-500 shadow-glow-8 shadow-caution-500/60';
 
                       return (
@@ -572,7 +572,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                         >
                           {/* ONLY ICON INSIDE GRID CELL */}
                           {token.type === 'player' && <User className="w-4 h-4 text-accent-300" />}
-                          {token.type === 'npc' && <Crosshair className="w-4 h-4 text-red-300" />}
+                          {token.type === 'npc' && <Crosshair className="w-4 h-4 text-fault-300" />}
                           {token.type === 'cover' && <Shield className="w-4 h-4 text-fg" />}
                           {token.type === 'hazard' && <Flame className="w-4 h-4 text-caution-300 animate-pulse" />}
 
@@ -585,7 +585,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
 
                           {/* Wounded status indicator dot */}
                           {token.hp !== undefined && token.hp > 0 && (
-                            <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping" />
+                            <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full bg-danger-500 border border-black animate-ping" />
                           )}
 
                           {/* "?" Icon Button to explicitly toggle Element Status Window */}
@@ -646,13 +646,13 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                   selectedToken.type === 'player'
                     ? 'bg-accent-950 border-accent-400 text-accent-300 shadow-glow-10 shadow-accent-500/60'
                     : selectedToken.type === 'npc'
-                    ? 'bg-red-950 border-red-500 text-red-300 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
+                    ? 'bg-fault-950 border-fault-500 text-fault-300 shadow-glow-10 shadow-fault-500/60'
                     : selectedToken.type === 'cover'
                     ? 'bg-raised border-night-400 text-fg'
                     : 'bg-caution-950 border-caution-500 text-caution-300'
                 }`}>
                   {selectedToken.type === 'player' && <User className="w-4 h-4 text-accent-400" />}
-                  {selectedToken.type === 'npc' && <Crosshair className="w-4 h-4 text-red-400" />}
+                  {selectedToken.type === 'npc' && <Crosshair className="w-4 h-4 text-fault-400" />}
                   {selectedToken.type === 'cover' && <Shield className="w-4 h-4 text-fg-soft" />}
                   {selectedToken.type === 'hazard' && <Flame className="w-4 h-4 text-caution-400 animate-pulse" />}
                 </div>
@@ -733,9 +733,9 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                       onSelectPlayerForHealthEdit(players[selectedToken.peerId!]);
                       setSelectedTokenId(null);
                     }}
-                    className="w-full py-1.5 rounded bg-pink-950 hover:bg-pink-900 border border-pink-700 text-pink-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
+                    className="w-full py-1.5 rounded bg-danger-950 hover:bg-danger-900 border border-danger-700 text-danger-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
                   >
-                    <Eye className="w-3.5 h-3.5 text-pink-400" />
+                    <Eye className="w-3.5 h-3.5 text-danger-400" />
                     <span>Editar Saúde</span>
                   </button>
                 )}
@@ -748,9 +748,9 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                       handleRemoveToken(selectedToken.id);
                       setSelectedTokenId(null);
                     }}
-                    className="w-full py-1.5 rounded bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
+                    className="w-full py-1.5 rounded bg-fault-950 hover:bg-fault-900 border border-fault-800 text-fault-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    <Trash2 className="w-3.5 h-3.5 text-fault-400" />
                     <span>Remover do Grid</span>
                   </button>
                 )}
@@ -768,7 +768,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
             <span className="text-fg-soft">Jogador</span>
           </span>
           <span className="flex items-center space-x-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-fault-500"></span>
             <span className="text-fg-soft">Inimigo / NPC</span>
           </span>
           <span className="flex items-center space-x-1">

@@ -57,8 +57,8 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
   };
 
   return (
-    <div className="bg-raised/70 border-l-4 border-signal-500 border-y border-r rounded-lg p-5 shadow-glow-20 shadow-signal-500/10 space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-signal-500 select-none">
+    <div className="bg-raised/70 border-l-4 border-l-signal-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-signal-500/10 space-y-4 relative overflow-hidden">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-signal-500 select-none">
         SKILLS
       </div>
 
@@ -125,7 +125,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
                 <div className="flex items-center space-x-1 bg-raised border border-line rounded px-1 py-0.5">
                   <button
                     onClick={() => changeLevel(skill.id, -1)}
-                    className="w-5 h-5 rounded bg-surface text-muted hover:text-red-400 cursor-pointer"
+                    className="w-5 h-5 rounded bg-surface text-muted hover:text-accent-400 cursor-pointer"
                   >
                     −
                   </button>
@@ -146,7 +146,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
                 </button>
                 <button
                   onClick={() => removeSkill(skill.id)}
-                  className="p-1.5 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
+                  className="p-1.5 rounded bg-raised hover:bg-fault-950 border border-line hover:border-fault-500 text-subtle hover:text-fault-400 transition-all cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -173,7 +173,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
               value={skillName}
               onChange={(e) => setSkillName(e.target.value)}
               placeholder="Ex: Handgun, Stealth, Brawling..."
-              className="w-full bg-raised border border-line-strong text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
               list="skill-suggestions"
             />
             <datalist id="skill-suggestions">
@@ -184,7 +184,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
             <select
               value={skillStat}
               onChange={(e) => changeStatForSuggestions(e.target.value as StatName)}
-              className="w-full bg-raised border border-line-strong text-xs font-mono text-accent-300 px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs font-mono text-accent-300 px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
             >
               {STAT_OPTIONS.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -198,7 +198,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
                 max={10}
                 value={skillLevel}
                 onChange={(e) => setSkillLevel(parseInt(e.target.value) || 0)}
-                className="w-full bg-raised border border-line-strong text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
+                className="w-full bg-raised border border-field text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
               />
             </div>
           </div>

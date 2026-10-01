@@ -13,7 +13,7 @@ const buttonVariants = cva(
         cyber:
           "bg-signal-400 hover:bg-signal-300 text-black font-extrabold shadow-glow-15 shadow-signal-400/40",
         destructive:
-          "bg-red-600 hover:bg-red-500 text-white font-bold shadow-[0_0_12px_rgba(239,68,68,0.4)]",
+          "bg-fault-600 hover:bg-fault-700 text-white font-bold shadow-glow-12 shadow-fault-500/40",
         outline:
           "border border-accent-500/60 bg-surface hover:bg-accent-950/40 text-accent-400 hover:border-accent-400",
         secondary:
@@ -23,7 +23,7 @@ const buttonVariants = cva(
         emerald:
           "bg-ok-500 hover:bg-ok-400 text-black font-extrabold shadow-glow-15 shadow-ok-500/40",
         magenta:
-          "bg-pink-600 hover:bg-pink-500 text-white font-extrabold shadow-[0_0_15px_rgba(219,39,119,0.4)]",
+          "bg-fault-600 hover:bg-fault-500 text-white font-extrabold shadow-glow-15 shadow-fault-600/40",
       },
       size: {
         default: "h-9 px-4 py-2",

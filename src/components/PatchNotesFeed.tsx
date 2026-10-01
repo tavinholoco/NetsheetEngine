@@ -47,7 +47,7 @@ export const PATCH_NOTES: PatchNote[] = [
     date: 'FASE 5 // CONCLUÍDO',
     title: 'REDESIGN HUD CYBERPUNK 2077',
     tag: 'LAYOUT',
-    tagColor: 'text-red-400 border-red-500/60 bg-red-950/60',
+    tagColor: 'text-roll-400 border-roll-500/60 bg-roll-950/60',
     summary: 'Novo layout de navegacao inspirado no menu principal de Cyberpunk 2077 Phantom Liberty, com barra vertical neon e feed flutuante de patch notes.',
     highlights: [
       'Menu vertical exclusivo com botoes Jogar, Ficha, Lendas, Netrunner, Dados, PRD e Perfil',
@@ -126,14 +126,14 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
     <div className={`space-y-3 ${className}`}>
       {/* Header Badge (Hidden when embedded in accordion button) */}
       {!embedded && (
-        <div className="flex items-center justify-between border-b border-red-500/40 pb-2">
+        <div className="flex items-center justify-between border-b border-accent-500/40 pb-2">
           <div className="flex items-center space-x-2">
-            <Terminal className="w-4 h-4 text-red-400 animate-pulse" />
-            <h3 className="font-mono text-xs tracking-caps text-red-400 uppercase">
+            <Terminal className="w-4 h-4 text-accent-400 animate-pulse" />
+            <h3 className="font-mono text-xs tracking-caps text-accent-400 uppercase">
               PATCH NOTES // NETWORK FEED
             </h3>
           </div>
-          <span className="font-mono text-micro text-fg-soft bg-red-950/80 px-2 py-0.5 rounded border border-red-800">
+          <span className="font-mono text-micro text-fg-soft bg-accent-950/80 px-2 py-0.5 rounded border border-accent-800">
             SYSTEM_LOG.DAT
           </span>
         </div>
@@ -144,15 +144,15 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
         {PATCH_NOTES.map((note) => (
           <div
             key={note.version}
-            className="bg-surface/80 border border-line hover:border-red-500/60 p-3.5 rounded-lg transition-all group backdrop-blur-md relative overflow-hidden shadow-lg hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+            className="bg-surface/80 border border-line hover:border-accent-500/60 p-3.5 rounded-lg transition-all group backdrop-blur-md relative overflow-hidden shadow-lg hover:shadow-glow-15 hover:shadow-accent-500/20"
           >
             {/* Top Accent Bar */}
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-500 via-signal-500 to-accent-500"></div>
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-signal-500 to-accent-500"></div>
 
             <div className="pl-2 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="font-mono text-sm text-red-400 tracking-caps">
+                  <span className="font-mono text-sm text-accent-400 tracking-caps">
                     {note.version}
                   </span>
                   <span className="text-micro text-fg-soft font-bold uppercase tracking-tight">
@@ -170,13 +170,13 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
 
               {!compact && (
                 <div className="pt-1.5 border-t border-line-soft space-y-1">
-                  <span className="text-micro text-red-400/90 font-bold uppercase block">
+                  <span className="text-micro text-accent-400/90 font-bold uppercase block">
                     Destaques da Atualizacao:
                   </span>
                   <ul className="space-y-1">
                     {note.highlights.map((h, idx) => (
                       <li key={idx} className="text-micro text-muted flex items-start space-x-1.5">
-                        <span className="text-red-500 font-bold shrink-0">•</span>
+                        <span className="text-accent-500 font-bold shrink-0">•</span>
                         <span>{h}</span>
                       </li>
                     ))}

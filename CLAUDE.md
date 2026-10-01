@@ -84,12 +84,12 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 671 testes depois da F.1 (ver "Linha de base atual" no plano)
+npx vitest run            # 744 testes depois do PR 3b da F (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
-npm run audit:colors      # cor escrita à mão em src/ (Fase F) — o critério de pronto da F.2 é zero
-npx tsx scripts/migrate-colors.ts --conflitos   # duas cores na mesma propriedade do elemento — deve dar 0
+npm run audit:colors      # cor escrita à mão em src/ — zero, e o CI exige (F.2.10): cor nova é token no @theme
+npx tsx scripts/migrate-colors.ts --conflitos   # duas cores na mesma propriedade do elemento — 0, e o CI exige
 node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
 npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) — exige Docker; nunca junto do CI
 ```
@@ -143,6 +143,13 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
 - **Tailwind 4: duas classes da mesma propriedade no mesmo elemento decidem pelo alfabeto** do nome
   (`border-emerald-500 border-slate-800` → vence `slate`). Renomear classe pode inverter o visual — foi
   o achado da F.2.4. Antes de trocar nome de classe, `migrate-colors --conflitos`; depois, captura.
+- **O `cn` (tailwind-merge) não lê o `@theme`.** Um token de **tamanho** novo (`--text-*`, `--tracking-*`,
+  `--shadow-*`, `--drop-shadow-*`) que ele não conheça vira "cor" e some do className ao lado de uma cor
+  de verdade — o modal de login perdeu o brilho assim (achado da F.4). Token novo entra também no
+  `extendTailwindMerge` de `src/lib/utils.ts`; o `cn-theme.test` deriva a lista do `@theme` e pega.
+- **A cor (F.2b):** vermelho só dano (`danger` e a escala `wound-0`–`wound-10`, que **clareia** com a
+  gravidade); erro, destrutivo, *fumble* e NPC hostil em `fault` (magenta); DADOS em `roll` (azul); o GM
+  em `signal`. Contraste de texto (4,5:1) e de borda de campo (3:1) travado no `theme-contrast.test`.
 - **Tipografia (F.1):** Rajdhani em rótulo e texto, Share Tech Mono só em dado — e **sem negrito** (a face
   só tem o 400) —, Orbitron em título. Rajdhani **não tem algarismos tabulares**: número vai na mono.
   Nem Rajdhani nem Orbitron têm `º`/`ª`. Nada abaixo de `text-micro` (10 px).

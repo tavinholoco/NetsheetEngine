@@ -16,11 +16,11 @@ const STAT_LABELS: Record<StatName, { label: string; color: string; icon: React.
   REF: { label: 'Reflexos', color: 'text-signal-400', icon: <Wind className="w-3.5 h-3.5" /> },
   TECH: { label: 'Técnica', color: 'text-cyber-400', icon: <Shield className="w-3.5 h-3.5" /> },
   COOL: { label: 'Frieza', color: 'text-ok-400', icon: <Flame className="w-3.5 h-3.5" /> },
-  ATTR: { label: 'Atração', color: 'text-pink-400', icon: <Heart className="w-3.5 h-3.5" /> },
+  ATTR: { label: 'Atração', color: 'text-roll-400', icon: <Heart className="w-3.5 h-3.5" /> },
   LUCK: { label: 'Sorte', color: 'text-caution-400', icon: <Shield className="w-3.5 h-3.5" /> },
-  MA: { label: 'Movimento', color: 'text-orange-400', icon: <Wind className="w-3.5 h-3.5" /> },
-  BODY: { label: 'Corpo', color: 'text-red-400', icon: <Shield className="w-3.5 h-3.5" /> },
-  EMP: { label: 'Empatia', color: 'text-teal-400', icon: <Heart className="w-3.5 h-3.5" /> }
+  MA: { label: 'Movimento', color: 'text-caution-600', icon: <Wind className="w-3.5 h-3.5" /> },
+  BODY: { label: 'Corpo', color: 'text-fg-strong', icon: <Shield className="w-3.5 h-3.5" /> },
+  EMP: { label: 'Empatia', color: 'text-cyber-300', icon: <Heart className="w-3.5 h-3.5" /> }
 };
 
 export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
@@ -47,8 +47,8 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
   const runMove = runFromMa(stats.MA);
 
   return (
-    <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-accent-500/10 space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-accent-400 select-none">
+    <div className="bg-raised/70 border-l-4 border-l-accent-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-accent-500/10 space-y-4 relative overflow-hidden">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-accent-400 select-none">
         STATS
       </div>
 
@@ -82,7 +82,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
               <div className="flex items-center justify-between space-x-1">
                 <button
                   onClick={() => handleChange(stat, -1)}
-                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-red-950 hover:text-red-400 hover:border-red-500 font-bold transition-all cursor-pointer"
+                  className="w-7 h-7 shrink-0 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-bold transition-all cursor-pointer"
                 >
                   −
                 </button>
@@ -90,11 +90,11 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
                   type="number"
                   value={val}
                   onChange={(e) => handleSet(stat, parseInt(e.target.value))}
-                  className="w-12 bg-raised border border-accent-800/70 text-center text-xl font-mono text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
+                  className="w-12 min-w-0 bg-raised border border-accent-700 text-center text-xl font-mono text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
                 />
                 <button
                   onClick={() => handleChange(stat, 1)}
-                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-bold transition-all cursor-pointer"
+                  className="w-7 h-7 shrink-0 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-bold transition-all cursor-pointer"
                 >
                   +
                 </button>
