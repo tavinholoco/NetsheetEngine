@@ -235,7 +235,14 @@
      2.3.1 (F.3.1). */
   --animate-fadeIn: fadeIn 0.3s ease-out;
   --animate-glitch: glitch 0.75s steps(1, end) 1;
-  --animate-pulse-glow: pulseGlow 2s ease-in-out infinite;
+  --animate-pulse-glow: pulseGlow 2s ease-in-out 2;
+
+  /* As do Tailwind vêm em loop; aqui param em ≤ 5 s (F.4.2) — um lugar para
+     os 18 pulse, os 2 ping e o bounce do aviso. O spin de carregando é
+     essencial e fica como o Tailwind o define. O theme-motion.test confere. */
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 2;
+  --animate-ping: ping 1s cubic-bezier(0, 0, 0.2, 1) 4;
+  --animate-bounce: bounce 1s 3;
 }
 
 @keyframes fadeIn {
@@ -323,6 +330,20 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-accent-400);
+  }
+}
+
+/* Quem pede menos movimento no sistema não recebe animação nem transição —
+   fora o spin de carregando, que é essencial (F.4.2). É boa prática, não o
+   critério 2.2.2: este é o das animações finitas no @theme. */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.animate-spin),
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
