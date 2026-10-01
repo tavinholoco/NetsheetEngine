@@ -9,7 +9,7 @@
  */
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { aplicarExcecoes, contarTexto, type Excecao } from '../../scripts/audit-colors';
+import { aplicarExcecoes, contarTexto, monoComNegrito, type Excecao } from '../../scripts/audit-colors';
 
 describe('contarTexto — código (.ts/.tsx)', () => {
   it('conta utilitário da paleta com variante e opacidade, e ignora token e cor sem tom', () => {
@@ -69,5 +69,22 @@ describe('aplicarExcecoes — exceção nomeada cobre só até o número dela', 
   it('não vale para outro arquivo nem outra categoria', () => {
     expect(aplicarExcecoes([{ ...linha, arquivo: 'src/b.tsx' }], [ex])[0].hex).toBe(7);
     expect(aplicarExcecoes([linha], [{ ...ex, categoria: 'rgba' }])[0].hex).toBe(7);
+  });
+});
+
+/*
+ * F.1.2 — a Share Tech Mono só tem o peso 400: pedir negrito a ela faz o
+ * navegador inventar um (99 elementos na ficha, na F.0a). Conta o trecho de
+ * classe que junta `font-mono` e peso; o ternário não soma alternativas.
+ */
+describe('monoComNegrito — negrito pedido à mono', () => {
+  it('conta o trecho com font-mono e peso, e não o que tem só um dos dois', () => {
+    expect(monoComNegrito('<span className="font-mono font-bold">1</span>')).toBe(1);
+    expect(monoComNegrito('<span className="font-black text-xl font-mono">1</span>')).toBe(1);
+    expect(monoComNegrito('<span className="font-mono text-xl">1</span><b className="font-bold">x</b>')).toBe(0);
+  });
+
+  it('alternativas de ternário não se somam', () => {
+    expect(monoComNegrito('className={`x ${a ? "font-mono" : "font-bold"}`}')).toBe(0);
   });
 });

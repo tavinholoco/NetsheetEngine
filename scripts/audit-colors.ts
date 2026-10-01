@@ -14,7 +14,9 @@
  *  - hex     — hex literal: em `.ts`/`.tsx`, dentro de string ou de `[…]`; no
  *              CSS, fora do bloco `@theme` (é lá que os tokens moram);
  *  - p/b     — `black`/`white` numa coluna à parte: é neutro absoluto, e a
- *              F.2 decide o que fazer com eles.
+ *              F.2 decide o que fazer com eles;
+ *  - mono+b  — trecho de classe com `font-mono` e peso (`font-bold`…): a Share
+ *              Tech Mono só tem o 400, e o navegador inventa o negrito (F.1.2).
  *
  * Exceção só NOMEADA, com motivo e gatilho — o mesmo padrão do audit-ci.mjs.
  * Nesta fase o script só reporta; a trava no CI é a F.2.10.
@@ -25,6 +27,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { contextos } from "./migrate-colors";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -60,6 +63,18 @@ export function contarTexto(texto: string, tipo: "codigo" | "css"): Contagem {
     hex: quantos(alvo, tipo === "css" ? RE_HEX_CSS : RE_HEX_CODIGO),
     pretoBranco: quantos(alvo, RE_PRETO_BRANCO)
   };
+}
+
+const PESO = /^font-(?:bold|black|extrabold|semibold)$/;
+
+/** F.1.2 — quantos trechos de classe pedem negrito à mono (a face não tem). */
+export function monoComNegrito(texto: string): number {
+  let n = 0;
+  for (const ctx of contextos(texto)) {
+    const cls = ctx.map((c) => c.texto);
+    if (cls.includes("font-mono") && cls.some((c) => PESO.test(c))) n++;
+  }
+  return n;
 }
 
 export type Excecao = {
@@ -114,20 +129,22 @@ function arquivosDoSrc(): string[] {
 }
 
 function main(): void {
+  const negrito = new Map<string, number>();
   const brutas: Linha[] = arquivosDoSrc().map((arquivo) => {
     const texto = fs.readFileSync(path.join(REPO, arquivo), "utf8");
+    if (!arquivo.endsWith(".css")) negrito.set(arquivo, monoComNegrito(texto));
     return { arquivo, ...contarTexto(texto, arquivo.endsWith(".css") ? "css" : "codigo") };
   });
   const linhas = aplicarExcecoes(brutas, EXCECOES)
-    .filter((l) => total(l) + l.pretoBranco > 0)
+    .filter((l) => total(l) + l.pretoBranco + (negrito.get(l.arquivo) ?? 0) > 0)
     .sort((a, b) => total(b) - total(a) || a.arquivo.localeCompare(b.arquivo));
 
   console.log("🎨 Cor escrita à mão em src/ (fora dos testes)\n");
   const larg = Math.max(...linhas.map((l) => l.arquivo.length), 7);
-  console.log(`${"arquivo".padEnd(larg)}  paleta   rgba    hex    p/b`);
+  console.log(`${"arquivo".padEnd(larg)}  paleta   rgba    hex    p/b mono+b`);
   for (const l of linhas) {
     const n = (v: number) => String(v).padStart(6);
-    console.log(`${l.arquivo.padEnd(larg)}  ${n(l.paleta)} ${n(l.rgba)} ${n(l.hex)} ${n(l.pretoBranco)}`);
+    console.log(`${l.arquivo.padEnd(larg)}  ${n(l.paleta)} ${n(l.rgba)} ${n(l.hex)} ${n(l.pretoBranco)} ${n(negrito.get(l.arquivo) ?? 0)}`);
   }
   const soma = linhas.reduce(
     (s, l) => ({ paleta: s.paleta + l.paleta, rgba: s.rgba + l.rgba, hex: s.hex + l.hex, pretoBranco: s.pretoBranco + l.pretoBranco }),
@@ -135,6 +152,7 @@ function main(): void {
   );
   console.log(`\nTotal: paleta ${soma.paleta} · rgba ${soma.rgba} · hex ${soma.hex} → ${total(soma)} a migrar`);
   console.log(`       black/white à parte: ${soma.pretoBranco}`);
+  console.log(`       mono com negrito (F.1.2): ${[...negrito.values()].reduce((a, b) => a + b, 0)}`);
   if (EXCECOES.length) {
     console.log(`\nExceções nomeadas (${EXCECOES.length}):`);
     for (const ex of EXCECOES) console.log(`   · ${ex.arquivo} — ${ex.categoria} até ${ex.ate}: ${ex.motivo}`);
