@@ -318,6 +318,21 @@
   );
 }
 
+/* Fósforo do CRT — linha de varredura de 4 px e a franja de cor de 3 px (o
+   fundo do menu). A franja era vermelho e azul em rgba; virou magenta e ciano,
+   o par de aberração do glitch: vermelho é só dano (F.2.2). */
+.crt-phosphor {
+  background-image:
+    linear-gradient(transparent 50%, color-mix(in oklab, var(--color-black) 35%, transparent) 50%),
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--color-fault-500) 8%, transparent),
+      transparent,
+      color-mix(in oklab, var(--color-accent-500) 4%, transparent)
+    );
+  background-size: 100% 4px, 3px 100%;
+}
+
 /* Glitch flicker para títulos neon */
 .glitch-text {
   position: relative;
