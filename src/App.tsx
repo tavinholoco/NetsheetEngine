@@ -270,10 +270,10 @@ export default function App() {
                     {currentPage.title}
                   </h1>
                   {user && (
-                    <p className="text-xs text-fg-soft font-medium pt-1 flex items-center space-x-1.5">
+                    <p className="text-xs text-fg-soft pt-1 flex items-center space-x-1.5">
                       <span className="text-muted">FICHA ATIVA:</span>
                       <strong className="text-signal-400 font-bold">{sheet.handle || 'Edgerunner'}</strong>
-                      <span className="text-accent-400 font-semibold">({sheet.role || 'Solo'})</span>
+                      <span className="text-accent-400 font-bold">({sheet.role || 'Solo'})</span>
                     </p>
                   )}
                 </div>

@@ -7,9 +7,10 @@ import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 // era recusado pelo CSP de produção (`font-src 'self'`) e a tela caía em fonte
 // de sistema. O Vite copia os woff2 para dist/assets, servidos pelo mesmo
 // origin; o `unicode-range` de cada peso faz o navegador baixar só o `latin`.
+// F.4.3: só os pesos usados — o 400 e o 700. O 500 e o 600 tinham um uso
+// cada, numa linha do cabeçalho; viraram 400 e 700. O 800 e o 900 (font-
+// extrabold, font-black) caem no 700 sem negrito sintético.
 import '@fontsource/rajdhani/400.css';
-import '@fontsource/rajdhani/500.css';
-import '@fontsource/rajdhani/600.css';
 import '@fontsource/rajdhani/700.css';
 import '@fontsource/share-tech-mono/400.css';
 // Fase F (F.1.3) — a voz de display: Orbitron, variável (400–900, 11,5 KB), só
