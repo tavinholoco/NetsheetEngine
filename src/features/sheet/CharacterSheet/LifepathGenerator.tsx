@@ -142,7 +142,7 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
               />
               <button
                 onClick={() => removeLifeEvent(idx)}
-                className="p-1.5 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
+                className="p-1.5 rounded bg-raised hover:bg-fault-950 border border-line hover:border-fault-500 text-subtle hover:text-fault-400 transition-all cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

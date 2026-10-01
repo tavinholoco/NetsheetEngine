@@ -102,7 +102,7 @@ export const FriendChatBox: React.FC<FriendChatBoxProps> = ({ currentUser, frien
         </div>
         <button
           onClick={onClose}
-          className="text-muted hover:text-red-400 p-0.5 rounded transition-colors cursor-pointer"
+          className="text-muted hover:text-accent-400 p-0.5 rounded transition-colors cursor-pointer"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -351,7 +351,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
       case 'shield':
         return <Shield className="w-3.5 h-3.5 text-accent-400" />;
       case 'skull':
-        return <Skull className="w-3.5 h-3.5 text-red-400" />;
+        return <Skull className="w-3.5 h-3.5 text-fault-400" />;
       case 'bot':
         return <Bot className="w-3.5 h-3.5 text-signal-400" />;
       case 'zap':
@@ -400,7 +400,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
   }
 
   return (
-    <div className="mt-2.5 bg-surface/90 border border-red-500/30 rounded-xl p-2.5 backdrop-blur-sm relative transition-all">
+    <div className="mt-2.5 bg-surface/90 border border-accent-500/30 rounded-xl p-2.5 backdrop-blur-sm relative transition-all">
       {/* Friends List Header */}
       <div className="flex items-center justify-between">
         <button
@@ -455,7 +455,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
                 setSearchResult(null);
                 setSearchError('');
               }}
-              className="text-muted hover:text-red-400 cursor-pointer"
+              className="text-muted hover:text-accent-400 cursor-pointer"
             >
               <X className="w-3 h-3" />
             </button>
@@ -505,7 +505,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
 
           {/* Search Error */}
           {searchError && (
-            <div className="text-micro text-red-400 bg-red-950/40 p-1.5 rounded border border-red-500/30">
+            <div className="text-micro text-fault-400 bg-fault-950/40 p-1.5 rounded border border-fault-500/30">
               {searchError}
             </div>
           )}
@@ -612,7 +612,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
                   <button
                     onClick={() => handleReject(req.id)}
                     title="Recusar"
-                    className="p-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/50 rounded transition-all cursor-pointer"
+                    className="p-1 bg-fault-500/20 hover:bg-fault-500/40 text-fault-400 border border-fault-500/50 rounded transition-all cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -696,9 +696,9 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
 
                       <button
                         onClick={() => handleRemove(friend)}
-                        className="py-1 px-2 bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-500/40 hover:border-red-500 rounded text-micro font-bold flex items-center justify-center space-x-1 cursor-pointer transition-all"
+                        className="py-1 px-2 bg-fault-950/80 hover:bg-fault-900 text-fault-300 border border-fault-500/40 hover:border-fault-500 rounded text-micro font-bold flex items-center justify-center space-x-1 cursor-pointer transition-all"
                       >
-                        <UserX className="w-3 h-3 text-red-400" />
+                        <UserX className="w-3 h-3 text-fault-400" />
                         <span>DESFAZER AMIZADE</span>
                       </button>
                     </div>

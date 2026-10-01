@@ -8,11 +8,11 @@ const STATUS_STYLE: Record<PrdStatus, { label: string; cls: string }> = {
   'em andamento': { label: 'EM ANDAMENTO', cls: 'bg-accent-950/80 text-accent-400 border-accent-500/60' },
   'pendente': { label: 'PENDENTE', cls: 'bg-raised text-muted border-line-strong' },
   'planejado': { label: 'PLANEJADO', cls: 'bg-cyber-950/80 text-cyber-400 border-cyber-500/60' },
-  'cancelado': { label: 'CANCELADO', cls: 'bg-red-950/80 text-red-400 border-red-500/60' }
+  'cancelado': { label: 'CANCELADO', cls: 'bg-fault-950/80 text-fault-400 border-fault-500/60' }
 };
 
 const PRIORITY_STYLE: Record<string, string> = {
-  P0: 'bg-red-950/80 text-red-400 border-red-500/60',
+  P0: 'bg-fault-950/80 text-fault-400 border-fault-500/60',
   P1: 'bg-caution-950/80 text-caution-400 border-caution-500/60',
   P2: 'bg-accent-950/80 text-accent-400 border-accent-500/60',
   P3: 'bg-raised text-muted border-line-strong'
@@ -36,12 +36,12 @@ export const PrdViewer: React.FC = () => {
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* Header */}
-      <div className="bg-surface/90 border-2 border-red-600/40 rounded-2xl p-6 relative overflow-hidden shadow-[0_0_25px_rgba(239,68,68,0.12)]">
-        <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-red-500 via-signal-500 to-accent-500" />
+      <div className="bg-surface/90 border-2 border-night-500/40 rounded-2xl p-6 relative overflow-hidden shadow-glow-25 shadow-night-400/10">
+        <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-signal-500 to-accent-500" />
         <div className="pl-3 relative z-10">
           <div className="flex items-center space-x-2 mb-2">
-            <FileText className="w-5 h-5 text-red-400" />
-            <span className="text-mini font-black tracking-caps text-red-500 uppercase">PRD // NETSHEET ENGINE</span>
+            <FileText className="w-5 h-5 text-fg-strong" />
+            <span className="text-mini font-black tracking-caps text-fg-strong uppercase">PRD // NETSHEET ENGINE</span>
             <StatusBadge status="em andamento" />
           </div>
           <h1 className="font-display text-2xl font-black italic text-signal-400 uppercase drop-shadow-glow-15 drop-shadow-signal-400/40">
@@ -75,8 +75,8 @@ export const PrdViewer: React.FC = () => {
             onClick={() => setActiveSection(id)}
             className={`px-3 py-1.5 rounded-lg border text-mini font-black uppercase tracking-caps flex items-center space-x-1.5 transition-all cursor-pointer ${
               activeSection === id
-                ? 'bg-red-950/80 border-red-500 text-signal-300 shadow-[0_0_12px_rgba(239,68,68,0.4)]'
-                : 'bg-surface border-line text-muted hover:border-red-500/50 hover:text-white'
+                ? 'bg-signal-950/80 border-signal-400 text-signal-300 shadow-glow-12 shadow-signal-400/40'
+                : 'bg-surface border-line text-muted hover:border-accent-500/50 hover:text-white'
             }`}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -153,13 +153,13 @@ export const PrdViewer: React.FC = () => {
                 </div>
                 <p className="text-mini text-muted mb-3">{phase.objective}</p>
                 <div className="h-1 bg-raised rounded-full overflow-hidden mb-3">
-                  <div className="h-full bg-gradient-to-r from-red-500 to-signal-400 transition-all" style={{ width: `${pct}%` }} />
+                  <div className="h-full bg-gradient-to-r from-accent-500 to-signal-400 transition-all" style={{ width: `${pct}%` }} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {phase.tasks.map((task) => (
                     <div key={task.code} className="flex items-center space-x-2 text-micro font-mono">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${
-                        task.status === 'concluído' ? 'bg-ok-400' : task.status === 'em andamento' ? 'bg-accent-400 animate-pulse' : task.status === 'cancelado' ? 'bg-red-500' : 'bg-night-700'
+                        task.status === 'concluído' ? 'bg-ok-400' : task.status === 'em andamento' ? 'bg-accent-400 animate-pulse' : task.status === 'cancelado' ? 'bg-fault-500' : 'bg-night-700'
                       }`} />
                       <span className="text-subtle font-bold shrink-0">{task.code}</span>
                       <span className={`truncate ${task.status === 'concluído' ? 'text-subtle line-through' : 'text-fg-soft'}`}>

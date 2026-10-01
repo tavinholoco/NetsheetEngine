@@ -176,7 +176,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
               </button>
               <button
                 onClick={() => removePreset(preset.id)}
-                className="p-1.5 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
+                className="p-1.5 rounded bg-raised hover:bg-fault-950 border border-line hover:border-fault-500 text-subtle hover:text-fault-400 transition-all cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -219,7 +219,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
                   <span className="text-micro text-faint">{new Date(meta.updatedAt).toLocaleDateString()}</span>
                   <button
                     onClick={() => onDeleteSheet(meta.id)}
-                    className="p-1.5 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
+                    className="p-1.5 rounded bg-raised hover:bg-fault-950 border border-line hover:border-fault-500 text-subtle hover:text-fault-400 transition-all cursor-pointer"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
