@@ -891,9 +891,11 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       bloco R está no `master`.** O que falta é a verificação no ar, no checklist abaixo.)*
 
       > **Isto NÃO bloqueia a Fase F.** O R.15 fecha em 01/10, pela tarefa agendada e pelos itens do dono.
-      > A Fase E abriu e fechou em 30/09 com ele aberto. **A próxima sessão abre a Fase F, pelo F.0** —
-      > decisão do dono em 30/09/2026. Exceção: se o checklist de 01/10 falhou (algo ❌ no PR
-      > `claude/verificacao-01-10` ou no resumo da tarefa), esse vermelho vem primeiro.
+      > A Fase E abriu e fechou em 30/09 com ele aberto, e a Fase F andou com ele aberto: em 30/09
+      > entraram no `master` a F.0, a F.2 mecânica e a F.1 (#26 a #29). **A próxima sessão segue a F
+      > pelo PR 3b** — ver [a F.2b](#f2b--cor-com-significado-meio-dia--pr-3b). Exceção: se o checklist de
+      > 01/10 falhou (algo ❌ no PR `claude/verificacao-01-10` ou no resumo da tarefa), esse vermelho vem
+      > primeiro.
 
       **Checklist de 01/10/2026 — quando a API voltar.** O Render suspendeu o serviço em setembro
       (incidente no [contrato de custo zero](#-contrato-de-custo-zero)); ele volta na virada do mês e
@@ -1153,10 +1155,10 @@ mecânica da F.2 vem **antes** da F.1 — os IDs ficaram os de 02/09, que o rest
 
 | PR | Itens | Por quê |
 |---|---|---|
-| **1** | F.0 | O único **bug** que o jogador vê vai ao ar sozinho, com as guardas |
-| **2** | F.2, parte mecânica (F.2.1, F.2.4–F.2.6) | Encanamento sem mudança visual, provado por captura: a revisão do dono é "nada mudou" |
-| **3a** | F.1 | A tipografia: as três vozes, mono sem negrito, piso de 10 px |
-| **3b** | F.2b, F.3, F.4 | A cor com significado, o vocabulário visual e a acessibilidade; fecha a fase com a tag |
+| **1** | F.0 | O único **bug** que o jogador vê vai ao ar sozinho, com as guardas — ✅ **#27**, mergeado em 30/09 |
+| **2** | F.2, parte mecânica (F.2.1, F.2.4–F.2.6) | Encanamento sem mudança visual, provado por captura: a revisão do dono é "nada mudou" — ✅ **#28**, 30/09 |
+| **3a** | F.1 | A tipografia: as três vozes, mono sem negrito, piso de 10 px — ✅ **#29**, 30/09 |
+| **3b** | F.2b, F.3, F.4 | A cor com significado, o vocabulário visual e a acessibilidade; fecha a fase com a tag — **o próximo** |
 
 *(30/09/2026 — o PR 3 virou dois. A ideia era a identidade chegar "de uma vez", mas a F.1 sozinha
 toca as 29 telas e componentes, e a produção ainda não tem jogador: duas ondas não custam nada a
@@ -1216,8 +1218,10 @@ site está no ar.
       `https://netsheetengine.onrender.com` com o DevTools — **antes**, o console recusa o
       `fonts.googleapis.com`; **depois**, nenhum aviso de CSP e as faces `loaded`. Uma visita de cada
       vez, nada de monitor (regra 3 do custo zero).
-      **Não bloqueia a F.2:** se o PR 1 ainda não estiver no ar (o Render volta em 01/10), a sessão
-      segue pela F.2.1 e marca esta caixa quando conferir.
+      **Não bloqueia o resto da F:** se o PR 1 ainda não estiver no ar (o Render volta em 01/10), a
+      sessão segue pelo primeiro item aberto depois desta caixa e a marca quando conferir. *(Em 30/09 o
+      `master` já tinha #27–#29, então a visita confere também a tipografia: Orbitron nos títulos e
+      nenhum aviso de CSP.)*
 
 #### F.2 — Ligar os tokens: o encanamento *(1–1,5 dia — PR 2; vem antes da F.1)*
 
@@ -1351,6 +1355,23 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
         e com o porquê no commit.
 
 #### F.2b — Cor com significado *(meio dia — PR 3b)*
+
+> **Para a sessão que abrir o PR 3b** *(fim da sessão de 30/09/2026)*. O que esta parte herda:
+> - **Comece pela F.3.0 — perguntar ao dono** as três respostas do livro (barra preta, faixas,
+>   numeração). A F.3 inteira depende delas; a F.2b e a F.4 não, e podem andar enquanto ele confere.
+> - **Renomear cor pode inverter o visual** (achado da F.2.4): com duas classes de cor da mesma
+>   propriedade no mesmo elemento, o Tailwind 4 decide pela ordem **alfabética** do nome. A F.2.2
+>   renomeia vermelho e rosa à mão — rode `npx tsx scripts/migrate-colors.ts --conflitos` depois de cada
+>   lote (hoje: 0) e prove por captura.
+> - **As ferramentas de prova estão em `scripts/visual/`**, contra o `netsheet-prod` (porta 3100, build de
+>   produção com helmet; `npm run build` antes, e servidor recém-subido — as salas de teste têm código
+>   fixo): `capturar.mjs` (cinco telas, relógio congelado), `comparar.mjs` (pixel a pixel; Δ ≤ 8 é
+>   arredondamento, Δ > 12 é mudança — a região de ~30×8 px da ficha muda sozinha: é o ID aleatório da
+>   ficha nova) e `tipografia.mjs` (as regras da F.1 no navegador; tem de continuar ✅).
+> - **`npm run audit:colors`** mostra o que falta: hoje 322 cores à mão, todas desta parte; a F.2.10 o
+>   põe no CI exigindo zero. A coluna `mono+b` tem de seguir em 0.
+> - **Contraste:** a medida da F.0a (`text-slate-500` 3,7–4,2:1, Mortal 2–6 3,0–4,5:1) foi feita com a
+>   cor computada contra o fundo composto — refazer igual depois de mudar `subtle`, `faint` e `wound-*`.
 
 - [ ] **F.2.2** **Regra de política: vermelho significa exclusivamente dano** (decisão 10b). Os 244
       usos, classificados à mão:
@@ -1859,7 +1880,7 @@ público mudar.
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
-| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28) e a F.1 (PR 3a: as três vozes) feitas; F.0g no ar depois do deploy; próximo: F.2.2 (PR 3b) | — |
+| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28) e a F.1 (#29) no `master`; falta a F.0g (no ar) e o PR 3b — próximo: F.2.2 | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
@@ -1872,7 +1893,7 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Depois da Fase E (30/09/2026) |
+| Verificação | Depois da F.1 (30/09/2026 — a Fase F em andamento) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
@@ -1881,7 +1902,9 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`) |
-| Chunk de entrada | 629 kB / 186 kB gzip |
+| Chunk de entrada | 628 kB / 186 kB gzip; CSS 119 kB / 16,9 kB gzip *(F.1)* |
+| Fontes (F.0c, F.1.3) | Rajdhani 400–700, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
+| `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
 | `npm run audit:colors` | **322** a migrar (paleta 285 · `rgba` 36 · hex 1) e 109 `black`/`white` — era **1.879** na F.0e; a F.2 mecânica converteu o resto, e o que sobra é o vermelho, o rosa e a escala de ferimento da F.2b. Zero é o critério de pronto da F.2.10 |
 | `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4) |
 | Mono com negrito (`audit:colors`, coluna `mono+b`) | **0** (F.1.2) — e 0 no navegador, em 12 telas |

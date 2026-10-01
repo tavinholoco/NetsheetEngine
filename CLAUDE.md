@@ -88,6 +88,7 @@ npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
 npm run audit:colors      # cor escrita à mão em src/ (Fase F) — o critério de pronto da F.2 é zero
+npx tsx scripts/migrate-colors.ts --conflitos   # duas cores na mesma propriedade do elemento — deve dar 0
 node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
 npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) — exige Docker; nunca junto do CI
 ```
@@ -109,7 +110,9 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
 - **Ver o app rodando:** a configuração `netsheet-dev` do [`.claude/launch.json`](./.claude/launch.json)
   (`npm run dev`, porta 3000) abre o preview no painel. Em modo dev, **deep link volta para `/`**
   (pista da Fase G) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,
-  semeie a sala por REST com o `gmPeerId` do navegador (a D.3–D.5 fizeram assim).
+  semeie a sala por REST com o `gmPeerId` do navegador (a D.3–D.5 fizeram assim). **O build de produção,**
+  com o helmet (onde o CSP vale), é a configuração `netsheet-prod` (porta 3100; `npm run build` antes) — e
+  `scripts/visual/` captura, compara pixel a pixel e confere a tipografia contra ela (Fase F).
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.
@@ -134,6 +137,12 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   mudar esse arquivo; `NODE_VERSION` no painel do Render passaria por cima dele em silêncio.
 - **Emitir sessão também é autorização.** O SEC-07 viveu desde a T1.7 porque todos conferiam de onde
   vinha o autor da ação, e ninguém quem recebia o token. É a segunda metade da pergunta 3 do portão.
+- **Tailwind 4: duas classes da mesma propriedade no mesmo elemento decidem pelo alfabeto** do nome
+  (`border-emerald-500 border-slate-800` → vence `slate`). Renomear classe pode inverter o visual — foi
+  o achado da F.2.4. Antes de trocar nome de classe, `migrate-colors --conflitos`; depois, captura.
+- **Tipografia (F.1):** Rajdhani em rótulo e texto, Share Tech Mono só em dado — e **sem negrito** (a face
+  só tem o 400) —, Orbitron em título. Rajdhani **não tem algarismos tabulares**: número vai na mono.
+  Nem Rajdhani nem Orbitron têm `º`/`ª`. Nada abaixo de `text-micro` (10 px).
 - **Migration e código que a usa nunca vão no mesmo merge** (decisão 5): o Render faz auto-deploy
   independente do `db-sync`, e em 24/09 o código subiu antes da migration.
 - **O token do CI expira.** Ele tem validade de 30 dias e vence por volta de **25/10/2026**; renovar
