@@ -1376,7 +1376,7 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 > - **Contraste:** a medida da F.0a (`text-slate-500` 3,7–4,2:1, Mortal 2–6 3,0–4,5:1) foi feita com a
 >   cor computada contra o fundo composto — refazer igual depois de mudar `subtle`, `faint` e `wound-*`.
 
-- [ ] **F.2.2** **Regra de política: vermelho significa exclusivamente dano** (decisão 10b). Os 244
+- [x] **F.2.2** **Regra de política: vermelho significa exclusivamente dano** (decisão 10b). Os 244
       usos, classificados à mão:
 
   | Hoje em vermelho | Vai para |
@@ -1391,30 +1391,84 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 
   *O NPC:* muda nas classes do `TacticalGrid`; o campo `color` persistido fica como está (sem
   leitor — pista da G). Os grids já gravados seguem válidos.
+
+  *(30/09/2026 — feito, um commit por lote, cada um com `--conflitos` em 0. Medido antes: **285**
+  utilitários (238 `red`, 38 `pink`, 9 das famílias pequenas), **36** `rgba` e **1** hex. O que cada
+  vermelho virou:*
+  - ***A moldura da marca** (menu, gaveta do celular, cabeçalho de página, herói da página inicial,
+    feed de notas, lista de amigos) → `accent`. A marca fica no par amarelo e ciano; a barra
+    vermelho-amarelo-ciano virou amarelo-ciano. **O item ativo** (menu e abas da PRD) → `signal`: com
+    a moldura ciano, o ativo precisa de outra cor.*
+  - ***`fault`:** erro (404, ErrorBoundary, login, busca, avatar, sala), ação destrutiva (apagar
+    ficha, preset, perícia, cyberware, arma, evento, avatar; recusar pedido, desfazer amizade, limpar
+    histórico, remover do grid), o *fumble*, o alerta de humanidade, o NPC hostil no grid, "Gerar
+    NPC", a variante `destructive` do botão, o "cancelado" e o P0 da PRD, o avatar caveira.*
+  - ***`danger`:** o Bio-Monitor da ficha e do GM, rolar dano, stun e death save (no rolador e na
+    mesa), editar saúde, aplicar dano, o ponto de token ferido, "MORTO".*
+  - ***`signal`:** o GM — etiqueta, nome e balão no chat, "Poderes do GM".*
+  - ***Neutro:** "Sair" do perfil e da mesa (sair não perde dado), o "fechar" (X) vai a `accent`, e
+    o "−" de atributo e perícia também (o "+" já era).*
+  - ***O rosa** (DADOS, rolagem, armas) → a rampa nova **`roll`** (F.2.9). "Sem munição" → `caution`.
+    Atributos: ATTR `roll`, MA `caution-600` (LUCK é o 400), BODY neutro, EMP `cyber-300` (a EMP gera
+    a Humanidade). O tema de grid azul (`sky`) → `roll`.*
+  - ***O tema de grid "Alerta de Combate (Vermelho)"** vira "(Magenta)", em `fault`: um grid inteiro
+    vermelho competiria com a trilha de ferimento. A chave gravada (`redalert`) não muda.*
+  - ***O fósforo do CRT** do menu saiu do `bg-[…rgba…]` para a classe `.crt-phosphor`, lendo os
+    tokens: a franja vermelho/azul virou magenta/ciano, o par do `.glitch-text` — cujo `::after` era o
+    hex do vermelho e virou `fault-500`. O gradiente do fundo do App lê `raised` e `surface`.*
+  - ***De carona, um resto da F.1:** `tracking-displayer` em 2 títulos (a troca de `tracking-tighter`
+    deixou o `er`) — classe que não gera CSS. Virou `tracking-display`.*
+
+  ***`audit:colors`: 322 → 0.** Prova por captura: as cinco telas antes e depois, no `netsheet-prod`.)*
 - [x] **F.2.3** `font-variant-numeric: tabular-nums` em toda coluna de número da ficha (atributos, SP,
       dano, iniciativa) — hoje os dígitos dançam quando o valor muda.
       *(30/09/2026 — **descartado, com medição** (F.1.4): o Rajdhani não tem algarismos tabulares, e
       `tabular-nums` nele não muda nada. Os números foram para a mono, que tem largura fixa — o
       sintoma (dígito que dança) acabou por outro caminho.)*
-- [ ] **F.2.7** **A escala de dano, `wound-*`, com contraste.** No fundo escuro, a gravidade tem que
+- [x] **F.2.7** **A escala de dano, `wound-*`, com contraste.** No fundo escuro, a gravidade tem que
       **clarear**, não escurecer: hoje Mortal 2–6 fica entre 3,0 e 4,5:1. Todo tom da escala com
       **≥ 4,5:1** sobre `surface` e `raised`, medido com a cor computada.
-- [ ] **F.2.8** **Texto apagado com ≥ 4,5:1.** Desde a F.2.4, os antigos `text-slate-500` (56) e
+      *(30/09/2026 — 11 tokens no `@theme`, `wound-0` a `wound-10` (o índice do
+      `WOUND_LEVEL_NAMES`). Do Crítico à Morte Iminente o tom sobe pelos claros do `danger` (500 → 100):
+      sobre `raised`, Mortal 2–3 foi de 3,7 a 9,3:1 e Mortal 5–6, de 2,9 a 12,3–14,6:1. **A trava é
+      um teste,** `theme-contrast.test`: lê o `@theme`, converte oklch → sRGB e exige 4,5:1 de cada
+      `wound-N` e de cada texto neutro sobre `surface` e `raised`, e que a escala clareie. Os números
+      dele batem com a medição da F.0a no navegador. **Provado** com os valores de antes: 16 falham.)*
+- [x] **F.2.8** **Texto apagado com ≥ 4,5:1.** Desde a F.2.4, os antigos `text-slate-500` (56) e
       `text-slate-600` (17) são os tokens `subtle` e `faint`: o conserto é trocar o **valor** deles no
       `@theme` (ou fundi-los em `muted`), num lugar só — o ganho do token.
-- [ ] **F.2.9** **Cor por seção, mantida** (decisão 10c). As 8 abas seguem com cor própria, tirada da
+      *(30/09/2026 — `subtle` sobe para oklch(62% …): 4,9:1 sobre `raised` (era 3,7) e 5,5 sobre
+      `surface`. O `faint` (2,4:1) se funde nele: dois degraus abaixo de 4,5:1 não existem. Os dois só
+      eram cor de texto. Travado pelo mesmo teste da F.2.7.)*
+- [x] **F.2.9** **Cor por seção, mantida** (decisão 10c). As 8 abas seguem com cor própria, tirada da
       paleta de papéis e nunca de `danger`: o **PRD** sai do vermelho e **DADOS** sai do rosa (que virou
       `fault`). A matiz nova de cada uma é escolhida com captura no PR.
-- [ ] **F.2.10** **A trava.** `--color-*: initial` no `@theme` (a paleta padrão deixa de gerar classe;
+      *(30/09/2026 — **DADOS ganha uma rampa nova, `roll` (azul, do `blue`):** nenhum papel sobrava —
+      accent é FICHA, ok é JOGAR, cyber é NETRUNNER IA, signal é INÍCIO e LENDAS, caution é PERFIL —, e
+      o `caution-500` tentado primeiro quase não se distingue do âmbar de PERFIL. **A PRD vai para o
+      neutro** (`fg-strong`): o documento, em P&B. As abas: INÍCIO e LENDAS `signal`, JOGAR `ok`, FICHA
+      `accent`, NETRUNNER IA `cyber`, DADOS `roll`, PRD neutro, PERFIL `caution`. O `color-map.json`
+      ganhou `blue → roll`.)*
+- [x] **F.2.10** **A trava.** `--color-*: initial` no `@theme` (a paleta padrão deixa de gerar classe;
       `black` e `white` redefinidos) e o `npm run audit:colors` no CI **exigindo zero**, fora das
       exceções nomeadas. Sem isso a paleta volta a ambiguar sozinha — a razão de fundo da F.2.2.
       **E `--conflitos` em zero** (`scripts/migrate-colors.ts`): duas classes de cor da mesma
       propriedade no mesmo elemento fazem o visual depender do alfabeto (achado da F.2.4) — a
       classificação à mão da F.2.2 renomeia vermelho e rosa, e cada troca pode inverter um vencedor.
-- [ ] **F.2.11** **As barras de destaque que nunca apareceram** (achado da F.2.4). 13 cartões tinham
+      *(30/09/2026 — `--color-*: initial`, com `black` e `white` redefinidos; no build, as 101
+      variáveis de cor usadas estão todas definidas e `text-red-500` não existe mais no CSS. O
+      `audit:colors` sai com erro (`codigoDeSaida`, com teste) e o `--conflitos` também; o job de
+      validação do CI roda os dois depois do typecheck. **Provado:** com um `text-red-500` e um par
+      `border-accent-500 border-line` plantados, os dois saem com 1. **Não muda a tela:** as cinco
+      capturas antes e depois da trava são iguais, fora o ruído conhecido da ficha.)*
+- [x] **F.2.11** **As barras de destaque que nunca apareceram** (achado da F.2.4). 13 cartões tinham
       `border-l-4` com uma cor que perdia para a borda neutra, e os 4 amarelos pintavam a borda
       inteira. A F.2.4 preservou o que se via; aqui se decide, com captura, se a barra aparece — com
       `border-l-<cor>`, que não briga com a borda dos outros lados — ou se o desenho fica sem ela.
+      *(30/09/2026 — **a barra aparece**, com a cor da seção pela F.2.2 (o Bio-Monitor em `danger`;
+      a PRD com visão em `accent`, módulos em `signal` e roadmap neutro), como os cartões de item já
+      faziam. Os 4 amarelos perdem a borda inteira e ganham a barra. A captura vai no PR para o dono
+      confirmar.)*
 
 #### F.3 — O vocabulário visual oitentista *(1 dia — PR 3b; decisão 10d)*
 
