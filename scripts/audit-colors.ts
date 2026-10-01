@@ -19,7 +19,8 @@
  *              Tech Mono só tem o 400, e o navegador inventa o negrito (F.1.2).
  *
  * Exceção só NOMEADA, com motivo e gatilho — o mesmo padrão do audit-ci.mjs.
- * Nesta fase o script só reporta; a trava no CI é a F.2.10.
+ * Desde a F.2.10 é trava: sai com erro se sobrar cor à mão ou negrito na mono,
+ * e o CI o roda a cada push.
  *
  * Uso:  npm run audit:colors
  * ============================================================
@@ -119,6 +120,15 @@ export function aplicarExcecoes(linhas: Linha[], excecoes: Excecao[]): Linha[] {
 
 const total = (c: Contagem) => c.paleta + c.rgba + c.hex;
 
+/**
+ * F.2.10 — a trava: o CI exige zero. Cor escrita à mão (fora das exceções) e
+ * negrito pedido à mono saem com 1; `black`/`white` não contam (são neutros
+ * absolutos, redefinidos no @theme).
+ */
+export function codigoDeSaida(soma: Contagem, monoComNegrito: number): 0 | 1 {
+  return total(soma) > 0 || monoComNegrito > 0 ? 1 : 0;
+}
+
 function arquivosDoSrc(): string[] {
   const src = path.join(REPO, "src");
   return fs
@@ -150,13 +160,20 @@ function main(): void {
     (s, l) => ({ paleta: s.paleta + l.paleta, rgba: s.rgba + l.rgba, hex: s.hex + l.hex, pretoBranco: s.pretoBranco + l.pretoBranco }),
     { paleta: 0, rgba: 0, hex: 0, pretoBranco: 0 }
   );
+  const monoNegrito = [...negrito.values()].reduce((a, b) => a + b, 0);
   console.log(`\nTotal: paleta ${soma.paleta} · rgba ${soma.rgba} · hex ${soma.hex} → ${total(soma)} a migrar`);
   console.log(`       black/white à parte: ${soma.pretoBranco}`);
-  console.log(`       mono com negrito (F.1.2): ${[...negrito.values()].reduce((a, b) => a + b, 0)}`);
+  console.log(`       mono com negrito (F.1.2): ${monoNegrito}`);
   if (EXCECOES.length) {
     console.log(`\nExceções nomeadas (${EXCECOES.length}):`);
     for (const ex of EXCECOES) console.log(`   · ${ex.arquivo} — ${ex.categoria} até ${ex.ate}: ${ex.motivo}`);
   }
+  process.exitCode = codigoDeSaida(soma, monoNegrito);
+  console.log(
+    process.exitCode
+      ? "\n❌ Cor escrita à mão ou negrito na mono: use um token do @theme (src/index.css) — a F.2.10 exige zero."
+      : "\n✅ Zero cor escrita à mão e zero negrito na mono."
+  );
 }
 
 const invocado = process.argv[1] ? path.resolve(process.argv[1]) : "";

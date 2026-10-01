@@ -48,7 +48,16 @@
           fault   magenta — erro, ação destrutiva, hostil (F.2.2)
           danger  vermelho — SÓ dano (decisão 10b; F.2.2 e F.2.7)
      2) Nomes semânticos para os neutros mais usados (abaixo).
+
+     A TRAVA (F.2.10): a paleta padrão do Tailwind sai — `text-red-500` não
+     gera mais CSS — e só existe a cor que mora aqui. Sem isso a paleta volta
+     a ambiguar sozinha. O `npm run audit:colors` no CI pega o resto (rgba e
+     hex escritos à mão). Preto e branco ficam, como neutros absolutos.
      --------------------------------------------------------------- */
+  --color-*: initial;
+  --color-black: #000;
+  --color-white: #fff;
+
   --color-night-50: oklch(98.4% 0.003 247.858);
   --color-night-100: oklch(96.8% 0.007 247.896);
   --color-night-200: oklch(92.9% 0.013 255.508);

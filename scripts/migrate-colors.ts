@@ -300,6 +300,8 @@ function conflitos(resolver: boolean): void {
     }
   }
   console.log(resolver ? `\n${total} classes mortas removidas` : `\n${total} conflitos`);
+  // F.2.10: no CI, conflito é erro — o visual passaria a depender do alfabeto.
+  if (!resolver && total > 0) process.exitCode = 1;
 }
 
 function main(): void {

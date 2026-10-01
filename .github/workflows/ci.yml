@@ -88,6 +88,16 @@ jobs:
       - name: Typecheck (tsc --noEmit)
         run: npm run lint
 
+      # Fase F (F.2.10): a cor mora no @theme do src/index.css. Cor escrita à
+      # mão (paleta do Tailwind, rgba, hex) ou negrito pedido à mono falha —
+      # exceção só nomeada, com motivo, em scripts/audit-colors.ts. Duas
+      # classes de cor da mesma propriedade no mesmo elemento também: o
+      # Tailwind 4 decide pelo alfabeto do nome (achado da F.2.4).
+      - name: Cor só por token (audit:colors e conflitos)
+        run: |
+          npm run audit:colors
+          npx tsx scripts/migrate-colors.ts --conflitos
+
       - name: Build (Vite + bundle do servidor)
         run: npm run build
 
