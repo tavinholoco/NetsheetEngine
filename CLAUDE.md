@@ -66,7 +66,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Explosão do d10 | **Encadeia.** O cliente e o PRD estão certos; corrigir o servidor |
 | Regras | **Fidelidade estrita** ao Cyberpunk 2020 |
 | Público da alpha | **Jogadores convidados pelo dono** — é o modelo de ameaça real. **Imposto na R.11 (29/09):** o lobby não lista salas; o código, com sufixo aleatório, é o convite |
-| Identidade visual | **Cyberpunk 2020** (mesa de 1988) — *não* 2077 nem RED. Ver ADR 0006. **Na F (decisão 10, 30/09):** Rajdhani nos rótulos, mono só em dado e sem negrito; vermelho só dano, magenta (`fault`) para erro e hostil; o livro do dono é P&B — referência de diagramação, não de cor |
+| Identidade visual | **Cyberpunk 2020** (mesa de 1988) — *não* 2077 nem RED. Ver ADR 0006. **Na F (decisão 10, 30/09):** Rajdhani nos rótulos, mono só em dado e sem negrito; vermelho só dano, magenta (`fault`) para erro e hostil; o interior do livro de 1990 é P&B — referência de diagramação, não de cor |
 | Provedor de IA | **Groq primário, Gemini fallback — decidido, NÃO implementado.** A B.1 trancou o endpoint mantendo o Gemini; a migração ainda não tem fase dona. Ver ADR 0005 |
 | Yjs / CRDT do grid | **Mantido sob observação**, com gatilho para reabrir. Ver ADR 0002 |
 | PITR do Supabase | **Não** — exige plano pago (decisão 4). *A premissa "o backup diário gratuito basta" era falsa: o plano gratuito não tem backup automático* |
@@ -78,6 +78,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Merge × sessão de jogo | **Nunca mergear no `master` com mesa aberta.** Todo deploy do Render roda duas instâncias por ≥60 s, e a mesa perde até ~1,5 min de estado (E.06, `docs/DEPLOY.md`) |
 | Login para criar mesa | **O servidor não exige** (a tela exige). Os tetos da E.03 (30 salas, `MAX_ROOMS`) fecham o esgotamento; exigir login é ADIAR com gatilho — decisão do dono (30/09/2026), em `docs/SEGURANCA.md` |
 | Netrunning | **O netrunner na ficha** (deck, programas, MU) entra na K.5; **a Net jogável na mesa: ADIAR**, fase própria depois da L — gatilho: alguém da mesa jogar de netrunner. Decisão 9 (30/09/2026) |
+| Fonte das regras | **O dono não tem o livro** (corrigido em 30/09/2026). Valem as **fontes secundárias**, aceitas com duas concordando; comprar o PDF oficial é **ADIAR** com gatilho. Cópia do livro sem licença não é fonte. Decisão 11 |
 
 ## Comandos que importam
 
@@ -116,9 +117,11 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.
-- **O dono tem o livro físico** (30/09/2026) — a fonte primária quando as secundárias divergem. As
-  dúvidas abertas ficam em "Perguntas para o livro", na conferência. Registre a regra com as suas
-  palavras e a página; **nunca copie texto ou tabela do livro** para o repositório, que é público.
+- **O dono não tem o livro** (corrigido em 30/09/2026 — um registro do mesmo dia dizia que tinha). As
+  regras vêm das **fontes secundárias** da conferência, aceitas com duas concordando; o que elas não
+  fecharam fica em "Perguntas para o livro", e o que bloquear trabalho vai ao dono como decisão, com a
+  pesquisa e uma opção recomendada (decisão 11). Registre a regra com as suas palavras e a página que
+  a fonte cita; **nunca copie texto ou tabela do livro** para o repositório, que é público.
 - Há um padrão recorrente aqui: **coisa construída de ponta a ponta e nunca ligada.** O
   `combatModifier` e o `currentStats` foram ligados na Fase C; o `@theme` de cores é da Fase F.
   Antes de construir algo novo, confira se o que existe já resolve.

@@ -52,11 +52,12 @@ modelo ainda não representa:
 O livro de 1990 não está no repositório. A conferência usou **fontes secundárias independentes**, e
 uma regra só foi aceita quando **duas ou mais concordam**. Onde só há inferência, a linha diz.
 
-> **30/09/2026 — o dono tem o livro físico.** Ele passa a ser a **fonte primária**: quando o livro e
-> as secundárias divergem, vence o livro, e a divergência do código vira bug (decisão 2). O que as
-> secundárias não fecharam está em [Perguntas para o livro](#perguntas-para-o-livro). **O repositório
-> é público:** a conferência anota a regra **com as nossas palavras e a página** — nunca texto ou
-> tabela copiados do livro.
+> **30/09/2026 — não há fonte primária.** Um registro do mesmo dia dizia que o dono tinha o livro
+> físico; **estava errado**, e ele corrigiu (decisão 11 do plano). O método segue o de cima — duas
+> fontes independentes —, e a divergência do código com o que elas sustentam vira bug (decisão 2). O
+> que as secundárias não fecharam está em [Perguntas para o livro](#perguntas-para-o-livro). **Cópia
+> do livro sem licença não é fonte.** **O repositório é público:** a conferência anota a regra **com
+> as nossas palavras e a página que a fonte cita** — nunca texto ou tabela copiados do livro.
 
 | # | Fonte | O que ela sustenta |
 |---|---|---|
@@ -200,8 +201,9 @@ Combat Sense (que não se rola sozinha), Medical Tech (TECH por S1 e S3) e Jury 
 1d10 + nível, que é o que S1 e S8 fazem por omissão) ou escolher um. Sem atributo, um Techie de nível
 6 rolaria como um personagem comum sem treino rola uma perícia — a habilidade que define o role
 ficaria mais fraca que uma perícia qualquer. E Jury Rig é um conserto: todo conserto no 2020 é
-perícia de TECH (Basic Tech, Electronics, CyberTech, Weaponsmith). **Gatilho para rever:** o dono
-achar no livro físico um atributo diferente, ou a mesa sentir o Techie forte demais.
+perícia de TECH (Basic Tech, Electronics, CyberTech, Weaponsmith). **Gatilho para rever:** duas
+fontes independentes darem um atributo diferente, ou a mesa sentir o Techie forte demais. *(Era "o
+dono achar no livro físico" — o dono não tem o livro, decisão 11.)*
 
 ## Dano — a ordem do pipeline (para a Fase D)
 
@@ -234,8 +236,9 @@ alguém escolheria B:** combate mais letal, e o texto não proíbe.
 
 **Decidido pelo dono em 26/09/2026: opção A** (decisão 6 do plano). O
 [diagrama](./ARQUITETURA.md#pipeline-de-dano-fnff) foi redesenhado com ela, e a D.1 implementa assim.
-**Gatilho para rever:** o dono achar no livro físico uma ordem explícita, ou um exemplo resolvido
-que só feche com B.
+**Gatilho para rever:** uma fonte que mostre uma ordem explícita no livro, ou um exemplo resolvido
+dele que só feche com B — uma errata ou FAQ oficial basta sozinha. *(Era "o dono achar no livro
+físico" — o dono não tem o livro, decisão 11.)*
 
 Também da Fase D: **penetração escalonada** (cada acerto que passa reduz o SP daquele ponto em 1) e
 **perda de membro** (mais de 8 pontos num membro de uma vez; na cabeça, morte).
@@ -248,14 +251,14 @@ Verificação da **D.0** (28/09/2026), com as decisões do dono (decisão 7 do p
 |---|---|---|---|
 | Dano conta **pontos** | 4 pontos por caixa, 40 no total; o resto de uma caixa fica marcado | Trilha acima; S9 escreve pontos | **D.1** — a ficha guarda pontos, o nível é derivado (decisão 7b) |
 | Perda de membro | Membro com **mais de 8** pontos num acerto, depois de todos os modificadores: decepado ou inutilizado | S5, S9 | **D.1** — aviso no chat |
-| Death save ao perder membro | Imediato, em Mortal 0 | **só S9** | **D.1 como aviso**, sem rolagem automática. **Gatilho:** o dono confirmar no livro — [pergunta aberta](#perguntas-para-o-livro) |
+| Death save ao perder membro | Imediato, em Mortal 0 | **só S9** | **D.1 como aviso**, sem rolagem automática. **Gatilho:** uma segunda fonte independente confirmar (era "o dono confirmar no livro" — decisão 11) — [pergunta aberta](#perguntas-para-o-livro) |
 | Cabeça com mais de 8 | Morte instantânea (o ×2 já aplicado) | S5, S9 | **D.1** — estado Morto |
 | Iniciativa | `1d10` **aberto** (o 10 explode) + REF **corrente** (com o ferimento) + Combat Sense do Solo. O 1 **não** é fumble — iniciativa não é teste | S1 (`1d10!!+REF+Combat_Sense`), S8 (`1d10x10 + ref.total + CombatSense`, com o `ref.total` já ferido), S5 | **D.4** — `sheetInitiativeRoll` |
 | Empate na iniciativa | O livro não dá desempate | Nenhuma fonte trata | Fica a ordem da rolagem. **ADIAR** — gatilho: a mesa pedir um desempate (ex.: maior REF) |
 | Dificuldade por alcance | Queima-roupa 10 (até 1 m); curto 15 (¼ do alcance); médio 20 (½); longo 25 (alcance); extremo 30 (2×) — p. 99 | **S8** (`lookups.js`) e **S9** (`rangefinding.js`, cita a p. 99) dão as cinco; **S1** confirma as quatro de cima | **D.3** — `RANGE_BANDS` no `tables.ts` |
 | O ataque acerta com | Total **igual ou maior** que a dificuldade | S8 (`attackRoll.total >= DC`), S9 | **D.3** — `attackHits` |
 | Fumble no ataque | Erro, mesmo com total alto | S9; e a regra do 1 (C.1) | **D.3** |
-| Queima-roupa dá dano máximo | Com arma de fogo | **Uma linhagem só**: o S9 descreve o S8 fazendo isso, mas o arquivo do S8 lido não tem; um resumo de busca repete | **ADIAR** — gatilho: o dono confirmar no livro — [pergunta aberta](#perguntas-para-o-livro) |
+| Queima-roupa dá dano máximo | Com arma de fogo | **Uma linhagem só**: o S9 descreve o S8 fazendo isso, mas o arquivo do S8 lido não tem; um resumo de busca repete | **ADIAR** — gatilho: uma fonte de fora da linhagem S8/S9 confirmar (era "o dono confirmar no livro" — decisão 11) — [pergunta aberta](#perguntas-para-o-livro) |
 | Corpo a corpo | Teste **resistido**: o defensor rola (Dodge, Melee…) | Conhecido; não conferido em fonte nesta fase | **D.3 parcial:** o GM informa o total do defensor como dificuldade livre. Rolagem resistida automática: **ADIAR** — gatilho: a mesa usar corpo a corpo com frequência |
 | Penetração escalonada | Cada acerto que fura a armadura tira 1 do SP daquele ponto | Um resumo de busca a chama de **opcional** ("One option is…"), página de origem não lida; S9 a implementa **atrás de uma chave** | **ADIAR** (decisão 7d). **Gatilho:** a mesa pedir, ou uma luta longa em que a armadura que nunca gasta incomode |
 | Cobertura entre atirador e alvo | SP da cobertura contra o dano | S5 diz só "subtraído do dano"; S9 **combina** cobertura e armadura pela tabela proporcional (p. 99) | **ADIAR** (decisão 7c: token sem ficha não recebe dano). **Gatilho:** o GM precisar da cobertura no cálculo, com a regra de combinação conferida em duas fontes |
@@ -274,11 +277,15 @@ Verificação da **D.0** (28/09/2026), com as decisões do dono (decisão 7 do p
 
 ## Perguntas para o livro
 
-*(Criada em 30/09/2026, quando o dono confirmou que tem o livro físico.)* O que as fontes secundárias
-não fecharam, para o dono conferir. **Como responder:** a regra com as suas palavras e a página —
-nunca o texto do livro (o repositório é público). Uma sessão que receber a resposta registra aqui e
-na linha da regra; **se o livro divergir do código, é bug** e entra na fase corrente, com teste
-derivado da tabela (a disciplina da Fase C).
+*(Criada em 30/09/2026, quando o dono disse ter o livro físico — **corrigido no mesmo dia: ele não
+tem** (decisão 11 do plano).)* O que as fontes secundárias não fecharam. **Como fechar uma
+pergunta:** duas fontes independentes concordando, cada uma na [tabela de
+fontes](#fontes-e-o-quanto-confiar-nelas) (S11 em diante), a regra com as nossas palavras e a página
+que a fonte cita — nunca o texto do livro (o repositório é público). A sessão que fechar registra
+aqui e na linha da regra; **se a resposta divergir do código, é bug** e entra na fase corrente, com
+teste derivado da tabela (a disciplina da Fase C). **Se a pergunta bloquear trabalho e as fontes não
+fecharem,** ela vai ao dono como decisão, com a pesquisa e uma opção recomendada (como a decisão 6) —
+e é o gatilho de comprar o PDF oficial (decisão 11).
 
 **Já implementadas — a resposta pode mudar o jogo de hoje:**
 
