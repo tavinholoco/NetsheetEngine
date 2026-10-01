@@ -20,6 +20,7 @@ import { useUiStore } from '../../stores/useUiStore';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
 import { apiUrl, wsUrl } from '../../api/base';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '../../components/ui/dialog';
 import {
   Radio,
   Users,
@@ -98,6 +99,21 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const [initiativeScore, setInitiativeScore] = useState(10);
   const [selectedHealthPlayer, setSelectedHealthPlayer] = useState<RoomPlayer | null>(null);
   const [inspectedPlayer, setInspectedPlayer] = useState<RoomPlayer | null>(null);
+  // F.4.2 — os modais abrem por estado, sem DialogTrigger: o Radix não sabe a
+  // quem devolver o foco ao fechar. Guarda quem o tinha ao abrir.
+  const quemAbriuModal = useRef<HTMLElement | null>(null);
+  const abrirSaude = (p: RoomPlayer) => {
+    quemAbriuModal.current = document.activeElement as HTMLElement | null;
+    setSelectedHealthPlayer(p);
+  };
+  const abrirInspecao = (p: RoomPlayer) => {
+    quemAbriuModal.current = document.activeElement as HTMLElement | null;
+    setInspectedPlayer(p);
+  };
+  const devolverFoco = (e: Event) => {
+    e.preventDefault();
+    quemAbriuModal.current?.focus();
+  };
   // R.11 — o convite que o GM copia (o link /room/CÓDIGO). Se o navegador não
   // deixar copiar, o link aparece para seleção manual.
   const [inviteState, setInviteState] = useState<'idle' | 'copied' | 'manual'>('idle');
@@ -785,7 +801,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                     </div>
                     <div className="flex items-center space-x-1 shrink-0">
                       <button
-                        onClick={() => setInspectedPlayer(p)}
+                        onClick={() => abrirInspecao(p)}
                         title="Inspecionar ficha"
                         className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-accent-400 cursor-pointer"
                       >
@@ -793,7 +809,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                       </button>
                       {isGm && p.peerId !== peerId && (
                         <button
-                          onClick={() => setSelectedHealthPlayer(p)}
+                          onClick={() => abrirSaude(p)}
                           title="Editar bio-monitor"
                           className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-danger-400 cursor-pointer"
                         >
@@ -870,8 +886,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             peerId={peerId}
             players={players}
             onUpdateGrid={updateGrid}
-            onSelectPlayerForHealthEdit={isGm ? (p) => setSelectedHealthPlayer(p) : undefined}
-            onInspectPlayer={(p) => setInspectedPlayer(p)}
+            onSelectPlayerForHealthEdit={isGm ? abrirSaude : undefined}
+            onInspectPlayer={abrirInspecao}
             remoteCursors={remoteCursors}
             onCursorMove={handleGmCursorMove}
             renderTokenCombat={isGm ? renderTokenCombat : undefined}
@@ -960,69 +976,74 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         </div>
       )}
 
+      {/* Os dois modais da mesa no Dialog do Radix (F.4.2): foco preso dentro,
+          Esc fecha, role="dialog" com o título ligado. Eram feitos à mão. */}
+
       {/* Modal: editar saúde (GM) */}
-      {selectedHealthPlayer && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedHealthPlayer(null)}>
-          <div className="bg-surface border-2 border-danger-500/60 rounded-2xl p-6 w-full max-w-sm shadow-glow-30 shadow-danger-500/30 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-display text-sm font-black text-danger-400 uppercase tracking-display mb-3">
-              Bio-Monitor // {selectedHealthPlayer.handle}
-            </h3>
-            <div className="grid grid-cols-5 gap-1.5 mb-4">
-              {Array.from({ length: 11 }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => updatePlayerHealth(selectedHealthPlayer.peerId, i)}
-                  className={`aspect-square rounded border-2 text-micro font-mono cursor-pointer transition-all ${
-                    i <= selectedHealthPlayer.sheet.woundLevel
-                      ? 'border-danger-500 bg-danger-950/80 text-danger-300'
-                      : 'border-line bg-raised text-subtle hover:border-danger-500/50'
-                  }`}
-                >
-                  {i}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setSelectedHealthPlayer(null)}
-              className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      )}
+      <Dialog open={selectedHealthPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setSelectedHealthPlayer(null); }}>
+        <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-sm border-2 border-danger-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-danger-500/30 font-sans">
+          {selectedHealthPlayer && (
+            <>
+              <DialogTitle className="text-sm font-black text-danger-400 pr-6">
+                Bio-Monitor // {selectedHealthPlayer.handle}
+              </DialogTitle>
+              <DialogDescription className="sr-only">Escolha o nível de ferimento, de 0 a 10.</DialogDescription>
+              <div className="grid grid-cols-5 gap-1.5">
+                {Array.from({ length: 11 }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => updatePlayerHealth(selectedHealthPlayer.peerId, i)}
+                    className={`aspect-square rounded border-2 text-micro font-mono cursor-pointer transition-all ${
+                      i <= selectedHealthPlayer.sheet.woundLevel
+                        ? 'border-danger-500 bg-danger-950/80 text-danger-300'
+                        : 'border-line bg-raised text-subtle hover:border-danger-500/50'
+                    }`}
+                  >
+                    {i}
+                  </button>
+                ))}
+              </div>
+              <DialogClose className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer">
+                Fechar
+              </DialogClose>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Modal: inspecionar ficha */}
-      {inspectedPlayer && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setInspectedPlayer(null)}>
-          <div className="bg-surface border-2 border-accent-500/60 rounded-2xl p-6 w-full max-w-md shadow-glow-30 shadow-accent-500/30 max-h-[80vh] overflow-y-auto custom-scrollbar animate-fadeIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display text-sm font-black text-accent-400 uppercase tracking-display">{inspectedPlayer.handle}</h3>
-              <span className="text-micro px-2 py-0.5 rounded bg-raised border border-line-strong text-signal-400">{inspectedPlayer.role}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5 mb-3">
-              {(Object.keys(inspectedPlayer.sheet.stats) as (keyof typeof inspectedPlayer.sheet.stats)[]).map((k) => (
-                <div key={k} className="bg-raised border border-line rounded p-1.5 text-center">
-                  <span className="text-micro text-subtle block">{k}</span>
-                  <span className="font-mono text-xs text-signal-400">{inspectedPlayer.sheet.stats[k]}</span>
-                </div>
-              ))}
-            </div>
-            <div className="font-mono text-micro text-muted space-y-1">
-              <p>💥 Ferimento: <span className="text-danger-300">{inspectedPlayer.sheet.woundLevel}/10</span></p>
-              <p>💰 €$ {inspectedPlayer.sheet.eurodollars.toLocaleString()}</p>
-              <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
-              <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>
-            </div>
-            <button
-              onClick={() => setInspectedPlayer(null)}
-              className="w-full mt-4 py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      )}
+      <Dialog open={inspectedPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setInspectedPlayer(null); }}>
+        <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-md border-2 border-accent-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-accent-500/30 max-h-[80vh] overflow-y-auto custom-scrollbar font-sans">
+          {inspectedPlayer && (
+            <>
+              <div className="flex items-center justify-between gap-2 pr-6">
+                <DialogTitle className="text-sm font-black">{inspectedPlayer.handle}</DialogTitle>
+                <span className="text-micro px-2 py-0.5 rounded bg-raised border border-line-strong text-signal-400">{inspectedPlayer.role}</span>
+              </div>
+              <DialogDescription className="sr-only">
+                Ficha de {inspectedPlayer.handle}: atributos, ferimento, verba, armas e cyberware.
+              </DialogDescription>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(Object.keys(inspectedPlayer.sheet.stats) as (keyof typeof inspectedPlayer.sheet.stats)[]).map((k) => (
+                  <div key={k} className="bg-raised border border-line rounded p-1.5 text-center">
+                    <span className="text-micro text-subtle block">{k}</span>
+                    <span className="font-mono text-xs text-signal-400">{inspectedPlayer.sheet.stats[k]}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="font-mono text-micro text-muted space-y-1">
+                <p>💥 Ferimento: <span className="text-danger-300">{inspectedPlayer.sheet.woundLevel}/10</span></p>
+                <p>💰 €$ {inspectedPlayer.sheet.eurodollars.toLocaleString()}</p>
+                <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
+                <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>
+              </div>
+              <DialogClose className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer">
+                Fechar
+              </DialogClose>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
