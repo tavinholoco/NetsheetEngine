@@ -375,7 +375,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
           {/* Top Title Section */}
           {!isMinimized ? (
             <div className="border-b-2 border-red-500/60 pb-3 space-y-1">
-              <h1 className="font-display text-2xl lg:text-3xl font-black italic tracking-displayer text-signal-400 drop-shadow-glow-18 drop-shadow-signal-400/90 uppercase leading-none">
+              <h1 className="font-display text-2xl lg:text-3xl font-black italic tracking-display text-signal-400 drop-shadow-glow-18 drop-shadow-signal-400/90 uppercase leading-none">
                 NETSHEET ENGINE
               </h1>
               <div className="flex items-center space-x-2 pt-1">
@@ -390,7 +390,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
           ) : (
             <div className="border-b-2 border-red-500/60 pb-3 text-center">
               <div className="w-10 h-10 mx-auto bg-red-950 border-2 border-signal-400 rounded-lg flex items-center justify-center shadow-glow-12 shadow-signal-400/60">
-                <span className="font-display text-signal-400 font-black text-xs tracking-displayer">NE</span>
+                <span className="font-display text-signal-400 font-black text-xs tracking-display">NE</span>
               </div>
               <span className="font-mono text-micro text-red-400 uppercase block mt-1 tracking-caps">
                 {APP_VERSION}
