@@ -86,7 +86,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
 
       {/* Panel */}
       <div className="bg-raised/80 border-l-4 border-l-roll-500 border-y border-r border-line rounded-xl p-6 shadow-glow-25 shadow-roll-500/12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[60px] font-black text-roll-500 select-none">
+        <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[60px] font-black text-roll-500 select-none">
           FNFF
         </div>
 

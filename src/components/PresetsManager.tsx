@@ -92,7 +92,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
     <div className="space-y-5 animate-fadeIn">
       {/* Header */}
       <div className="bg-surface/90 border-l-4 border-l-signal-500 border-y border-r border-line rounded-xl p-5 flex flex-wrap items-center justify-between gap-3 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-signal-500 select-none">
+        <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-signal-500 select-none">
           LEGENDS
         </div>
         <div className="flex items-center space-x-3 relative z-10">

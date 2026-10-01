@@ -507,7 +507,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     return (
       <div className="space-y-5 animate-fadeIn">
         <div className="bg-surface/90 border-l-4 border-l-ok-500 border-y border-r border-line rounded-2xl p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-ok-500 select-none">
+          <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-ok-500 select-none">
             NET_LOBBY
           </div>
           <div className="flex items-center space-x-3 relative z-10">

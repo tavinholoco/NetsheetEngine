@@ -48,7 +48,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
 
   return (
     <div className="bg-raised/70 border-l-4 border-l-accent-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-accent-500/10 space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-accent-400 select-none">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-accent-400 select-none">
         STATS
       </div>
 
