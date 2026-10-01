@@ -69,6 +69,19 @@ describe('texto neutro (F.2.8) — 4,5:1 sobre surface e raised', () => {
   }
 });
 
+// F.4.2 — WCAG 1.4.11 (AA): a borda de um campo de formulário é o que o
+// identifica (o preenchimento difere do painel em ~1,1:1), e pede 3:1. As
+// bordas coloridas de campo usam o 700 da rampa.
+describe('borda de campo de formulário (F.4.2) — 3:1 sobre surface e raised', () => {
+  for (const borda of ['field', 'accent-700', 'ok-700']) {
+    for (const fundo of FUNDOS) {
+      it(`${borda} sobre ${fundo}`, () => {
+        expect(contraste(borda, fundo)).toBeGreaterThanOrEqual(3);
+      });
+    }
+  }
+});
+
 // Que cada nível pinta com o seu wound-N, o injury-rules.test confere.
 describe('escala de dano, wound-* (F.2.7)', () => {
   for (let i = 0; i <= WOUND_MAX; i++) {

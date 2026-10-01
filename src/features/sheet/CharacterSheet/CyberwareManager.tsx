@@ -152,12 +152,12 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Kerenzikov Speedware (+2 REF)"
-              className="w-full bg-raised border border-line-strong text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
             />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-raised border border-line-strong text-xs font-mono text-cyber-300 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs font-mono text-cyber-300 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -169,7 +169,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
                 type="number"
                 value={costEb}
                 onChange={(e) => setCostEb(parseInt(e.target.value) || 0)}
-                className="w-full bg-raised border border-line-strong text-xs font-mono text-ok-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+                className="w-full bg-raised border border-field text-xs font-mono text-ok-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -178,7 +178,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
                 type="text"
                 value={humanityLoss}
                 onChange={(e) => setHumanityLoss(e.target.value)}
-                className="w-full bg-raised border border-line-strong text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+                className="w-full bg-raised border border-field text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
               />
             </div>
           </div>

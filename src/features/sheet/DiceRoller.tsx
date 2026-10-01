@@ -103,7 +103,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                   type="text"
                   value={skillName}
                   onChange={(e) => setSkillName(e.target.value)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-fg-strong px-2.5 py-2 rounded focus:border-roll-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-fg-strong px-2.5 py-2 rounded focus:border-roll-400 focus:outline-none"
                 />
               </div>
               <div>
@@ -111,7 +111,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                 <select
                   value={skillStat}
                   onChange={(e) => setSkillStat(e.target.value as StatName)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-accent-300 px-2.5 py-2 rounded focus:border-roll-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-accent-300 px-2.5 py-2 rounded focus:border-roll-400 focus:outline-none"
                 >
                   {STATS.map((s) => (
                     <option key={s} value={s}>{s} ({sheet.stats[s] || 0})</option>
@@ -126,7 +126,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                   max={10}
                   value={skillRank}
                   onChange={(e) => setSkillRank(parseInt(e.target.value) || 0)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-signal-400 px-2.5 py-2 rounded focus:border-roll-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-signal-400 px-2.5 py-2 rounded focus:border-roll-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -152,7 +152,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                   type="text"
                   value={weaponName}
                   onChange={(e) => setWeaponName(e.target.value)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-fg-strong px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-fg-strong px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none"
                 />
               </div>
               <div>
@@ -161,7 +161,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({ onAddRoll, onClearHistor
                   type="text"
                   value={damageFormula}
                   onChange={(e) => setDamageFormula(e.target.value)}
-                  className="font-mono w-full bg-surface border border-line-strong text-xs text-signal-400 px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none"
+                  className="font-mono w-full bg-surface border border-field text-xs text-signal-400 px-2.5 py-2 rounded focus:border-signal-400 focus:outline-none"
                 />
               </div>
             </div>

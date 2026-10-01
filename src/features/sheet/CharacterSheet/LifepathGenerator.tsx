@@ -114,7 +114,7 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
               type="text"
               value={lifepath[key] || ''}
               onChange={(e) => setField(key, e.target.value)}
-              className="w-full bg-surface border border-line text-xs font-mono text-ok-200 px-2.5 py-1.5 rounded focus:border-ok-400 focus:outline-none"
+              className="w-full bg-surface border border-field text-xs font-mono text-ok-200 px-2.5 py-1.5 rounded focus:border-ok-400 focus:outline-none"
             />
           </div>
         ))}
@@ -138,7 +138,7 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
                 value={ev}
                 onChange={(e) => updateLifeEvent(idx, e.target.value)}
                 placeholder={`Evento ${idx + 1}`}
-                className="w-full bg-raised border border-line text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-ok-400 focus:outline-none"
+                className="w-full bg-raised border border-field text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-ok-400 focus:outline-none"
               />
               <button
                 onClick={() => removeLifeEvent(idx)}

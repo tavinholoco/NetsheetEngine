@@ -162,7 +162,7 @@ export const FriendChatBox: React.FC<FriendChatBoxProps> = ({ currentUser, frien
           placeholder={`Digitar para ${friend.displayName}...`}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 bg-surface border border-accent-500/40 text-fg-strong px-2.5 py-1 rounded text-mini focus:border-accent-400 focus:outline-none placeholder:text-faint font-sans"
+          className="flex-1 bg-surface border border-accent-700 text-fg-strong px-2.5 py-1 rounded text-mini focus:border-accent-400 focus:outline-none placeholder:text-faint font-sans"
         />
         <button
           type="submit"
@@ -467,7 +467,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
               placeholder="Ex: #NC-1815 ou #NC-2020"
               value={searchIdInput}
               onChange={(e) => setSearchIdInput(e.target.value)}
-              className="flex-1 bg-black/80 border border-line-strong text-fg-strong px-2 py-1 rounded text-mini font-mono focus:border-accent-400 focus:outline-none placeholder:text-faint"
+              className="flex-1 bg-black/80 border border-field text-fg-strong px-2 py-1 rounded text-mini font-mono focus:border-accent-400 focus:outline-none placeholder:text-faint"
             />
             <button
               type="submit"

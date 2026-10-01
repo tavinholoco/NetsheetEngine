@@ -526,7 +526,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
               placeholder="Prefixo do código (ex.: NC-2020)"
-              className="w-full bg-raised border border-line-strong text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-ok-400 focus:outline-none uppercase"
+              className="w-full bg-raised border border-field text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-ok-400 focus:outline-none uppercase"
             />
             <p className="text-micro text-subtle leading-relaxed">
               O código ganha um final aleatório (ex.: NC-2020-K7Q9XD) — é ele o convite, e ninguém o adivinha.
@@ -536,7 +536,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               value={roomName}
               onChange={(e) => setRoomName(e.target.value)}
               placeholder="Nome da mesa"
-              className="w-full bg-raised border border-line-strong text-xs text-fg-strong px-3 py-2 rounded focus:border-ok-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs text-fg-strong px-3 py-2 rounded focus:border-ok-400 focus:outline-none"
             />
             <button
               onClick={createRoom}
@@ -557,7 +557,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
               placeholder="Digite o código da sala"
-              className="w-full bg-raised border border-line-strong text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-accent-400 focus:outline-none uppercase"
+              className="w-full bg-raised border border-field text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-accent-400 focus:outline-none uppercase"
             />
             <button
               onClick={() => joinRoom()}
@@ -717,7 +717,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendChat()}
                 placeholder="Mensagem para a mesa..."
-                className="flex-1 bg-raised border border-line-strong text-fg-strong text-xs px-3 py-2.5 rounded focus:border-accent-400 focus:outline-none placeholder:text-faint"
+                className="flex-1 bg-raised border border-field text-fg-strong text-xs px-3 py-2.5 rounded focus:border-accent-400 focus:outline-none placeholder:text-faint"
               />
               <button
                 onClick={() => sendChat()}
@@ -941,13 +941,13 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               value={initiativeName}
               onChange={(e) => setInitiativeName(e.target.value)}
               placeholder="Nome / handle"
-              className="w-full bg-raised border border-line-strong text-xs text-fg-strong px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs text-fg-strong px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
             />
             <input
               type="number"
               value={initiativeScore}
               onChange={(e) => setInitiativeScore(parseInt(e.target.value) || 0)}
-              className="font-mono w-full bg-raised border border-line-strong text-xs text-signal-400 px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
+              className="font-mono w-full bg-raised border border-field text-xs text-signal-400 px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
             />
             <button
               onClick={addInitiative}

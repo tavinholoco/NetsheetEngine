@@ -373,7 +373,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                 placeholder="Ex: Barricada, Inimigo A, Fogo..."
                 value={newTokenName}
                 onChange={(e) => setNewTokenName(e.target.value)}
-                className="w-full bg-surface border border-line-strong rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
+                className="w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
               />
             </div>
 
@@ -382,7 +382,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
               <select
                 value={newTokenType}
                 onChange={(e) => setNewTokenType(e.target.value as any)}
-                className="w-full bg-surface border border-line-strong rounded px-2.5 py-1 text-xs text-accent-300 focus:outline-none focus:border-accent-500"
+                className="w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-accent-300 focus:outline-none focus:border-accent-500"
               >
                 <option value="npc">👾 Inimigo / NPC</option>
                 <option value="cover">🛡️ Cobertura (Blindagem/Barricada)</option>
@@ -399,7 +399,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                   max="100"
                   value={newTokenSp}
                   onChange={(e) => setNewTokenSp(Number(e.target.value))}
-                  className="font-mono w-full bg-surface border border-line-strong rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
+                  className="font-mono w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
                 />
               </div>
             ) : (

@@ -90,7 +90,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
                   type="number"
                   value={val}
                   onChange={(e) => handleSet(stat, parseInt(e.target.value))}
-                  className="w-12 bg-raised border border-accent-800/70 text-center text-xl font-mono text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
+                  className="w-12 bg-raised border border-accent-700 text-center text-xl font-mono text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
                 />
                 <button
                   onClick={() => handleChange(stat, 1)}

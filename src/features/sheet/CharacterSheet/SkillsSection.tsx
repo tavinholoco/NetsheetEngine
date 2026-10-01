@@ -173,7 +173,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
               value={skillName}
               onChange={(e) => setSkillName(e.target.value)}
               placeholder="Ex: Handgun, Stealth, Brawling..."
-              className="w-full bg-raised border border-line-strong text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
               list="skill-suggestions"
             />
             <datalist id="skill-suggestions">
@@ -184,7 +184,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
             <select
               value={skillStat}
               onChange={(e) => changeStatForSuggestions(e.target.value as StatName)}
-              className="w-full bg-raised border border-line-strong text-xs font-mono text-accent-300 px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
+              className="w-full bg-raised border border-field text-xs font-mono text-accent-300 px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
             >
               {STAT_OPTIONS.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -198,7 +198,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
                 max={10}
                 value={skillLevel}
                 onChange={(e) => setSkillLevel(parseInt(e.target.value) || 0)}
-                className="w-full bg-raised border border-line-strong text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
+                className="w-full bg-raised border border-field text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-signal-400 focus:outline-none"
               />
             </div>
           </div>

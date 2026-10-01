@@ -64,7 +64,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
   };
 
   const label = 'text-micro uppercase text-muted';
-  const input = 'w-full bg-surface border border-line-strong rounded px-1.5 py-1 text-mini text-fg font-mono';
+  const input = 'w-full bg-surface border border-field rounded px-1.5 py-1 text-mini text-fg font-mono';
 
   return (
     <div className="space-y-2 border-t border-line pt-2">
