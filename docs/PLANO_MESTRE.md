@@ -1420,7 +1420,7 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 
 A tipografia é metade. A outra metade é o repertório gráfico do livro impresso.
 
-- [ ] **F.3.0** 🔍 **Conferir em fonte pública** — o dono **não tem o livro** (decisão 11; o texto
+- [x] **F.3.0** 🔍 **Conferir em fonte pública** — o dono **não tem o livro** (decisão 11; o texto
       anterior pedia "o dono, com o livro na mão"). As três perguntas são de diagramação: **(1)**
       títulos de seção em barra preta com texto branco em caixa alta? **(2)** faixas de perigo
       diagonais? **(3)** numeração de seção ou rótulos técnicos? Vale o que as fontes públicas mostram
@@ -1429,16 +1429,27 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
       F.0a já não achou fonte pública para as três (ADR 0006): **o que nenhuma fonte mostrar sai da
       F.3**, com uma linha de razão — a não ser que o dono queira mantê-lo como "linguagem da época",
       item a item (🧑‍⚖️, com uma opção recomendada).
+      *(30/09/2026 — pesquisado: a resenha do RPG.net (lida pelo resumo da busca — o arquivo antigo do
+      site redireciona para o fórum), a [revisão da série OSSR no The Gaming Den](http://www.tgdmb.com/phpBB3/viewtopic.php?t=57550)
+      e o [artigo da R. Talsorian sobre a diagramação do RED](https://rtalsoriangames.com/2020/11/13/cyberpunk-red-alert-layout-and-launch/),
+      que não fala do 2020. **Nenhuma das três aparece.** O que as fontes confirmam do interior: duas
+      colunas justificadas, face sem serifa, *sidebars*, arte a traço em P&B, o nome do capítulo no
+      alto da página e o número embaixo. **O dono decidiu pelas recomendações:** a F.3.2 e a F.3.4
+      saem, e a F.3.3 vira ADIAR com gatilho.)*
 - [ ] **F.3.1** **`scanline` e `glitch` com intenção, dentro do 2.2.2:** a scanline **estática** (a
       `.crt-scanlines` que já existe, 1 uso) no lugar da animação de 8 s em loop; o `glitch` **só em
       evento** e uma vez (menos de 1 s) — entrar em Mortal, trocar de tela. Nunca em loop numa tela de
       leitura.
-- [ ] **F.3.2** **Barras pretas com caixa alta reversa** — um componente de cabeçalho de seção, não uma
-      classe repetida. *Se o F.3.0 confirmar.*
-- [ ] **F.3.3** **Faixas de perigo amarelo-e-preto** (`signal`) para estados de alerta (turno do
-      jogador, sala em combate). *Se o F.3.0 confirmar.*
-- [ ] **F.3.4** **Numeração de seção e rótulos técnicos.** *Se o F.3.0 confirmar* — e no formato do
-      livro. O `FICHA_01` com underscore, sem o livro, sai. O app já usa `SISTEMA // FICHA`.
+- [x] ~~**F.3.2** **Barras pretas com caixa alta reversa** — um componente de cabeçalho de seção, não
+      uma classe repetida. *Se o F.3.0 confirmar.*~~ **Saiu (F.3.0, 30/09/2026):** sem fonte, e o
+      sintoma que ela resolveria — seções que não se distinguem — a F.1.3 já resolveu com o Orbitron.
+- [x] **F.3.3** **Faixas de perigo amarelo-e-preto** (`signal`) para estados de alerta (turno do
+      jogador, sala em combate). *Se o F.3.0 confirmar.* **ADIAR (F.3.0, 30/09/2026):** sem fonte e
+      sem sintoma — nenhuma sessão em produção ainda. **Gatilho:** alguém da mesa perder a vez por não
+      perceber que era o turno dele, anotado no [registro de sessões](#registro-de-sessões).
+- [x] ~~**F.3.4** **Numeração de seção e rótulos técnicos.** *Se o F.3.0 confirmar* — e no formato do
+      livro. O `FICHA_01` com underscore, sem o livro, sai.~~ **Saiu (F.3.0, 30/09/2026):** sem fonte;
+      fica o `SISTEMA // FICHA` que o app já usa.
 - [ ] **F.3.5** *(opcional, sob o filtro)* Textura de impressão/xerox e aberração cromática sutil.
       **ADIAR** por padrão — "falta sujeira analógica" é gosto, não sintoma. Qualquer textura passa no
       F.4.2.
