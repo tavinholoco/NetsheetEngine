@@ -406,7 +406,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     const ownerId = token.peerId;
     const owner = ownerId ? room?.players?.[ownerId] ?? room?.npcs?.[ownerId] : undefined;
     if (!owner) {
-      return <p className="text-[10px] text-subtle border-t border-line pt-2">Token sem ficha: não recebe dano.</p>;
+      return <p className="text-micro text-subtle border-t border-line pt-2">Token sem ficha: não recebe dano.</p>;
     }
     const attackers = Object.values(room?.npcs ?? {}).filter((n) => n.peerId !== ownerId && !n.sheet?.isDead);
     const wound = woundStateOf(owner.sheet ?? {});
@@ -489,9 +489,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
      ============================================================ */
   if (view === 'lobby') {
     return (
-      <div className="space-y-5 font-mono animate-fadeIn">
+      <div className="space-y-5 animate-fadeIn">
         <div className="bg-surface/90 border-l-4 border-y border-r border-line rounded-2xl p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-ok-500 select-none">
+          <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-ok-500 select-none">
             NET_LOBBY
           </div>
           <div className="flex items-center space-x-3 relative z-10">
@@ -499,17 +499,17 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               <Radio className="w-6 h-6 text-ok-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-ok-400 uppercase tracking-widest">Mesa Multiplayer</h2>
-              <p className="text-[10px] text-subtle">Crie ou entre em uma sala em tempo real</p>
+              <h2 className="font-display text-lg sm:text-xl font-bold text-ok-400 uppercase tracking-display">Mesa Multiplayer</h2>
+              <p className="text-micro text-subtle">Crie ou entre em uma sala em tempo real</p>
             </div>
           </div>
         </div>
 
         {!user && (
-          <div className="bg-signal-950/40 border border-signal-500/50 p-4 rounded-xl text-xs font-mono text-signal-300 flex items-center space-x-2">
+          <div className="bg-signal-950/40 border border-signal-500/50 p-4 rounded-xl text-xs text-signal-300 flex items-center space-x-2">
             <Lock className="w-4 h-4 text-signal-400 shrink-0" />
             <span>Você está no modo visitante. Faça login para criar salas como GM.</span>
-            <button onClick={onOpenAuthModal} className="ml-auto px-3 py-1.5 bg-signal-400 hover:bg-signal-300 text-black font-black text-[10px] uppercase rounded cursor-pointer transition-all shrink-0">
+            <button onClick={onOpenAuthModal} className="ml-auto px-3 py-1.5 bg-signal-400 hover:bg-signal-300 text-black font-black text-micro uppercase rounded cursor-pointer transition-all shrink-0">
               Acessar Conta
             </button>
           </div>
@@ -518,7 +518,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Criar sala */}
           <div className="bg-surface/80 border border-line rounded-xl p-5 space-y-3">
-            <span className="text-xs font-black text-ok-400 uppercase tracking-widest flex items-center space-x-1.5">
+            <span className="text-xs font-black text-ok-400 uppercase tracking-caps flex items-center space-x-1.5">
               <Plus className="w-4 h-4" /> Criar Nova Sala
             </span>
             <input
@@ -528,7 +528,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               placeholder="Prefixo do código (ex.: NC-2020)"
               className="w-full bg-raised border border-line-strong text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-ok-400 focus:outline-none uppercase"
             />
-            <p className="text-[10px] text-subtle leading-relaxed">
+            <p className="text-micro text-subtle leading-relaxed">
               O código ganha um final aleatório (ex.: NC-2020-K7Q9XD) — é ele o convite, e ninguém o adivinha.
             </p>
             <input
@@ -549,7 +549,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
 
           {/* Entrar em sala */}
           <div className="bg-surface/80 border border-line rounded-xl p-5 space-y-3">
-            <span className="text-xs font-black text-accent-400 uppercase tracking-widest flex items-center space-x-1.5">
+            <span className="text-xs font-black text-accent-400 uppercase tracking-caps flex items-center space-x-1.5">
               <Users className="w-4 h-4" /> Entrar em Sala
             </span>
             <input
@@ -565,14 +565,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             >
               🎮 Entrar na Mesa
             </button>
-            <p className="text-[10px] text-subtle leading-relaxed">
+            <p className="text-micro text-subtle leading-relaxed">
               As mesas não aparecem numa lista: peça ao Mestre o código ou o link do convite.
             </p>
           </div>
         </div>
 
         {errorMsg && (
-          <div className="bg-red-950/60 border border-red-500/50 p-3 rounded text-[11px] font-mono text-red-300">{errorMsg}</div>
+          <div className="bg-red-950/60 border border-red-500/50 p-3 rounded text-mini text-red-300">{errorMsg}</div>
         )}
       </div>
     );
@@ -586,9 +586,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const gridState = yjsGrid || room?.tacticalGrid || { rows: 8, cols: 10, theme: 'alley', tokens: [] };
 
   return (
-    <div className="space-y-4 font-mono animate-fadeIn">
+    <div className="space-y-4 animate-fadeIn">
       {errorMsg && (
-        <div className="bg-red-950/70 border border-red-500/50 p-3 rounded-lg text-[11px] font-mono text-red-300 animate-fadeIn">
+        <div className="bg-red-950/70 border border-red-500/50 p-3 rounded-lg text-mini text-red-300 animate-fadeIn">
           {errorMsg}
         </div>
       )}
@@ -600,39 +600,39 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-black text-white uppercase tracking-wider">{room?.name}</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-raised border border-line-strong text-accent-300 font-bold font-mono select-all">
+              <span className="text-sm font-black text-white uppercase tracking-caps">{room?.name}</span>
+              <span className="text-micro px-1.5 py-0.5 rounded bg-raised border border-line-strong text-accent-300 font-mono select-all">
                 {roomCode}
               </span>
               {isGm && (
                 <button
                   onClick={copyInvite}
-                  className="text-[9px] px-1.5 py-0.5 rounded bg-raised border border-accent-700/60 text-accent-300 hover:border-accent-400 font-bold uppercase flex items-center space-x-1 cursor-pointer transition-all"
+                  className="text-micro px-1.5 py-0.5 rounded bg-raised border border-accent-700/60 text-accent-300 hover:border-accent-400 font-bold uppercase flex items-center space-x-1 cursor-pointer transition-all"
                 >
                   <Link2 className="w-3 h-3" />
                   <span>{inviteState === 'copied' ? 'Link copiado' : 'Copiar convite'}</span>
                 </button>
               )}
               {isGm && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-950 border border-red-500/60 text-red-300 font-black uppercase">
+                <span className="text-micro px-1.5 py-0.5 rounded bg-red-950 border border-red-500/60 text-red-300 font-black uppercase">
                   GM
                 </span>
               )}
             </div>
-            <p className="text-[10px] text-subtle">{room?.locationName || 'Night City'}</p>
+            <p className="text-micro text-subtle">{room?.locationName || 'Night City'}</p>
             {isGm && inviteState === 'manual' && (
-              <p className="text-[10px] text-accent-300 font-mono select-all break-all">{inviteLink}</p>
+              <p className="text-micro text-accent-300 font-mono select-all break-all">{inviteLink}</p>
             )}
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-[10px] text-muted flex items-center space-x-1">
+          <span className="text-micro text-muted flex items-center space-x-1">
             <Users className="w-3.5 h-3.5 text-accent-400" />
             <span>{Object.keys(players).length} jogadores</span>
           </span>
           <button
             onClick={leaveRoom}
-            className="px-3 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-600/60 text-red-300 rounded font-bold text-[10px] uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
+            className="px-3 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-600/60 text-red-300 rounded font-bold text-micro uppercase flex items-center space-x-1.5 transition-all cursor-pointer"
           >
             <LogOut className="w-3 h-3" />
             <span>Sair</span>
@@ -650,7 +650,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-3.5 py-2 rounded-lg border-2 text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg border-2 text-mini font-black uppercase tracking-caps transition-all cursor-pointer ${
               tab === t.id
                 ? 'bg-ok-600 text-white border-ok-400 shadow-glow-12 shadow-ok-500/50'
                 : 'bg-surface text-muted border-line hover:border-ok-500/50 hover:text-white'
@@ -666,22 +666,22 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bg-surface/80 border border-line rounded-xl overflow-hidden flex flex-col h-[540px]">
             <div className="flex items-center justify-between p-3 border-b border-line">
-              <span className="text-xs font-black text-accent-400 uppercase tracking-widest flex items-center space-x-1.5">
+              <span className="text-xs font-black text-accent-400 uppercase tracking-caps flex items-center space-x-1.5">
                 <MessageSquare className="w-4 h-4" /> Chat da Mesa
               </span>
-              <span className="text-[9px] text-subtle">{chatMessages.length} mensagens</span>
+              <span className="text-micro text-subtle">{chatMessages.length} mensagens</span>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
               {chatMessages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.senderHandle === 'SISTEMA_NET' ? 'justify-center' : ''}`}>
                   {msg.senderHandle === 'SISTEMA_NET' ? (
-                    <div className="bg-raised/60 border border-line rounded px-3 py-1.5 text-[9px] text-muted text-center font-mono max-w-[90%]">
+                    <div className="bg-raised/60 border border-line rounded px-3 py-1.5 text-micro text-muted text-center font-mono max-w-[90%]">
                       {msg.text}
                     </div>
                   ) : (
                     <div className="max-w-[85%] space-y-0.5">
-                      <div className="flex items-center space-x-1.5 text-[9px] font-mono">
-                        <span className={msg.senderRole === 'gm' ? 'text-red-400 font-black' : 'text-accent-300 font-bold'}>
+                      <div className="flex items-center space-x-1.5 text-micro font-mono">
+                        <span className={msg.senderRole === 'gm' ? 'text-red-400' : 'text-accent-300'}>
                           {msg.senderRole === 'gm' ? '👑' : '🔹'} {msg.senderHandle}
                         </span>
                         <span className="text-faint">{msg.timestamp}</span>
@@ -693,10 +693,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                       }`}>
                         {msg.isDiceRoll && msg.rollResult ? (
                           <div>
-                            <span className="font-mono font-black text-signal-400">
+                            <span className="font-mono text-signal-400">
                               🎲 {msg.rollResult.label}: {msg.rollResult.total}
                             </span>
-                            <p className="text-[10px] text-muted mt-1">{msg.rollResult.details}</p>
+                            <p className="font-mono text-micro text-muted mt-1">{msg.rollResult.details}</p>
                           </div>
                         ) : (
                           msg.text
@@ -707,7 +707,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 </div>
               ))}
               {chatMessages.length === 0 && (
-                <div className="text-center py-10 text-[10px] text-faint">A mesa está em silêncio... Quebre o gelo!</div>
+                <div className="text-center py-10 text-micro text-faint">A mesa está em silêncio... Quebre o gelo!</div>
               )}
             </div>
             <div className="border-t border-line p-3 flex space-x-2">
@@ -760,7 +760,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           {/* Lateral: jogadores & NPCs */}
           <div className="space-y-4">
             <div className="bg-surface/80 border border-line rounded-xl p-3">
-              <span className="text-[10px] font-black text-accent-400 uppercase tracking-widest block mb-2">
+              <span className="text-micro font-black text-accent-400 uppercase tracking-caps block mb-2">
                 Jogadores ({Object.keys(players).length})
               </span>
               <div className="space-y-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-1">
@@ -779,7 +779,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                     <div className="flex items-center space-x-2 min-w-0">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${p.isOnline ? 'bg-ok-400 animate-pulse' : 'bg-night-600'}`} />
                       <span className="text-xs font-bold text-white truncate">{p.handle}</span>
-                      <span className="text-[8px] px-1 py-0.5 rounded bg-surface border border-line-strong text-signal-400 shrink-0">
+                      <span className="text-micro px-1 py-0.5 rounded bg-surface border border-line-strong text-signal-400 shrink-0">
                         {p.role}
                       </span>
                     </div>
@@ -808,38 +808,38 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
 
             {isGm && (
               <div className="bg-surface/80 border border-red-500/40 rounded-xl p-3 space-y-2">
-                <span className="text-[10px] font-black text-red-400 uppercase tracking-widest block">Poderes do GM</span>
+                <span className="text-micro font-black text-red-400 uppercase tracking-caps block">Poderes do GM</span>
                 <div className="grid grid-cols-2 gap-1.5">
                   <button
                     onClick={() => generateNpc()}
-                    className="px-2 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-300 rounded font-bold text-[9px] uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
+                    className="px-2 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-300 rounded font-bold text-micro uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
                   >
                     <Skull className="w-3 h-3" />
                     <span>Gerar NPC</span>
                   </button>
                   <button
                     onClick={generatePlayerEdgerunner}
-                    className="px-2 py-1.5 bg-accent-950/80 hover:bg-accent-900 border border-accent-700/60 text-accent-300 rounded font-bold text-[9px] uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
+                    className="px-2 py-1.5 bg-accent-950/80 hover:bg-accent-900 border border-accent-700/60 text-accent-300 rounded font-bold text-micro uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
                   >
                     <UserPlus className="w-3 h-3" />
                     <span>Gerar Jogador</span>
                   </button>
                 </div>
                 <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                  <span className="text-[9px] text-subtle uppercase">NPCs ({Object.keys(npcs).length})</span>
+                  <span className="text-micro text-subtle uppercase">NPCs ({Object.keys(npcs).length})</span>
                   {Object.values(npcs).map((n) => (
                     <div key={n.peerId} className="bg-raised/70 border border-line rounded px-2 py-1.5 flex items-center justify-between">
-                      <span className="text-[10px] text-red-200 font-bold truncate">{n.handle}</span>
+                      <span className="text-micro text-red-200 font-bold truncate">{n.handle}</span>
                       <div className="flex items-center space-x-1 shrink-0">
                         <button
                           onClick={() => updateNpcHealth(n.peerId, Math.min(10, n.sheet.woundLevel + 1))}
-                          className="text-[9px] px-1 py-0.5 rounded bg-surface border border-line-strong text-red-400 cursor-pointer"
+                          className="text-micro px-1 py-0.5 rounded bg-surface border border-line-strong text-red-400 cursor-pointer"
                         >
                           +
                         </button>
                         <button
                           onClick={() => deleteNpc(n.peerId)}
-                          className="text-[9px] px-1 py-0.5 rounded bg-surface border border-line-strong text-muted cursor-pointer"
+                          className="text-micro px-1 py-0.5 rounded bg-surface border border-line-strong text-muted cursor-pointer"
                         >
                           ✕
                         </button>
@@ -847,7 +847,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                     </div>
                   ))}
                   {Object.keys(npcs).length === 0 && (
-                    <div className="text-center py-2 text-[9px] text-faint">Sem NPCs na mesa.</div>
+                    <div className="text-center py-2 text-micro text-faint">Sem NPCs na mesa.</div>
                   )}
                 </div>
               </div>
@@ -860,7 +860,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       {tab === 'grid' && (
         <div className="space-y-3">
           {isGm && (
-            <div className="bg-surface/60 border border-line rounded p-2.5 text-[10px] text-muted font-mono">
+            <div className="bg-surface/60 border border-line rounded p-2.5 text-micro text-muted">
               💡 Arraste as fichas da barra lateral diretamente para o grid, ou use os controles do grid para adicionar NPCs, cobertura e perigos.
             </div>
           )}
@@ -884,14 +884,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bg-surface/80 border border-line rounded-xl overflow-hidden">
             <div className="flex items-center justify-between p-3 border-b border-line">
-              <span className="text-xs font-black text-signal-400 uppercase tracking-widest">Ordem de Iniciativa</span>
+              <span className="text-xs font-black text-signal-400 uppercase tracking-caps">Ordem de Iniciativa</span>
               <div className="flex items-center gap-2">
-                <span className="text-[9px] text-subtle">{initiative.length} entradas</span>
+                <span className="text-micro text-subtle">{initiative.length} entradas</span>
                 {isGm && (
                   <button
                     onClick={() => roomAction(roomsApi.rollInitiative(roomCode))}
                     title="1d10 + REF (+ Combat Sense do Solo) para cada combatente com ficha. Quem você pôs à mão continua."
-                    className="px-2.5 py-1 bg-signal-500 hover:bg-signal-400 text-black font-black text-[10px] uppercase rounded cursor-pointer transition-all"
+                    className="px-2.5 py-1 bg-signal-500 hover:bg-signal-400 text-black font-black text-micro uppercase rounded cursor-pointer transition-all"
                   >
                     🎲 Rolar iniciativa
                   </button>
@@ -907,19 +907,19 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="text-[9px] text-subtle w-6">{idx + 1}º</span>
+                    <span className="font-mono text-micro text-subtle w-6">{idx + 1}º</span>
                     <span className={`text-xs font-bold ${entry.isCurrentTurn ? 'text-signal-300' : 'text-white'}`}>
                       {entry.handle}
                     </span>
                     {entry.isCurrentTurn && (
-                      <span className="text-[8px] px-1.5 py-0.5 bg-signal-400 text-black rounded font-black uppercase">Vez</span>
+                      <span className="text-micro px-1.5 py-0.5 bg-signal-400 text-black rounded font-black uppercase">Vez</span>
                     )}
                   </div>
-                  <span className="text-xs font-mono font-black text-accent-300">{entry.score}</span>
+                  <span className="text-xs font-mono text-accent-300">{entry.score}</span>
                 </div>
               ))}
               {initiative.length === 0 && (
-                <div className="text-center py-10 text-[10px] text-faint">Role a iniciativa ou adicione combatentes para iniciar a rodada.</div>
+                <div className="text-center py-10 text-micro text-faint">Role a iniciativa ou adicione combatentes para iniciar a rodada.</div>
               )}
             </div>
             {initiative.length > 0 && (
@@ -935,7 +935,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           </div>
 
           <div className="bg-surface/80 border border-line rounded-xl p-4 space-y-2.5">
-            <span className="text-xs font-black text-signal-400 uppercase tracking-widest">Adicionar Combatente</span>
+            <span className="text-xs font-black text-signal-400 uppercase tracking-caps">Adicionar Combatente</span>
             <input
               type="text"
               value={initiativeName}
@@ -947,12 +947,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               type="number"
               value={initiativeScore}
               onChange={(e) => setInitiativeScore(parseInt(e.target.value) || 0)}
-              className="w-full bg-raised border border-line-strong text-xs text-signal-400 px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
+              className="font-mono w-full bg-raised border border-line-strong text-xs text-signal-400 px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
             />
             <button
               onClick={addInitiative}
               disabled={!initiativeName.trim()}
-              className="w-full py-2 bg-signal-500 hover:bg-signal-400 disabled:opacity-40 text-black font-black text-[10px] uppercase rounded cursor-pointer transition-all"
+              className="w-full py-2 bg-signal-500 hover:bg-signal-400 disabled:opacity-40 text-black font-black text-micro uppercase rounded cursor-pointer transition-all"
             >
               + Adicionar
             </button>
@@ -963,8 +963,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       {/* Modal: editar saúde (GM) */}
       {selectedHealthPlayer && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedHealthPlayer(null)}>
-          <div className="bg-surface border-2 border-red-500/60 rounded-2xl p-6 w-full max-w-sm font-mono shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-fadeIn" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-sm font-black text-red-400 uppercase tracking-widest mb-3">
+          <div className="bg-surface border-2 border-red-500/60 rounded-2xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-display text-sm font-black text-red-400 uppercase tracking-display mb-3">
               Bio-Monitor // {selectedHealthPlayer.handle}
             </h3>
             <div className="grid grid-cols-5 gap-1.5 mb-4">
@@ -972,7 +972,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 <button
                   key={i}
                   onClick={() => updatePlayerHealth(selectedHealthPlayer.peerId, i)}
-                  className={`aspect-square rounded border-2 text-[10px] font-black font-mono cursor-pointer transition-all ${
+                  className={`aspect-square rounded border-2 text-micro font-mono cursor-pointer transition-all ${
                     i <= selectedHealthPlayer.sheet.woundLevel
                       ? 'border-red-500 bg-red-950/80 text-red-300'
                       : 'border-line bg-raised text-subtle hover:border-red-500/50'
@@ -984,7 +984,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             </div>
             <button
               onClick={() => setSelectedHealthPlayer(null)}
-              className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-[10px] uppercase cursor-pointer"
+              className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer"
             >
               Fechar
             </button>
@@ -995,28 +995,28 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       {/* Modal: inspecionar ficha */}
       {inspectedPlayer && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setInspectedPlayer(null)}>
-          <div className="bg-surface border-2 border-accent-500/60 rounded-2xl p-6 w-full max-w-md font-mono shadow-glow-30 shadow-accent-500/30 max-h-[80vh] overflow-y-auto custom-scrollbar animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-surface border-2 border-accent-500/60 rounded-2xl p-6 w-full max-w-md shadow-glow-30 shadow-accent-500/30 max-h-[80vh] overflow-y-auto custom-scrollbar animate-fadeIn" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-black text-accent-400 uppercase tracking-widest">{inspectedPlayer.handle}</h3>
-              <span className="text-[9px] px-2 py-0.5 rounded bg-raised border border-line-strong text-signal-400">{inspectedPlayer.role}</span>
+              <h3 className="font-display text-sm font-black text-accent-400 uppercase tracking-display">{inspectedPlayer.handle}</h3>
+              <span className="text-micro px-2 py-0.5 rounded bg-raised border border-line-strong text-signal-400">{inspectedPlayer.role}</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5 mb-3">
               {(Object.keys(inspectedPlayer.sheet.stats) as (keyof typeof inspectedPlayer.sheet.stats)[]).map((k) => (
                 <div key={k} className="bg-raised border border-line rounded p-1.5 text-center">
-                  <span className="text-[8px] text-subtle block">{k}</span>
-                  <span className="text-xs font-black text-signal-400">{inspectedPlayer.sheet.stats[k]}</span>
+                  <span className="text-micro text-subtle block">{k}</span>
+                  <span className="font-mono text-xs text-signal-400">{inspectedPlayer.sheet.stats[k]}</span>
                 </div>
               ))}
             </div>
-            <div className="text-[10px] text-muted space-y-1">
-              <p>💥 Ferimento: <span className="text-red-300 font-bold">{inspectedPlayer.sheet.woundLevel}/10</span></p>
+            <div className="font-mono text-micro text-muted space-y-1">
+              <p>💥 Ferimento: <span className="text-red-300">{inspectedPlayer.sheet.woundLevel}/10</span></p>
               <p>💰 €$ {inspectedPlayer.sheet.eurodollars.toLocaleString()}</p>
               <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
               <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>
             </div>
             <button
               onClick={() => setInspectedPlayer(null)}
-              className="w-full mt-4 py-2 bg-raised border border-line-strong text-fg-soft rounded text-[10px] uppercase cursor-pointer"
+              className="w-full mt-4 py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer"
             >
               Fechar
             </button>

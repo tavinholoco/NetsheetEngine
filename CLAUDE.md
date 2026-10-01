@@ -83,7 +83,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 669 testes depois da F.2 mecânica (ver "Linha de base atual" no plano)
+npx vitest run            # 671 testes depois da F.1 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada

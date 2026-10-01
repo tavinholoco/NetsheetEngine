@@ -14,18 +14,18 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
   return (
     <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-accent-500/10 space-y-4 relative overflow-hidden">
       {/* Background HUD Grid Accent */}
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[60px] font-black text-accent-400 select-none">
+      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[60px] font-black text-accent-400 select-none">
         EDGERUNNER
       </div>
 
       <div className="flex items-center justify-between border-b border-line pb-3 relative z-10">
         <div className="flex items-center space-x-2">
           <User className="w-5 h-5 text-accent-400" />
-          <h2 className="text-lg font-mono font-bold text-accent-400 uppercase tracking-widest">
+          <h2 className="text-base sm:text-lg font-display font-bold text-accent-400 uppercase tracking-display">
             Identidade do Edgerunner // Bio-Scanner Active
           </h2>
         </div>
-        <span className="text-xs font-mono px-2.5 py-1 rounded bg-surface border border-accent-500/40 text-signal-400 font-bold tracking-wider shadow-glow-10 shadow-accent-500/20">
+        <span className="text-xs font-mono px-2.5 py-1 rounded bg-surface border border-accent-500/40 text-signal-400 tracking-caps shadow-glow-10 shadow-accent-500/20">
           {sheet.handle ? sheet.handle.toUpperCase() : 'SEMANOME'}
         </span>
       </div>
@@ -41,14 +41,14 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
             )}
             <div className="absolute top-2 left-2 flex items-center space-x-1">
               <span className="w-1.5 h-1.5 rounded-full bg-accent-400 animate-pulse"></span>
-              <span className="text-[8px] font-mono text-accent-400 bg-accent-950/80 px-1 uppercase">LIVE</span>
+              <span className="text-micro font-mono text-accent-400 bg-accent-950/80 px-1 uppercase">LIVE</span>
             </div>
-            <div className="absolute bottom-0 inset-x-0 bg-accent-950/90 text-[9px] font-mono text-accent-300 text-center py-0.5 border-t border-accent-500/40 uppercase tracking-widest font-bold">
+            <div className="absolute bottom-0 inset-x-0 bg-accent-950/90 text-micro font-mono text-accent-300 text-center py-0.5 border-t border-accent-500/40 uppercase tracking-caps">
               CP-2020 BIO-ID
             </div>
           </div>
           <div className="w-full">
-            <label className="text-[10px] font-mono text-muted block mb-1">URL da Imagem:</label>
+            <label className="text-micro text-muted block mb-1">URL da Imagem:</label>
             <input
               type="text"
               value={sheet.avatarUrl}
@@ -62,18 +62,18 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
         {/* Inputs Column 1 */}
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-mono text-muted block mb-1">Apelido (Handle / Street Name):</label>
+            <label className="text-xs text-muted block mb-1">Apelido (Handle / Street Name):</label>
             <input
               type="text"
               value={sheet.handle}
               onChange={(e) => onChange({ handle: e.target.value })}
-              className="w-full bg-surface border border-accent-800/80 text-sm font-mono text-signal-400 px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none font-bold shadow-inner"
+              className="w-full bg-surface border border-accent-800/80 text-sm font-mono text-signal-400 px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none shadow-inner"
               placeholder="Ex: Silverhand, V, Spider"
             />
           </div>
 
           <div>
-            <label className="text-xs font-mono text-muted block mb-1">Nome Real:</label>
+            <label className="text-xs text-muted block mb-1">Nome Real:</label>
             <input
               type="text"
               value={sheet.realName}
@@ -85,7 +85,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs font-mono text-muted block mb-1">Idade:</label>
+              <label className="text-xs text-muted block mb-1">Idade:</label>
               <input
                 type="number"
                 value={sheet.age}
@@ -94,7 +94,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
               />
             </div>
             <div>
-              <label className="text-xs font-mono text-muted block mb-1">Gênero:</label>
+              <label className="text-xs text-muted block mb-1">Gênero:</label>
               <input
                 type="text"
                 value={sheet.sex}
@@ -108,7 +108,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
         {/* Inputs Column 2: Role & Special Ability */}
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-mono text-muted block mb-1">Classe Oficial (Role):</label>
+            <label className="text-xs text-muted block mb-1">Classe Oficial (Role):</label>
             <select
               value={sheet.role}
               onChange={(e) => {
@@ -119,7 +119,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
                   specialAbilityName: rObj ? rObj.specialAbility : sheet.specialAbilityName
                 });
               }}
-              className="w-full bg-surface border border-accent-800/80 text-xs font-mono text-accent-300 font-bold px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none"
+              className="w-full bg-surface border border-accent-800/80 text-xs font-mono text-accent-300 px-3 py-1.5 rounded focus:border-accent-400 focus:outline-none"
             >
               {OFFICIAL_ROLES.map((r) => (
                 <option key={r.name} value={r.name}>
@@ -127,15 +127,15 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
                 </option>
               ))}
             </select>
-            <p className="text-[10px] font-mono text-muted mt-1 line-clamp-2">
+            <p className="text-micro text-muted mt-1 line-clamp-2">
               {currentRoleObj.description}
             </p>
           </div>
 
           <div>
             <div className="flex items-center justify-between">
-              <label className="text-xs font-mono text-muted block mb-1">Habilidade Especial:</label>
-              <span className="text-xs font-mono font-bold text-signal-400">{sheet.specialAbilityName}</span>
+              <label className="text-xs text-muted block mb-1">Habilidade Especial:</label>
+              <span className="text-xs font-mono text-signal-400">{sheet.specialAbilityName}</span>
             </div>
             <div className="flex items-center space-x-2">
               <input
@@ -146,7 +146,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
                 onChange={(e) => onChange({ specialAbilityRank: parseInt(e.target.value) || 0 })}
                 className="w-full accent-accent-400"
               />
-              <span className="w-8 text-center font-mono font-bold text-xs bg-surface border border-line text-accent-400 py-1 rounded">
+              <span className="w-8 text-center font-mono text-xs bg-surface border border-line text-accent-400 py-1 rounded">
                 +{sheet.specialAbilityRank}
               </span>
             </div>
@@ -158,19 +158,19 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({ sheet, onChang
           <div>
             <div className="flex items-center space-x-1 mb-1">
               <DollarSign className="w-4 h-4 text-ok-400" />
-              <span className="text-xs font-mono text-ok-400 font-bold uppercase tracking-wider">Fundos (Eurodólares eb):</span>
+              <span className="text-xs text-ok-400 font-bold uppercase tracking-caps">Fundos (Eurodólares eb):</span>
             </div>
             <input
               type="number"
               value={sheet.eurodollars}
               onChange={(e) => onChange({ eurodollars: parseInt(e.target.value) || 0 })}
-              className="w-full bg-raised border border-ok-800/80 text-xl font-mono text-ok-400 font-bold px-3 py-1.5 rounded focus:border-ok-400 focus:outline-none text-right shadow-glow-10 shadow-ok-500/10"
+              className="w-full bg-raised border border-ok-800/80 text-xl font-mono text-ok-400 px-3 py-1.5 rounded focus:border-ok-400 focus:outline-none text-right shadow-glow-10 shadow-ok-500/10"
             />
           </div>
 
           <div className="bg-raised p-2 rounded border border-line text-center space-y-1">
-            <span className="text-[10px] font-mono text-muted block uppercase tracking-widest">Nível da Ficha</span>
-            <span className="text-xs font-mono font-bold text-signal-400 tracking-wider">
+            <span className="text-micro text-muted block uppercase tracking-caps">Nível da Ficha</span>
+            <span className="text-xs font-mono text-signal-400 tracking-caps">
               CYBERPUNK 2020 OFICIAL
             </span>
           </div>

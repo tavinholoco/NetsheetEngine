@@ -63,14 +63,14 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
     setLocation(lastDamageRoll.hitLocation);
   };
 
-  const label = 'text-[10px] font-mono uppercase text-muted';
-  const input = 'w-full bg-surface border border-line-strong rounded px-1.5 py-1 text-[11px] text-fg font-mono';
+  const label = 'text-micro uppercase text-muted';
+  const input = 'w-full bg-surface border border-line-strong rounded px-1.5 py-1 text-mini text-fg font-mono';
 
   return (
     <div className="space-y-2 border-t border-line pt-2">
       {/* Estado do alvo (D.1/D.5) */}
-      <div className="flex items-center justify-between gap-2 text-[10px] font-mono">
-        <span className={status.isDead ? 'text-red-400 font-bold' : 'text-fg-soft'}>
+      <div className="flex items-center justify-between gap-2 text-micro font-mono">
+        <span className={status.isDead ? 'text-red-400' : 'text-fg-soft'}>
           {status.isDead ? '💀 MORTO' : status.label} · {status.points}/{WOUND_TRACK_POINTS}
           {status.isStabilized && !status.isDead && <span className="text-ok-400"> · estabilizado</span>}
         </span>
@@ -88,12 +88,12 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
 
       {/* O NPC ataca */}
       <details className="group bg-raised/90 rounded-lg border border-line">
-        <summary className="flex items-center gap-1 p-2 text-[11px] font-bold text-caution-300 uppercase cursor-pointer select-none">
+        <summary className="flex items-center gap-1 p-2 text-mini font-bold text-caution-300 uppercase cursor-pointer select-none">
           <Crosshair className="w-3.5 h-3.5" /> NPC ataca {targetName}
         </summary>
         <div className="space-y-1.5 px-2 pb-2">
         {attackers.length === 0 ? (
-          <p className="text-[10px] text-subtle">Nenhum NPC com ficha na mesa para atacar.</p>
+          <p className="text-micro text-subtle">Nenhum NPC com ficha na mesa para atacar.</p>
         ) : (
           <>
             <label className="block">
@@ -104,7 +104,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
                 ))}
               </select>
             </label>
-            {weapon && <p className="text-[10px] text-subtle font-mono truncate">{weapon.name} · {weapon.damage} · {weapon.rangeMeters} m</p>}
+            {weapon && <p className="text-micro text-subtle font-mono truncate">{weapon.name} · {weapon.damage} · {weapon.rangeMeters} m</p>}
             <div role="radiogroup" aria-label="Faixa de alcance" className="grid grid-cols-3 gap-1">
               {RANGE_BANDS.map((band) => (
                 <button
@@ -114,7 +114,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
                   aria-checked={range === band.key}
                   onClick={() => setRange(band.key)}
                   title={weapon ? `até ${rangeBandMeters(band, weapon.rangeMeters)} m com ${weapon.name}` : undefined}
-                  className={`px-1 py-1 rounded border text-[10px] font-mono cursor-pointer ${range === band.key ? 'border-caution-400 text-caution-300 bg-caution-950/50' : 'border-line-strong text-fg-soft hover:border-night-500'}`}
+                  className={`px-1 py-1 rounded border text-micro font-mono cursor-pointer ${range === band.key ? 'border-caution-400 text-caution-300 bg-caution-950/50' : 'border-line-strong text-fg-soft hover:border-night-500'}`}
                 >
                   {band.name} {band.difficulty}
                 </button>
@@ -125,7 +125,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
                 aria-checked={range === FREE}
                 onClick={() => setRange(FREE)}
                 title="Dificuldade livre — no corpo a corpo, o total do defensor"
-                className={`px-1 py-1 rounded border text-[10px] font-mono cursor-pointer ${range === FREE ? 'border-caution-400 text-caution-300 bg-caution-950/50' : 'border-line-strong text-fg-soft hover:border-night-500'}`}
+                className={`px-1 py-1 rounded border text-micro font-mono cursor-pointer ${range === FREE ? 'border-caution-400 text-caution-300 bg-caution-950/50' : 'border-line-strong text-fg-soft hover:border-night-500'}`}
               >
                 Outra
               </button>
@@ -139,7 +139,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
             <button
               type="button"
               onClick={attack}
-              className="w-full py-1.5 rounded bg-caution-500 hover:bg-caution-400 text-black font-extrabold text-[11px] uppercase cursor-pointer"
+              className="w-full py-1.5 rounded bg-caution-500 hover:bg-caution-400 text-black font-extrabold text-mini uppercase cursor-pointer"
             >
               Rolar ataque
             </button>
@@ -150,7 +150,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
 
       {/* Aplicar dano */}
       <details className="group bg-raised/90 rounded-lg border border-line">
-        <summary className="flex items-center gap-1 p-2 text-[11px] font-bold text-red-300 uppercase cursor-pointer select-none">
+        <summary className="flex items-center gap-1 p-2 text-mini font-bold text-red-300 uppercase cursor-pointer select-none">
           <Droplet className="w-3.5 h-3.5" /> Aplicar dano em {targetName}
         </summary>
         <div className="space-y-1.5 px-2 pb-2">
@@ -158,7 +158,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
           <button
             type="button"
             onClick={useLastDamage}
-            className="w-full py-1 rounded border border-line-strong hover:border-night-500 text-[10px] text-fg-soft font-mono cursor-pointer truncate"
+            className="w-full py-1 rounded border border-line-strong hover:border-night-500 text-micro text-fg-soft cursor-pointer truncate"
           >
             Usar último dano: {lastDamageRoll.total} ({lastDamageRoll.characterName})
           </button>
@@ -181,7 +181,7 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
           type="button"
           onClick={() => onApplyDamage(targetId, raw, location)}
           disabled={!(raw > 0)}
-          className="w-full py-1.5 rounded bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-[11px] uppercase cursor-pointer"
+          className="w-full py-1.5 rounded bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-mini uppercase cursor-pointer"
         >
           Aplicar {raw > 0 ? raw : ''} de dano
         </button>

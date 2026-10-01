@@ -82,10 +82,10 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user,
   };
 
   return (
-    <div className="space-y-5 font-mono animate-fadeIn">
+    <div className="space-y-5 animate-fadeIn">
       {/* Header */}
       <div className="bg-surface/90 border-l-4 border-y border-r border-line rounded-xl p-5 flex items-center justify-between relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-cyber-500 select-none">
+        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-cyber-500 select-none">
           NETRUNNER
         </div>
         <div className="flex items-center space-x-3 relative z-10">
@@ -93,20 +93,20 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user,
             <Bot className="w-6 h-6 text-cyber-400" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-cyber-400 uppercase tracking-widest">Assistente Netrunner IA</h2>
-            <p className="text-[10px] text-subtle">Conectado à Net de Night City via Gemini API</p>
+            <h2 className="font-display text-base sm:text-lg font-bold text-cyber-400 uppercase tracking-display">Assistente Netrunner IA</h2>
+            <p className="text-micro text-subtle">Conectado à Net de Night City via Gemini API</p>
           </div>
         </div>
         <div className="flex items-center space-x-2 relative z-10">
           <button
             onClick={quickDiagnose}
-            className="px-3 py-1.5 bg-accent-950/80 hover:bg-accent-900 border border-accent-500/50 text-accent-300 rounded font-bold text-[10px] uppercase transition-all cursor-pointer"
+            className="px-3 py-1.5 bg-accent-950/80 hover:bg-accent-900 border border-accent-500/50 text-accent-300 rounded font-bold text-micro uppercase transition-all cursor-pointer"
           >
             🔬 Diagnosticar Build
           </button>
           <button
             onClick={generateLifepath}
-            className="px-3 py-1.5 bg-cyber-600 hover:bg-cyber-500 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer shadow-glow-10 shadow-cyber-500/40"
+            className="px-3 py-1.5 bg-cyber-600 hover:bg-cyber-500 text-white rounded font-bold text-micro uppercase transition-all cursor-pointer shadow-glow-10 shadow-cyber-500/40"
           >
             <Dices className="w-3 h-3 inline mr-1" />
             Gerar Lifepath
@@ -126,7 +126,7 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user,
                     : 'bg-raised text-fg border border-line-strong rounded-bl-none'
                 }`}
               >
-                <div className="flex items-center space-x-1.5 mb-1 text-[9px] font-mono font-black uppercase">
+                <div className="flex items-center space-x-1.5 mb-1 text-micro font-mono uppercase">
                   {msg.role === 'user' ? (
                     <>
                       <User className="w-3 h-3 text-cyber-300" />
@@ -158,7 +158,7 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user,
           {!user ? (
             <button
               onClick={onOpenAuthModal}
-              className="w-full py-2.5 bg-signal-400 hover:bg-signal-300 text-black font-black text-[11px] uppercase rounded flex items-center justify-center space-x-2 cursor-pointer transition-all"
+              className="w-full py-2.5 bg-signal-400 hover:bg-signal-300 text-black font-black text-mini uppercase rounded flex items-center justify-center space-x-2 cursor-pointer transition-all"
             >
               <Lock className="w-3.5 h-3.5" />
               <span>Acesse sua conta para usar o NETRUNNER IA</span>

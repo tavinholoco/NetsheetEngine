@@ -333,20 +333,20 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
   };
 
   return (
-    <div className="space-y-4 font-mono select-none">
+    <div className="space-y-4 select-none">
       {/* Grid Top Title Bar */}
       <div className="bg-raised/90 border border-line p-3 rounded-lg flex items-center justify-between shadow-lg">
         <div className="flex items-center space-x-2">
           <Grid className="w-5 h-5 text-accent-400" />
-          <h2 className="text-sm font-extrabold text-white uppercase tracking-wider">
+          <h2 className="font-display text-sm font-extrabold text-white uppercase tracking-display">
             GRID TÁTICO DE COMBATE
           </h2>
-          <span className="text-[10px] px-2 py-0.5 rounded bg-raised-strong text-fg-soft font-bold border border-line-strong">
+          <span className="text-micro px-2 py-0.5 rounded bg-raised-strong text-fg-soft font-bold border border-line-strong">
             {gridState.cols}x{gridState.rows} SETORES
           </span>
         </div>
 
-        <span className="text-[10px] text-accent-400 font-bold uppercase tracking-wide flex items-center space-x-1">
+        <span className="text-micro text-accent-400 font-bold uppercase tracking-caps flex items-center space-x-1">
           <Eye className="w-3.5 h-3.5 text-accent-400" />
           <span>Mapeamento Visual // {roleMode === 'gm' ? 'Controles no Painel da Mesa' : 'Somente Mestre move fichas'}</span>
         </span>
@@ -356,7 +356,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
       {roleMode === 'gm' && isAddingToken && (
         <div className="bg-raised border border-accent-800 p-4 rounded-lg space-y-3 animate-fadeIn shadow-xl">
           <div className="flex items-center justify-between border-b border-line pb-2">
-            <h3 className="text-xs font-bold text-accent-400 uppercase tracking-wider flex items-center space-x-2">
+            <h3 className="text-xs font-bold text-accent-400 uppercase tracking-caps flex items-center space-x-2">
               <Plus className="w-4 h-4 text-accent-400" />
               <span>ADICIONAR ELEMENTO AO GRID TÁTICO</span>
             </h3>
@@ -367,7 +367,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] text-muted uppercase font-bold block mb-1">Nome do Elemento</label>
+              <label className="text-micro text-muted uppercase font-bold block mb-1">Nome do Elemento</label>
               <input
                 type="text"
                 placeholder="Ex: Barricada, Inimigo A, Fogo..."
@@ -378,7 +378,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] text-muted uppercase font-bold block mb-1">Tipo de Elemento</label>
+              <label className="text-micro text-muted uppercase font-bold block mb-1">Tipo de Elemento</label>
               <select
                 value={newTokenType}
                 onChange={(e) => setNewTokenType(e.target.value as any)}
@@ -392,14 +392,14 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
 
             {newTokenType === 'cover' ? (
               <div>
-                <label className="text-[10px] text-muted uppercase font-bold block mb-1">Pontos de Blindagem (SP)</label>
+                <label className="text-micro text-muted uppercase font-bold block mb-1">Pontos de Blindagem (SP)</label>
                 <input
                   type="number"
                   min="1"
                   max="100"
                   value={newTokenSp}
                   onChange={(e) => setNewTokenSp(Number(e.target.value))}
-                  className="w-full bg-surface border border-line-strong rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
+                  className="font-mono w-full bg-surface border border-line-strong rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
                 />
               </div>
             ) : (
@@ -456,7 +456,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
             >
               <div className="-translate-x-1/2 -translate-y-1/2 relative">
                 <div className="w-4 h-4 rounded-full bg-signal-300 border-2 border-black shadow-glow-10 shadow-signal-400/90" />
-                <span className="absolute top-3.5 left-3 whitespace-nowrap text-[8px] px-1.5 py-0.5 rounded bg-signal-400 text-black font-black font-mono border border-black">
+                <span className="absolute top-3.5 left-3 whitespace-nowrap text-micro px-1.5 py-0.5 rounded bg-signal-400 text-black font-black border border-black">
                   👁 {c.name}
                 </span>
               </div>
@@ -481,7 +481,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                     }`}
                   >
                     {/* Sector Coordinate Code (Visual Label) */}
-                    <span className="absolute top-0.5 left-1 text-[8px] font-mono text-subtle/70 select-none">
+                    <span className="absolute top-0.5 left-1 text-micro font-mono text-subtle/70 select-none">
                       {ROWS_LABELS[r] || r}{c + 1}
                     </span>
                   </div>
@@ -578,7 +578,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
 
                           {/* SP cover overlay badge */}
                           {token.type === 'cover' && token.spCover !== undefined && (
-                            <span className="absolute -bottom-1 -left-1 text-[7px] font-mono font-black bg-surface text-fg px-1 rounded border border-night-600">
+                            <span className="absolute -bottom-1 -left-1 text-micro font-mono bg-surface text-fg px-1 rounded border border-night-600">
                               {token.spCover}
                             </span>
                           )}
@@ -598,7 +598,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                               setSelectedTokenId(prev => String(prev) === String(token.id) ? null : token.id);
                             }}
                             title={`Abrir status de ${token.name}`}
-                            className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-signal-400 hover:bg-signal-300 text-black font-extrabold text-[9px] font-mono flex items-center justify-center border border-black shadow-glow-8 shadow-signal-400/90 z-30 transition-transform hover:scale-130 cursor-pointer"
+                            className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-signal-400 hover:bg-signal-300 text-black font-extrabold text-micro flex items-center justify-center border border-black shadow-glow-8 shadow-signal-400/90 z-30 transition-transform hover:scale-130 cursor-pointer"
                           >
                             ?
                           </button>
@@ -615,7 +615,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
           {selectedToken && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="absolute z-50 w-64 sm:w-72 bg-surface/95 border-2 border-signal-400 rounded-xl p-3.5 shadow-glow-25 shadow-signal-400/40 space-y-3 font-mono text-left animate-fadeIn backdrop-blur-md"
+              className="absolute z-50 w-64 sm:w-72 bg-surface/95 border-2 border-signal-400 rounded-xl p-3.5 shadow-glow-25 shadow-signal-400/40 space-y-3 text-left animate-fadeIn backdrop-blur-md"
               style={{
                 top: isBottomHalf
                   ? 'auto'
@@ -658,14 +658,14 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                 </div>
 
                 <div className="overflow-hidden">
-                  <h4 className="text-sm font-extrabold text-white uppercase tracking-wider truncate">
+                  <h4 className="text-sm font-extrabold text-white uppercase tracking-caps truncate">
                     {selectedToken.name}
                   </h4>
                   <div className="flex items-center space-x-1.5 pt-0.5">
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-signal-400 text-black font-extrabold uppercase shrink-0">
+                    <span className="font-mono text-micro px-1.5 py-0.5 rounded bg-signal-400 text-black uppercase shrink-0">
                       SETOR {ROWS_LABELS[selectedToken.y] || selectedToken.y}{selectedToken.x + 1}
                     </span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-raised text-accent-300 border border-line font-bold uppercase shrink-0">
+                    <span className="text-micro px-1.5 py-0.5 rounded bg-raised text-accent-300 border border-line font-bold uppercase shrink-0">
                       {selectedToken.type.toUpperCase()}
                     </span>
                   </div>
@@ -673,10 +673,10 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
               </div>
 
               {/* Details */}
-              <div className="space-y-1.5 bg-raised/90 p-2.5 rounded-lg border border-line text-[11px] text-fg-soft">
+              <div className="space-y-1.5 bg-raised/90 p-2.5 rounded-lg border border-line text-mini text-fg-soft">
                 <div className="flex justify-between items-center py-0.5 border-b border-line/60">
                   <span className="text-muted">Setor:</span>
-                  <span className="font-bold text-signal-400">
+                  <span className="font-mono text-signal-400">
                     {ROWS_LABELS[selectedToken.y] || selectedToken.y}{selectedToken.x + 1}
                   </span>
                 </div>
@@ -684,14 +684,14 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                 {selectedToken.spCover !== undefined && (
                   <div className="flex justify-between items-center py-0.5 border-b border-line/60">
                     <span className="text-muted">Blindagem (SP):</span>
-                    <span className="font-bold text-accent-400">{selectedToken.spCover} SP</span>
+                    <span className="font-mono text-accent-400">{selectedToken.spCover} SP</span>
                   </div>
                 )}
 
                 {selectedToken.hp !== undefined && (selectedToken.type === 'player' || selectedToken.type === 'npc') && (
                   <div className="flex justify-between items-center py-0.5 border-b border-line/60">
                     <span className="text-muted">Bio-Monitor:</span>
-                    <span className={`font-bold ${WOUND_LEVEL_NAMES[selectedToken.hp]?.color || 'text-ok-400'}`}>
+                    <span className={`font-mono ${WOUND_LEVEL_NAMES[selectedToken.hp]?.color || 'text-ok-400'}`}>
                       {WOUND_LEVEL_NAMES[selectedToken.hp]?.name || 'Normal'} ({selectedToken.hp}/10)
                     </span>
                   </div>
@@ -720,7 +720,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                       onInspectPlayer(players[selectedToken.peerId!]);
                       setSelectedTokenId(null);
                     }}
-                    className="w-full py-1.5 rounded bg-accent-950 hover:bg-accent-900 border border-accent-700 text-accent-300 font-extrabold text-[11px] uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
+                    className="w-full py-1.5 rounded bg-accent-950 hover:bg-accent-900 border border-accent-700 text-accent-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
                   >
                     <Eye className="w-3.5 h-3.5 text-accent-400" />
                     <span>Inspecionar Ficha</span>
@@ -733,7 +733,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                       onSelectPlayerForHealthEdit(players[selectedToken.peerId!]);
                       setSelectedTokenId(null);
                     }}
-                    className="w-full py-1.5 rounded bg-pink-950 hover:bg-pink-900 border border-pink-700 text-pink-300 font-extrabold text-[11px] uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
+                    className="w-full py-1.5 rounded bg-pink-950 hover:bg-pink-900 border border-pink-700 text-pink-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
                   >
                     <Eye className="w-3.5 h-3.5 text-pink-400" />
                     <span>Editar Saúde</span>
@@ -748,7 +748,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                       handleRemoveToken(selectedToken.id);
                       setSelectedTokenId(null);
                     }}
-                    className="w-full py-1.5 rounded bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 font-extrabold text-[11px] uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
+                    className="w-full py-1.5 rounded bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
                   >
                     <Trash2 className="w-3.5 h-3.5 text-red-400" />
                     <span>Remover do Grid</span>
@@ -761,7 +761,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
       </div>
 
       {/* Legend & Instructions Footer */}
-      <div className="flex flex-wrap items-center justify-between text-[11px] text-muted bg-raised/60 p-2.5 rounded border border-line gap-2">
+      <div className="flex flex-wrap items-center justify-between text-mini text-muted bg-raised/60 p-2.5 rounded border border-line gap-2">
         <div className="flex flex-wrap items-center gap-4">
           <span className="flex items-center space-x-1">
             <span className="w-2.5 h-2.5 rounded-full bg-accent-500"></span>
@@ -781,7 +781,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
           </span>
         </div>
 
-        <span className="text-[10px] text-subtle font-mono">
+        <span className="text-micro text-subtle">
           {roleMode === 'gm'
             ? '💡 Dica Mestre: Arraste a ficha da barra lateral diretamente para qualquer lugar no Grid.'
             : '💡 Dica Jogador: Clique no token para inspecionar os detalhes.'}

@@ -133,6 +133,12 @@ armas) **não** é `fault` — e mostraram um defeito de cascata: com duas class
 propriedade no mesmo elemento, o Tailwind 4 decide pelo alfabeto do nome, e renomear inverte o
 vencedor. A tabela de conversão é `scripts/color-map.json`; o detector, `migrate-colors --conflitos`.
 
+**Na F.1 (30/09/2026)**, a tabela de faces acima passou a valer de fato: Rajdhani em ~75% do texto,
+mono em ~20% e Orbitron nos títulos. Duas medições fecharam as condicionais: o **Rajdhani não tem
+algarismos tabulares** (`tabular-nums` não muda nada nele), então número vai para a mono, que tem
+largura fixa — e a **Saira Condensed** não entrou; e os momentos de terminal já se distinguem pela
+mono — o **VT323** também não. Nem o Rajdhani nem o Orbitron têm `º`/`ª`.
+
 ## Histórico de revisões
 
 **Versão 1 — migrar para o Cyberpunk 2077.** Proposta a partir da galeria

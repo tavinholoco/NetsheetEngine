@@ -6,11 +6,29 @@
    ============================================================ */
 
 @theme {
-  /* Fonte da interface (sans) e fonte de terminal (mono). Os arquivos vêm do
-     @fontsource, importados no main.tsx (F.0c) — nada de host externo: o CSP
-     de produção só aceita fonte do próprio origin. */
+  /* ---------------------------------------------------------------
+     TIPOGRAFIA — três vozes (Fase F, F.1; decisão 10a). Os arquivos vêm do
+     @fontsource, importados no main.tsx — nada de host externo: o CSP de
+     produção só aceita fonte do próprio origin (F.0c).
+       sans     Rajdhani — rótulo, navegação, título de campo, texto corrido
+       mono     Share Tech Mono — número, dado, valor de campo, rolagem,
+                mensagem de sistema, terminal. SÓ tem o peso 400: destaque
+                na mono é brilho (cor, tamanho), nunca negrito (F.1.2)
+       display  Orbitron — título de seção e a marca. Não tem º/ª.
+     --------------------------------------------------------------- */
   --font-sans: "Rajdhani", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Share Tech Mono", ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  --font-display: "Orbitron Variable", "Orbitron", "Rajdhani", ui-sans-serif, sans-serif;
+
+  /* Os tamanhos pequenos com nome, e o piso de 10 px (F.1.6): nada abaixo
+     de text-micro. Sem --line-height próprio: herdam, como os text-[Npx]
+     que substituíram. */
+  --text-micro: 0.625rem; /* 10 px — rótulo, etiqueta, status */
+  --text-mini: 0.6875rem; /* 11 px */
+
+  /* Caixa alta tem dois espaçamentos (F.1.6): o do rótulo e o do título. */
+  --tracking-caps: 0.08em; /* rótulo em caixa alta (sans e mono) */
+  --tracking-display: 0.04em; /* título em Orbitron — a face já é larga */
 
   /* ---------------------------------------------------------------
      COR — duas camadas (Fase F, F.2.1). A tabela que as documenta e

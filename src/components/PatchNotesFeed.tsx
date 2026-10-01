@@ -123,17 +123,17 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
   embedded = false
 }) => {
   return (
-    <div className={`space-y-3 font-mono ${className}`}>
+    <div className={`space-y-3 ${className}`}>
       {/* Header Badge (Hidden when embedded in accordion button) */}
       {!embedded && (
         <div className="flex items-center justify-between border-b border-red-500/40 pb-2">
           <div className="flex items-center space-x-2">
             <Terminal className="w-4 h-4 text-red-400 animate-pulse" />
-            <h3 className="text-xs font-black tracking-widest text-red-400 uppercase">
+            <h3 className="font-mono text-xs tracking-caps text-red-400 uppercase">
               PATCH NOTES // NETWORK FEED
             </h3>
           </div>
-          <span className="text-[10px] text-fg-soft bg-red-950/80 px-2 py-0.5 rounded border border-red-800">
+          <span className="font-mono text-micro text-fg-soft bg-red-950/80 px-2 py-0.5 rounded border border-red-800">
             SYSTEM_LOG.DAT
           </span>
         </div>
@@ -152,30 +152,30 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
             <div className="pl-2 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-extrabold text-red-400 tracking-wider">
+                  <span className="font-mono text-sm text-red-400 tracking-caps">
                     {note.version}
                   </span>
-                  <span className="text-[10px] text-fg-soft font-bold uppercase tracking-tight">
+                  <span className="text-micro text-fg-soft font-bold uppercase tracking-tight">
                     {note.title}
                   </span>
                 </div>
-                <span className={`text-[9px] px-1.5 py-0.5 border rounded font-bold uppercase ${note.tagColor}`}>
+                <span className={`text-micro px-1.5 py-0.5 border rounded font-bold uppercase ${note.tagColor}`}>
                   {note.tag}
                 </span>
               </div>
 
-              <p className="text-[11px] text-fg-soft leading-relaxed font-sans">
+              <p className="text-mini text-fg-soft leading-relaxed font-sans">
                 {note.summary}
               </p>
 
               {!compact && (
                 <div className="pt-1.5 border-t border-line-soft space-y-1">
-                  <span className="text-[10px] text-red-400/90 font-bold uppercase block">
+                  <span className="text-micro text-red-400/90 font-bold uppercase block">
                     Destaques da Atualizacao:
                   </span>
                   <ul className="space-y-1">
                     {note.highlights.map((h, idx) => (
-                      <li key={idx} className="text-[10px] text-muted flex items-start space-x-1.5">
+                      <li key={idx} className="text-micro text-muted flex items-start space-x-1.5">
                         <span className="text-red-500 font-bold shrink-0">•</span>
                         <span>{h}</span>
                       </li>
@@ -184,7 +184,7 @@ export const PatchNotesFeed: React.FC<PatchNotesFeedProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-[9px] text-fg-soft pt-1">
+              <div className="font-mono flex items-center justify-between text-micro text-fg-soft pt-1">
                 <span>STATUS: STABLE_DEPLOY</span>
                 <span className="text-fg">{note.date}</span>
               </div>

@@ -194,7 +194,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
 
   return (
     <aside
-      className={`shrink-0 font-mono relative z-40 transition-all duration-300 lg:my-4 lg:ml-4 lg:sticky lg:top-4 lg:self-start ${
+      className={`shrink-0 relative z-40 transition-all duration-300 lg:my-4 lg:ml-4 lg:sticky lg:top-4 lg:self-start ${
         isMinimized ? 'w-full lg:w-20' : 'w-full lg:w-80'
       }`}
     >
@@ -215,13 +215,13 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
       <div className="lg:hidden bg-surface/95 border-b-2 border-red-500/80 px-3 py-2.5 flex items-center justify-between sticky top-0 z-50 shadow-[0_4px_20px_rgba(239,68,68,0.3)] backdrop-blur-md">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-red-950 border border-signal-400 rounded flex items-center justify-center shadow-glow-10 shadow-signal-400/40">
-            <span className="text-signal-400 font-black text-xs">NE</span>
+            <span className="font-display text-signal-400 font-black text-xs">NE</span>
           </div>
           <div>
-            <span className="text-xs font-black text-signal-400 uppercase tracking-widest block leading-none">
+            <span className="font-display text-xs font-black text-signal-400 uppercase tracking-display block leading-none">
               NETSHEET
             </span>
-            <span className="text-[9px] text-red-500 font-bold uppercase tracking-tight block pt-0.5">
+            <span className="font-mono text-micro text-red-500 uppercase tracking-tight block pt-0.5">
               {APP_VERSION}
             </span>
           </div>
@@ -232,7 +232,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
           const currentItem = MENU_ITEMS.find((m) => m.id === activeTab) || MENU_ITEMS[0];
           const CurrentIcon = currentItem.icon;
           return (
-            <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 bg-red-950/80 border border-red-500/60 rounded text-[11px] font-bold uppercase text-signal-300">
+            <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 bg-red-950/80 border border-red-500/60 rounded text-mini font-bold uppercase text-signal-300">
               <CurrentIcon className={`w-3.5 h-3.5 ${currentItem.accent}`} />
               <span>{currentItem.label}</span>
             </div>
@@ -251,7 +251,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
           </button>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`px-3 py-1.5 font-black text-xs uppercase tracking-wider rounded border-2 transition-all flex items-center space-x-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 font-black text-xs uppercase tracking-caps rounded border-2 transition-all flex items-center space-x-1.5 cursor-pointer ${
               isMobileMenuOpen
                 ? 'bg-signal-400 text-black border-signal-300 shadow-glow-15 shadow-signal-400/60'
                 : 'bg-red-600 text-white border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)]'
@@ -289,16 +289,16 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                   {renderAvatar('w-9 h-9')}
                   <div>
                     <div className="flex items-center space-x-1.5 leading-tight">
-                      <span className={`text-xs ${avatarInfo.color} font-black uppercase tracking-wider block`}>
+                      <span className={`text-xs ${avatarInfo.color} font-black uppercase tracking-caps block`}>
                         {user.displayName || user.email?.split('@')[0]}
                       </span>
-                      <span className="text-[10px] font-mono font-bold text-accent-300 bg-accent-950/90 px-1.5 py-0.2 rounded border border-accent-500/60 shrink-0">
+                      <span className="text-micro font-mono text-accent-300 bg-accent-950/90 px-1.5 py-0.2 rounded border border-accent-500/60 shrink-0">
                         {userCyberpunkId}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-1 text-[10px] mt-0.5">
+                    <div className="flex items-center space-x-1 text-micro mt-0.5">
                       <Wifi className={`w-2.5 h-2.5 ${statusInfo.textColor}`} />
-                      <span className={`font-bold uppercase ${statusInfo.textColor}`}>{statusInfo.label}</span>
+                      <span className={`font-mono uppercase ${statusInfo.textColor}`}>{statusInfo.label}</span>
                     </div>
                   </div>
                 </div>
@@ -312,7 +312,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                 if (onOpenAuth) onOpenAuth();
                 setIsMobileMenuOpen(false);
               }}
-              className="w-full py-3 px-4 bg-signal-400 hover:bg-signal-300 text-black font-black text-xs uppercase tracking-widest rounded border-2 border-signal-300 shadow-glow-15 shadow-signal-400/50 flex items-center justify-center space-x-2"
+              className="w-full py-3 px-4 bg-signal-400 hover:bg-signal-300 text-black font-black text-xs uppercase tracking-caps rounded border-2 border-signal-300 shadow-glow-15 shadow-signal-400/50 flex items-center justify-center space-x-2"
             >
               <LogIn className="w-4 h-4 text-black shrink-0" />
               <span>ACESSAR CONTA // EDGERUNNER</span>
@@ -321,7 +321,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
 
           {/* Compact Cyberpunk Grid of Modules */}
           <div className="space-y-1.5">
-            <span className="text-[10px] text-red-500 font-black uppercase tracking-widest block">
+            <span className="font-mono text-micro text-red-500 uppercase tracking-caps block">
               MÓDULOS DE NAVEGAÇÃO // SELECT
             </span>
             <div className="grid grid-cols-2 gap-2">
@@ -335,14 +335,14 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                       setActiveTab(item.id);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`p-3 rounded-lg border-2 uppercase font-mono transition-all flex items-center space-x-2.5 ${
+                    className={`p-3 rounded-lg border-2 uppercase transition-all flex items-center space-x-2.5 ${
                       isActive
                         ? 'bg-red-950/90 border-red-500 text-signal-300 shadow-[0_0_15px_rgba(239,68,68,0.5)]'
                         : 'bg-raised/80 border-line text-fg-soft hover:border-red-500/50'
                     }`}
                   >
                     <IconComp className={`w-4 h-4 ${isActive ? 'text-signal-400 animate-pulse' : item.accent} shrink-0`} />
-                    <span className="text-xs font-black tracking-wider truncate">{item.label}</span>
+                    <span className="text-xs font-black tracking-caps truncate">{item.label}</span>
                   </button>
                 );
               })}
@@ -375,14 +375,14 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
           {/* Top Title Section */}
           {!isMinimized ? (
             <div className="border-b-2 border-red-500/60 pb-3 space-y-1">
-              <h1 className="text-2xl lg:text-3xl font-black italic tracking-tighter text-signal-400 drop-shadow-glow-18 drop-shadow-signal-400/90 uppercase leading-none">
+              <h1 className="font-display text-2xl lg:text-3xl font-black italic tracking-displayer text-signal-400 drop-shadow-glow-18 drop-shadow-signal-400/90 uppercase leading-none">
                 NETSHEET ENGINE
               </h1>
               <div className="flex items-center space-x-2 pt-1">
-                <h2 className="text-xs lg:text-sm font-black tracking-widest text-red-500 uppercase leading-none drop-shadow-[0_0_10px_rgba(239,68,68,0.7)]">
+                <h2 className="font-display text-xs lg:text-sm font-black tracking-display text-red-500 uppercase leading-none drop-shadow-[0_0_10px_rgba(239,68,68,0.7)]">
                   CYBERPUNK 2020
                 </h2>
-                <span className="text-[9px] text-muted font-bold tracking-tight bg-red-950/80 px-1.5 py-0.5 border border-red-800/80 rounded leading-none">
+                <span className="font-mono text-micro text-muted tracking-tight bg-red-950/80 px-1.5 py-0.5 border border-red-800/80 rounded leading-none">
                   {APP_VERSION}
                 </span>
               </div>
@@ -390,9 +390,9 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
           ) : (
             <div className="border-b-2 border-red-500/60 pb-3 text-center">
               <div className="w-10 h-10 mx-auto bg-red-950 border-2 border-signal-400 rounded-lg flex items-center justify-center shadow-glow-12 shadow-signal-400/60">
-                <span className="text-signal-400 font-black text-xs tracking-tighter">NE</span>
+                <span className="font-display text-signal-400 font-black text-xs tracking-displayer">NE</span>
               </div>
-              <span className="text-[8px] text-red-400 font-black uppercase block mt-1 tracking-widest">
+              <span className="font-mono text-micro text-red-400 uppercase block mt-1 tracking-caps">
                 {APP_VERSION}
               </span>
             </div>
@@ -414,7 +414,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                   title={item.label}
                   className={`w-full transition-all duration-200 group relative flex items-center ${
                     isMinimized ? 'justify-center p-2.5' : 'justify-between py-2.5 px-3'
-                  } rounded-lg border-2 uppercase font-mono cursor-pointer ${
+                  } rounded-lg border-2 uppercase cursor-pointer ${
                     isActive
                       ? 'bg-red-950/80 border-red-500 text-signal-300 shadow-[0_0_20px_rgba(239,68,68,0.5)]'
                       : 'bg-raised/60 border-line/80 text-fg-soft hover:border-red-500/60 hover:text-red-400 hover:bg-raised/90'
@@ -439,7 +439,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                             isActive ? 'text-signal-400 animate-pulse' : item.accent
                           } shrink-0`}
                         />
-                        <span className="text-xs font-black tracking-widest leading-none">
+                        <span className="text-xs font-black tracking-caps leading-none">
                           {item.label}
                         </span>
                       </div>
@@ -498,7 +498,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
 
                 {!isMinimized && (
                   <div className="flex items-center space-x-2">
-                    <span className="text-[10px] text-red-400 bg-red-950 px-2 py-0.5 border border-red-800/80 rounded font-bold">
+                    <span className="font-mono font-normal text-micro text-red-400 bg-red-950 px-2 py-0.5 border border-red-800/80 rounded">
                       {APP_VERSION}
                     </span>
                     <ChevronDown
@@ -550,17 +550,17 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
                     <div>
                       <div className="flex items-center space-x-1.5 leading-tight">
                         <span
-                          className={`text-xs ${avatarInfo.color} font-black uppercase tracking-wider block truncate max-w-[100px]`}
+                          className={`text-xs ${avatarInfo.color} font-black uppercase tracking-caps block truncate max-w-[100px]`}
                         >
                           {user.displayName || user.email?.split('@')[0]}
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-accent-300 bg-accent-950/90 px-1.5 py-0.2 rounded border border-accent-500/60 shrink-0">
+                        <span className="text-micro font-mono text-accent-300 bg-accent-950/90 px-1.5 py-0.2 rounded border border-accent-500/60 shrink-0">
                           {userCyberpunkId}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-1 text-[9px] mt-0.5">
+                      <div className="flex items-center space-x-1 text-micro mt-0.5">
                         <Wifi className={`w-2.5 h-2.5 ${statusInfo.textColor}`} />
-                        <span className={`font-bold uppercase ${statusInfo.textColor}`}>
+                        <span className={`font-mono uppercase ${statusInfo.textColor}`}>
                           {statusInfo.label}
                         </span>
                       </div>
@@ -595,7 +595,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
               title="Acessar Conta"
               className={`w-full py-3 ${
                 isMinimized ? 'px-2' : 'px-4'
-              } bg-signal-400 hover:bg-signal-300 text-black font-black text-xs uppercase tracking-widest rounded border-2 border-signal-300 shadow-glow-15 shadow-signal-400/50 transition-all flex items-center justify-center space-x-2 cursor-pointer`}
+              } bg-signal-400 hover:bg-signal-300 text-black font-black text-xs uppercase tracking-caps rounded border-2 border-signal-300 shadow-glow-15 shadow-signal-400/50 transition-all flex items-center justify-center space-x-2 cursor-pointer`}
             >
               <LogIn className="w-4 h-4 text-black shrink-0" />
               {!isMinimized && <span>PERFIL // ACESSAR CONTA</span>}

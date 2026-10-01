@@ -21,7 +21,7 @@ const PRIORITY_STYLE: Record<string, string> = {
 function StatusBadge({ status }: { status: PrdStatus }) {
   const s = STATUS_STYLE[status] || STATUS_STYLE['pendente'];
   return (
-    <span className={`text-[9px] px-1.5 py-0.5 border rounded font-black uppercase tracking-wider font-mono ${s.cls}`}>
+    <span className={`text-micro px-1.5 py-0.5 border rounded font-black uppercase tracking-caps ${s.cls}`}>
       {s.label}
     </span>
   );
@@ -34,21 +34,21 @@ export const PrdViewer: React.FC = () => {
   const doneTasks = doc.roadmap.reduce((acc, p) => acc + p.tasks.filter((t: PrdTask) => t.status === 'concluído').length, 0);
 
   return (
-    <div className="space-y-5 font-mono animate-fadeIn">
+    <div className="space-y-5 animate-fadeIn">
       {/* Header */}
       <div className="bg-surface/90 border-2 border-red-600/40 rounded-2xl p-6 relative overflow-hidden shadow-[0_0_25px_rgba(239,68,68,0.12)]">
         <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-red-500 via-signal-500 to-accent-500" />
         <div className="pl-3 relative z-10">
           <div className="flex items-center space-x-2 mb-2">
             <FileText className="w-5 h-5 text-red-400" />
-            <span className="text-[11px] font-black tracking-widest text-red-500 uppercase">PRD // NETSHEET ENGINE</span>
+            <span className="text-mini font-black tracking-caps text-red-500 uppercase">PRD // NETSHEET ENGINE</span>
             <StatusBadge status="em andamento" />
           </div>
-          <h1 className="text-2xl font-black italic text-signal-400 uppercase drop-shadow-glow-15 drop-shadow-signal-400/40">
+          <h1 className="font-display text-2xl font-black italic text-signal-400 uppercase drop-shadow-glow-15 drop-shadow-signal-400/40">
             {doc.title}
           </h1>
           <p className="text-xs text-fg-soft mt-1 max-w-3xl leading-relaxed">{doc.subtitle}</p>
-          <div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-subtle">
+          <div className="flex flex-wrap items-center gap-3 mt-3 text-micro text-subtle">
             <span>Versão: <strong className="text-accent-400">{doc.version}</strong></span>
             <span>Atualizado: <strong className="text-fg-soft">{doc.updatedAt}</strong></span>
             <span>Tarefas: <strong className="text-signal-400">{doneTasks}/{totalTasks}</strong> concluídas</span>
@@ -73,7 +73,7 @@ export const PrdViewer: React.FC = () => {
           <button
             key={id}
             onClick={() => setActiveSection(id)}
-            className={`px-3 py-1.5 rounded-lg border text-[11px] font-black uppercase tracking-wider flex items-center space-x-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg border text-mini font-black uppercase tracking-caps flex items-center space-x-1.5 transition-all cursor-pointer ${
               activeSection === id
                 ? 'bg-red-950/80 border-red-500 text-signal-300 shadow-[0_0_12px_rgba(239,68,68,0.4)]'
                 : 'bg-surface border-line text-muted hover:border-red-500/50 hover:text-white'
@@ -90,12 +90,12 @@ export const PrdViewer: React.FC = () => {
         <div className="space-y-4">
           {doc.overview.map((section) => (
             <div key={section.id} className="bg-surface/80 border-l-4 border-y border-r border-line rounded-xl p-5">
-              <h3 className="text-sm font-black text-accent-400 uppercase tracking-widest mb-2">{section.title}</h3>
+              <h3 className="text-sm font-black text-accent-400 uppercase tracking-caps mb-2">{section.title}</h3>
               <p className="text-xs text-fg-soft leading-relaxed">{section.content}</p>
               {section.items && (
                 <ul className="mt-3 space-y-1.5">
                   {section.items.map((item, i) => (
-                    <li key={i} className="text-[11px] text-muted flex items-start space-x-2">
+                    <li key={i} className="text-mini text-muted flex items-start space-x-2">
                       <span className="text-accent-500 font-black shrink-0">▸</span>
                       <span>{item}</span>
                     </li>
@@ -112,13 +112,13 @@ export const PrdViewer: React.FC = () => {
           {doc.modules.map((mod) => (
             <div key={mod.id} className="bg-surface/80 border-l-4 border-signal-500 border-y border-r rounded-xl p-5 hover:shadow-glow-15 hover:shadow-signal-500/12 transition-all">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-black text-signal-400 uppercase tracking-widest">{mod.name}</h3>
+                <h3 className="text-sm font-black text-signal-400 uppercase tracking-caps">{mod.name}</h3>
                 <StatusBadge status={mod.status} />
               </div>
-              <p className="text-[11px] text-muted leading-relaxed mb-3">{mod.description}</p>
+              <p className="text-mini text-muted leading-relaxed mb-3">{mod.description}</p>
               <ul className="space-y-1">
                 {mod.features.map((f, i) => (
-                  <li key={i} className="text-[10px] text-fg-soft flex items-start space-x-1.5">
+                  <li key={i} className="text-micro text-fg-soft flex items-start space-x-1.5">
                     <CheckCircle2 className="w-3 h-3 text-ok-400 shrink-0 mt-0.5" />
                     <span>{f}</span>
                   </li>
@@ -139,25 +139,25 @@ export const PrdViewer: React.FC = () => {
               <div key={phase.id} className="bg-surface/80 border-l-4 border-y border-r border-line rounded-xl p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <div className="flex items-center space-x-2">
-                    <span className={`text-[9px] px-1.5 py-0.5 border rounded font-black ${PRIORITY_STYLE[phase.priority]} font-mono`}>
+                    <span className={`text-micro px-1.5 py-0.5 border rounded ${PRIORITY_STYLE[phase.priority]} font-mono`}>
                       {phase.priority}
                     </span>
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                    <h3 className="text-sm font-black text-white uppercase tracking-caps">
                       Fase {phase.number} — {phase.title}
                     </h3>
                   </div>
                   <div className="flex items-center space-x-2">
                     <StatusBadge status={phase.status} />
-                    <span className="text-[9px] text-subtle font-mono">{done}/{applicable}</span>
+                    <span className="text-micro text-subtle font-mono">{done}/{applicable}</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-muted mb-3">{phase.objective}</p>
+                <p className="text-mini text-muted mb-3">{phase.objective}</p>
                 <div className="h-1 bg-raised rounded-full overflow-hidden mb-3">
                   <div className="h-full bg-gradient-to-r from-red-500 to-signal-400 transition-all" style={{ width: `${pct}%` }} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {phase.tasks.map((task) => (
-                    <div key={task.code} className="flex items-center space-x-2 text-[10px] font-mono">
+                    <div key={task.code} className="flex items-center space-x-2 text-micro font-mono">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${
                         task.status === 'concluído' ? 'bg-ok-400' : task.status === 'em andamento' ? 'bg-accent-400 animate-pulse' : task.status === 'cancelado' ? 'bg-red-500' : 'bg-night-700'
                       }`} />
@@ -182,12 +182,12 @@ export const PrdViewer: React.FC = () => {
             }`}>
               <div className="flex items-center space-x-2 mb-2">
                 <Terminal className="w-4 h-4 text-accent-400" />
-                <h3 className="text-sm font-black text-accent-400 uppercase tracking-widest">{layer.layer}</h3>
+                <h3 className="text-sm font-black text-accent-400 uppercase tracking-caps">{layer.layer}</h3>
               </div>
-              <p className="text-[11px] text-muted leading-relaxed mb-3">{layer.description}</p>
+              <p className="text-mini text-muted leading-relaxed mb-3">{layer.description}</p>
               <div className="flex flex-wrap gap-1.5">
                 {layer.tech.map((t) => (
-                  <span key={t} className="text-[9px] px-2 py-0.5 rounded bg-raised border border-line-strong text-signal-300 font-mono font-bold">
+                  <span key={t} className="text-micro px-2 py-0.5 rounded bg-raised border border-line-strong text-signal-300 font-mono">
                     {t}
                   </span>
                 ))}

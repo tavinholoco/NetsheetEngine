@@ -9,9 +9,9 @@ export const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="bg-surface/90 border-l-4 border-y border-r border-line rounded-2xl p-10 text-center font-mono animate-fadeIn">
-      <div className="text-[80px] font-black text-red-500/30 select-none leading-none">404</div>
-      <h2 className="text-xl font-black text-red-400 uppercase tracking-widest mt-2">// ROTA NÃO ENCONTRADA</h2>
+    <div className="bg-surface/90 border-l-4 border-y border-r border-line rounded-2xl p-10 text-center animate-fadeIn">
+      <div className="font-display text-[80px] font-black text-red-500/30 select-none leading-none">404</div>
+      <h2 className="font-display text-lg sm:text-xl font-black text-red-400 uppercase tracking-display mt-2">// ROTA NÃO ENCONTRADA</h2>
       <p className="text-xs text-muted mt-3 max-w-md mx-auto">
         A Net não reconhece esse endereço. Verifique a URL ou volte para o terminal principal, choomba.
       </p>
