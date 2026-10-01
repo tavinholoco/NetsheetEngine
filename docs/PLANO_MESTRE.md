@@ -905,20 +905,27 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       publica o `master`. Os itens automáticos rodam num comando só —
       **`node scripts/verify-prod.mjs`** —, que a tarefa agendada `verificar-render-netsheet-01-10`
       (app do Claude, 01/10 às 11:30) executa e registra num PR. O backup mensal roda antes, às 10:00.
-      - [ ] **01.1** O serviço voltou: `/api/health` responde JSON, não `503 Service Suspended`.
-      - [ ] **01.2** A versão publicada é a do `package.json` (`0.4.3`; `0.4.4` se o PR 3b da F entrar
+      - [x] **01.1** O serviço voltou: `/api/health` responde JSON, não `503 Service Suspended`.
+            *(01/10/2026: `/api/health` online.)*
+      - [x] **01.2** A versão publicada é a do `package.json` (`0.4.3`; `0.4.4` se o PR 3b da F entrar
             antes — o script lê o `package.json`) — o deploy é o último commit
             (R.9). Se não for: painel do Render → *Manual Deploy → Deploy latest commit* (dono).
+            *(01/10/2026: publicada `0.4.4` = `package.json`.)*
       - [ ] **01.3** O `clientIp` do health é o IP público de quem pergunta (R.5, `trust proxy`). Registrar
             só se **bateu** — nunca o IP. Se não bateu: `TRUST_PROXY` no [`DEPLOY.md`](./DEPLOY.md).
-      - [ ] **01.4** O site carrega e a interface mostra a versão do `package.json` (continuação do R.9).
-      - [ ] **01.5** `/api/nao-existe` → 404 em JSON, não a SPA.
-      - [ ] **01.6** `GET /api/rooms` → 404: o lobby não lista salas (R.11).
-      - [ ] **01.7** `POST /api/gemini` sem login → 401 (SEC-01).
-      - [ ] **01.8** Os contratos da revisão, com uma sala de teste que o script apaga no fim: código de
+            *01/10/2026: não bateu. O ajuste é o `TRUST_PROXY` no painel do Render (dono), e depois
+            rodar o script de novo.*
+      - [x] **01.4** O site carrega e a interface mostra a versão do `package.json` (continuação do R.9).
+            *(01/10/2026: título "NETSHEET ENGINE — Cyberpunk 2020 Sheet Builder"; bundle com `0.4.4`.)*
+      - [x] **01.5** `/api/nao-existe` → 404 em JSON, não a SPA. *(01/10/2026: 404 JSON.)*
+      - [x] **01.6** `GET /api/rooms` → 404: o lobby não lista salas (R.11). *(01/10/2026: 404.)*
+      - [x] **01.7** `POST /api/gemini` sem login → 401 (SEC-01). *(01/10/2026: recebeu 401.)*
+      - [x] **01.8** Os contratos da revisão, com uma sala de teste que o script apaga no fim: código de
             convite aceito; `join` com o `gmPeerId` sem o token → 409 `seat_taken` (R.1); `create` com
-            código em uso → 409 `room_exists` (R.2).
-      - [ ] **01.9** O E2E de WebSocket contra o ar: chat, rolagem e Yjs, 5/5.
+            código em uso → 409 `room_exists` (R.2). *(01/10/2026: criar sala 200; `seat_taken` 409;
+            `room_exists` 409; sala de teste removida.)*
+      - [x] **01.9** O E2E de WebSocket contra o ar: chat, rolagem e Yjs, 5/5.
+            *(01/10/2026: 5 passaram, 0 falharam.)*
       - [ ] **01.10** *(dono)* Painel do Render → *Events* → log do build: **Node 24.x** (R.8, OPS-02). O
             CLI do Render desta máquina está deslogado, e o login é do dono.
       - [ ] **01.11** *(dono)* Painel do Render → uso do workspace: anotar horas e banda do NetSheet —
@@ -2041,7 +2048,11 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
 Renovar até 22/10 — passo a passo no P.2.
 
-**⏰ 01/10/2026 — o Render volta** depois da suspensão de setembro (ver o incidente no
+**01/10/2026 — o Render voltou.** `node scripts/verify-prod.mjs`: 11 de 12 checagens passaram
+(01.1, 01.2 com `0.4.4`, 01.4–01.9). **O 01.3 falhou**: o `clientIp` não bateu, e o ajuste é o
+`TRUST_PROXY` no painel (dono). Faltam também o 01.10–01.12, do dono. O histórico da nota segue abaixo.
+
+*Nota anterior:* o Render volta depois da suspensão de setembro (ver o incidente no
 [contrato de custo zero](#-contrato-de-custo-zero)). Conferir na aba *Events* que o deploy que subiu é
 o do commit mais recente do `master` — se não for, *Manual Deploy → Deploy latest commit* — e rodar a
 [verificação pós-deploy](./DEPLOY.md#verificação-pós-deploy) contra
