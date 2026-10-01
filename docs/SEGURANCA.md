@@ -611,7 +611,35 @@ executável. `npm audit`: 0.
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
 
-*F.2b, F.3 e F.4: a preencher no F.5.*
+**30/09/2026 — F.2b, F.3 e F.4 (PR 3b: cor com significado, vocabulário, acessibilidade) — e o F.5
+da fase inteira.**
+
+1. **Entrada nova?** Nenhuma no servidor. No cliente, nada que o usuário digita mudou: os dois modais
+   da mesa passaram ao `Dialog` do Radix com os **mesmos** botões e as mesmas chamadas.
+2. **Dado novo sai?** Nenhum. O modal "inspecionar ficha" mostra o que já mostrava; a descrição para
+   leitor de tela (`sr-only`) repete o *handle*, que já está no título.
+3. **Autorização nova?** Nenhuma. O modal "editar saúde" continua aberto só para o GM no cliente
+   (`isGm`), e quem decide é o servidor: desde a D, só o GM e o próprio servidor escrevem ferimento na
+   mesa — forçar o modal pelo DevTools dá um 403, como antes. Nenhuma sessão nova é emitida.
+4. **Jogador convidado hostil?** Nada muda para ele.
+5. **Estado novo sem limite?** Nenhum. A referência ao botão que abriu o modal (`quemAbriuModal`) é
+   um ponteiro de DOM só entre abrir e fechar.
+6. **Custo por requisição a serviço externo?** Nenhum. A banda **cai**: o Rajdhani 500 e 600 saem
+   (F.4.3) — ~30 KB a menos por aparelho de quem está logado.
+
+**Mudança no CI:** o job de validação roda o `audit:colors` e o `migrate-colors --conflitos` (F.2.10).
+Os dois só **leem** `src/`, sem rede e sem segredo; o job não recebe nenhum *secret* novo.
+
+**Sem dependência nova.** O `cn` passou a configurar o `tailwind-merge` que já existia
+(`extendTailwindMerge`) — só nomes de classe.
+
+**A fase inteira (F.0–F.4), pelo portão:** o CSP continua `'self'` em tudo, e agora é exercitado a
+cada PR pelo E2E `fonts-csp`; o navegador do jogador deixou de pedir fonte ao Google (um dado a menos
+saindo); nenhuma rota, mensagem de WebSocket, sessão ou permissão nova. O que a F mudou é
+apresentação — e a acessibilidade (WCAG 2.2: 2.2.2, 2.3.1, 1.4.3, 1.4.11, 2.5.8 e os modais com foco
+preso) — com teste ou prova por script em cada item.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
 
 ### Fases G, H, I e J — varreduras
 

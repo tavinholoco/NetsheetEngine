@@ -146,6 +146,22 @@ algarismos tabulares** (`tabular-nums` não muda nada nele), então número vai 
 largura fixa — e a **Saira Condensed** não entrou; e os momentos de terminal já se distinguem pela
 mono — o **VT323** também não. Nem o Rajdhani nem o Orbitron têm `º`/`ª`.
 
+**No PR 3b (F.2b, F.3, F.4 — 30/09/2026)** a direção se cumpriu e ganhou trava:
+
+- **Vermelho só dano.** Os 322 usos restantes foram classificados um a um: a moldura da marca foi
+  para `accent`, o item ativo e o GM para `signal`, erro e ação destrutiva para `fault`, e só o dano
+  ficou em `danger`. A escala de ferimento virou `wound-0` a `wound-10`, que **clareia** com a
+  gravidade. A paleta padrão saiu do `@theme` (`--color-*: initial`), e o `audit:colors` exige zero no
+  CI.
+- **Uma rampa a mais, `roll` (azul), para DADOS:** o rosa de antes era a própria rampa do `fault`, e
+  nenhum papel sobrava. A PRD foi para o neutro.
+- **Sem o livro (decisão 11), a diagramação da (d) não teve fonte pública:** a barra preta e a
+  numeração de seção saíram, e as faixas de perigo ficaram ADIAR. A scanline ficou estática, e o glitch
+  virou evento único de 0,75 s.
+- **Acessibilidade com teste:** contraste de texto e de borda de campo, animação que para em 5 s,
+  alvos de 24 px, modais com foco preso. E um achado de camada: o `tailwind-merge` do `cn` não lia o
+  `@theme` e apagava os tokens de tamanho (`shadow-glow-*`, `text-micro`) — agora ele os conhece.
+
 ## Histórico de revisões
 
 **Versão 1 — migrar para o Cyberpunk 2077.** Proposta a partir da galeria

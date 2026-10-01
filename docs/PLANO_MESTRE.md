@@ -893,10 +893,11 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
 
       > **Isto NÃO bloqueia a Fase F.** O R.15 fecha em 01/10, pela tarefa agendada e pelos itens do dono.
       > A Fase E abriu e fechou em 30/09 com ele aberto, e a Fase F andou com ele aberto: em 30/09
-      > entraram no `master` a F.0, a F.2 mecânica e a F.1 (#26 a #29). **A próxima sessão segue a F
-      > pelo PR 3b** — ver [a F.2b](#f2b--cor-com-significado-meio-dia--pr-3b). Exceção: se o checklist de
-      > 01/10 falhou (algo ❌ no PR `claude/verificacao-01-10` ou no resumo da tarefa), esse vermelho vem
-      > primeiro.
+      > entraram no `master` a F.0, a F.2 mecânica e a F.1 (#26 a #29). *(30/09, à noite: o PR 3b — F.2b,
+      > F.3 e F.4 — foi aberto, empilhado no #31 da decisão 11. **A próxima sessão confere a F.0g e a
+      > F.4.4 no ar, depois do merge, e abre a [Fase G](#fase-g---varredura-frontend-12-dias).)*
+      > Exceção: se o checklist de 01/10 falhou (algo ❌ no PR `claude/verificacao-01-10` ou no resumo da
+      > tarefa), esse vermelho vem primeiro.
 
       **Checklist de 01/10/2026 — quando a API voltar.** O Render suspendeu o serviço em setembro
       (incidente no [contrato de custo zero](#-contrato-de-custo-zero)); ele volta na virada do mês e
@@ -904,11 +905,12 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       **`node scripts/verify-prod.mjs`** —, que a tarefa agendada `verificar-render-netsheet-01-10`
       (app do Claude, 01/10 às 11:30) executa e registra num PR. O backup mensal roda antes, às 10:00.
       - [ ] **01.1** O serviço voltou: `/api/health` responde JSON, não `503 Service Suspended`.
-      - [ ] **01.2** A versão publicada é a do `package.json` (`0.4.3`) — o deploy é o último commit
+      - [ ] **01.2** A versão publicada é a do `package.json` (`0.4.3`; `0.4.4` se o PR 3b da F entrar
+            antes — o script lê o `package.json`) — o deploy é o último commit
             (R.9). Se não for: painel do Render → *Manual Deploy → Deploy latest commit* (dono).
       - [ ] **01.3** O `clientIp` do health é o IP público de quem pergunta (R.5, `trust proxy`). Registrar
             só se **bateu** — nunca o IP. Se não bateu: `TRUST_PROXY` no [`DEPLOY.md`](./DEPLOY.md).
-      - [ ] **01.4** O site carrega e a interface mostra `v0.4.3` (continuação do R.9).
+      - [ ] **01.4** O site carrega e a interface mostra a versão do `package.json` (continuação do R.9).
       - [ ] **01.5** `/api/nao-existe` → 404 em JSON, não a SPA.
       - [ ] **01.6** `GET /api/rooms` → 404: o lobby não lista salas (R.11).
       - [ ] **01.7** `POST /api/gemini` sem login → 401 (SEC-01).
@@ -1160,7 +1162,7 @@ mecânica da F.2 vem **antes** da F.1 — os IDs ficaram os de 02/09, que o rest
 | **1** | F.0 | O único **bug** que o jogador vê vai ao ar sozinho, com as guardas — ✅ **#27**, mergeado em 30/09 |
 | **2** | F.2, parte mecânica (F.2.1, F.2.4–F.2.6) | Encanamento sem mudança visual, provado por captura: a revisão do dono é "nada mudou" — ✅ **#28**, 30/09 |
 | **3a** | F.1 | A tipografia: as três vozes, mono sem negrito, piso de 10 px — ✅ **#29**, 30/09 |
-| **3b** | F.2b, F.3, F.4 | A cor com significado, o vocabulário visual e a acessibilidade; fecha a fase com a tag — **o próximo** |
+| **3b** | F.2b, F.3, F.4 | A cor com significado, o vocabulário visual e a acessibilidade; fecha a fase com a tag — aberto em 30/09, empilhado no #31 (decisão 11) |
 
 *(30/09/2026 — o PR 3 virou dois. A ideia era a identidade chegar "de uma vez", mas a F.1 sozinha
 toca as 29 telas e componentes, e a produção ainda não tem jogador: duas ondas não custam nada a
@@ -1358,6 +1360,11 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 
 #### F.2b — Cor com significado *(meio dia — PR 3b)*
 
+> *(30/09/2026, à noite — **o PR 3b foi feito nesta mesma data**; as notas abaixo ficam como o que a
+> sessão herdou. As ferramentas e as travas continuam valendo para qualquer mudança visual: o
+> `audit:colors` e o `--conflitos` agora rodam no CI, e o `capturar.mjs` faz o GM entrar pelo deep
+> link — antes ele virava jogador.)*
+>
 > **Para a sessão que abrir o PR 3b** *(fim da sessão de 30/09/2026)*. O que esta parte herda:
 > - **Comece pela F.3.0 — a pesquisa em fonte pública** das três perguntas de diagramação (barra
 >   preta, faixas, numeração): o dono **não tem o livro** (decisão 11). A F.3 inteira depende delas; a
@@ -1490,10 +1497,15 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
       colunas justificadas, face sem serifa, *sidebars*, arte a traço em P&B, o nome do capítulo no
       alto da página e o número embaixo. **O dono decidiu pelas recomendações:** a F.3.2 e a F.3.4
       saem, e a F.3.3 vira ADIAR com gatilho.)*
-- [ ] **F.3.1** **`scanline` e `glitch` com intenção, dentro do 2.2.2:** a scanline **estática** (a
+- [x] **F.3.1** **`scanline` e `glitch` com intenção, dentro do 2.2.2:** a scanline **estática** (a
       `.crt-scanlines` que já existe, 1 uso) no lugar da animação de 8 s em loop; o `glitch` **só em
       evento** e uma vez (menos de 1 s) — entrar em Mortal, trocar de tela. Nunca em loop numa tela de
       leitura.
+      *(30/09/2026 — medido: a scanline animada, o glitch e o `.glitch-text` tinham **0 usos**, todos em
+      loop infinito. A animada e o `.glitch-text` saem; o glitch vira `glitch 0.75s steps(1, end) 1` —
+      dois saltos e a volta, três mudanças. Quem dispara é a `key` do React: o título da página a cada
+      troca de tela, e o estado do Bio-Monitor ao entrar ou piorar em Mortal e ao morrer. Conferido no
+      navegador: 0,75 s, 1 iteração.)*
 - [x] ~~**F.3.2** **Barras pretas com caixa alta reversa** — um componente de cabeçalho de seção, não
       uma classe repetida. *Se o F.3.0 confirmar.*~~ **Saiu (F.3.0, 30/09/2026):** sem fonte, e o
       sintoma que ela resolveria — seções que não se distinguem — a F.1.3 já resolveu com o Orbitron.
@@ -1504,14 +1516,19 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
 - [x] ~~**F.3.4** **Numeração de seção e rótulos técnicos.** *Se o F.3.0 confirmar* — e no formato do
       livro. O `FICHA_01` com underscore, sem o livro, sai.~~ **Saiu (F.3.0, 30/09/2026):** sem fonte;
       fica o `SISTEMA // FICHA` que o app já usa.
-- [ ] **F.3.5** *(opcional, sob o filtro)* Textura de impressão/xerox e aberração cromática sutil.
+- [x] **F.3.5** *(opcional, sob o filtro)* Textura de impressão/xerox e aberração cromática sutil.
       **ADIAR** por padrão — "falta sujeira analógica" é gosto, não sintoma. Qualquer textura passa no
-      F.4.2.
+      F.4.2. *(30/09/2026 — **ADIAR**, como o item previa. **Gatilho:** o dono pedir a textura depois de
+      ver a F no ar. A aberração sutil que já existe é a franja magenta/ciano do `.crt-phosphor`.)*
 
 #### F.4 — Aplicar e verificar *(meio dia a 1 dia — PR 3b)*
 
-- [ ] **F.4.1** Aplicar começando pela ficha (maior superfície visual) e terminando na mesa.
-- [ ] **F.4.2** **Acessibilidade — não negociável.** Critérios do [WCAG 2.2](https://www.w3.org/TR/WCAG22/):
+- [x] **F.4.1** Aplicar começando pela ficha (maior superfície visual) e terminando na mesa.
+      *(30/09/2026 — aplicado pela F.2b em lotes, da moldura e da interface à ficha e à mesa, cada um
+      com `--conflitos` em 0; prova pelas cinco capturas antes e depois no `netsheet-prod`, que vão no
+      PR. A ferramenta de captura tinha um defeito: a "mesa do GM" entrava pelo lobby e virava jogador
+      desde a R.1 — consertada, o GM entra pelo deep link.)*
+- [x] **F.4.2** **Acessibilidade — não negociável.** Critérios do [WCAG 2.2](https://www.w3.org/TR/WCAG22/):
       - **2.2.2 Pausar, parar, ocultar (A)** — a versão 10× menor **certa**: no `@theme`,
         `--animate-pulse` e `--animate-ping` com **iterações finitas** (param em ≤ 5 s) — um lugar para
         os 18 `pulse` e os 2 `ping`. O `spin` de carregando é essencial e fica. **E** a regra
@@ -1526,15 +1543,47 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
       - As **12 marcas d'água** decorativas ganham `aria-hidden`.
       - **2.5.8 Tamanho do alvo (AA, 24 px):** 44 dos 111 alvos da ficha têm menos de 24 px. Os 40 da
         trilha (20 × 20, com 4 px de vão) passam pela exceção de espaçamento; conferir os outros.
-- [ ] **F.4.3** Peso das fontes: só os pesos usados. Linha de base (`latin`, `woff2`): Rajdhani 14–15 KB
+      *(30/09/2026 — feito, cada parte com teste ou prova por script:*
+      - ***2.2.2:** `pulse` (2 s × 2), `ping` (1 s × 4), `bounce` (1 s × 3) e `pulse-glow` (2 s × 2) no
+        `@theme`, finitos; o `spin` fica. `prefers-reduced-motion` zera o resto, fora o spin. Trava:
+        `theme-motion.test` (provado: 6 de 8 falhavam antes).*
+      - ***2.3.1:** o glitch tem três mudanças em 0,75 s (F.3.1).*
+      - ***1.4.3:** pelos tokens (F.2.7, F.2.8). **1.4.11 — achado ao medir:** a borda dos campos de
+        formulário ficava em 1,27–2,14:1 (borda de cartão é decoração e fica). Token novo `field`
+        (night-500) e o 700 da rampa nos campos coloridos: pior caso 3,53:1. Trava no
+        `theme-contrast.test` (provado: o valor de antes dá 1,95 e 1,73:1).*
+      - ***Modais:** os dois da mesa no `Dialog` do Radix, com o foco devolvido a quem abriu (eles
+        abrem por estado). Prova com o build de produção, GM e jogador: `role="dialog"` com título, foco
+        preso por 20 Tabs, Esc fecha, foco volta. Do `dialog.tsx` saíram os `animate-in/out`, `zoom-*`,
+        `slide-*` (do plugin que não está instalado); o conteúdo entra com o `fadeIn`.*
+      - ***Marcas d'água:** as 12 com `aria-hidden`.*
+      - ***2.5.8 — medido em 9 larguras, de 375 a 1920 px:** a 375 px os 40 quadrados da trilha eram
+        12×12 e falhavam (a medida de 20×20 era a do desktop); a 1024 px os "−"/"+" dos atributos
+        encolhiam para 14×28. A trilha passa a 2 níveis por linha no celular, 5 a partir de 640 px e
+        os 10 do livro a partir de 1536 px (quadrado de 25 a 48 px); os botões, `shrink-0`. **0** alvos
+        fora do critério nas 9 larguras.*
+      - ***Achado ao converter os modais — o `cn` apagava classes:** o `tailwind-merge` não lê o
+        `@theme` e tomava `shadow-glow-*`, `text-micro`/`text-mini` por cor; o modal de login perdera o
+        brilho desde a F.2.5. `extendTailwindMerge` com os tokens de tamanho, e o `cn-theme.test`
+        deriva a lista do `@theme` (provado: 20 de 21 falhavam).)*
+- [x] **F.4.3** Peso das fontes: só os pesos usados. Linha de base (`latin`, `woff2`): Rajdhani 14–15 KB
       por peso, Share Tech Mono 13 KB, Orbitron variável 11,5 KB. Uma vez por aparelho — ~40–80 KB,
       nada perto dos 5 GB de banda do workspace.
+      *(30/09/2026 — o Rajdhani 500 e o 600 tinham **um** uso cada, na linha "FICHA ATIVA" do
+      cabeçalho; viraram 400 e 700, e os dois imports saem. Ficam Rajdhani 400 e 700, Share Tech Mono
+      400 e o Orbitron variável; o build passa de 13 para 7 `woff2` do Rajdhani e da mono, mais o do
+      Orbitron.)*
 - [ ] **F.4.4** Produção com helmet ativo — coberta pelo E2E da F.0d a cada PR. Conferir no ar uma vez,
       depois do último deploy (como na F.0g).
-- [ ] **F.4.5** `git tag v0.4.4`, com o `package.json` em `0.4.4` (a regra do R.9).
-- [ ] **F.5** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.** *(Prévia de 30/09: nenhuma entrada, saída ou autorização nova; o CSP continua `'self'`; custo novo só a banda das fontes.)*
-- [ ] **F.6** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase F concluída em:** ____/____/______
+      *(30/09/2026 — o E2E `fonts-csp` passou neste PR, 7/7. A visita ao ar é depois do merge, junto
+      com a F.0g.)*
+- [x] **F.4.5** `git tag v0.4.4`, com o `package.json` em `0.4.4` (a regra do R.9).
+      *(30/09/2026 — `npm version 0.4.4 --no-git-tag-version`; a tag `v0.4.4` vai no último commit do
+      branch, como a `v0.4.3` foi no da D.)*
+- [x] **F.5** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.** *(Prévia de 30/09: nenhuma entrada, saída ou autorização nova; o CSP continua `'self'`; custo novo só a banda das fontes.)* *(30/09/2026 — registrado em [`SEGURANCA.md`](./SEGURANCA.md#fase-f--reestruturação-visual), para o PR 3b e para a fase inteira: nada novo nas seis; a banda cai com os dois pesos a menos; o CI roda dois scripts que só leem `src/`. Nenhum diagrama mudou de forma — o das camadas de token segue ADIAR, sem o gatilho disparado.)*
+- [x] **F.6** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+- [ ] ✅ **Fase F concluída em:** ____/____/______ *(a construção fechou em 30/09/2026, no PR 3b; a data
+      entra quando a F.0g e a F.4.4 — a visita ao ar depois do deploy — estiverem marcadas)*
 
 > **Critério de pronto:** duas medidas objetivas, não "está bonito" — e as duas com comando.
 > (1) `npm run audit:colors` em **zero** no CI, fora das exceções nomeadas (F.2.10). (2) O E2E das
@@ -1956,7 +2005,7 @@ público mudar.
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
-| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28) e a F.1 (#29) no `master`; falta a F.0g (no ar) e o PR 3b — próximo: F.2.2 | — |
+| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28) e a F.1 (#29) no `master`; o PR 3b (F.2b, F.3, F.4, tag `v0.4.4`) aberto em 30/09. Falta a visita ao ar: F.0g e F.4.4 | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
@@ -1969,20 +2018,20 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Depois da F.1 (30/09/2026 — a Fase F em andamento) |
+| Verificação | Depois do PR 3b da F (30/09/2026 — a construção da F fechada; falta a visita ao ar) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **671** testes, 47 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1)* — `vitest` 4.1.11 |
+| `npx vitest run` | **744** testes, 50 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`) |
-| Chunk de entrada | 628 kB / 186 kB gzip; CSS 119 kB / 16,9 kB gzip *(F.1)* |
-| Fontes (F.0c, F.1.3) | Rajdhani 400–700, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
+| Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
+| Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
 | `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
-| `npm run audit:colors` | **322** a migrar (paleta 285 · `rgba` 36 · hex 1) e 109 `black`/`white` — era **1.879** na F.0e; a F.2 mecânica converteu o resto, e o que sobra é o vermelho, o rosa e a escala de ferimento da F.2b. Zero é o critério de pronto da F.2.10 |
-| `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4) |
+| `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 107 `black`/`white`, à parte. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
+| `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4), e **o CI exige** (F.2.10) |
 | Mono com negrito (`audit:colors`, coluna `mono+b`) | **0** (F.1.2) — e 0 no navegador, em 12 telas |
 | Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 
