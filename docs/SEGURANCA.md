@@ -596,7 +596,22 @@ quem migra, leem e escrevem arquivos de `src/`, sem rede e sem segredo. Não ent
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança: é refatoração visual,
 provada por captura sem mudança de tela.
 
-*F.1, F.2b, F.3 e F.4: a preencher no F.5.*
+**30/09/2026 — F.1 (PR 3a: a tipografia).**
+
+1. **Entrada nova?** Nenhuma. Só classes e tokens de tipografia.
+2. **Dado novo sai?** Nenhum.
+3. **Autorização nova?** Nenhuma.
+4. **Jogador convidado hostil?** Nada muda para ele.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum externo. O Orbitron é mais um `woff2` servido
+   pelo próprio origin (11,8 KB, uma vez por aparelho); o CSP não muda e o E2E `fonts-csp` segue verde.
+
+**Dependência nova:** `@fontsource-variable/orbitron` 5.3.0 — só CSS e fonte, OFL-1.1, sem código
+executável. `npm audit`: 0.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
+
+*F.2b, F.3 e F.4: a preencher no F.5.*
 
 ### Fases G, H, I e J — varreduras
 

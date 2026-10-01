@@ -1155,7 +1155,12 @@ mecânica da F.2 vem **antes** da F.1 — os IDs ficaram os de 02/09, que o rest
 |---|---|---|
 | **1** | F.0 | O único **bug** que o jogador vê vai ao ar sozinho, com as guardas |
 | **2** | F.2, parte mecânica (F.2.1, F.2.4–F.2.6) | Encanamento sem mudança visual, provado por captura: a revisão do dono é "nada mudou" |
-| **3** | F.1, F.2b, F.3, F.4 | A identidade nova chega **de uma vez**, numa versão coerente, e não em duas ondas. Pode virar dois PRs (ficha; mesa) |
+| **3a** | F.1 | A tipografia: as três vozes, mono sem negrito, piso de 10 px |
+| **3b** | F.2b, F.3, F.4 | A cor com significado, o vocabulário visual e a acessibilidade; fecha a fase com a tag |
+
+*(30/09/2026 — o PR 3 virou dois. A ideia era a identidade chegar "de uma vez", mas a F.1 sozinha
+toca as 29 telas e componentes, e a produção ainda não tem jogador: duas ondas não custam nada a
+ninguém, e cada PR fica revisável.)*
 
 **Mergear fora de sessão de jogo** (`DEPLOY.md`, E.06): cada PR publica sozinho. E desde 01/10 o
 site está no ar.
@@ -1220,7 +1225,7 @@ O sistema de design **já existe e nunca foi conectado**: 8 tokens de cor no `@t
 componentes usando; `scanline` e `glitch` definidas, **0** usos. Terceiro caso do mesmo padrão, depois
 do `combatModifier` e do `currentStats`. **Sem esta etapa, aplicar a identidade nova custa ~1.850
 substituições — e a próxima mudança custará outras tantas.** Esta parte **não muda o visual**; a que
-muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3).
+muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3b).
 
 - [x] **F.2.1** **Duas camadas de token, e a tabela de conversão.** No `@theme` do `index.css`:
       - **rampa por papel**, com os tons que o código usa e os valores de hoje — `accent` (ciano: ação,
@@ -1286,35 +1291,66 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3).
       diferença. `audit:colors`: **1.879 → 322** (paleta 285 · `rgba` 36 · hex 1) — o que sobra é
       todo da F.2b. `black`/`white`: 109.)*
 
-#### F.1 — O sistema tipográfico *(1 dia — PR 3; decisão 10a)*
+#### F.1 — O sistema tipográfico *(1 dia — PR 3a; decisão 10a)*
 
-- [ ] **F.1.1** **Papéis das faces**, pelo `@theme`:
+- [x] **F.1.1** **Papéis das faces**, pelo `@theme`:
       - `--font-sans` **Rajdhani** — rótulos, navegação, títulos de campo e texto corrido;
       - `--font-mono` **Share Tech Mono** — números, dados, valores de campo, rolagens, mensagens de
         sistema e momentos de terminal;
       - `--font-display` **Orbitron** — títulos de seção e wordmark (F.1.3).
       Cada um dos **206** `font-mono` é classificado: a maioria é rótulo e sai.
-- [ ] **F.1.2** **Mono sem negrito.** A Share Tech Mono só tem o 400; destaque na mono é **brilho**
+      *(30/09/2026 — classificado elemento a elemento, lendo o que cada um mostra: rótulo, navegação,
+      botão e prosa saíram da mono; campo, número, código, ID, versão, rolagem e mensagem de sistema
+      ficaram. **Os contêineres eram o grosso:** a raiz do menu, da página inicial, do rolador, da
+      mesa, do perfil e do grid era mono, e tudo dentro herdava — a raiz passou a sans e os dados de
+      dentro ganharam a mono de volta. Medido no navegador, a fatia de texto por voz: **a ficha foi de
+      96% mono para 75% Rajdhani, 16% mono e 9% Orbitron**; nas outras telas, ~72–76% Rajdhani,
+      ~20–30% mono (a mesa tem mais, pelo chat) e 2–5% Orbitron.)*
+- [x] **F.1.2** **Mono sem negrito.** A Share Tech Mono só tem o 400; destaque na mono é **brilho**
       (cor, tamanho, caixa alta), como no terminal — nunca peso. O `audit:colors` ganha uma coluna que
       acusa `font-mono` com `font-bold|extrabold|black` no mesmo elemento (99 só na ficha, hoje).
-- [ ] **F.1.3** **Display → `Orbitron`** *(adicionar)*, por `@fontsource-variable/orbitron` (400–900,
+      *(30/09/2026 — a coluna `mono+b` do `audit:colors` conta o trecho de classe que junta os dois
+      (ternário não soma alternativas): **0**. Mas negrito **herdado** de um contêiner a análise
+      estática não vê — a prova é no navegador: todo elemento renderizado em Share Tech Mono com peso
+      ≥ 600, em 12 telas (as 9 rotas e a mesa do GM em chat, grid e iniciativa). Achou dois — o selo
+      da versão dentro do botão das notas e o "Modo Visitante" na linha de ID da ficha —, corrigidos:
+      **0**. `audit-colors` (9).)*
+- [x] **F.1.3** **Display → `Orbitron`** *(adicionar)*, por `@fontsource-variable/orbitron` (400–900,
       11,5 KB). *Sintoma:* não existe voz de display — títulos são a fonte do corpo, só maior, e as
       seções não se distinguem. Conferido: todos os acentos do português e o `€`. **Não usar onde
       aparece `º`/`ª`** (a ordem da iniciativa fica na mono). *(Michroma, mais próxima do Eurostile
       Extended, só se o Orbitron não servir no wordmark: 17,5 KB, peso único.)*
-- [ ] **F.1.4** **Números da ficha → condicional.** Primeiro `tabular-nums` (F.2.3; 0 usos hoje). *Só
+      *(30/09/2026 — na marca, no título de cada página e de cada seção, no herói da página inicial,
+      nos títulos de modal e nas marcas d'água (`EDGERUNNER`, `BIOMON`…). Um `woff2` de 11,8 KB. O
+      itálico dos títulos de página é sintético — o Orbitron não tem itálico —, e numa face
+      geométrica fica bem. Como ela é larga, os títulos de seção descem um tamanho abaixo de 640 px
+      (`text-base sm:text-lg`), e a marca do menu passou a ocupar duas linhas. O Michroma não fez
+      falta. **O `1º` da iniciativa foi para a mono:** o Rajdhani também não tem `º`/`ª`.)*
+- [x] **F.1.4** **Números da ficha → condicional.** Primeiro `tabular-nums` (F.2.3; 0 usos hoje). *Só
       se* os dígitos continuarem desalinhados, `Saira Condensed` (17,5 KB por peso) nos blocos de
       estatística. Não adicionar fonte antes de medir — é o filtro aplicado à tipografia.
-- [ ] **F.1.5** **Momentos de terminal → condicional.** `VT323` (17,5 KB) **só** se o Netrunner IA, as
+      *(30/09/2026 — **medido: o Rajdhani não tem algarismos tabulares.** Com ou sem `tabular-nums`,
+      `1111` mede 50,7 px e `8888`, 83,1 px. O que alinha os dígitos é a F.1.1: todo número está na
+      mono, que tem largura fixa. A Saira não entra — a condição não se cumpriu.)*
+- [x] **F.1.5** **Momentos de terminal → condicional.** `VT323` (17,5 KB) **só** se o Netrunner IA, as
       mensagens de `SISTEMA_NET` e as telas de carregamento não se distinguirem com a mono — e nunca
       em corpo de texto, onde é ilegível.
-- [ ] **F.1.6** **Escala e tracking** com nome, no `@theme` (`--text-*`), com **piso de 10 px**: os 61
+      *(30/09/2026 — distinguem-se: com o resto da interface em Rajdhani, o cabeçalho do Netrunner IA,
+      as mensagens do sistema no chat e as telas de carregamento ficaram sendo o que está em mono. O
+      VT323 não entra — a condição não se cumpriu.)*
+- [x] **F.1.6** **Escala e tracking** com nome, no `@theme` (`--text-*`), com **piso de 10 px**: os 61
       textos em 9 px, os 9 em 8 px e o de 7 px sobem. Dois trackings para caixa alta, com critério
       (hoje 51 `tracking-widest` e 32 `tracking-wider` sem regra).
+      *(30/09/2026 — `text-micro` (10 px) no lugar de 208 `text-[7–10px]` e `text-mini` (11 px) no de 42
+      `text-[11px]`; `tracking-caps` (0,08em) no lugar dos 86 `wide`/`wider`/`widest`, e
+      `tracking-display` (0,04em) nos títulos em Orbitron. Os `tracking-tight` de etiquetas pequenas
+      ficaram: são exceção de espaço, não critério de caixa alta. **Piso conferido no navegador:**
+      nenhum texto visível abaixo de 10 px nas 12 telas. O E2E passou sem mudar uma linha — nenhum
+      rótulo mudou de texto.)*
       - **E2E:** o fluxo acha elementos por texto visível. Mudar rótulo é mudar o teste — de propósito,
         e com o porquê no commit.
 
-#### F.2b — Cor com significado *(meio dia — PR 3)*
+#### F.2b — Cor com significado *(meio dia — PR 3b)*
 
 - [ ] **F.2.2** **Regra de política: vermelho significa exclusivamente dano** (decisão 10b). Os 244
       usos, classificados à mão:
@@ -1331,8 +1367,11 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3).
 
   *O NPC:* muda nas classes do `TacticalGrid`; o campo `color` persistido fica como está (sem
   leitor — pista da G). Os grids já gravados seguem válidos.
-- [ ] **F.2.3** `font-variant-numeric: tabular-nums` em toda coluna de número da ficha (atributos, SP,
+- [x] **F.2.3** `font-variant-numeric: tabular-nums` em toda coluna de número da ficha (atributos, SP,
       dano, iniciativa) — hoje os dígitos dançam quando o valor muda.
+      *(30/09/2026 — **descartado, com medição** (F.1.4): o Rajdhani não tem algarismos tabulares, e
+      `tabular-nums` nele não muda nada. Os números foram para a mono, que tem largura fixa — o
+      sintoma (dígito que dança) acabou por outro caminho.)*
 - [ ] **F.2.7** **A escala de dano, `wound-*`, com contraste.** No fundo escuro, a gravidade tem que
       **clarear**, não escurecer: hoje Mortal 2–6 fica entre 3,0 e 4,5:1. Todo tom da escala com
       **≥ 4,5:1** sobre `surface` e `raised`, medido com a cor computada.
@@ -1353,7 +1392,7 @@ muda é a [F.2b](#f2b--cor-com-significado-meio-dia--pr-3).
       inteira. A F.2.4 preservou o que se via; aqui se decide, com captura, se a barra aparece — com
       `border-l-<cor>`, que não briga com a borda dos outros lados — ou se o desenho fica sem ela.
 
-#### F.3 — O vocabulário visual oitentista *(1 dia — PR 3; decisão 10d)*
+#### F.3 — O vocabulário visual oitentista *(1 dia — PR 3b; decisão 10d)*
 
 A tipografia é metade. A outra metade é o repertório gráfico do livro impresso.
 
@@ -1377,7 +1416,7 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
       **ADIAR** por padrão — "falta sujeira analógica" é gosto, não sintoma. Qualquer textura passa no
       F.4.2.
 
-#### F.4 — Aplicar e verificar *(meio dia a 1 dia — PR 3)*
+#### F.4 — Aplicar e verificar *(meio dia a 1 dia — PR 3b)*
 
 - [ ] **F.4.1** Aplicar começando pela ficha (maior superfície visual) e terminando na mesa.
 - [ ] **F.4.2** **Acessibilidade — não negociável.** Critérios do [WCAG 2.2](https://www.w3.org/TR/WCAG22/):
@@ -1820,7 +1859,7 @@ público mudar.
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
 | R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
-| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (PR #27) e a parte mecânica da F.2 (PR 2: tokens, conversão, brilho, prova por captura) feitas; F.0g no ar depois do deploy; próximo: F.1.1 | — |
+| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28) e a F.1 (PR 3a: as três vozes) feitas; F.0g no ar depois do deploy; próximo: F.2.2 (PR 3b) | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
@@ -1837,7 +1876,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **669** testes, 47 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2)* — `vitest` 4.1.11 |
+| `npx vitest run` | **671** testes, 47 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
@@ -1845,6 +1884,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | Chunk de entrada | 629 kB / 186 kB gzip |
 | `npm run audit:colors` | **322** a migrar (paleta 285 · `rgba` 36 · hex 1) e 109 `black`/`white` — era **1.879** na F.0e; a F.2 mecânica converteu o resto, e o que sobra é o vermelho, o rosa e a escala de ferimento da F.2b. Zero é o critério de pronto da F.2.10 |
 | `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4) |
+| Mono com negrito (`audit:colors`, coluna `mono+b`) | **0** (F.1.2) — e 0 no navegador, em 12 telas |
 | Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
