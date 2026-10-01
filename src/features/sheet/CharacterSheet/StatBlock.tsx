@@ -16,11 +16,11 @@ const STAT_LABELS: Record<StatName, { label: string; color: string; icon: React.
   REF: { label: 'Reflexos', color: 'text-signal-400', icon: <Wind className="w-3.5 h-3.5" /> },
   TECH: { label: 'Técnica', color: 'text-cyber-400', icon: <Shield className="w-3.5 h-3.5" /> },
   COOL: { label: 'Frieza', color: 'text-ok-400', icon: <Flame className="w-3.5 h-3.5" /> },
-  ATTR: { label: 'Atração', color: 'text-pink-400', icon: <Heart className="w-3.5 h-3.5" /> },
+  ATTR: { label: 'Atração', color: 'text-roll-400', icon: <Heart className="w-3.5 h-3.5" /> },
   LUCK: { label: 'Sorte', color: 'text-caution-400', icon: <Shield className="w-3.5 h-3.5" /> },
-  MA: { label: 'Movimento', color: 'text-orange-400', icon: <Wind className="w-3.5 h-3.5" /> },
-  BODY: { label: 'Corpo', color: 'text-red-400', icon: <Shield className="w-3.5 h-3.5" /> },
-  EMP: { label: 'Empatia', color: 'text-teal-400', icon: <Heart className="w-3.5 h-3.5" /> }
+  MA: { label: 'Movimento', color: 'text-caution-600', icon: <Wind className="w-3.5 h-3.5" /> },
+  BODY: { label: 'Corpo', color: 'text-fg-strong', icon: <Shield className="w-3.5 h-3.5" /> },
+  EMP: { label: 'Empatia', color: 'text-cyber-300', icon: <Heart className="w-3.5 h-3.5" /> }
 };
 
 export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
@@ -82,7 +82,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
               <div className="flex items-center justify-between space-x-1">
                 <button
                   onClick={() => handleChange(stat, -1)}
-                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-red-950 hover:text-red-400 hover:border-red-500 font-bold transition-all cursor-pointer"
+                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-bold transition-all cursor-pointer"
                 >
                   −
                 </button>

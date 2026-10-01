@@ -125,7 +125,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
                 <div className="flex items-center space-x-1 bg-raised border border-line rounded px-1 py-0.5">
                   <button
                     onClick={() => changeLevel(skill.id, -1)}
-                    className="w-5 h-5 rounded bg-surface text-muted hover:text-red-400 cursor-pointer"
+                    className="w-5 h-5 rounded bg-surface text-muted hover:text-accent-400 cursor-pointer"
                   >
                     −
                   </button>
@@ -146,7 +146,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
                 </button>
                 <button
                   onClick={() => removeSkill(skill.id)}
-                  className="p-1.5 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
+                  className="p-1.5 rounded bg-raised hover:bg-fault-950 border border-line hover:border-fault-500 text-subtle hover:text-fault-400 transition-all cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
