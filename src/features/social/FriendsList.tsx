@@ -93,10 +93,10 @@ export const FriendChatBox: React.FC<FriendChatBoxProps> = ({ currentUser, frien
       <div className="flex items-center justify-between border-b border-accent-500/30 pb-1.5">
         <div className="flex items-center space-x-1.5 min-w-0">
           <MessageSquare className="w-3.5 h-3.5 text-accent-400 shrink-0" />
-          <span className="text-[10px] font-bold text-accent-300 font-mono uppercase truncate">
+          <span className="text-micro text-accent-300 font-mono uppercase truncate">
             CHAT // {friend.displayName}
           </span>
-          <span className="text-[9px] font-mono font-bold text-fg-soft bg-accent-950 px-1 py-0.2 rounded border border-accent-500/40 shrink-0">
+          <span className="text-micro font-mono text-fg-soft bg-accent-950 px-1 py-0.2 rounded border border-accent-500/40 shrink-0">
             {friend.cyberpunkId}
           </span>
         </div>
@@ -110,7 +110,7 @@ export const FriendChatBox: React.FC<FriendChatBoxProps> = ({ currentUser, frien
 
       {/* NPC Cyberpunk Badge Notice */}
       {isNpc && (
-        <div className="bg-signal-950/40 border border-signal-500/30 px-2 py-1 rounded text-[9px] font-mono text-signal-300 flex items-center space-x-1">
+        <div className="bg-signal-950/40 border border-signal-500/30 px-2 py-1 rounded text-micro text-signal-300 flex items-center space-x-1">
           <Bot className="w-3 h-3 text-signal-400 shrink-0" />
           <span>SISTEMA NET: IA de {friend.displayName} ativa em Night City</span>
         </div>
@@ -119,7 +119,7 @@ export const FriendChatBox: React.FC<FriendChatBoxProps> = ({ currentUser, frien
       {/* Messages Scroll Box */}
       <div className="h-40 overflow-y-auto custom-scrollbar space-y-2 p-1.5 bg-surface/90 rounded border border-line-soft">
         {messages.length === 0 ? (
-          <div className="text-center py-6 text-[10px] text-subtle font-mono">
+          <div className="text-center py-6 text-micro text-subtle">
             Nenhuma mensagem trocada ainda. Envie um ping no HoloNet!
           </div>
         ) : (
@@ -130,8 +130,8 @@ export const FriendChatBox: React.FC<FriendChatBoxProps> = ({ currentUser, frien
                 key={msg.id}
                 className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
               >
-                <div className="flex items-center space-x-1 text-[8px] font-mono text-muted mb-0.5">
-                  <span className={isMe ? 'text-accent-400 font-bold' : 'text-signal-400 font-bold'}>
+                <div className="flex items-center space-x-1 text-micro font-mono text-muted mb-0.5">
+                  <span className={isMe ? 'text-accent-400' : 'text-signal-400'}>
                     {isMe ? 'VOCÊ' : msg.senderName}
                   </span>
                   <span>•</span>
@@ -140,7 +140,7 @@ export const FriendChatBox: React.FC<FriendChatBoxProps> = ({ currentUser, frien
                   </span>
                 </div>
                 <div
-                  className={`max-w-[88%] px-2.5 py-1.5 rounded text-[11px] leading-relaxed break-words font-sans ${
+                  className={`max-w-[88%] px-2.5 py-1.5 rounded text-mini leading-relaxed break-words font-sans ${
                     isMe
                       ? 'bg-accent-950 text-accent-100 border border-accent-500/50 rounded-br-none shadow-glow-8 shadow-accent-500/15'
                       : 'bg-raised text-fg-strong border border-line-strong rounded-bl-none'
@@ -162,12 +162,12 @@ export const FriendChatBox: React.FC<FriendChatBoxProps> = ({ currentUser, frien
           placeholder={`Digitar para ${friend.displayName}...`}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 bg-surface border border-accent-500/40 text-fg-strong px-2.5 py-1 rounded text-[11px] focus:border-accent-400 focus:outline-none placeholder:text-faint font-sans"
+          className="flex-1 bg-surface border border-accent-500/40 text-fg-strong px-2.5 py-1 rounded text-mini focus:border-accent-400 focus:outline-none placeholder:text-faint font-sans"
         />
         <button
           type="submit"
           disabled={sending || !inputText.trim()}
-          className="px-2.5 py-1 bg-accent-500 hover:bg-accent-400 text-black font-black text-[10px] rounded uppercase flex items-center space-x-1 cursor-pointer transition-all disabled:opacity-40"
+          className="px-2.5 py-1 bg-accent-500 hover:bg-accent-400 text-black font-black text-micro rounded uppercase flex items-center space-x-1 cursor-pointer transition-all disabled:opacity-40"
         >
           <Send className="w-3 h-3" />
         </button>
@@ -377,7 +377,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
     }
 
     return (
-      <div className="flex items-center space-x-1 text-[9px]">
+      <div className="flex items-center space-x-1 text-micro">
         <Wifi className={`w-2.5 h-2.5 ${color}`} />
         <span className={`font-bold uppercase ${color}`}>{label}</span>
       </div>
@@ -411,11 +411,11 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
             <Users className="w-3.5 h-3.5" />
           </div>
           <div>
-            <span className="text-[11px] font-black uppercase tracking-wider block text-fg">
+            <span className="text-mini font-black uppercase tracking-caps block text-fg">
               AMIGOS <span className="text-accent-400 font-mono">({friends.length})</span>
             </span>
             {pendingRequests.length > 0 && (
-              <span className="text-[9px] font-bold text-signal-400 block animate-pulse">
+              <span className="text-micro font-bold text-signal-400 block animate-pulse">
                 • {pendingRequests.length} SOLICITAÇÃO(ÕES)
               </span>
             )}
@@ -426,7 +426,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
           <button
             onClick={() => setShowAddModal(!showAddModal)}
             title="Adicionar por ID"
-            className="px-2 py-1 bg-accent-950 hover:bg-accent-900 border border-accent-500/50 rounded text-[10px] font-bold text-accent-300 flex items-center space-x-1 cursor-pointer transition-all hover:shadow-glow-10 hover:shadow-accent-500/30"
+            className="px-2 py-1 bg-accent-950 hover:bg-accent-900 border border-accent-500/50 rounded text-micro font-bold text-accent-300 flex items-center space-x-1 cursor-pointer transition-all hover:shadow-glow-10 hover:shadow-accent-500/30"
           >
             <UserPlus className="w-3 h-3 text-accent-400" />
             <span>+ ADICIONAR</span>
@@ -444,7 +444,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
       {/* Add Friend Panel / Search Form */}
       {showAddModal && (
         <div className="mt-2.5 p-2 bg-raised/95 border border-accent-500/40 rounded-lg space-y-2 animate-fadeIn">
-          <div className="flex items-center justify-between text-[10px] text-accent-400 font-bold uppercase tracking-wide">
+          <div className="flex items-center justify-between text-micro text-accent-400 font-bold uppercase tracking-caps">
             <span className="flex items-center space-x-1">
               <Search className="w-3 h-3" />
               <span>BUSCAR EDGERUNNER POR ID</span>
@@ -467,12 +467,12 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
               placeholder="Ex: #NC-1815 ou #NC-2020"
               value={searchIdInput}
               onChange={(e) => setSearchIdInput(e.target.value)}
-              className="flex-1 bg-black/80 border border-line-strong text-fg-strong px-2 py-1 rounded text-[11px] font-mono focus:border-accent-400 focus:outline-none placeholder:text-faint"
+              className="flex-1 bg-black/80 border border-line-strong text-fg-strong px-2 py-1 rounded text-mini font-mono focus:border-accent-400 focus:outline-none placeholder:text-faint"
             />
             <button
               type="submit"
               disabled={searching}
-              className="px-2.5 py-1 bg-accent-500 hover:bg-accent-400 text-black font-bold text-[10px] rounded uppercase cursor-pointer transition-all disabled:opacity-50"
+              className="px-2.5 py-1 bg-accent-500 hover:bg-accent-400 text-black font-bold text-micro rounded uppercase cursor-pointer transition-all disabled:opacity-50"
             >
               {searching ? '...' : 'BUSCAR'}
             </button>
@@ -481,7 +481,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
           {/* Quick Demo Suggestions */}
           {!searchResult && !searchError && (
             <div className="pt-1 border-t border-line">
-              <span className="text-[9px] text-subtle block mb-1 uppercase font-mono">
+              <span className="text-micro text-subtle block mb-1 uppercase">
                 Sugestões da Rede:
               </span>
               <div className="flex flex-wrap gap-1">
@@ -493,7 +493,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
                       setSearchResult(demo);
                       setSearchError('');
                     }}
-                    className="text-[9px] bg-surface hover:bg-raised-strong border border-line hover:border-accent-500/40 text-fg-soft px-1.5 py-0.5 rounded font-mono flex items-center space-x-1 cursor-pointer"
+                    className="text-micro bg-surface hover:bg-raised-strong border border-line hover:border-accent-500/40 text-fg-soft px-1.5 py-0.5 rounded font-mono flex items-center space-x-1 cursor-pointer"
                   >
                     <span className="text-accent-400 font-bold">{demo.cyberpunkId}</span>
                     <span className="text-muted">({demo.displayName})</span>
@@ -505,7 +505,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
 
           {/* Search Error */}
           {searchError && (
-            <div className="text-[10px] text-red-400 font-mono bg-red-950/40 p-1.5 rounded border border-red-500/30">
+            <div className="text-micro text-red-400 bg-red-950/40 p-1.5 rounded border border-red-500/30">
               {searchError}
             </div>
           )}
@@ -530,19 +530,19 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
                       <span className="text-xs font-bold text-fg-strong block leading-tight">
                         {searchResult.displayName}
                       </span>
-                      <span className="text-[10px] font-mono text-accent-300 font-bold">
+                      <span className="text-micro font-mono text-accent-300">
                         {searchResult.cyberpunkId}
                       </span>
                     </div>
                   </div>
 
                   {isAlreadyFriend ? (
-                    <span className="px-2 py-1 bg-signal-950/90 text-signal-400 border border-signal-500/60 font-mono font-bold text-[9px] rounded uppercase flex items-center space-x-1 shadow-glow-8 shadow-signal-500/20">
+                    <span className="px-2 py-1 bg-signal-950/90 text-signal-400 border border-signal-500/60 font-bold text-micro rounded uppercase flex items-center space-x-1 shadow-glow-8 shadow-signal-500/20">
                       <Check className="w-3 h-3 text-signal-400" />
                       <span>JÁ É AMIGO</span>
                     </span>
                   ) : isPendingReq ? (
-                    <span className="px-2 py-1 bg-accent-950/90 text-accent-400 border border-accent-500/60 font-mono font-bold text-[9px] rounded uppercase flex items-center space-x-1 shadow-glow-8 shadow-accent-500/20">
+                    <span className="px-2 py-1 bg-accent-950/90 text-accent-400 border border-accent-500/60 font-bold text-micro rounded uppercase flex items-center space-x-1 shadow-glow-8 shadow-accent-500/20">
                       <Clock className="w-3 h-3 text-accent-400" />
                       <span>PENDENTE</span>
                     </span>
@@ -550,7 +550,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
                     <button
                       onClick={() => handleSendRequest(searchResult)}
                       disabled={searching}
-                      className="px-2 py-1 bg-ok-500 hover:bg-ok-400 text-black font-black text-[10px] rounded uppercase flex items-center space-x-1 cursor-pointer transition-all shadow-glow-10 shadow-ok-500/30 disabled:opacity-50"
+                      className="px-2 py-1 bg-ok-500 hover:bg-ok-400 text-black font-black text-micro rounded uppercase flex items-center space-x-1 cursor-pointer transition-all shadow-glow-10 shadow-ok-500/30 disabled:opacity-50"
                     >
                       <UserCheck className="w-3 h-3" />
                       <span>ADICIONAR</span>
@@ -559,7 +559,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
                 </div>
 
                 {isAlreadyFriend && (
-                  <div className="text-[9px] text-signal-400/90 font-mono bg-signal-950/30 p-1.5 rounded border border-signal-500/30">
+                  <div className="text-micro text-signal-400/90 bg-signal-950/30 p-1.5 rounded border border-signal-500/30">
                     Aviso: Este Edgerunner ({searchResult.cyberpunkId}) já está na sua lista de amigos.
                   </div>
                 )}
@@ -568,7 +568,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
           })()}
 
           {actionFeedback && (
-            <div className="text-[10px] text-accent-300 font-mono text-center pt-0.5">
+            <div className="text-micro text-accent-300 text-center pt-0.5">
               {actionFeedback}
             </div>
           )}
@@ -578,7 +578,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
       {/* Pending Requests Section */}
       {pendingRequests.length > 0 && (
         <div className="mt-2 space-y-1 bg-signal-950/30 border border-signal-500/40 p-2 rounded-lg">
-          <span className="text-[10px] font-black text-signal-400 uppercase tracking-wider block">
+          <span className="text-micro font-black text-signal-400 uppercase tracking-caps block">
             PENDENTES ({pendingRequests.length})
           </span>
           <div className="space-y-1.5">
@@ -592,10 +592,10 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
                     {renderAvatar(req.senderAvatar)}
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[11px] font-bold text-fg-strong block truncate">
+                    <span className="text-mini font-bold text-fg-strong block truncate">
                       {req.senderName}
                     </span>
-                    <span className="text-[9px] font-mono text-accent-400 font-bold block">
+                    <span className="text-micro font-mono text-accent-400 block">
                       {req.senderCyberpunkId}
                     </span>
                   </div>
@@ -628,12 +628,12 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
         <div className="mt-2 space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-0.5 animate-fadeIn">
           {friends.length === 0 ? (
             <div className="text-center py-3 bg-raised/50 rounded border border-line">
-              <span className="text-[10px] text-muted font-mono block">
+              <span className="text-micro text-muted block">
                 NENHUM AMIGO ADICIONADO
               </span>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="mt-1 text-[10px] text-accent-400 underline font-bold cursor-pointer"
+                className="mt-1 text-micro text-accent-400 underline font-bold cursor-pointer"
               >
                 Adicionar por ID
               </button>
@@ -661,10 +661,10 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
 
                       <div className="min-w-0">
                         <div className="flex items-center space-x-1.5 leading-tight">
-                          <span className="text-[11px] font-bold text-fg-strong truncate block">
+                          <span className="text-mini font-bold text-fg-strong truncate block">
                             {friend.displayName}
                           </span>
-                          <span className="text-[9px] font-mono font-bold text-accent-300 bg-accent-950/80 px-1 py-0.2 rounded border border-accent-500/40 shrink-0">
+                          <span className="text-micro font-mono text-accent-300 bg-accent-950/80 px-1 py-0.2 rounded border border-accent-500/40 shrink-0">
                             {friend.cyberpunkId}
                           </span>
                         </div>
@@ -684,7 +684,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
                         onClick={() => {
                           setActiveChatFriendUid(isChatOpen ? null : friend.uid);
                         }}
-                        className={`flex-1 py-1 px-2 rounded text-[10px] font-bold flex items-center justify-center space-x-1.5 cursor-pointer transition-all ${
+                        className={`flex-1 py-1 px-2 rounded text-micro font-bold flex items-center justify-center space-x-1.5 cursor-pointer transition-all ${
                           isChatOpen
                             ? 'bg-accent-500 text-black border border-accent-400 shadow-glow-8 shadow-accent-500/40'
                             : 'bg-accent-950/80 hover:bg-accent-900 text-accent-300 border border-accent-500/40'
@@ -696,7 +696,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
 
                       <button
                         onClick={() => handleRemove(friend)}
-                        className="py-1 px-2 bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-500/40 hover:border-red-500 rounded text-[10px] font-bold flex items-center justify-center space-x-1 cursor-pointer transition-all"
+                        className="py-1 px-2 bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-500/40 hover:border-red-500 rounded text-micro font-bold flex items-center justify-center space-x-1 cursor-pointer transition-all"
                       >
                         <UserX className="w-3 h-3 text-red-400" />
                         <span>DESFAZER AMIZADE</span>

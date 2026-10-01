@@ -43,7 +43,7 @@ const NotFoundLazy = lazy(() => import('./pages/NotFoundPage').then((m) => ({ de
 /** Placeholder exibido enquanto o chunk da rota carrega. */
 const RouteFallback: React.FC = () => (
   <div className="flex items-center justify-center py-20 font-mono text-subtle animate-pulse">
-    <span className="text-xs uppercase tracking-widest">Carregando módulo da Net...</span>
+    <span className="text-xs uppercase tracking-caps">Carregando módulo da Net...</span>
   </div>
 );
 
@@ -205,24 +205,24 @@ export default function App() {
       {lastRollBanner && (
         <div className="fixed bottom-4 right-4 z-50 max-w-sm bg-raised/90 border-2 border-accent-400 p-4 rounded-lg shadow-glow-25 shadow-accent-500/50 animate-bounce text-xs font-mono backdrop-blur-sm">
           <div className="flex items-center justify-between border-b border-line pb-1 mb-2">
-            <span className="font-bold text-signal-400 flex items-center space-x-1">
+            <span className="text-signal-400 flex items-center space-x-1">
               <Dice5 className="w-4 h-4 text-accent-400" />
               <span>{lastRollBanner.label}</span>
             </span>
-            <span className="text-[10px] text-muted">{lastRollBanner.timestamp}</span>
+            <span className="text-micro text-muted">{lastRollBanner.timestamp}</span>
           </div>
 
-          <div className="text-xl font-black text-accent-300 my-1">
+          <div className="text-xl text-accent-300 my-1">
             RESULTADO TOTAL: {lastRollBanner.total}
           </div>
 
-          <p className="text-[11px] text-fg-soft">{lastRollBanner.details}</p>
+          <p className="text-mini text-fg-soft">{lastRollBanner.details}</p>
         </div>
       )}
 
       {/* Floating Save Sheet Toast Notification */}
       {saveToast && (
-        <div className="fixed bottom-4 left-4 z-50 max-w-md bg-surface border-2 border-ok-400 p-4 rounded-lg shadow-glow-25 shadow-ok-500/50 text-xs font-mono backdrop-blur-sm space-y-1">
+        <div className="fixed bottom-4 left-4 z-50 max-w-md bg-surface border-2 border-ok-400 p-4 rounded-lg shadow-glow-25 shadow-ok-500/50 text-xs backdrop-blur-sm space-y-1">
           <div className="flex items-center space-x-2 text-ok-400 font-bold uppercase">
             <CheckCircle2 className="w-4 h-4" />
             <span>Sincronização Concluída</span>
@@ -257,16 +257,16 @@ export default function App() {
             const currentPage = pageInfoMap[activeTab] || pageInfoMap['home'];
 
             return (
-              <div className="bg-surface/90 border-2 border-red-600/40 rounded-xl p-4 md:p-5 font-mono backdrop-blur-md shadow-[0_0_20px_rgba(239,68,68,0.15)] relative overflow-hidden">
+              <div className="bg-surface/90 border-2 border-red-600/40 rounded-xl p-4 md:p-5 backdrop-blur-md shadow-[0_0_20px_rgba(239,68,68,0.15)] relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-red-500 via-signal-500 to-accent-500"></div>
                 <div className="pl-3 space-y-1">
                   <div className="flex items-center space-x-2">
                     <div className="w-2.5 h-2.5 bg-red-500 animate-pulse rounded-full shadow-[0_0_8px_rgba(239,68,68,1)]"></div>
-                    <span className="text-[11px] font-black tracking-widest text-red-500 uppercase">
+                    <span className="font-mono text-mini tracking-caps text-red-500 uppercase">
                       SISTEMA // {currentPage.category}
                     </span>
                   </div>
-                  <h1 className={`text-xl sm:text-2xl md:text-3xl font-black italic tracking-tight uppercase ${currentPage.color} drop-shadow-glow-12 drop-shadow-white/15 leading-tight`}>
+                  <h1 className={`font-display text-xl sm:text-2xl md:text-3xl font-black italic tracking-display uppercase ${currentPage.color} drop-shadow-glow-12 drop-shadow-white/15 leading-tight`}>
                     {currentPage.title}
                   </h1>
                   {user && (
@@ -369,17 +369,17 @@ export default function App() {
           {/* Immersive Footer Bar */}
           <footer className="border-t border-line/80 bg-surface/80 backdrop-blur-md py-4 text-xs font-mono text-subtle rounded-lg p-4">
             <div className="flex flex-col md:flex-row items-center justify-between gap-2">
-              <div className="flex items-center space-x-6 uppercase tracking-widest text-[10px]">
-                <span className="text-accent-400 font-bold">CYBERPUNK 2020 ENGINE</span>
+              <div className="flex items-center space-x-6 uppercase tracking-caps text-micro">
+                <span className="text-accent-400">CYBERPUNK 2020 ENGINE</span>
                 <span className="hover:text-fg-soft">R. TALSORIAN GAMES</span>
                 <span className="hover:text-fg-soft">NETRUNNER AI LINK</span>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 rounded-full bg-ok-500 shadow-glow-5 shadow-ok-500"></div>
-                  <span className="text-ok-500 text-[10px] font-bold uppercase">SUPABASE CLOUD CONECTADO</span>
+                  <span className="text-ok-500 text-micro uppercase">SUPABASE CLOUD CONECTADO</span>
                 </div>
-                <span className="border-l border-line pl-4 text-[10px]">{APP_VERSION}</span>
+                <span className="border-l border-line pl-4 text-micro">{APP_VERSION}</span>
               </div>
             </div>
           </footer>

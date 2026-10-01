@@ -70,20 +70,20 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
 
   return (
     <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-ok-500/10 space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-ok-500 select-none">
+      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-ok-500 select-none">
         LIFEPATH
       </div>
 
       <div className="flex items-center justify-between border-b border-line pb-3 relative z-10">
         <div className="flex items-center space-x-2">
           <BookOpen className="w-5 h-5 text-ok-400" />
-          <h2 className="text-lg font-mono font-bold text-ok-400 uppercase tracking-widest">
+          <h2 className="text-base sm:text-lg font-display font-bold text-ok-400 uppercase tracking-display">
             Lifepath // História do Personagem
           </h2>
         </div>
         <button
           onClick={() => setShowGenerator(!showGenerator)}
-          className="px-2.5 py-1.5 bg-ok-500 hover:bg-ok-400 text-black rounded font-bold text-[10px] uppercase flex items-center space-x-1 transition-all cursor-pointer font-mono shadow-glow-10 shadow-ok-500/40"
+          className="px-2.5 py-1.5 bg-ok-500 hover:bg-ok-400 text-black rounded font-bold text-micro uppercase flex items-center space-x-1 transition-all cursor-pointer shadow-glow-10 shadow-ok-500/40"
         >
           <Dices className="w-3.5 h-3.5" />
           <span>{showGenerator ? 'Ocultar Gerador' : 'Gerar 1D10'}</span>
@@ -93,12 +93,12 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
       {/* Gerador rápido de lifepath */}
       {showGenerator && (
         <div className="bg-surface/90 border border-ok-500/40 rounded-lg p-3 relative z-10 animate-fadeIn">
-          <p className="text-[10px] font-mono text-muted mb-2">
+          <p className="text-micro text-muted mb-2">
             Role 1D10 em cada tabela CP2020 para montar uma história rápida. Depois refine os campos abaixo.
           </p>
           <button
             onClick={generateLifepath}
-            className="w-full py-2 bg-ok-500 hover:bg-ok-400 text-black font-black text-[11px] uppercase rounded transition-all cursor-pointer font-mono"
+            className="w-full py-2 bg-ok-500 hover:bg-ok-400 text-black font-black text-mini uppercase rounded transition-all cursor-pointer"
           >
             🎲 Rolagem Automática de Lifepath (5×1D10)
           </button>
@@ -109,7 +109,7 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10">
         {fields.map(({ key, label }) => (
           <div key={key}>
-            <label className="text-[10px] font-mono text-muted block mb-1 uppercase">{label}:</label>
+            <label className="text-micro text-muted block mb-1 uppercase">{label}:</label>
             <input
               type="text"
               value={lifepath[key] || ''}
@@ -122,10 +122,10 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
         {/* Eventos de vida */}
         <div className="md:col-span-2 bg-surface/60 border border-line rounded p-3 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono text-muted uppercase">Eventos de Vida:</span>
+            <span className="text-micro text-muted uppercase">Eventos de Vida:</span>
             <button
               onClick={addLifeEvent}
-              className="text-[10px] text-ok-400 hover:text-ok-300 flex items-center space-x-1 cursor-pointer font-mono"
+              className="text-micro text-ok-400 hover:text-ok-300 flex items-center space-x-1 cursor-pointer"
             >
               <Plus className="w-3 h-3" />
               <span>Adicionar evento</span>
@@ -149,7 +149,7 @@ export const LifepathGenerator: React.FC<LifepathGeneratorProps> = ({ sheet, onC
             </div>
           ))}
           {lifepath.lifeEvents.length === 0 && (
-            <p className="text-[10px] font-mono text-faint">Nenhum evento de vida registrado.</p>
+            <p className="text-micro text-faint">Nenhum evento de vida registrado.</p>
           )}
         </div>
       </div>

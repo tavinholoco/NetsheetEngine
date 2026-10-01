@@ -48,18 +48,18 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
 
   return (
     <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-accent-500/10 space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-accent-400 select-none">
+      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-accent-400 select-none">
         STATS
       </div>
 
       <div className="flex items-center justify-between border-b border-line pb-3 relative z-10">
         <div className="flex items-center space-x-2">
           <Shield className="w-5 h-5 text-accent-400" />
-          <h2 className="text-lg font-mono font-bold text-accent-400 uppercase tracking-widest">
+          <h2 className="text-base sm:text-lg font-display font-bold text-accent-400 uppercase tracking-display">
             Atributos Primários & Derivados
           </h2>
         </div>
-        <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">
+        <span className="text-micro font-mono text-subtle uppercase tracking-caps">
           BTM: {btm} • Run: {runMove}m
         </span>
       </div>
@@ -75,14 +75,14 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
             >
               <div className="flex items-center space-x-1.5 mb-1">
                 <span className={meta.color}>{meta.icon}</span>
-                <span className={`text-[10px] font-mono font-black uppercase tracking-wider ${meta.color}`}>
+                <span className={`text-micro font-black uppercase tracking-caps ${meta.color}`}>
                   {stat} — {meta.label}
                 </span>
               </div>
               <div className="flex items-center justify-between space-x-1">
                 <button
                   onClick={() => handleChange(stat, -1)}
-                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-red-950 hover:text-red-400 hover:border-red-500 font-mono font-bold transition-all cursor-pointer"
+                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-red-950 hover:text-red-400 hover:border-red-500 font-bold transition-all cursor-pointer"
                 >
                   −
                 </button>
@@ -90,11 +90,11 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
                   type="number"
                   value={val}
                   onChange={(e) => handleSet(stat, parseInt(e.target.value))}
-                  className="w-12 bg-raised border border-accent-800/70 text-center text-xl font-mono font-black text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
+                  className="w-12 bg-raised border border-accent-800/70 text-center text-xl font-mono text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
                 />
                 <button
                   onClick={() => handleChange(stat, 1)}
-                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-mono font-bold transition-all cursor-pointer"
+                  className="w-7 h-7 rounded bg-raised border border-line-strong text-fg-soft hover:bg-accent-950 hover:text-accent-400 hover:border-accent-500 font-bold transition-all cursor-pointer"
                 >
                   +
                 </button>
@@ -111,7 +111,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
               </div>
               {current[stat] !== val && (
                 <p
-                  className="mt-1 text-center text-[9px] font-mono font-bold text-caution-300 uppercase tracking-wider"
+                  className="mt-1 text-center text-micro font-mono text-caution-300 uppercase tracking-caps"
                   title="Valor usado nas rolagens: humanidade perdida e ferimento já aplicados"
                 >
                   rola com {current[stat]}
@@ -123,29 +123,29 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
 
         {/* Card de estatísticas derivadas */}
         <div className="col-span-2 sm:col-span-3 lg:col-span-2 bg-surface/90 p-3 rounded-lg border-2 border-accent-500/40 space-y-2 shadow-glow-15 shadow-accent-500/15">
-          <span className="text-[10px] font-mono font-black text-accent-400 uppercase tracking-widest block border-b border-line pb-1">
+          <span className="text-micro font-black text-accent-400 uppercase tracking-caps block border-b border-line pb-1">
             Estatísticas Derivadas
           </span>
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+          <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-raised p-2 rounded border border-line">
-              <span className="text-[9px] text-muted block uppercase">BTM</span>
-              <span className="text-signal-400 font-black text-lg">{btm}</span>
-              <span className="text-[9px] text-subtle block">{bodyType.bodyType}</span>
+              <span className="text-micro text-muted block uppercase">BTM</span>
+              <span className="font-mono text-signal-400 text-lg">{btm}</span>
+              <span className="text-micro text-subtle block">{bodyType.bodyType}</span>
             </div>
             <div className="bg-raised p-2 rounded border border-line">
-              <span className="text-[9px] text-muted block uppercase">Humanidade</span>
-              <span className="text-cyber-400 font-black text-lg">{humanity}</span>
+              <span className="text-micro text-muted block uppercase">Humanidade</span>
+              <span className="font-mono text-cyber-400 text-lg">{humanity}</span>
             </div>
             <div className="bg-raised p-2 rounded border border-line">
-              <span className="text-[9px] text-muted block uppercase">Run (m/turno)</span>
-              <span className="text-ok-400 font-black text-lg">{runMove}</span>
+              <span className="text-micro text-muted block uppercase">Run (m/turno)</span>
+              <span className="font-mono text-ok-400 text-lg">{runMove}</span>
             </div>
             <div className="bg-raised p-2 rounded border border-line">
-              <span className="text-[9px] text-muted block uppercase">Walk (m/turno)</span>
-              <span className="text-accent-400 font-black text-lg">{walkFromMa(stats.MA)}</span>
+              <span className="text-micro text-muted block uppercase">Walk (m/turno)</span>
+              <span className="font-mono text-accent-400 text-lg">{walkFromMa(stats.MA)}</span>
             </div>
           </div>
-          <p className="text-[9px] text-subtle leading-relaxed">
+          <p className="text-micro text-subtle leading-relaxed">
             BTM = tipo corporal pelo BODY (0 a −5), reduz o dano que passa da armadura. Humanidade = EMP × 10.
           </p>
         </div>

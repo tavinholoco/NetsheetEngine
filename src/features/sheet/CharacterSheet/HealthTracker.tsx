@@ -44,18 +44,18 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
 
   return (
     <div className="bg-raised/70 border-l-4 border-y border-r border-line rounded-lg p-5 shadow-[0_0_20px_rgba(239,68,68,0.1)] space-y-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-red-500 select-none">
+      <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-red-500 select-none">
         BIOMON
       </div>
 
       <div className="flex items-center justify-between border-b border-line pb-3 relative z-10">
         <div className="flex items-center space-x-2">
           <HeartPulse className="w-5 h-5 text-red-400" />
-          <h2 className="text-lg font-mono font-bold text-red-400 uppercase tracking-widest">
+          <h2 className="text-base sm:text-lg font-display font-bold text-red-400 uppercase tracking-display">
             Bio-Monitor // Ferimentos
           </h2>
         </div>
-        <span className={`text-xs font-mono font-black px-2.5 py-1 rounded border ${isDead || lastBox ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-surface border-line-strong text-fg'}`}>
+        <span className={`text-xs font-mono px-2.5 py-1 rounded border ${isDead || lastBox ? 'bg-red-950 border-red-500 text-red-300 animate-pulse' : 'bg-surface border-line-strong text-fg'}`}>
           {isDead ? 'MORTO' : current.name}
         </span>
       </div>
@@ -65,7 +65,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
         <div className="grid grid-cols-5 sm:grid-cols-10 gap-x-1.5 gap-y-2">
           {WOUND_TRACK.slice(1).map((row) => (
             <div key={row.level} className="flex flex-col items-center gap-1">
-              <span className="font-mono text-[9px] uppercase text-subtle">{shortName(row.level)}</span>
+              <span className="text-micro uppercase text-subtle">{shortName(row.level)}</span>
               <div className="grid grid-cols-4 gap-0.5 w-full">
                 {Array.from({ length: DAMAGE_POINTS_PER_WOUND_LEVEL }, (_, i) => {
                   const point = (row.level - 1) * DAMAGE_POINTS_PER_WOUND_LEVEL + i + 1;
@@ -91,9 +91,9 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-muted">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-mini text-muted">
           <span>
-            <span className="text-fg font-bold">{damagePoints}</span>/{WOUND_TRACK_POINTS} pontos
+            <span className="font-mono text-fg">{damagePoints}</span>/{WOUND_TRACK_POINTS} pontos
           </span>
           {atTable ? (
             <span className="flex items-center gap-1 text-subtle">
@@ -122,20 +122,20 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
         <div className="bg-surface/80 p-3 rounded-lg border border-line">
           <div className="flex items-center space-x-1.5 mb-1">
             <Activity className="w-3.5 h-3.5 text-signal-400" />
-            <span className="text-[10px] font-mono text-muted uppercase">Estado</span>
+            <span className="text-micro text-muted uppercase">Estado</span>
           </div>
-          <span className={`font-mono font-black text-sm ${isDead ? 'text-red-400' : current.color}`}>{isDead ? 'Morto' : current.name}</span>
+          <span className={`font-mono text-sm ${isDead ? 'text-red-400' : current.color}`}>{isDead ? 'Morto' : current.name}</span>
           {sheet.isStabilized && !isDead && mortal !== null && (
-            <span className="block font-mono text-[10px] text-ok-400 mt-0.5">Estabilizado — sem death save por turno</span>
+            <span className="block text-micro text-ok-400 mt-0.5">Estabilizado — sem death save por turno</span>
           )}
         </div>
 
         <div className="bg-surface/80 p-3 rounded-lg border border-line">
           <div className="flex items-center space-x-1.5 mb-1">
             <Skull className="w-3.5 h-3.5 text-red-400" />
-            <span className="text-[10px] font-mono text-muted uppercase">Efeito nos atributos</span>
+            <span className="text-micro text-muted uppercase">Efeito nos atributos</span>
           </div>
-          <span className="font-mono font-black text-sm text-red-300">
+          <span className="font-mono text-sm text-red-300">
             {woundEffectText(woundLevel)}
           </span>
         </div>
@@ -143,14 +143,14 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
         <div className="bg-surface/80 p-3 rounded-lg border border-red-500/40 flex flex-col justify-between">
           <div className="flex items-center space-x-1.5 mb-1">
             <Zap className="w-3.5 h-3.5 text-signal-400" />
-            <span className="text-[10px] font-mono text-muted uppercase">Saves</span>
+            <span className="text-micro text-muted uppercase">Saves</span>
           </div>
           <div className="flex flex-col gap-1.5">
             <button
               onClick={onRollStunSave}
               disabled={isDead}
               title="A cada dano sofrido: falhou, está fora de ação"
-              className="px-3 py-1.5 bg-caution-500 hover:bg-caution-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-[11px] uppercase rounded transition-all font-mono cursor-pointer"
+              className="px-3 py-1.5 bg-caution-500 hover:bg-caution-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-mini uppercase rounded transition-all cursor-pointer"
             >
               Stun · 1d10 ≤ {stunTarget}
             </button>
@@ -158,7 +158,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
               onClick={onRollDeathSave}
               disabled={mortal === null || isDead}
               title={mortal === null ? 'O death save só é exigido em ferimento Mortal' : `Mortal ${mortal}: a cada turno, até ser estabilizado`}
-              className="px-3 py-1.5 bg-signal-500 hover:bg-signal-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-[11px] uppercase rounded transition-all font-mono shadow-glow-12 shadow-signal-400/40 cursor-pointer"
+              className="px-3 py-1.5 bg-signal-500 hover:bg-signal-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-mini uppercase rounded transition-all shadow-glow-12 shadow-signal-400/40 cursor-pointer"
             >
               Death · 1d10 ≤ {deathTarget}
             </button>

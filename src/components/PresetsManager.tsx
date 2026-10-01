@@ -89,10 +89,10 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
   };
 
   return (
-    <div className="space-y-5 font-mono animate-fadeIn">
+    <div className="space-y-5 animate-fadeIn">
       {/* Header */}
       <div className="bg-surface/90 border-l-4 border-signal-500 border-y border-r rounded-xl p-5 flex flex-wrap items-center justify-between gap-3 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-mono text-[50px] font-black text-signal-500 select-none">
+        <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-signal-500 select-none">
           LEGENDS
         </div>
         <div className="flex items-center space-x-3 relative z-10">
@@ -100,26 +100,26 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
             <Swords className="w-6 h-6 text-signal-400" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-signal-400 uppercase tracking-widest">Lendas de Night City</h2>
-            <p className="text-[10px] text-subtle">Presets, NPCs e fichas importáveis</p>
+            <h2 className="font-display text-base sm:text-lg font-bold text-signal-400 uppercase tracking-display">Lendas de Night City</h2>
+            <p className="text-micro text-subtle">Presets, NPCs e fichas importáveis</p>
           </div>
         </div>
         <div className="flex items-center space-x-2 relative z-10">
           <button
             onClick={exportCurrent}
-            className="px-3 py-1.5 bg-raised hover:bg-raised-strong border border-line-strong text-fg-soft rounded font-bold text-[10px] uppercase flex items-center space-x-1 transition-all cursor-pointer"
+            className="px-3 py-1.5 bg-raised hover:bg-raised-strong border border-line-strong text-fg-soft rounded font-bold text-micro uppercase flex items-center space-x-1 transition-all cursor-pointer"
           >
             <Download className="w-3 h-3" />
             <span>Exportar Atual</span>
           </button>
-          <label className="px-3 py-1.5 bg-raised hover:bg-raised-strong border border-line-strong text-fg-soft rounded font-bold text-[10px] uppercase flex items-center space-x-1 transition-all cursor-pointer">
+          <label className="px-3 py-1.5 bg-raised hover:bg-raised-strong border border-line-strong text-fg-soft rounded font-bold text-micro uppercase flex items-center space-x-1 transition-all cursor-pointer">
             <Upload className="w-3 h-3" />
             <span>Importar</span>
             <input type="file" accept=".json" className="hidden" onChange={importSheet} />
           </label>
           <button
             onClick={() => setShowGenerator(!showGenerator)}
-            className="px-3 py-1.5 bg-signal-500 hover:bg-signal-400 text-black rounded font-black text-[10px] uppercase flex items-center space-x-1 transition-all cursor-pointer shadow-glow-10 shadow-signal-500/40"
+            className="px-3 py-1.5 bg-signal-500 hover:bg-signal-400 text-black rounded font-black text-micro uppercase flex items-center space-x-1 transition-all cursor-pointer shadow-glow-10 shadow-signal-500/40"
           >
             <Plus className="w-3 h-3" />
             <span>Gerar Lenda</span>
@@ -130,7 +130,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
       {/* Gerador */}
       {showGenerator && (
         <div className="bg-surface/80 border border-signal-500/40 rounded-xl p-4 space-y-2 animate-fadeIn">
-          <p className="text-[10px] font-mono text-muted">
+          <p className="text-micro text-muted">
             Gera uma ficha completa de NPC/edgerunner aleatória com atributos, perícias, cromo, armas e lifepath.
           </p>
           <button
@@ -138,7 +138,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
               generatePreset();
               setShowGenerator(false);
             }}
-            className="px-4 py-2 bg-signal-500 hover:bg-signal-400 text-black font-black text-[11px] uppercase rounded transition-all cursor-pointer"
+            className="px-4 py-2 bg-signal-500 hover:bg-signal-400 text-black font-black text-mini uppercase rounded transition-all cursor-pointer"
           >
             🎲 Gerar NPC Aleatório
           </button>
@@ -159,17 +159,17 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
               </div>
               <div className="min-w-0">
                 <span className="text-sm font-black text-signal-300 uppercase block truncate">{preset.handle || 'Sem nome'}</span>
-                <span className="text-[10px] text-accent-400 font-bold">{preset.role} • REF {preset.stats.REF}</span>
+                <span className="text-micro text-accent-400 font-bold">{preset.role} • REF {preset.stats.REF}</span>
               </div>
             </div>
-            <p className="text-[10px] text-muted line-clamp-2">
+            <p className="text-micro text-muted line-clamp-2">
               {preset.lifepath?.familyBackground || 'Lenda sem histórico registrado.'}
             </p>
             <div className="flex items-center justify-between pt-1">
               <button
                 onClick={() => clonePreset(preset)}
                 title={user ? 'Clonar como nova ficha' : 'Requer login'}
-                className="px-2.5 py-1.5 bg-ok-500 hover:bg-ok-400 text-black rounded font-bold text-[10px] uppercase flex items-center space-x-1 transition-all cursor-pointer"
+                className="px-2.5 py-1.5 bg-ok-500 hover:bg-ok-400 text-black rounded font-bold text-micro uppercase flex items-center space-x-1 transition-all cursor-pointer"
               >
                 {user ? <Copy className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                 <span>Clonar</span>
@@ -184,7 +184,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
           </div>
         ))}
         {presets.length === 0 && (
-          <div className="col-span-full text-center py-10 text-xs font-mono text-subtle bg-surface/60 rounded border border-dashed border-line-strong">
+          <div className="col-span-full text-center py-10 text-xs text-subtle bg-surface/60 rounded border border-dashed border-line-strong">
             Biblioteca vazia. Gere uma lenda ou importe uma ficha JSON.
           </div>
         )}
@@ -194,10 +194,10 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
       {user && (
         <div className="bg-surface/80 border border-line rounded-xl overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-line">
-            <span className="text-xs font-black text-accent-400 uppercase tracking-widest">Fichas Salvas ({roster.length})</span>
+            <span className="text-xs font-black text-accent-400 uppercase tracking-caps">Fichas Salvas ({roster.length})</span>
             <button
               onClick={onCreateNew}
-              className="px-2.5 py-1 text-[10px] text-accent-300 hover:text-white bg-raised border border-line-strong rounded uppercase flex items-center space-x-1 transition-all cursor-pointer"
+              className="px-2.5 py-1 text-micro text-accent-300 hover:text-white bg-raised border border-line-strong rounded uppercase flex items-center space-x-1 transition-all cursor-pointer"
             >
               <Plus className="w-3 h-3" />
               <span>Nova</span>
@@ -210,13 +210,13 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
                   onClick={() => onLoadSheet(meta.id)}
                   className="flex items-center space-x-2 text-left min-w-0 flex-1 cursor-pointer"
                 >
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-raised border border-line-strong text-signal-400 font-bold shrink-0">
+                  <span className="text-micro px-1.5 py-0.5 rounded bg-raised border border-line-strong text-signal-400 font-bold shrink-0">
                     {meta.role}
                   </span>
                   <span className="text-xs font-bold text-white truncate">{meta.handle || 'Sem nome'}</span>
                 </button>
                 <div className="flex items-center space-x-2 shrink-0">
-                  <span className="text-[9px] text-faint">{new Date(meta.updatedAt).toLocaleDateString()}</span>
+                  <span className="text-micro text-faint">{new Date(meta.updatedAt).toLocaleDateString()}</span>
                   <button
                     onClick={() => onDeleteSheet(meta.id)}
                     className="p-1.5 rounded bg-raised hover:bg-red-950 border border-line hover:border-red-500 text-subtle hover:text-red-400 transition-all cursor-pointer"
@@ -227,7 +227,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
               </div>
             ))}
             {roster.length === 0 && (
-              <div className="text-center py-6 text-[10px] text-subtle">Nenhuma ficha salva na nuvem ainda.</div>
+              <div className="text-center py-6 text-micro text-subtle">Nenhuma ficha salva na nuvem ainda.</div>
             )}
           </div>
         </div>

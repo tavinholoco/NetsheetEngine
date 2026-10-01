@@ -32,7 +32,7 @@ const MODULE_CARDS: { tab: TabType; title: string; desc: string; icon: React.Com
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   return (
-    <div className="space-y-6 font-mono animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn">
       {/* Hero */}
       <div className="relative overflow-hidden bg-surface/90 border-2 border-red-600/40 rounded-2xl p-8 shadow-[0_0_30px_rgba(239,68,68,0.15)]">
         <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-red-500 via-signal-500 to-accent-500" />
@@ -40,11 +40,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         <div className="relative z-10 pl-3 space-y-4">
           <div className="flex items-center space-x-2">
             <Shield className="w-5 h-5 text-signal-400 animate-pulse-glow" />
-            <span className="text-[11px] font-black tracking-widest text-red-500 uppercase">
+            <span className="font-mono text-mini tracking-caps text-red-500 uppercase">
               NETSHEET ENGINE // TERMINAL ONLINE
             </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black italic tracking-tight text-signal-400 uppercase drop-shadow-glow-20 drop-shadow-signal-400/50">
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black italic tracking-display text-signal-400 uppercase drop-shadow-glow-20 drop-shadow-signal-400/50">
             Bem-vindo a Night City
           </h1>
           <p className="text-sm text-fg-soft max-w-2xl leading-relaxed">
@@ -67,7 +67,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               <Radio className="w-4 h-4" />
               <span>Jogar Agora</span>
             </button>
-            <span className="text-[10px] text-subtle uppercase tracking-wider">
+            <span className="font-mono text-micro text-subtle uppercase tracking-caps">
               {APP_VERSION} • Estado: {new Date().toLocaleTimeString('pt-BR')}
             </span>
           </div>
@@ -88,24 +88,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 <Icon className={`w-5 h-5 ${mod.accent}`} />
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm font-black uppercase tracking-wider ${mod.accent}`}>{mod.title}</span>
+                <span className={`text-sm font-black uppercase tracking-caps ${mod.accent}`}>{mod.title}</span>
                 <ArrowRight className={`w-4 h-4 text-faint group-hover:text-accent-400 group-hover:translate-x-1 transition-all`} />
               </div>
-              <p className="text-[11px] text-muted mt-1.5 leading-relaxed">{mod.desc}</p>
+              <p className="text-mini text-muted mt-1.5 leading-relaxed">{mod.desc}</p>
             </button>
           );
         })}
       </div>
 
       {/* Status bar */}
-      <div className="bg-surface/80 border border-line rounded-lg p-3 flex items-center justify-between text-[10px] font-mono text-subtle">
+      <div className="bg-surface/80 border border-line rounded-lg p-3 flex items-center justify-between text-micro font-mono text-subtle">
         <div className="flex items-center space-x-2">
           <Terminal className="w-3.5 h-3.5 text-accent-400" />
           <span>SISTEMA.NET // NETSHEET ENGINE — módulos prontos para uso</span>
         </div>
         <div className="flex items-center space-x-2">
           <span className="w-2 h-2 rounded-full bg-ok-500 animate-pulse" />
-          <span className="text-ok-400 font-bold uppercase">ONLINE</span>
+          <span className="text-ok-400 uppercase">ONLINE</span>
         </div>
       </div>
     </div>

@@ -152,13 +152,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         {errorMsg && (
-          <div className="bg-red-950/80 border border-red-800 p-3 rounded text-xs text-red-300 flex items-center space-x-2 font-mono">
+          <div className="bg-red-950/80 border border-red-800 p-3 rounded text-xs text-red-300 flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-400" />
             <span>{errorMsg}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 font-mono">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {isRegister && (
             <div>
               <label className="text-xs text-muted block mb-1 uppercase">Nome / Handle do Edgerunner:</label>
@@ -227,9 +227,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </Button>
         </form>
 
-        <div className="relative flex py-1 items-center font-mono">
+        <div className="relative flex py-1 items-center">
           <div className="flex-grow border-t border-line"></div>
-          <span className="flex-shrink mx-3 text-[10px] text-subtle uppercase">ou acesse com</span>
+          <span className="flex-shrink mx-3 text-micro text-subtle uppercase">ou acesse com</span>
           <div className="flex-grow border-t border-line"></div>
         </div>
 
@@ -243,7 +243,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <span>Login com Google</span>
         </Button>
 
-        <div className="text-center pt-2 border-t border-line font-mono">
+        <div className="text-center pt-2 border-t border-line">
           <button
             type="button"
             onClick={() => {
