@@ -23,9 +23,11 @@ describe('WOUND_LEVEL_NAMES — 11 níveis (0..10)', () => {
     expect(WOUND_LEVEL_NAMES[WOUND_MAX].name).toBe('Mortal 6 (Morte Iminente)');
   });
 
-  it('níveis mortais (4+) têm cor vermelha/rose (estado crítico)', () => {
-    for (let i = 4; i <= WOUND_MAX; i++) {
-      expect(WOUND_LEVEL_NAMES[i].color).toMatch(/red|rose/);
+  // A cor saiu daqui na F.2.7: cada nível pinta com o token wound-N, e o tom e
+  // o contraste da escala são conferidos no theme-contrast.test.
+  it('cada nível usa o seu token da escala de dano (wound-N)', () => {
+    for (let i = 0; i <= WOUND_MAX; i++) {
+      expect(WOUND_LEVEL_NAMES[i].color).toBe(`text-wound-${i}`);
     }
   });
 });

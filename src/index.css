@@ -159,6 +159,24 @@
   --color-danger-900: oklch(39.6% 0.141 25.723);
   --color-danger-950: oklch(25.8% 0.092 26.042);
 
+  /* A escala de dano (F.2.7): um tom por nível de ferimento, o índice 0..10 do
+     WOUND_LEVEL_NAMES (src/utils/injuryRules.ts). No fundo escuro a gravidade
+     CLAREIA: do Crítico à Morte Iminente o tom sobe pelos claros do danger.
+     Antes descia (red-500 → rose-700), e Mortal 2–6 ficava em 2,9–4,5:1 —
+     quanto mais perto da morte, menos legível. Todo tom com ≥ 4,5:1 sobre
+     surface e raised: o theme-contrast.test confere. */
+  --color-wound-0: var(--color-ok-400);           /* Saudável */
+  --color-wound-1: var(--color-signal-400);       /* Leve */
+  --color-wound-2: oklch(75% 0.183 55.934);       /* Sério — o orange-400 */
+  --color-wound-3: var(--color-danger-500);       /* Crítico */
+  --color-wound-4: var(--color-danger-400);       /* Mortal 0 */
+  --color-wound-5: var(--color-danger-400);       /* Mortal 1 */
+  --color-wound-6: var(--color-danger-300);       /* Mortal 2 */
+  --color-wound-7: var(--color-danger-300);       /* Mortal 3 */
+  --color-wound-8: var(--color-danger-200);       /* Mortal 4 */
+  --color-wound-9: var(--color-danger-200);       /* Mortal 5 */
+  --color-wound-10: var(--color-danger-100);      /* Mortal 6 — morte iminente */
+
   /* Neutros com nome — pelo tipo de uso × tom (color-map.json, "neutros"). */
   --color-surface: var(--color-night-950);       /* fundo da página e dos painéis */
   --color-raised: var(--color-night-900);        /* painel elevado, campo */
@@ -170,8 +188,12 @@
   --color-fg: var(--color-night-200);            /* texto do corpo */
   --color-fg-soft: var(--color-night-300);
   --color-muted: var(--color-night-400);         /* texto secundário */
-  --color-subtle: var(--color-night-500);        /* abaixo de 4,5:1 — F.2.8 */
-  --color-faint: var(--color-night-600);         /* abaixo de 4,5:1 — F.2.8 */
+  /* Texto apagado (F.2.8). Eram o night-500 e o night-600: 3,7–4,2:1 e
+     2,4–2,7:1, abaixo do 4,5:1 do WCAG 1.4.3. O subtle sobe para o menor tom
+     da rampa que passa sobre raised com folga (~4,9:1), e o faint se funde
+     nele — dois degraus abaixo de 4,5:1 não existem. */
+  --color-subtle: oklch(62% 0.045 257.4);
+  --color-faint: var(--color-subtle);
 
   /* Brilho neon (F.2.5): a geometria aqui, a cor pelo token —
      `shadow-glow-15 shadow-accent-500/40`. O currentColor é só o padrão:

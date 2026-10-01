@@ -23,19 +23,21 @@ export const WOUND_MAX = 10;
 /**
  * Nomes dos níveis de ferimento (índice = woundLevel 0..10).
  * Exportado porque o TacticalGrid.tsx também consome este símbolo.
+ * A cor de cada nível é o token `wound-N` do @theme (src/index.css, F.2.7):
+ * a escala e o contraste dela moram lá, num lugar só.
  */
 export const WOUND_LEVEL_NAMES: { name: string; color: string }[] = [
-  { name: 'Saudável (OK)', color: 'text-ok-400' },
-  { name: 'Ferimento Leve (Light)', color: 'text-signal-400' },
-  { name: 'Ferimento Sério (Serious)', color: 'text-orange-400' },
-  { name: 'Ferimento Crítico (Critical)', color: 'text-red-400' },
-  { name: 'Mortal 0', color: 'text-red-500' },
-  { name: 'Mortal 1', color: 'text-red-500' },
-  { name: 'Mortal 2', color: 'text-red-600' },
-  { name: 'Mortal 3', color: 'text-red-600' },
-  { name: 'Mortal 4', color: 'text-rose-600' },
-  { name: 'Mortal 5', color: 'text-rose-700' },
-  { name: 'Mortal 6 (Morte Iminente)', color: 'text-rose-700' }
+  { name: 'Saudável (OK)', color: 'text-wound-0' },
+  { name: 'Ferimento Leve (Light)', color: 'text-wound-1' },
+  { name: 'Ferimento Sério (Serious)', color: 'text-wound-2' },
+  { name: 'Ferimento Crítico (Critical)', color: 'text-wound-3' },
+  { name: 'Mortal 0', color: 'text-wound-4' },
+  { name: 'Mortal 1', color: 'text-wound-5' },
+  { name: 'Mortal 2', color: 'text-wound-6' },
+  { name: 'Mortal 3', color: 'text-wound-7' },
+  { name: 'Mortal 4', color: 'text-wound-8' },
+  { name: 'Mortal 5', color: 'text-wound-9' },
+  { name: 'Mortal 6 (Morte Iminente)', color: 'text-wound-10' }
 ];
 
 // O `clampWoundLevel` saiu na Fase D: a ficha passou a marcar PONTOS (D.1),
