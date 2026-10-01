@@ -224,10 +224,12 @@
   --drop-shadow-glow-18: 0 0 18px currentColor;
   --drop-shadow-glow-20: 0 0 20px currentColor;
 
-  /* Animações HUD */
+  /* Animações HUD. Nada decorativo em loop (WCAG 2.2.2, nível A): a
+     scanline é estática (.crt-scanlines) e o glitch é de evento — uma vez,
+     em 0,75 s, com três mudanças, abaixo dos três flashes por segundo do
+     2.3.1 (F.3.1). */
   --animate-fadeIn: fadeIn 0.3s ease-out;
-  --animate-scanline: scanline 8s linear infinite;
-  --animate-glitch: glitch 2.5s infinite;
+  --animate-glitch: glitch 0.75s steps(1, end) 1;
   --animate-pulse-glow: pulseGlow 2s ease-in-out infinite;
 }
 
@@ -242,33 +244,22 @@
   }
 }
 
-@keyframes scanline {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
-}
-
+/* O glitch de evento (F.3.1): dois saltos e a volta, cada estado parado por
+   um terço da duração (steps). Quem dispara é o React — a `key` remonta o
+   elemento a cada evento: trocar de tela, entrar em Mortal. */
 @keyframes glitch {
-  0%,
-  92%,
-  100% {
-    transform: translate(0, 0);
-    clip-path: inset(0 0 0 0);
-  }
-  93% {
+  0% {
     transform: translate(-2px, 1px);
     clip-path: inset(20% 0 40% 0);
   }
-  95% {
+  33% {
     transform: translate(2px, -1px);
     clip-path: inset(60% 0 10% 0);
   }
-  97% {
-    transform: translate(-1px, 0);
-    clip-path: inset(30% 0 30% 0);
+  66%,
+  100% {
+    transform: translate(0, 0);
+    clip-path: inset(0 0 0 0);
   }
 }
 
@@ -379,29 +370,3 @@
   background-size: 100% 4px, 3px 100%;
 }
 
-/* Glitch flicker para títulos neon */
-.glitch-text {
-  position: relative;
-  display: inline-block;
-}
-
-.glitch-text::before,
-.glitch-text::after {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.glitch-text::before {
-  color: var(--color-accent-400);
-  animation: glitch 2.5s infinite;
-  z-index: -1;
-}
-
-.glitch-text::after {
-  color: var(--color-fault-500); /* era vermelho — e vermelho é só dano (F.2.2) */
-  animation: glitch 3s infinite reverse;
-  z-index: -2;
-}

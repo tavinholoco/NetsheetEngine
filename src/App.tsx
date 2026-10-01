@@ -266,7 +266,7 @@ export default function App() {
                       SISTEMA // {currentPage.category}
                     </span>
                   </div>
-                  <h1 className={`font-display text-xl sm:text-2xl md:text-3xl font-black italic tracking-display uppercase ${currentPage.color} drop-shadow-glow-12 drop-shadow-white/15 leading-tight`}>
+                  <h1 key={activeTab} className={`animate-glitch font-display text-xl sm:text-2xl md:text-3xl font-black italic tracking-display uppercase ${currentPage.color} drop-shadow-glow-12 drop-shadow-white/15 leading-tight`}>
                     {currentPage.title}
                   </h1>
                   {user && (

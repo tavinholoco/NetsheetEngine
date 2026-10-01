@@ -56,7 +56,11 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
           </h2>
         </div>
         <span className={`text-xs font-mono px-2.5 py-1 rounded border ${isDead || lastBox ? 'bg-danger-950 border-danger-500 text-danger-300 animate-pulse' : 'bg-surface border-line-strong text-fg'}`}>
-          {isDead ? 'MORTO' : current.name}
+          {/* F.3.1: o glitch é de evento — a key remonta o texto a cada nível, e ele
+              só pisca uma vez ao entrar (ou piorar) em Mortal e ao morrer. */}
+          <span key={isDead ? 'morto' : woundLevel} className={isDead || mortal !== null ? 'inline-block animate-glitch' : undefined}>
+            {isDead ? 'MORTO' : current.name}
+          </span>
         </span>
       </div>
 
