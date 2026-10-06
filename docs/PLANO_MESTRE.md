@@ -466,6 +466,9 @@ Quando disparar, vira item junto com a I.1e — o cross-origin só se testa de v
    uptime bot da regra 3. **ADIAR — gatilho:** a página de uso do Render mostrar o NetSheet acima de
    100 h num mês, ou uma aba esquecida observada. Versão 10× menor, quando disparar: pausar o polling e
    o heartbeat com a aba oculta (`document.hidden`) e fechar o socket depois de ~30 min oculta.
+   *(05/10/2026: as 100 h de outubro passaram no dia 5 — mas pelo monitor do Better Stack, sem mesa
+   nenhuma aberta (ver o incidente abaixo). A causa não é a deste risco: **segue ADIAR**, e o gatilho
+   volta a valer com o número de um mês sem o monitor. O mesmo vale para o gatilho da regra 4.)*
 2. **Mesa grande.** A banda cresce com o **quadrado** dos jogadores (sala maior × mais conexões). Com
    6 ou mais jogadores e fichas cheias, uma sessão passa de 0,5 GB. **É o ARQ-01, já na Fase L**
    (broadcast por diferença). **Gatilho para antecipar:** a banda do workspace passar de 2,5 GB num
@@ -494,6 +497,21 @@ número real.
 > serviços gratuitos até a virada do mês, e as horas são **por workspace**: o NetSheet caiu junto,
 > sem ter causado. **Volta em 01/10/2026.** Enquanto o serviço está suspenso, nada que for mergeado
 > no `master` chega ao ar.
+>
+> *Corrigido em 05/10/2026: o NetSheet **causou**, e não foi só setembro.* Um **monitor do Better
+> Stack** ("NetsheetEngine — API Health", no `/api/health`) ficou ligado desde a T10.4 de agosto — a
+> regra 3 proibiu o uptime bot em 02/09, mas ninguém conferiu se o monitor existia. O plano gratuito do
+> Better Stack checa a cada **3 min** (a frequência deste monitor não foi conferida na conta): o serviço
+> **nunca hibernava**, ~720 h/mês só do NetSheet. O histórico do próprio monitor mostra **dois** `503`:
+> de 29/08 11:10 por 2 dias e 10 h, e de 19/09 13:31 por 1 semana e 4 dias — os dois terminam na
+> virada do mês (UTC), que é quando o Render libera o workspace. **O workspace estourou em agosto e em
+> setembro**; as instâncias do Newra completaram a conta, não a começaram.
+> **Medido em 05/10** (21:32 BRT), sem nenhuma mesa — a tabela `rooms` de produção vazia e o
+> `/api/health` com `rooms: 0` —: `uptime` de **357.038 s (99,2 h)**, ou seja, o processo do deploy do
+> #34 (01/10, 18:22 BRT) não tinha dormido nenhuma vez. O painel do Render mostrava ~18 h/dia do
+> NetSheet. **O dono pausou o monitor em 05/10/2026**; o Newra News não tinha monitor. Conferir que a
+> hibernação voltou é o item 01.13 do R.15. **Nunca reativar o monitor** com intervalo abaixo de
+> 15 min — se quiser aviso de queda, 1×/dia ou 1×/semana, como o `DEPLOY.md` já diz.
 
 > **Nota sobre o Newra News:** o `CRON_SCHEDULE: "0 8 * * *"` é um cron **em processo**. No plano
 > gratuito do Render, se ninguém acessar o portal nos 15 minutos anteriores às 08:00, o processo está
@@ -899,6 +917,12 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       > ar, confere a F.0g e a F.4.4; então abre a [Fase G](#fase-g---varredura-frontend-12-dias).)*
       > Exceção: se o checklist de 01/10 falhou (algo ❌ no PR `claude/verificacao-01-10` ou no resumo da
       > tarefa), esse vermelho vem primeiro.
+      >
+      > **Decisão do dono (05/10/2026): a G só abre depois de fechar o que falta da R e da F.** A
+      > próxima sessão segue esta ordem: **01.13** (a hibernação voltou?), depois os itens do dono —
+      > **01.3** (`TRUST_PROXY`), **01.10** (Node no log) e **01.11** (horas e banda) —, a data do bloco
+      > R; então a **F.0g** e a **F.4.4** (uma visita ao ar, pelo navegador do app) e a data da F. Só
+      > então a [Fase G](#fase-g---varredura-frontend-12-dias).
 
       **Checklist de 01/10/2026 — quando a API voltar.** O Render suspendeu o serviço em setembro
       (incidente no [contrato de custo zero](#-contrato-de-custo-zero)); ele volta na virada do mês e
@@ -930,7 +954,17 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
             CLI do Render desta máquina está deslogado, e o login é do dono.
       - [ ] **01.11** *(dono)* Painel do Render → uso do workspace: anotar horas e banda do NetSheet —
             a linha de base que troca a estimativa do contrato de custo zero pelo número real.
-      - [ ] **01.12** *(dono)* Mergear o PR que a tarefa abrir com o resultado (e o do backup mensal).
+            *05/10/2026: ~18 h/dia de horas — mas com o monitor do Better Stack ligado (incidente no
+            [contrato de custo zero](#-contrato-de-custo-zero)), então **não é linha de base**. Anotar de
+            novo depois da 01.13, com alguns dias sem o monitor: as horas por dia **e a banda** do mês.*
+      - [x] **01.12** *(dono)* Mergear o PR que a tarefa abrir com o resultado (e o do backup mensal).
+            *(01/10/2026: #34, da verificação, e #33, do backup, no `master`.)*
+      - [ ] **01.13** **A hibernação voltou** depois de pausar o monitor (05/10/2026). Uma requisição só ao
+            `/api/health`, com pelo menos 1 h sem ninguém no site: o `uptime` tem de vir **pequeno**
+            (minutos — o processo dormiu e esta requisição o acordou) e a resposta, lenta (~1 min de
+            partida a frio). Se vier em horas, ainda tem algo batendo no serviço: o próximo passo é logar
+            caminho e *user agent* de cada requisição (nunca o IP) para achar quem. **Nunca** repetir a
+            requisição em sequência — cada uma o mantém acordado por mais 15 min.
       Com tudo marcado, o R.15 e o bloco R fecham. *Provado antes de 01/10:* o script passa os 12
       checagens contra o build de produção local e **acusa falha** (sai com erro) contra um servidor
       fora do ar.
@@ -2013,9 +2047,9 @@ público mudar.
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
-| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 (checklist de 01/10) | — |
+| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 — do checklist de 01/10, o 01.13 (hibernação depois do monitor pausado) e os do dono, 01.3, 01.10 e 01.11 | — |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
-| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28) e a F.1 (#29) no `master`; o PR 3b (F.2b, F.3, F.4, tag `v0.4.4`) aberto em 30/09. Falta a visita ao ar: F.0g e F.4.4 | — |
+| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28), a F.1 (#29) e o PR 3b (#32 — F.2b, F.3, F.4, tag `v0.4.4`) no `master`, e a `0.4.4` no ar desde 01/10. Falta a visita ao ar: F.0g e F.4.4 | — |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
@@ -2051,6 +2085,11 @@ Renovar até 22/10 — passo a passo no P.2.
 **01/10/2026 — o Render voltou.** `node scripts/verify-prod.mjs`: 11 de 12 checagens passaram
 (01.1, 01.2 com `0.4.4`, 01.4–01.9). **O 01.3 falhou**: o `clientIp` não bateu, e o ajuste é o
 `TRUST_PROXY` no painel (dono). Faltam também o 01.10–01.12, do dono. O histórico da nota segue abaixo.
+
+**05/10/2026 — o serviço não hibernava.** Sem mesa nenhuma, o processo estava acordado havia 99 h: um
+monitor do Better Stack no `/api/health`, da T10.4 de agosto, e a causa dos estouros de agosto e de
+setembro. O dono pausou o monitor; conferir a hibernação é o 01.13. Detalhe no incidente do
+[contrato de custo zero](#-contrato-de-custo-zero).
 
 *Nota anterior:* o Render volta depois da suspensão de setembro (ver o incidente no
 [contrato de custo zero](#-contrato-de-custo-zero)). Conferir na aba *Events* que o deploy que subiu é

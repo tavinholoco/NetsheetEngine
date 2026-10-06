@@ -96,6 +96,8 @@ supabase db push                  # aplica as migrations pendentes (0001–0007)
 - ~~**Monitoramento** ativo via T10.4 (UptimeRobot: health + SSL).~~ *29/09: **proibido no plano
   gratuito** — um monitor de 5 em 5 min consome ~730 h/mês do workspace e suspende este serviço e o
   Newra News (regra 3 do contrato de custo zero). Ver o [`DEPLOY.md`](./DEPLOY.md#monitoramento-externo-t104).*
+  *05/10: o da T10.4 tinha sido criado — no **Better Stack**, não no UptimeRobot — e foi a causa dos
+  estouros de agosto e setembro. Pausado pelo dono; incidente no contrato de custo zero do plano.*
 - ~~**Backups do Supabase cloud** habilitados (retenção automática).~~ *29/09: o plano gratuito
   **não tem backup automático** — ver a seção 6.*
 

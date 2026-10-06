@@ -52,6 +52,9 @@ A memória complementa com decisões e preferências; ela é local desta máquin
   um serviço no Render (750 h **e 5 GB de banda** por mês, por *workspace*, divididas com outro
   projeto do usuário — estourar qualquer uma desliga os dois até o mês seguinte);
   **nunca** apontar uptime bot para `/api/health`. Detalhes no contrato de custo zero do plano.
+  *Um existiu:* o monitor do Better Stack da T10.4 manteve o serviço acordado 24 h por dia e estourou o
+  workspace em agosto e setembro; o dono o pausou em 05/10/2026. O `uptime` do `/api/health` mostra se
+  o serviço está hibernando — uma requisição só.
 - **Filtro de necessidade: ADIAR é o veredito padrão.** Mudança sem sintoma observado não entra.
   Se mais de 1/3 de uma varredura virar FAZER, o critério está frouxo.
 - **Portão de segurança:** nenhuma fase de construção fecha sem responder as 6 perguntas e registrar.
