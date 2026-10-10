@@ -899,7 +899,7 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       Achado do portão: **SEC-13**, virou a R.16. O item fecha quando R.7–R.9 e a R.16 responderem.)*
       *(29/09/2026 — R.16, R.7, R.8 e R.9 responderam no mesmo registro; nenhum achado novo. R.10,
       R.11 e R.13 são decisão e documentação — o portão pergunta de novo se virarem código.)*
-- [ ] **R.15** 🧠 **Estado durável e PRs.** Ordem: consertos de segurança (R.1–R.6) **junto com** o
+- [x] **R.15** 🧠 **Estado durável e PRs.** Ordem: consertos de segurança (R.1–R.6) **junto com** o
       texto que os descreve, nunca depois dele; dependências, Node e versão (R.7–R.9) podem ir no mesmo
       PR; a R.13 em PR próprio. Depois do merge, `master` verde e a verificação pós-deploy de 01/10.
       *(29/09/2026 — R.0–R.6 e R.12 publicados juntos, a pedido do dono: um commit por item, cada um
@@ -977,7 +977,7 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
             `room_exists` 409; sala de teste removida.)*
       - [x] **01.9** O E2E de WebSocket contra o ar: chat, rolagem e Yjs, 5/5.
             *(01/10/2026: 5 passaram, 0 falharam.)*
-      - [ ] **01.10** *(dono)* Painel do Render → *Events* → log do build: **Node 24.x** (R.8, OPS-02). O
+      - [x] **01.10** *(dono)* Painel do Render → *Events* → log do build: **Node 24.x** (R.8, OPS-02). O
             CLI do Render desta máquina está deslogado, e o login é do dono.
             *10/10/2026 — **falhou, e a premissa da R.8 caiu.** Lido no painel, com o dono logado no
             navegador do app: o serviço é **Docker** (o selo do painel, e o log do deploy do #35 roda os
@@ -991,6 +991,10 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
             to be '24'"). O `DEPLOY.md`, o `CLAUDE.md` e o cabeçalho do `render.yaml` dizem agora o que
             roda. O Docker local não sobe (o contorno do `BACKUP.md`), então **a prova é o build do Render
             depois do merge**: o log tem de puxar o `node:24-alpine`, e o health, responder.*
+            *(10/10/2026 — **conferido.** O deploy do #36 (`8eefe08`) no log do Render: `load metadata for
+            docker.io/library/node:24-alpine` e `[build 1/6] FROM docker.io/library/node:24-alpine@sha256:…`,
+            *Deploy succeeded | Live*. O health respondeu no processo novo (`uptime` de 33 s, `0.4.4`), com
+            o `clientIp` da 01.3 ainda certo. CI do `master` verde nos 4 jobs depois do merge.)*
       - [x] **01.11** *(dono)* Painel do Render → uso do workspace: anotar horas e banda do NetSheet —
             a linha de base que troca a estimativa do contrato de custo zero pelo número real.
             *05/10/2026: ~18 h/dia de horas — mas com o monitor do Better Stack ligado (incidente no
@@ -1032,7 +1036,8 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       sempre volta ao seu; gerar ficha → recusado com "A mesa está cheia". Teto máximo de sockets por
       sala: 48. `seat-cap.integration` (6). **Provado revertendo** as 2 linhas do teto: 4 falham. As
       **fichas de NPC** (`room.npcs`) continuam sem teto — é a pista da E, e NPC não abre socket.
-- [ ] ✅ **Pendências da revisão pós-D resolvidas em:** ____/____/______
+- [x] ✅ **Pendências da revisão pós-D resolvidas em:** 10/10/2026 *(o código, em 29–30/09; a verificação no ar
+      fechou com o #36 — a `TRUST_PROXY` com o Cloudflare, o `Dockerfile` no Node 24, e a hibernação de volta)*
 
 ---
 
@@ -2105,7 +2110,7 @@ público mudar.
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
-| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; do checklist do R.15, só a 01.10 espera o build do Render depois do merge do PR que pôs o `Dockerfile` no Node 24 (10/10) | — |
+| R | 🔨 | Pendências da revisão pós-D (segurança da mesa, Node, backup) | ✅ | 10/10/2026 |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
