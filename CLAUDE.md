@@ -14,7 +14,7 @@
 1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M),
    mais blocos de pendências fora das fases (P em 25/09; **R**, da revisão pós-D de 29/09) que
    precedem a fase seguinte. O arquivo passa de uma leitura só: leia em partes, e não pule nenhuma.
-   O detalhe das fases fechadas (A–D e P) mora em [`docs/historico/`](./docs/historico/) desde a R.13
+   O detalhe das fases fechadas (A–D, P, R e F) mora em [`docs/historico/`](./docs/historico/) desde a R.13
    — só abra quando precisar do porquê de algo já feito.
 2. Ache o **primeiro item `[ ]` não marcado**. É de onde o trabalho continua.
 3. Rode `git log --oneline -15` e `git tag -l` — as tags marcam o fim de cada fase de construção.

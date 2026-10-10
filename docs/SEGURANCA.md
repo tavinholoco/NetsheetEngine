@@ -307,7 +307,7 @@ a falta de teto de NPCs, que vira pista da Fase E. **O achado da C.14 está fech
 
 **29/09/2026.** Não é portão de fase: é o registro de seis achados que **escaparam** aos portões da A
 à D, achados numa revisão pedida pelo dono. Detalhe e provas na
-[revisão pós-D do plano](./PLANO_MESTRE.md#-revisão-pós-d-29092026); consertos nas pendências R.
+[revisão pós-D do plano](./historico/AUDITORIAS_E_PENDENCIAS_R.md#-revisão-pós-d-29092026); consertos nas pendências R.
 
 **Por que escaparam.** O portão pergunta sobre *o que a fase mudou*. O SEC-07, o SEC-08 e o SEC-09
 nasceram antes dele (T1.7 e T3.3, no plano antigo). A Fase B **passou perto**: a B.3 exigiu sessão
