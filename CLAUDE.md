@@ -113,7 +113,7 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   `docs/varreduras/E-backend.md`, com o mapa de cortes que a L.3 vai usar.
 - **Ver o app rodando:** a configuração `netsheet-dev` do [`.claude/launch.json`](./.claude/launch.json)
   (`npm run dev`, porta 3000) abre o preview no painel. Em modo dev, **deep link volta para `/`**
-  (pista da Fase G) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,
+  (G.02 do [ledger da G](./docs/varreduras/G-frontend.md): ADIAR, com a versão de uma linha pronta) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,
   semeie a sala por REST com o `gmPeerId` do navegador (a D.3–D.5 fizeram assim). **O build de produção,**
   com o helmet (onde o CSP vale), é a configuração `netsheet-prod` (porta 3100; `npm run build` antes) — e
   `scripts/visual/` captura, compara pixel a pixel e confere a tipografia contra ela (Fase F).
