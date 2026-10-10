@@ -1120,7 +1120,7 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Depois do PR 3b da F (30/09/2026 — a construção da F fechada; falta a visita ao ar) |
+| Verificação | Ao fechar a R e a F (10/10/2026 — antes da G.0) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
