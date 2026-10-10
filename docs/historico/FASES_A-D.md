@@ -62,7 +62,7 @@
 ### FASE B — FECHAR OS BURACOS DE AUTORIZAÇÃO 🔨 *(2,5 dias)*
 
 - [x] **B.0** 🔍 **Verificação de premissas** *(03/09/2026 — disciplina nova, nascida da
-      [auditoria da Fase A](../PLANO_MESTRE.md#-auditoria-das-afirmações-deste-plano-03092026): não executar a partir
+      [auditoria da Fase A](./AUDITORIAS_E_PENDENCIAS_R.md#-auditoria-das-afirmações-deste-plano-03092026): não executar a partir
       de descrição sem conferir o estado real).* **Os seis achados se confirmaram todos.** Refinamentos
       que mudam o trabalho:
       - **SEC-01 é maior que o descrito.** Além de não ter autenticação e aceitar `systemInstruction`
@@ -304,7 +304,7 @@ cliente e servidor para ela.
       livro** — a pesquisa está em [`CONFERENCIA_CP2020.md`](../CONFERENCIA_CP2020.md), com a fonte de
       cada regra. **Três premissas do plano estavam erradas, e as três vieram de fora do 2020:** duas
       do Cyberpunk RED, uma de regra de casa publicada como se fosse do livro. O defeito é do plano,
-      não da execução — mesma classe da [auditoria de 03/09](../PLANO_MESTRE.md#-auditoria-das-afirmações-deste-plano-03092026).
+      não da execução — mesma classe da [auditoria de 03/09](./AUDITORIAS_E_PENDENCIAS_R.md#-auditoria-das-afirmações-deste-plano-03092026).
       - **Linha de base: 196/197, não 197.** No checkout principal o `supabaseAuth` do B.1 ia à rede
         (o `.env.local` aponta para o Supabase local) e o teste de falha fechada recebia 401 em vez de
         503. Nos worktrees da Fase B não havia `.env.local`, por isso escapou. Corrigido com a mesma
