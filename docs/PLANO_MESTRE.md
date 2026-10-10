@@ -588,9 +588,9 @@ número real.
 | SEC-13 | 🟠 Alto | Sala sem teto de **assentos**: cada `join` novo cria um, cada um abre até 3 sockets e recebe cada reenvio *(achado do portão das R, 29/09 — reproduzido na R.16: 101 assentos para 100 joins)* | ✅ R.16 |
 | OPS-01 | 🟠 Alto | **Nenhum backup** — a decisão 4 supôs um backup diário que o plano gratuito não tem | ✅ R.10 (decisão 8; restauração de teste com gatilho) |
 | SEC-09 | 🟡 Médio | Expulsar não revoga a sessão nem fecha o socket — o expulso segue lendo a mesa *(reproduzido)* | ✅ R.3 |
-| SEC-11 | 🟡 Médio | Sem `trust proxy`, os limitadores tendem a ser um balde só atrás do proxy do Render | ✅ R.5 (conferir no ar) |
+| SEC-11 | 🟡 Médio | Sem `trust proxy`, os limitadores tendem a ser um balde só atrás do proxy do Render | ✅ R.5 + 01.3 (no ar em 10/10: a `TRUST_PROXY` com os privados e o Cloudflare) |
 | SEC-12 | 🟡 Médio | Posse de token no grid Yjs compara o dono **novo** — jogador move e toma token alheio *(reproduzido na R.6)* | ✅ R.6 |
-| OPS-02 | 🟡 Médio | Node sem versão fixa: produção no `latest` (26, não LTS), CI no 20 (fim de vida) e no 22 | ✅ R.8 (conferir no log de 01/10) |
+| OPS-02 | 🟡 Médio | Node sem versão fixa: produção no `latest` (26, não LTS), CI no 20 (fim de vida) e no 22. *(10/10: a premissa estava errada — o serviço é Docker e rodava o `node:22-alpine` do `Dockerfile`)* | ✅ R.8 + 01.10 (o `Dockerfile` no 24) |
 | DOC-06 | 🟡 Médio | A L.6 depende de meses de log, e o Render Hobby guarda 7 dias | ✅ R.12 |
 | DOC-07 | 🟡 Médio | A decisão 3 (só convidados) não é imposta pelo produto: lobby público e `join` aberto | ✅ R.11 |
 | OPS-03 | 🔵 Baixo | `version` do `package.json` em 0.4.0 com a tag em `v0.4.3` | ✅ R.9 |
@@ -795,6 +795,8 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       sem aviso de `engines`. Não há teste automatizado possível do que o Render escolhe: **a prova é o
       log do deploy** — em 01/10, o primeiro deploy deve dizer Node 24.x. *O `@types/node` segue no
       ^22: tipos mais velhos que o runtime não quebram nada; sobe quando algo do 24 fizer falta.*
+      *(10/10/2026 — **a premissa caiu na 01.10:** o serviço é Docker e não lê o `.node-version`; a
+      produção rodava o `node:22-alpine` do `Dockerfile`. Consertado lá, com teste de paridade.)*
 - [x] **R.9** **OPS-03 — versão com a tag.** `package.json` → `0.4.3`. A regra entrou no passo 3 do
       ritual de abertura.
       *(29/09/2026)* `npm version 0.4.3 --no-git-tag-version` (o `package.json` e as duas linhas da
@@ -935,10 +937,35 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
             antes — o script lê o `package.json`) — o deploy é o último commit
             (R.9). Se não for: painel do Render → *Manual Deploy → Deploy latest commit* (dono).
             *(01/10/2026: publicada `0.4.4` = `package.json`.)*
-      - [ ] **01.3** O `clientIp` do health é o IP público de quem pergunta (R.5, `trust proxy`). Registrar
+      - [x] **01.3** O `clientIp` do health é o IP público de quem pergunta (R.5, `trust proxy`). Registrar
             só se **bateu** — nunca o IP. Se não bateu: `TRUST_PROXY` no [`DEPLOY.md`](./DEPLOY.md).
             *01/10/2026: não bateu. O ajuste é o `TRUST_PROXY` no painel do Render (dono), e depois
             rodar o script de novo.*
+            *05/10/2026 — diagnosticado, com a requisição da 01.13:* o `clientIp` é um IPv4 **privado** —
+            o endereço de um proxy **interno** do Render, não o do jogador. (Hipótese descartada: não é
+            IPv6 contra o IPv4 do `api.ipify.org`.) A documentação e os relatos dizem "um salto"; a
+            medição diz que há pelo menos dois, e o último anexa um endereço privado. **Os limitadores
+            ainda são um balde só em produção** — o SEC-11 está aberto no ar, com o código certo e a
+            configuração errada. Simulado com o Express do projeto (cadeia `IP real, 10.x`, conexão de
+            loopback): `1` devolve o `10.x` — o sintoma de produção —; `2` e a lista
+            **`loopback, linklocal, uniquelocal`** devolvem o IP real, e os dois ignoram um
+            `X-Forwarded-For` forjado pelo cliente. **Recomendada a lista:** confia em todo endereço
+            privado, e por isso continua certa se o Render mudar o número de proxies internos; um IP
+            privado não chega da internet, então o cliente não consegue se passar por proxy. O
+            `resolveTrustProxy` já a aceita (teste da R.5). **Depois de pôr a env** (o Render reinicia o
+            serviço): uma requisição ao health — o `clientIp` tem de bater —, e uma com
+            `X-Forwarded-For: 203.0.113.9` — o `clientIp` tem de **continuar** o seu.*
+            *(10/10/2026 — **resolvido, em duas voltas.** O dono pôs a lista privada no painel; no ar, o
+            `clientIp` passou a ser um IP **público que não era o meu** — conferido contra as faixas
+            publicadas, um IP do **Cloudflare**. A cadeia real é jogador → borda do Cloudflare → proxy
+            interno privado → app: a lista pulou o proxy interno e parou na borda, e os limitadores
+            seguiam um balde por borda. Simulado de novo: só os privados devolvem o IP do Cloudflare (o
+            que o ar mostrou); **os privados mais as 22 faixas oficiais do Cloudflare** devolvem o IP
+            real, e ignoram um `X-Forwarded-For` forjado — mesmo um que imite IP do Cloudflare, porque
+            fica à esquerda do IP que a borda anexa. O dono trocou o valor; **no ar:** o `clientIp` é o
+            meu IPv4 público, e continua sendo com `X-Forwarded-For: 203.0.113.9`. O valor e de onde vêm
+            as faixas estão no [`DEPLOY.md`](./DEPLOY.md#variáveis-de-ambiente). **Nenhuma linha de
+            código mudou** — o `resolveTrustProxy` da R.5 já aceitava a lista. O SEC-11 fecha no ar.)*
       - [x] **01.4** O site carrega e a interface mostra a versão do `package.json` (continuação do R.9).
             *(01/10/2026: título "NETSHEET ENGINE — Cyberpunk 2020 Sheet Builder"; bundle com `0.4.4`.)*
       - [x] **01.5** `/api/nao-existe` → 404 em JSON, não a SPA. *(01/10/2026: 404 JSON.)*
@@ -952,19 +979,42 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
             *(01/10/2026: 5 passaram, 0 falharam.)*
       - [ ] **01.10** *(dono)* Painel do Render → *Events* → log do build: **Node 24.x** (R.8, OPS-02). O
             CLI do Render desta máquina está deslogado, e o login é do dono.
-      - [ ] **01.11** *(dono)* Painel do Render → uso do workspace: anotar horas e banda do NetSheet —
+            *10/10/2026 — **falhou, e a premissa da R.8 caiu.** Lido no painel, com o dono logado no
+            navegador do app: o serviço é **Docker** (o selo do painel, e o log do deploy do #35 roda os
+            estágios `build`/`runtime` do `Dockerfile`), e o `Dockerfile` tinha `FROM node:22-alpine`. **A
+            produção rodava o Node 22**; o `.node-version` com o 24 só valia para o CI. O Render não lê o
+            `.node-version` num serviço Docker, e o `render.yaml` (Blueprint de runtime nativo, outro nome,
+            outra região) não é o serviço que existe. Não era risco imediato — o 22 é LTS até 30/04/2027 —,
+            mas a produção rodava uma versão que o CI não testa, o que a R.8 existia para impedir.
+            **Conserto, neste PR:** os dois `FROM` em `node:24-alpine`, e o `node-version.test` falha se o
+            `Dockerfile` e o `.node-version` divergirem (provado: com o `Dockerfile` antigo, "expected '22'
+            to be '24'"). O `DEPLOY.md`, o `CLAUDE.md` e o cabeçalho do `render.yaml` dizem agora o que
+            roda. O Docker local não sobe (o contorno do `BACKUP.md`), então **a prova é o build do Render
+            depois do merge**: o log tem de puxar o `node:24-alpine`, e o health, responder.*
+      - [x] **01.11** *(dono)* Painel do Render → uso do workspace: anotar horas e banda do NetSheet —
             a linha de base que troca a estimativa do contrato de custo zero pelo número real.
             *05/10/2026: ~18 h/dia de horas — mas com o monitor do Better Stack ligado (incidente no
             [contrato de custo zero](#-contrato-de-custo-zero)), então **não é linha de base**. Anotar de
             novo depois da 01.13, com alguns dias sem o monitor: as horas por dia **e a banda** do mês.*
+            *(10/10/2026 — lido no painel, cinco dias sem o monitor. **Workspace** em outubro (NetSheet e
+            Newra juntos): **177,4 h** de 750 e **112 MB** de 5 GB; build, 11 de 500 min. **NetSheet:**
+            **14 MB** de banda no mês. O gráfico de 7 dias mostra o filete constante do monitor até a noite
+            de 05/10, o pico da visita da F.0g, e **nada** de 06/10 a 10/10 — "no data captured" nas
+            últimas 12 h. O painel gratuito não divide as horas por serviço; pela conta, o NetSheet gastou
+            ~120 h de 01/10 a 05/10 (acordado sem parar, pelo monitor) e perto de **0 h por dia** desde
+            então, sem mesa. **Linha de base:** sem sessão de jogo, o NetSheet não gasta nada; o que vier
+            agora é mesa, e vai para o [Registro de sessões](#registro-de-sessões).)*
       - [x] **01.12** *(dono)* Mergear o PR que a tarefa abrir com o resultado (e o do backup mensal).
             *(01/10/2026: #34, da verificação, e #33, do backup, no `master`.)*
-      - [ ] **01.13** **A hibernação voltou** depois de pausar o monitor (05/10/2026). Uma requisição só ao
+      - [x] **01.13** **A hibernação voltou** depois de pausar o monitor (05/10/2026). Uma requisição só ao
             `/api/health`, com pelo menos 1 h sem ninguém no site: o `uptime` tem de vir **pequeno**
             (minutos — o processo dormiu e esta requisição o acordou) e a resposta, lenta (~1 min de
             partida a frio). Se vier em horas, ainda tem algo batendo no serviço: o próximo passo é logar
             caminho e *user agent* de cada requisição (nunca o IP) para achar quem. **Nunca** repetir a
             requisição em sequência — cada uma o mantém acordado por mais 15 min.
+            *(05/10/2026, 22:51 BRT — **voltou.** Uma requisição, ~1 h 20 min depois da medição das 21:32 e
+            ~57 min depois do deploy do #35: `uptime` de **9 s** e resposta em **12,4 s**, a partida a
+            frio. O processo do deploy das 21:54 dormiu, e nada mais bate no serviço.)*
       Com tudo marcado, o R.15 e o bloco R fecham. *Provado antes de 01/10:* o script passa os 12
       checagens contra o build de produção local e **acusa falha** (sai com erro) contra um servidor
       fora do ar.
@@ -1260,7 +1310,7 @@ site está no ar.
       e desfeito; entra aqui). A porta 3000 fica com o dev e com o E2E.
       *(30/09/2026 — exige `npm run build` antes. Usado na prova visual da F.0c: a ficha, que caía em
       Cascadia/Consolas, agora carrega as duas faces, sem aviso de CSP.)*
-- [ ] **F.0g** **Conferir no ar** depois do deploy do PR 1: uma visita a
+- [x] **F.0g** **Conferir no ar** depois do deploy do PR 1: uma visita a
       `https://netsheetengine.onrender.com` com o DevTools — **antes**, o console recusa o
       `fonts.googleapis.com`; **depois**, nenhum aviso de CSP e as faces `loaded`. Uma visita de cada
       vez, nada de monitor (regra 3 do custo zero).
@@ -1268,6 +1318,13 @@ site está no ar.
       sessão segue pelo primeiro item aberto depois desta caixa e a marca quando conferir. *(Em 30/09 o
       `master` já tinha #27–#29, então a visita confere também a tipografia: Orbitron nos títulos e
       nenhum aviso de CSP.)*
+      *(05/10/2026 — conferido no ar, com a `0.4.4`, pelo navegador do app, logo depois da 01.13 (a
+      visita acordaria o serviço antes dela). Nas três telas do E2E da F.0d — início, ficha e entrada da
+      mesa —: **nenhuma** mensagem no console, **nenhum** recurso de fora do origin, **0** faces em
+      `error`, e `loaded` o Rajdhani 400 e 700, o Share Tech Mono e o Orbitron. Os quatro primeiros
+      títulos da página inicial computam `Orbitron Variable`. O cabeçalho do ar traz `font-src 'self'
+      data:` e `style-src 'self' 'unsafe-inline'` — o helmet ativo. As faces `unloaded` que o
+      `document.fonts` lista são os outros subconjuntos do `unicode-range`, que o navegador não baixa.)*
 
 #### F.2 — Ligar os tokens: o encanamento *(1–1,5 dia — PR 2; vem antes da F.1)*
 
@@ -1616,18 +1673,19 @@ A tipografia é metade. A outra metade é o repertório gráfico do livro impres
       cabeçalho; viraram 400 e 700, e os dois imports saem. Ficam Rajdhani 400 e 700, Share Tech Mono
       400 e o Orbitron variável; o build passa de 13 para 7 `woff2` do Rajdhani e da mono, mais o do
       Orbitron.)*
-- [ ] **F.4.4** Produção com helmet ativo — coberta pelo E2E da F.0d a cada PR. Conferir no ar uma vez,
+- [x] **F.4.4** Produção com helmet ativo — coberta pelo E2E da F.0d a cada PR. Conferir no ar uma vez,
       depois do último deploy (como na F.0g).
       *(30/09/2026 — o E2E `fonts-csp` passou neste PR, 7/7. A visita ao ar é depois do merge, junto
-      com a F.0g.)*
+      com a F.0g.)* *(05/10/2026 — conferida na mesma visita da F.0g, com o PR 3b no ar: a `0.4.4` e
+      as faces da F.4.3, nada além delas.)*
 - [x] **F.4.5** `git tag v0.4.4`, com o `package.json` em `0.4.4` (a regra do R.9).
       *(30/09/2026 — `npm version 0.4.4 --no-git-tag-version`; a tag `v0.4.4` está no commit que fechou
       a construção (`41d3305`), como a `v0.4.3` no da D. O registro da aprovação, de 01/10, veio depois e
       é só documento — a tag publicada não foi movida.)*
 - [x] **F.5** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.** *(Prévia de 30/09: nenhuma entrada, saída ou autorização nova; o CSP continua `'self'`; custo novo só a banda das fontes.)* *(30/09/2026 — registrado em [`SEGURANCA.md`](./SEGURANCA.md#fase-f--reestruturação-visual), para o PR 3b e para a fase inteira: nada novo nas seis; a banda cai com os dois pesos a menos; o CI roda dois scripts que só leem `src/`. Nenhum diagrama mudou de forma — o das camadas de token segue ADIAR, sem o gatilho disparado.)*
 - [x] **F.6** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase F concluída em:** ____/____/______ *(a construção fechou em 30/09/2026, no PR 3b; a data
-      entra quando a F.0g e a F.4.4 — a visita ao ar depois do deploy — estiverem marcadas)*
+- [x] ✅ **Fase F concluída em:** 05/10/2026 *(a construção fechou em 30/09/2026, no PR 3b; a data
+      entrou com a F.0g e a F.4.4 — a visita ao ar depois do deploy)*
 
 > **Critério de pronto:** duas medidas objetivas, não "está bonito" — e as duas com comando.
 > (1) `npm run audit:colors` em **zero** no CI, fora das exceções nomeadas (F.2.10). (2) O E2E das
@@ -2047,9 +2105,9 @@ público mudar.
 | B | 🔨 | Fechar buracos de autorização | ✅ | 03/09/2026 |
 | C | 🔨 | Fonte única de regras | ✅ | 25/09/2026 |
 | D | 🔨 | Loop de combate | ✅ | 28/09/2026 |
-| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; falta o R.15 — do checklist de 01/10, o 01.13 (hibernação depois do monitor pausado) e os do dono, 01.3, 01.10 e 01.11 | — |
+| R | 🔨 | **Pendências da revisão pós-D** (segurança da mesa, Node, backup) | 🔶 R.0–R.14 e R.16 feitos; do checklist do R.15, só a 01.10 espera o build do Render depois do merge do PR que pôs o `Dockerfile` no Node 24 (10/10) | — |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
-| F | 🔨 | **Reestruturação visual: identidade Cyberpunk 2020** | 🔶 F.0 (#27), a F.2 mecânica (#28), a F.1 (#29) e o PR 3b (#32 — F.2b, F.3, F.4, tag `v0.4.4`) no `master`, e a `0.4.4` no ar desde 01/10. Falta a visita ao ar: F.0g e F.4.4 | — |
+| F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
 | G | 🔍 | Varredura: frontend | ⬜ | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
@@ -2066,7 +2124,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **744** testes, 50 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado)* — `vitest` 4.1.11 |
+| `npx vitest run` | **745** testes, 51 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version`)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |

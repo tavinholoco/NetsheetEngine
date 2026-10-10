@@ -30,7 +30,16 @@ Cliente (React) ──►  Express + WebSocket (dist/server.cjs)  ──►  Sup
 | `ROOM_OFFLINE_TIMEOUT_MS` | runtime | Opcional — timeout de `isOnline` da mesa (T3.4). Padrão 60 s |
 | `ROOM_ABANDONED_TIMEOUT_MS` | runtime | Opcional — janela de abandono: o coletor encerra a mesa após este tempo sem ninguém ativo (B.5). Padrão 24 h. **Diminuir com cuidado — o delete é irreversível** |
 | `MAX_ROOMS` | runtime | Opcional (E.03) — quantas salas podem estar abertas ao mesmo tempo. **Padrão 30.** Criar sala não exige login no servidor, e cada sala é memória na instância de 512 MB e uma linha no banco. Se o GM ver "o servidor está com o máximo de mesas abertas" (`503 rooms_full`, com `rooms_full` no log), subir aqui: é a saída sem deploy de código. As vagas voltam sozinhas 24 h depois da última atividade de cada sala |
-| `TRUST_PROXY` | runtime | Opcional (R.5) — em quantos proxies confiar para achar o IP do jogador. **Padrão: `1` em produção** (o proxy do Render), nenhum fora dela. Aceita número de saltos, `false` ou lista de endereços/sub-redes; `true` é recusado (deixaria o cliente escolher o próprio IP). Só mexer se a verificação pós-deploy mostrar o IP errado |
+| `TRUST_PROXY` | runtime | **No Render: `loopback, linklocal, uniquelocal` + as faixas do Cloudflare** (R.5, 01.3 — definida no painel em 10/10/2026; o valor inteiro está abaixo da tabela). Em quais proxies confiar para achar o IP do jogador. O padrão do código, `1` em produção, **não serve no Render** — medido: a cadeia é jogador → borda do **Cloudflare** → proxy interno com endereço **privado** → app. Com `1`, o `req.ip` é o proxy privado; só com os privados, a borda do Cloudflare — e os limitadores viram um balde por borda. Confiar por **faixa**, e não por número de saltos, continua certo se o Render mudar a cadeia, e um `X-Forwarded-For` forjado fica à esquerda do IP que o Cloudflare anexa, onde o Express não chega. Aceita número de saltos, `false` ou lista de endereços/sub-redes; `true` é recusado (deixaria o cliente escolher o próprio IP). Conferir com o passo 1 da verificação pós-deploy |
+
+**O valor da `TRUST_PROXY` no Render** (10/10/2026) — os privados e as faixas oficiais do Cloudflare,
+de [cloudflare.com/ips-v4](https://www.cloudflare.com/ips-v4) e [/ips-v6](https://www.cloudflare.com/ips-v6).
+Se o Cloudflare publicar faixa nova, o sintoma é o `clientIp` do health voltar a ser um IP dele:
+refazer a linha a partir das duas listas.
+
+```
+loopback, linklocal, uniquelocal, 173.245.48.0/20, 103.21.244.0/22, 103.22.200.0/22, 103.31.4.0/22, 141.101.64.0/18, 108.162.192.0/18, 190.93.240.0/20, 188.114.96.0/20, 197.234.240.0/22, 198.41.128.0/17, 162.158.0.0/15, 104.16.0.0/13, 104.24.0.0/14, 172.64.0.0/13, 131.0.72.0/22, 2400:cb00::/32, 2606:4700::/32, 2803:f800::/32, 2405:b500::/32, 2405:8100::/32, 2a06:98c0::/29, 2c0f:f248::/32
+```
 
 > **NUNCA** commite valores reais: o CI roda **gitleaks** e bloqueia o push.
 
@@ -54,8 +63,8 @@ payload é rico para monitoramento:
 ```
 
 O `clientIp` devolve a quem pergunta o próprio IP — nunca o de outra pessoa. Serve para conferir o
-`trust proxy` (R.5): se ele vier como um endereço interno do Render em vez do seu, os limitadores
-estão contando todo mundo no mesmo balde.
+`trust proxy` (R.5): se ele vier como um endereço interno do Render ou um IP do Cloudflare em vez do
+seu, os limitadores estão contando todo mundo no mesmo balde — ver a `TRUST_PROXY` acima.
 
 Já configurado no `HEALTHCHECK` do Dockerfile e nas plataformas. Rotas
 `/api/*` desconhecidas respondem **JSON 404** (não HTML da SPA) — seguro para
@@ -133,18 +142,21 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
 > por instâncias do Newra News criadas sem querer (erro operacional do dono, já corrigido lá). **Volta em 01/10/2026** — o que conferir nesse dia está na seção de
 > operação do [plano](./PLANO_MESTRE.md#linha-de-base-atual). O produto ainda não foi publicado.
 
-> **Versão do Node: o arquivo [`.node-version`](../.node-version) (24, LTS).** O Render o lê antes do
-> `engines` do `package.json`, e o CI usa o mesmo arquivo (`node-version-file`). *Até a R.8 não havia
-> versão fixada: `engines: ">=20"` sem teto, que o Render resolve para o `latest` — em setembro de
-> 2026, o Node 26, que não é LTS e que o CI nunca testou.* Trocar de versão é mudar esse arquivo, e só
-> ele. **Não** definir `NODE_VERSION` no painel: ela passaria por cima do arquivo, em silêncio.
+> **O serviço em produção é Docker** (painel: `NetsheetEngine`, selo *Docker*, região `us-west1`) —
+> **não** o Blueprint do `render.yaml`, que descreve um serviço de runtime nativo que não existe.
+> Conferido no painel em 10/10/2026: o log do build roda os estágios do [`Dockerfile`](../Dockerfile).
+>
+> **Versão do Node: a do `FROM` do `Dockerfile`, que segue a versão maior do
+> [`.node-version`](../.node-version) (24, LTS)** — o arquivo que o CI usa (`node-version-file`). O
+> Render **não** lê o `.node-version` num serviço Docker. *A R.8 supôs que lia; o `Dockerfile` ficou em
+> `node:22-alpine` e a produção rodou o 22 enquanto o CI testava o 24, até 10/10/2026 (item 01.10 do
+> plano).* Trocar de versão é mudar os dois — o `node-version.test` falha se divergirem.
 
-1. Em [render.com](https://render.com): **New → Blueprint** e selecione o repo
-   (detecta `render.yaml`).
-2. Defina os valores das variáveis com `sync: false` no painel do serviço
-   (o blueprint cria os placeholders).
-3. O serviço sobe com runtime Node nativo (plano free ok), healthcheck
-   `/api/health` e auto-deploy em push.
+Para recriar o serviço do zero: **New → Web Service**, o repositório, runtime **Docker** (o Render
+acha o `Dockerfile` na raiz), plano free, health check `/api/health` e auto-deploy no `master`; as
+variáveis da tabela acima no painel — as `VITE_*` também valem no build, porque o Render as passa
+como *build args* ao Docker. O `render.yaml` (Blueprint, runtime nativo) é a alternativa que **não**
+está em uso.
 
 > Railway e Fly.io tinham seções próprias aqui até a Fase A. Os configs
 > (`railway.toml`, `fly.toml`) e o porquê de terem saído do caminho principal
