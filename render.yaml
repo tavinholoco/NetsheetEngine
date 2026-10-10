@@ -1,6 +1,11 @@
 # ============================================================
 # NETSHEET ENGINE — Render Blueprint (Fase 10, T10.1)
 # ============================================================
+# ⚠️ NÃO É O QUE RODA EM PRODUÇÃO (conferido no painel em 10/10/2026):
+# o serviço `NetsheetEngine` é Docker e builda o Dockerfile — o Node vem
+# do FROM de lá. Este Blueprint (runtime nativo) é alternativa sem uso.
+# Ver docs/DEPLOY.md, seção Render.
+# ------------------------------------------------------------
 # Deploy: o Render detecta `render.yaml` na raiz (Blueprints) ao criar
 # um "New Blueprint" a partir do repositório. Roda com runtime NATIVO
 # do Node (funciona no plano free). Render é o único alvo de backend

@@ -16,10 +16,14 @@
 # (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, PORT) são
 # lidas em RUNTIME — injete como secrets/variáveis na plataforma.
 # NUNCA commitar chaves reais.
+#
+# Node: a versão MAIOR do `.node-version` (o que o CI testa). O Render
+# roda ESTE arquivo — o serviço é Docker — e não lê o `.node-version`.
+# Trocar de versão é mudar os dois; o node-version.test confere.
 # ============================================================
 
 # ---------- Estágio 1: build ----------
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 
 # Deps primeiro (aproveita cache da camada quando o lock não muda)
@@ -38,7 +42,7 @@ ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
 RUN npm run build
 
 # ---------- Estágio 2: runtime ----------
-FROM node:22-alpine AS runtime
+FROM node:24-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
