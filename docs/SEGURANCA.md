@@ -446,6 +446,41 @@ script avisam.
 **Junto, fora da segurança:** a interface mostrava "v0.4.0" escrito à mão em seis lugares; agora lê o
 `package.json` (continuação do R.9).
 
+**10/10/2026 — a verificação no ar (01.3 e 01.10 do R.15).** As duas mudanças são de configuração; o
+código da R.5 e da R.8 já estava certo, e a premissa sobre o Render é que não estava:
+
+1. **Entrada nova?** Nenhuma. A `TRUST_PROXY` diz **de quem** o servidor aceita o `X-Forwarded-For`:
+   dos endereços privados (o proxy interno do Render) e das faixas do Cloudflare (a borda). O que vem
+   à esquerda do IP que a borda anexa — onde o cliente escreve — o Express não lê. Simulado com o
+   Express do projeto, com o forjado imitando até um IP do Cloudflare; conferido no ar com
+   `X-Forwarded-For: 203.0.113.9`.
+2. **Dado novo sai?** Nenhum. O `clientIp` do health segue devolvendo a quem pergunta o próprio IP.
+3. **Autorização nova?** Nenhuma. O que muda é a **identidade que os limitadores contam**: antes da
+   variável, todo mundo saía pelo mesmo endereço privado (um balde só — o SEC-11 aberto no ar desde
+   01/10, com o código certo); com a lista privada, um balde por borda do Cloudflare; agora, um por
+   jogador. **Por que o texto só entra agora:** dizer no repo público que o limitador era um balde só
+   ensinaria a esgotá-lo para todos — o diagnóstico ficou fora do commit até o conserto estar no ar.
+4. **Jogador convidado hostil?** Perde o efeito de estourar o limitador **dos outros**. A cota dele é
+   dele. O que sobra é o que se compra com IPs (o limite é por IP, como sempre foi).
+5. **Estado novo sem limite?** Os baldes passam a ser um por IP, em vez de um só — o coletor da B.5
+   (SEC-04) já os recolhe.
+6. **Custo?** Zero. A imagem `node:24-alpine` (01.10) troca a do 22 no mesmo build.
+
+**A 01.10 não é de segurança, mas é da mesma classe:** o serviço é Docker, e o Node vinha do `FROM
+node:22-alpine` do `Dockerfile`, não do `.node-version` que a R.8 fixou. Consertado no `Dockerfile`, com
+o `node-version.test` travando a paridade. Lição para o portão: **"o Render faz X" é premissa de
+configuração**, e só o painel prova.
+
+**No mesmo PR, o portão de audit pegou dois alertas publicados no dia** — nenhum vinha da mudança:
+`proxy-addr` ≤ 2.0.7 (**crítico**, [GHSA-jqcg-44mw-7w3h](https://github.com/advisories/GHSA-jqcg-44mw-7w3h))
+e `source-map-js` ≤ 1.2.1 (alto, só build/dev na prática). O do `proxy-addr` é a biblioteca que aplica a
+`TRUST_PROXY`: uma faixa IPv6 com bits iniciais zerados (`::ffff:10.0.0.0/8`, `::/1`) casava **todo**
+IPv4, e o cliente escolhia o próprio IP. **A configuração do ar não era afetada** — as faixas IPv6 dela
+começam com bits não nulos (`2400:`, `2606:`, `fc00::/7`, `fe80::/10`) e o `::1` é `/128`; a simulação com
+a 2.0.7 já mostrava o forjado perdendo. `npm audit fix` levou a `proxy-addr@2.0.8` e `source-map-js@1.2.2`
+(só o lock), `npm ci` para o `node_modules` valer (a armadilha da R.7), e a simulação repetida com a 2.0.8
+deu o mesmo resultado. `npm audit`: 0.
+
 ### Fase E — Varredura: backend
 
 **30/09/2026 — SEC-14 e SEC-15**, achados na varredura (E.02 e E.03 do
@@ -676,7 +711,7 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-08 | `create` com código existente substitui a sala | R | ✅ fechado 29/09 (R.2) |
 | SEC-09 | Expulsão não revoga sessão nem fecha socket | R | ✅ fechado 29/09 (R.3) — sem conta, aba nova é outro jogador (R.11) |
 | SEC-10 | WebSocket sem limitador por mensagem, `maxPayload` de 100 MiB | R | ✅ fechado 29/09 (R.4) — o ritmo do REST ainda gasta a banda em horas (L.1, R.11) |
-| SEC-11 | Sem `trust proxy`: limitadores contam o IP do proxy | R | ✅ fechado no código 29/09 (R.5) — **conferir no ar** com o `clientIp` do `/api/health` |
+| SEC-11 | Sem `trust proxy`: limitadores contam o IP do proxy | R | ✅ fechado no código 29/09 (R.5) e **no ar em 10/10/2026** (01.3): o `1` do código não servia — a cadeia do Render é jogador → borda do Cloudflare → proxy interno privado —, e a `TRUST_PROXY` do painel confia nos endereços privados e nas faixas do Cloudflare. Conferido: o `clientIp` é o IP de quem pergunta, mesmo com `X-Forwarded-For` forjado |
 | SEC-12 | Posse de token no grid Yjs conferida contra o dono novo | R | ✅ fechado 29/09 (R.6) — reproduzido antes, com cliente Yjs real |
 | SEC-13 | Sala sem teto de assentos: cada assento abre até 3 sockets e recebe cada reenvio | R | ✅ fechado 29/09 (R.16) — 16 assentos, contando as fichas geradas; `room.npcs` segue sem teto (pista da E) — *teto de NPCs no SEC-15* |
 | SEC-14 | Grid malformado (REST ou Yjs) trava a sala e, pelo vigia de presença, **derruba o processo** — sem login | E | ✅ fechado 30/09 (E.02) — forma validada nas duas portas; reenvio e vigia isolados |

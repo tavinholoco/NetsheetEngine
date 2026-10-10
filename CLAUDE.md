@@ -139,8 +139,10 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
 - **O repositório é público** e o `master` não tem proteção de branch (conferido em 29/09). Achado de
   segurança **aberto** é publicado no repo **junto com o conserto**, nunca antes. E backup de banco
   nunca vai para o repositório.
-- **Node 24, no `.node-version`** (R.8) — o mesmo arquivo para o Render e o CI. Trocar de versão é
-  mudar esse arquivo; `NODE_VERSION` no painel do Render passaria por cima dele em silêncio.
+- **Node 24, no `.node-version` (o CI) e no `FROM` do `Dockerfile` (o Render)** — o serviço em
+  produção é **Docker**, não o Blueprint do `render.yaml`, e não lê o `.node-version`: a R.8 supôs que
+  lia, e a produção rodou o 22 até 10/10/2026. Trocar de versão é mudar os dois; o `node-version.test`
+  falha se divergirem.
 - **Emitir sessão também é autorização.** O SEC-07 viveu desde a T1.7 porque todos conferiam de onde
   vinha o autor da ação, e ninguém quem recebia o token. É a segunda metade da pergunta 3 do portão.
 - **Tailwind 4: duas classes da mesma propriedade no mesmo elemento decidem pelo alfabeto** do nome
