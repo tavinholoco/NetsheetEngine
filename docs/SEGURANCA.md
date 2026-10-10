@@ -471,6 +471,16 @@ node:22-alpine` do `Dockerfile`, não do `.node-version` que a R.8 fixou. Conser
 o `node-version.test` travando a paridade. Lição para o portão: **"o Render faz X" é premissa de
 configuração**, e só o painel prova.
 
+**No mesmo PR, o portão de audit pegou dois alertas publicados no dia** — nenhum vinha da mudança:
+`proxy-addr` ≤ 2.0.7 (**crítico**, [GHSA-jqcg-44mw-7w3h](https://github.com/advisories/GHSA-jqcg-44mw-7w3h))
+e `source-map-js` ≤ 1.2.1 (alto, só build/dev na prática). O do `proxy-addr` é a biblioteca que aplica a
+`TRUST_PROXY`: uma faixa IPv6 com bits iniciais zerados (`::ffff:10.0.0.0/8`, `::/1`) casava **todo**
+IPv4, e o cliente escolhia o próprio IP. **A configuração do ar não era afetada** — as faixas IPv6 dela
+começam com bits não nulos (`2400:`, `2606:`, `fc00::/7`, `fe80::/10`) e o `::1` é `/128`; a simulação com
+a 2.0.7 já mostrava o forjado perdendo. `npm audit fix` levou a `proxy-addr@2.0.8` e `source-map-js@1.2.2`
+(só o lock), `npm ci` para o `node_modules` valer (a armadilha da R.7), e a simulação repetida com a 2.0.8
+deu o mesmo resultado. `npm audit`: 0.
+
 ### Fase E — Varredura: backend
 
 **30/09/2026 — SEC-14 e SEC-15**, achados na varredura (E.02 e E.03 do
