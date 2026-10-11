@@ -124,3 +124,35 @@ describe('G.07 — o GM remove um jogador da mesa', () => {
     expect(screen.queryByRole('button', { name: /remover .* da mesa/i })).toBeNull();
   });
 });
+
+describe('G.04 — os modais leem o jogador da sala, não a foto de quando abriram', () => {
+  /** Os botões 0–10 do Bio-Monitor que estão acesos (até o nível de ferimento). */
+  function acesos(dialog: HTMLElement): number[] {
+    return within(dialog)
+      .getAllByRole('button')
+      .filter((b) => /^\d+$/.test(b.textContent ?? '') && b.classList.contains('bg-danger-950/80'))
+      .map((b) => Number(b.textContent));
+  }
+
+  it('a sala muda o ferimento com o Bio-Monitor aberto: o modal acende o nível novo', async () => {
+    entrarComo('peer_dono');
+    render(<MultiplayerRoom onOpenAuthModal={() => {}} />);
+    await userEvent.click(screen.getAllByTitle('Editar bio-monitor')[0]);
+    const dialog = screen.getByRole('dialog');
+    expect(acesos(dialog)).toEqual([0]);
+
+    salaMuda(jogador('peer_vex', 'Vex', 5));
+    expect(acesos(screen.getByRole('dialog'))).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it('a sala muda o ferimento com a ficha aberta: a inspeção mostra o novo', async () => {
+    entrarComo('peer_dono');
+    render(<MultiplayerRoom onOpenAuthModal={() => {}} />);
+    const vexRow = screen.getByText('Vex').closest('div[draggable]') as HTMLElement;
+    await userEvent.click(within(vexRow).getByTitle('Inspecionar ficha'));
+    expect(within(screen.getByRole('dialog')).getByText('0/10')).toBeTruthy();
+
+    salaMuda(jogador('peer_vex', 'Vex', 7));
+    expect(within(screen.getByRole('dialog')).getByText('7/10')).toBeTruthy();
+  });
+});

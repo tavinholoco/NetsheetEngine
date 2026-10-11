@@ -99,18 +99,21 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const yjsActiveRef = useRef(false);
   const [initiativeName, setInitiativeName] = useState('');
   const [initiativeScore, setInitiativeScore] = useState(10);
-  const [selectedHealthPlayer, setSelectedHealthPlayer] = useState<RoomPlayer | null>(null);
-  const [inspectedPlayer, setInspectedPlayer] = useState<RoomPlayer | null>(null);
+  // G.04 — os modais guardam QUEM, e leem o jogador da sala a cada render: com a
+  // cópia tirada no clique, o Bio-Monitor não acendia o nível que o próprio GM
+  // acabara de aplicar.
+  const [healthPeerId, setHealthPeerId] = useState<string | null>(null);
+  const [inspectedPeerId, setInspectedPeerId] = useState<string | null>(null);
   // F.4.2 — os modais abrem por estado, sem DialogTrigger: o Radix não sabe a
   // quem devolver o foco ao fechar. Guarda quem o tinha ao abrir.
   const quemAbriuModal = useRef<HTMLElement | null>(null);
   const abrirSaude = (p: RoomPlayer) => {
     quemAbriuModal.current = document.activeElement as HTMLElement | null;
-    setSelectedHealthPlayer(p);
+    setHealthPeerId(p.peerId);
   };
   const abrirInspecao = (p: RoomPlayer) => {
     quemAbriuModal.current = document.activeElement as HTMLElement | null;
-    setInspectedPlayer(p);
+    setInspectedPeerId(p.peerId);
   };
   const devolverFoco = (e: Event) => {
     e.preventDefault();
@@ -135,6 +138,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const isGm = !!room && room.gmPeerId === peerId;
   const players = room?.players || {};
   const npcs = room?.npcs || {};
+  const selectedHealthPlayer = healthPeerId ? players[healthPeerId] ?? null : null;
+  const inspectedPlayer = inspectedPeerId ? players[inspectedPeerId] ?? null : null;
 
   const ensurePeerId = roomsApi.getPeerId;
 
@@ -1008,7 +1013,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           Esc fecha, role="dialog" com o título ligado. Eram feitos à mão. */}
 
       {/* Modal: editar saúde (GM) */}
-      <Dialog open={selectedHealthPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setSelectedHealthPlayer(null); }}>
+      <Dialog open={selectedHealthPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setHealthPeerId(null); }}>
         <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-sm border-2 border-danger-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-danger-500/30 font-sans">
           {selectedHealthPlayer && (
             <>
@@ -1040,7 +1045,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       </Dialog>
 
       {/* Modal: inspecionar ficha */}
-      <Dialog open={inspectedPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setInspectedPlayer(null); }}>
+      <Dialog open={inspectedPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setInspectedPeerId(null); }}>
         <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-md border-2 border-accent-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-accent-500/30 max-h-[80vh] overflow-y-auto custom-scrollbar font-sans">
           {inspectedPlayer && (
             <>
