@@ -13,20 +13,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { useRoomStore } from '../stores/useRoomStore';
+import { stubRoomTransport } from '../test/roomTransport';
 import type { ChatMessage, GameRoom } from '../types/multiplayer';
-
-/** WebSocket inerte: o teste é da caixa do chat, não do transporte. */
-class FakeWebSocket {
-  static OPEN = 1;
-  readyState = 0;
-  binaryType = 'arraybuffer';
-  onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
-  onmessage: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  send() {}
-  close() {}
-}
 
 const CODE = 'NC-2020-K7Q9XD';
 /** ~108 px por mensagem: 25 mensagens = 2.703 px, como no build de produção. */
@@ -85,8 +73,7 @@ function rolarPara(caixa: HTMLElement, scrollTop: number) {
 }
 
 beforeEach(() => {
-  vi.stubGlobal('WebSocket', FakeWebSocket);
-  vi.stubGlobal('EventSource', class { close() {} });
+  stubRoomTransport();
   vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })));
   vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockImplementation(() => total * POR_MENSAGEM);
   vi.spyOn(Element.prototype, 'clientHeight', 'get').mockImplementation(() => VISIVEL);

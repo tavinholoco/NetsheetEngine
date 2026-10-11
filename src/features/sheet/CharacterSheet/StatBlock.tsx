@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CharacterSheet, StatName } from '../../../types/cyberpunk';
 import { humanityFromEmp, runFromMa, walkFromMa } from '../../../utils/derivedStats';
 import { bodyTypeFor, deriveCurrentStats } from '../../../rules/character';
+import { STAT_MAX, STAT_MIN } from '../../../rules/sheetSchema';
 import { Heart, Shield, Brain, Wind, Flame } from 'lucide-react';
 
 interface StatBlockProps {
@@ -22,9 +23,6 @@ const STAT_LABELS: Record<StatName, { label: string; color: string; icon: React.
   BODY: { label: 'Corpo', color: 'text-fg-strong', icon: <Shield className="w-3.5 h-3.5" /> },
   EMP: { label: 'Empatia', color: 'text-cyber-300', icon: <Heart className="w-3.5 h-3.5" /> }
 };
-
-const STAT_MIN = 2;
-const STAT_MAX = 15;
 
 /**
  * G.12 — o texto é livre enquanto se digita: o número entra na ficha assim que

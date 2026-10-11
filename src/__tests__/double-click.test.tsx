@@ -14,21 +14,9 @@ import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { CombatPanel } from '../features/multiplayer/CombatPanel';
 import * as roomsApi from '../api/rooms';
 import { useRoomStore } from '../stores/useRoomStore';
+import { stubRoomTransport } from '../test/roomTransport';
 import type { CharacterSheet } from '../types/cyberpunk';
 import type { GameRoom, RoomPlayer } from '../types/multiplayer';
-
-/** WebSocket inerte: o teste é dos botões, não do transporte. */
-class FakeWebSocket {
-  static OPEN = 1;
-  readyState = 0;
-  binaryType = 'arraybuffer';
-  onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
-  onmessage: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  send() {}
-  close() {}
-}
 
 const CODE = 'NC-2020-K7Q9XD';
 const SHEET = { handle: 'Vex', stats: {}, weapons: [], cyberware: [] } as unknown as CharacterSheet;
@@ -72,8 +60,7 @@ function mesa(): GameRoom {
 
 beforeEach(() => {
   sessionStorage.clear();
-  vi.stubGlobal('WebSocket', FakeWebSocket);
-  vi.stubGlobal('EventSource', class { close() {} });
+  stubRoomTransport();
   useRoomStore.getState().setPeerId('peer_vex');
   useRoomStore.getState().setSessionToken('');
 });

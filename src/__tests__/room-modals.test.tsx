@@ -13,21 +13,9 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { useRoomStore } from '../stores/useRoomStore';
+import { stubRoomTransport } from '../test/roomTransport';
 import type { CharacterSheet } from '../types/cyberpunk';
 import type { GameRoom, RoomPlayer } from '../types/multiplayer';
-
-/** WebSocket inerte: o teste é da lista e dos modais, não do transporte. */
-class FakeWebSocket {
-  static OPEN = 1;
-  readyState = 0;
-  binaryType = 'arraybuffer';
-  onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
-  onmessage: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  send() {}
-  close() {}
-}
 
 const CODE = 'NC-2020-K7Q9XD';
 const STATS = { INT: 6, REF: 8, TECH: 5, COOL: 6, ATTR: 5, LUCK: 5, MA: 6, BODY: 8, EMP: 5 };
@@ -80,8 +68,7 @@ function chamadasA(trecho: string): string[] {
 }
 
 beforeEach(() => {
-  vi.stubGlobal('WebSocket', FakeWebSocket);
-  vi.stubGlobal('EventSource', class { close() {} });
+  stubRoomTransport();
   fetchMock = vi.fn(async () => new Response(JSON.stringify(useRoomStore.getState().room), { status: 200 }));
   vi.stubGlobal('fetch', fetchMock);
 });
