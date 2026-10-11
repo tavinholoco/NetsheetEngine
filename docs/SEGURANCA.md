@@ -707,6 +707,19 @@ Fecha a **G.4**. O ledger não tinha achado de segurança aberto.
 são defeitos de tela e de regra, e o único com cara de moderação (o G.07) é um botão que faltava para
 uma porta que o servidor já guardava.
 
+**11/10/2026 — G.3h, a revisão do código da G.3** (adendo; os consertos são da tela e de documento).
+
+1. **Entrada nova?** Nenhuma. O campo da perda de Humanidade digitada passa a pedir inteiro (`step 1`) —
+   o que o `sheetSchema` já exigia.
+2. **Dado novo sai?** Nenhum. O `confirm` do "Remover" passa a dizer que a pessoa só volta por uma aba
+   nova — o comportamento da R.3, que o protocolo já publicava.
+3. **Autorização nova?** Nenhuma. O modal do GM esquece o jogador que saiu — só estado da tela.
+4. **Jogador convidado hostil?** Nada muda para ele. *Registrado:* o "Remover" barra o `peerId`, não a
+   pessoa — uma aba nova é outro jogador (a R.3 já dizia: "não é banimento"). O texto novo deixa isso
+   claro para o GM, em vez de prometer mais do que o servidor faz.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
 ### Fases H, I e J — varreduras
 
 *(cada uma a preencher no seu passo X.4 — só se a execução dos FAZER mudar código)*
