@@ -129,9 +129,11 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   `combatModifier` e o `currentStats` foram ligados na Fase C; o `@theme` de cores é da Fase F; o
   `deletePlayer` ganhou botão na G.3 (estava sem desde a Fase 0).
   Antes de construir algo novo, confira se o que existe já resolve.
-- **Botão que manda ação ao servidor passa pelo `useInFlight`** (`src/hooks/`, G.06): sem ele, o clique
-  duplo repete a ação — dano em dobro e assento órfão foram reproduzidos. Os testes de tela da mesa
-  montam o `MultiplayerRoom` com o `stubRoomTransport` (`src/test/roomTransport.ts`).
+- **Botão cuja ação repetida estraga a mesa passa pelo `useInFlight`** (`src/hooks/`, G.06): entrar, criar,
+  aplicar dano, NPC ataca e próximo turno — dano em dobro e assento órfão foram reproduzidos. Os outros
+  botões do GM ("Gerar NPC", "Gerar Jogador", "Rolar iniciativa") **ainda não passam**: em dobro, o
+  resultado fica à vista e se desfaz — ADIAR na revisão da G.3, com gatilho no plano. Os testes de tela da
+  mesa montam o `MultiplayerRoom` com o `stubRoomTransport` (`src/test/roomTransport.ts`).
 - O `PLANO_DE_ACAO.md` na raiz está **substituído, não concluído** — suas Fases 11 e 12 viraram as
   Fases K e M do plano novo, e ele só é removido na Fase M.
 - **Verifique a premissa antes de executar um item.** A auditoria de 03/09 mostrou que as afirmações
