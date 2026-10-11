@@ -3,6 +3,7 @@ import type { ArmorLocation, RollResult } from '../../types/cyberpunk';
 import type { RoomPlayer } from '../../types/multiplayer';
 import { HIT_LOCATIONS, RANGE_BANDS, WOUND_TRACK_POINTS, type RangeBandKey } from '../../rules/tables';
 import { rangeBandMeters } from '../../rules/combat';
+import { useInFlight } from '../../hooks/useInFlight';
 import { Crosshair, Droplet } from 'lucide-react';
 
 /**
@@ -20,8 +21,9 @@ interface CombatPanelProps {
   attackers: RoomPlayer[];
   /** A rolagem de dano mais recente do chat que tem o local estruturado. */
   lastDamageRoll?: RollResult;
-  onAttack: (input: { attackerId: string; targetId: string; range?: RangeBandKey; difficulty?: number }) => void;
-  onApplyDamage: (targetId: string, raw: number, location: ArmorLocation) => void;
+  /** G.06 — devolvem a requisição: o botão fica desligado até ela voltar. */
+  onAttack: (input: { attackerId: string; targetId: string; range?: RangeBandKey; difficulty?: number }) => Promise<unknown>;
+  onApplyDamage: (targetId: string, raw: number, location: ArmorLocation) => Promise<unknown>;
   /** D.5 — estado do alvo e o botão de estabilizar (só em Mortal). */
   status: { label: string; points: number; isMortal: boolean; isDead: boolean; isStabilized: boolean };
   onToggleStabilized: (targetId: string, stabilized: boolean) => void;
@@ -44,16 +46,19 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
   const [freeDifficulty, setFreeDifficulty] = useState(15);
   const [raw, setRaw] = useState(0);
   const [location, setLocation] = useState<ArmorLocation>('Torso');
+  const { run, isBusy } = useInFlight();
 
   const attacker = attackers.find((a) => a.peerId === attackerId) ?? attackers[0];
   const weapon = attacker?.sheet.weapons?.find((w) => w.equipped) ?? attacker?.sheet.weapons?.[0];
 
   const attack = () => {
     if (!attacker) return;
-    onAttack(
-      range === FREE
-        ? { attackerId: attacker.peerId, targetId, difficulty: freeDifficulty }
-        : { attackerId: attacker.peerId, targetId, range }
+    run('attack', () =>
+      onAttack(
+        range === FREE
+          ? { attackerId: attacker.peerId, targetId, difficulty: freeDifficulty }
+          : { attackerId: attacker.peerId, targetId, range }
+      )
     );
   };
 
@@ -139,9 +144,10 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
             <button
               type="button"
               onClick={attack}
-              className="w-full py-1.5 rounded bg-caution-500 hover:bg-caution-400 text-black font-extrabold text-mini uppercase cursor-pointer"
+              disabled={isBusy('attack')}
+              className="w-full py-1.5 rounded bg-caution-500 hover:bg-caution-400 disabled:opacity-40 disabled:cursor-wait text-black font-extrabold text-mini uppercase cursor-pointer"
             >
-              Rolar ataque
+              {isBusy('attack') ? 'Rolando…' : 'Rolar ataque'}
             </button>
           </>
         )}
@@ -179,11 +185,11 @@ export const CombatPanel: React.FC<CombatPanelProps> = ({
         </div>
         <button
           type="button"
-          onClick={() => onApplyDamage(targetId, raw, location)}
-          disabled={!(raw > 0)}
+          onClick={() => run('damage', () => onApplyDamage(targetId, raw, location))}
+          disabled={!(raw > 0) || isBusy('damage')}
           className="w-full py-1.5 rounded bg-danger-700 hover:bg-danger-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-mini uppercase cursor-pointer"
         >
-          Aplicar {raw > 0 ? raw : ''} de dano
+          {isBusy('damage') ? 'Aplicando…' : `Aplicar ${raw > 0 ? raw : ''} de dano`}
         </button>
         </div>
       </details>

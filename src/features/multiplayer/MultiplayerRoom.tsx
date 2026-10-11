@@ -17,6 +17,7 @@ import { useSheetStore } from '../../stores/useSheetStore';
 import { woundStateOf } from '../../rules/damage';
 import { mortalLevel, woundRow } from '../../rules/character';
 import { useUiStore } from '../../stores/useUiStore';
+import { useInFlight } from '../../hooks/useInFlight';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
 import { apiUrl, wsUrl } from '../../api/base';
@@ -304,7 +305,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     return () => clearTimeout(t);
   }, [view, peerId, sessionToken, sheet, roomCode]);
 
-  const createRoom = async () => {
+  // G.06 — criar, entrar e as ações de combate do GM: uma por vez, com o botão
+  // desligado enquanto a requisição não volta.
+  const { run, isBusy } = useInFlight();
+
+  const createRoom = () => {
     if (!user) {
       onOpenAuthModal();
       return;
@@ -314,24 +319,28 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       return;
     }
     setErrorMsg('');
-    try {
-      await roomsApi.createRoom({ code: roomCode.trim(), name: roomName, gmHandle: handle });
-      useRoomStore.getState().setView('active');
-    } catch (e: any) {
-      setErrorMsg(e?.message || 'Erro ao criar sala.');
-    }
+    run('create', async () => {
+      try {
+        await roomsApi.createRoom({ code: roomCode.trim(), name: roomName, gmHandle: handle });
+        useRoomStore.getState().setView('active');
+      } catch (e: any) {
+        setErrorMsg(e?.message || 'Erro ao criar sala.');
+      }
+    });
   };
 
-  const joinRoom = async (code?: string) => {
+  const joinRoom = (code?: string) => {
     const targetCode = (code || roomCode).trim();
     if (!targetCode) return;
     setErrorMsg('');
-    try {
-      await roomsApi.joinRoom({ code: targetCode, handle, sheet });
-      useRoomStore.getState().setView('active');
-    } catch (e: any) {
-      setErrorMsg(e?.message || 'Sala não encontrada.');
-    }
+    run('join', async () => {
+      try {
+        await roomsApi.joinRoom({ code: targetCode, handle, sheet });
+        useRoomStore.getState().setView('active');
+      } catch (e: any) {
+        setErrorMsg(e?.message || 'Sala não encontrada.');
+      }
+    });
   };
 
   const sendChat = async (text?: string) => {
@@ -362,11 +371,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const rollTableSave = () => requestTableRoll('save');
   const rollTableStun = () => requestTableRoll('stun');
 
-  // Helper: ação autenticada fire-and-forget (T7.3 — camada api). A api lança
-  // ApiError com a mensagem do servidor; o banner mostra o motivo.
-  const roomAction = (p: Promise<unknown>) => {
-    p.catch((e: any) => setErrorMsg(e?.message || 'Ação negada pelo servidor.'));
-  };
+  // Helper: ação autenticada (T7.3 — camada api). A api lança ApiError com a
+  // mensagem do servidor; o banner mostra o motivo. Devolve a promessa já
+  // tratada, para quem precisa saber quando a requisição voltou (G.06).
+  const roomAction = (p: Promise<unknown>): Promise<void> =>
+    p.then(
+      () => {},
+      (e: any) => setErrorMsg(e?.message || 'Ação negada pelo servidor.')
+    );
 
   // Fase 5 (T5.3) — grid editado pelo TacticalGrid:
   // - Yjs ativo → escreve no doc CRDT (latência zero, o servidor espelha e
@@ -477,7 +489,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   };
 
   const nextTurn = () => {
-    roomAction(roomsApi.nextTurn(roomCode));
+    run('nextTurn', () => roomAction(roomsApi.nextTurn(roomCode)));
   };
 
   // R.11 — sem a lista do lobby, o convite é o link /room/CÓDIGO.
@@ -556,10 +568,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             />
             <button
               onClick={createRoom}
-              disabled={!user}
+              disabled={!user || isBusy('create')}
               className="w-full py-2.5 bg-ok-500 hover:bg-ok-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-xs uppercase rounded shadow-glow-15 shadow-ok-500/40 transition-all cursor-pointer"
             >
-              🌐 Criar Mesa como GM
+              {isBusy('create') ? 'Criando…' : '🌐 Criar Mesa como GM'}
             </button>
           </div>
 
@@ -577,9 +589,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             />
             <button
               onClick={() => joinRoom()}
-              className="w-full py-2.5 bg-accent-500 hover:bg-accent-400 text-black font-black text-xs uppercase rounded shadow-glow-15 shadow-accent-500/40 transition-all cursor-pointer"
+              disabled={isBusy('join')}
+              className="w-full py-2.5 bg-accent-500 hover:bg-accent-400 disabled:opacity-40 disabled:cursor-wait text-black font-black text-xs uppercase rounded shadow-glow-15 shadow-accent-500/40 transition-all cursor-pointer"
             >
-              🎮 Entrar na Mesa
+              {isBusy('join') ? 'Entrando…' : '🎮 Entrar na Mesa'}
             </button>
             <p className="text-micro text-subtle leading-relaxed">
               As mesas não aparecem numa lista: peça ao Mestre o código ou o link do convite.
@@ -942,7 +955,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               <div className="p-3 border-t border-line">
                 <button
                   onClick={nextTurn}
-                  className="w-full py-2.5 bg-signal-500 hover:bg-signal-400 text-black font-black text-xs uppercase rounded cursor-pointer transition-all"
+                  disabled={isBusy('nextTurn')}
+                  className="w-full py-2.5 bg-signal-500 hover:bg-signal-400 disabled:opacity-40 disabled:cursor-wait text-black font-black text-xs uppercase rounded cursor-pointer transition-all"
                 >
                   ⚔️ Próximo Turno
                 </button>
