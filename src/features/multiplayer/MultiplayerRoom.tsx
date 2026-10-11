@@ -31,6 +31,7 @@ import {
   LogOut,
   Skull,
   UserPlus,
+  UserX,
   Crosshair,
   Eye,
   Lock,
@@ -468,8 +469,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     roomAction(roomsApi.deleteNpc(roomCode, npcId));
   };
 
-  const deletePlayer = (targetPeerId: string) => {
-    roomAction(roomsApi.deletePlayer(roomCode, targetPeerId));
+  // G.07 — o GM tira alguém da mesa (assento órfão, mesa cheia, convidado que
+  // não devia estar ali). O servidor revoga a sessão e fecha o socket (R.3).
+  const deletePlayer = (p: RoomPlayer) => {
+    if (!confirm(`Remover ${p.handle} da mesa? O assento sai e a sessão é encerrada.`)) return;
+    roomAction(roomsApi.deletePlayer(roomCode, p.peerId));
   };
 
   const addInitiative = () => {
@@ -827,6 +831,16 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                           className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-danger-400 cursor-pointer"
                         >
                           <Crosshair className="w-3 h-3" />
+                        </button>
+                      )}
+                      {isGm && p.peerId !== peerId && (
+                        <button
+                          onClick={() => deletePlayer(p)}
+                          title="Remover da mesa"
+                          aria-label={`Remover ${p.handle} da mesa`}
+                          className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-fault-400 cursor-pointer"
+                        >
+                          <UserX className="w-3 h-3" />
                         </button>
                       )}
                     </div>
