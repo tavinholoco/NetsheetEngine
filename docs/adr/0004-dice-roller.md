@@ -106,6 +106,9 @@ e cada parcela nomeada; o determinismo em teste vem do RNG injetado (`scriptedRn
   ALLOWLIST de `scripts/audit-ci.mjs` ficou vazia.
 - **A página de dados perde notação livre.** Quem digitar `3d6+1d4` ou `1d6/2` recebe fórmula
   inválida, como a mesa já respondia desde a T5.4. Nenhuma arma do arsenal padrão usa outra forma.
+  *(Corrigido na varredura G, 10/10/2026: na página de dados e na ficha, quem digita uma fórmula que o
+  parser não lê **não recebe nada** — o `catch` engole o erro, e o botão não rola nem avisa. ADIAR, com
+  este mesmo gatilho: [G.09](../varreduras/G-frontend.md#g09--fórmula-de-dano-inválida-o-botão-não-faz-nada).)*
   **Gatilho para ampliar o parser:** uma arma do livro com fórmula de divisão (`1D6/2`, `1D6/3`)
   entrar numa ficha de verdade.
 - A suíte do rolador foi reescrita contra o RNG injetado; os testes que trocavam o gerador global

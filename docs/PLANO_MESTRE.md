@@ -702,9 +702,19 @@ somavam ~1.800 linhas **fora do escopo de qualquer varredura**. Vem **depois** d
 varrer código que acabou de ser reestilizado. Segue o
 [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
-- [ ] **G.0** 🔍 **Premissas** — medidas em 29/09/2026; conferir de novo no dia, e depois da F.
-- [ ] **G.1** Varredura por área → ledger em `docs/varreduras/G-frontend.md`.
-  - [ ] **G.1a Estado em dois lugares.** Que estado existe em dois lugares e pode divergir?
+- [x] **G.0** 🔍 **Premissas** — medidas em 29/09/2026; conferir de novo no dia, e depois da F.
+      *(10/10/2026 — as nove pistas conferidas contra o `master` em `c3e3375`: **todas bateram**, e as duas
+      da G.1a **reproduziram** (o aviso do React no console; `/dice` aberto no dev termina em `/`). Mudou um
+      número: o `MultiplayerRoom` tem **1.049** linhas. Tabela no topo do [ledger](./varreduras/G-frontend.md).)*
+- [x] **G.1** Varredura por área → ledger em `docs/varreduras/G-frontend.md`.
+      *(10/10/2026 — **25 itens: 7 FAZER (28%), 17 ADIAR, 1 DESCARTAR**, depois de recalibrar (a primeira
+      passada deu 40%). As 9.170 linhas lidas inteiras; reproduzido no navegador — dev e build de produção
+      local — e com script fora do repo. Nenhum achado de segurança aberto. O que depende de login ficou
+      lido: o Supabase local não subiu.)*
+  - [x] **G.1a Estado em dois lugares.** *(G.04 FAZER — reproduzido: o modal do Bio-Monitor congela no
+        jogador de quando abriu. G.01, G.02, G.03 e G.05 ADIAR — as duas pistas reproduziram, mas só quem
+        mantém o código as sente; G.05, os dois nomes do ferimento, só fica feio.)* Que estado existe em
+        dois lugares e pode divergir?
         - `syncSheetStore(sheetResult)` no **corpo do render** (`App.tsx:69`). **Com sintoma** *(visto na
           C, 25/09)*: o React avisa a cada carga "Cannot update a component while rendering a different
           component". Anterior à Fase C (`7fe4f47`).
@@ -713,27 +723,47 @@ varrer código que acabou de ser reestilizado. Segue o
           `StrictMode` roda o efeito "aba → URL" duas vezes e a guarda só segura a primeira. Produção não
           tem o duplo efeito, e o E2E roda o build de produção.
         - A ficha local × a ficha na mesa (desde a decisão 7a, a mesa não aceita o ferimento do cliente).
-  - [ ] **G.1b Rede, sessão e espera.** O que a tela mostra quando a rede falha, o token expira ou a
-        resposta demora? *(A G olha a tela; o contrato é da I.)*
+  - [x] **G.1b Rede, sessão e espera.** *(G.06 FAZER — reproduzido: clique duplo aplica o dano duas vezes
+        e, com o servidor lento, cria um assento órfão; nada na tela mostra espera. G.07 FAZER — reproduzido:
+        o `deletePlayer` existe de ponta a ponta e **nenhum botão o chama desde a Fase 0** — a mensagem de
+        mesa cheia manda o GM "remover alguém". G.08–G.11 ADIAR. Os estados das R têm mensagem certa.)* O que
+        a tela mostra quando a rede falha, o token expira ou a resposta demora? *(A G olha a tela; o
+        contrato é da I.)*
         - Os estados novos das R: `409 seat_taken` (R.1), `403 removed_by_gm` (R.3), `409 room_full`
           (R.16), `409 room_exists` (R.2).
         - **A espera de ~1 min** quando o Render acorda de hibernação ([free](https://render.com/docs/free)):
           a primeira ação depois de um tempo parado parece travada?
-  - [ ] **G.1c Teclado e foco.** Dá para operar a ficha só com teclado? *(Contraste, movimento e foco
-        em modal são da F.4.2 — não repetir.)*
-  - [ ] **G.1d Efeitos, IDs e console.**
+  - [x] **G.1c Teclado e foco.** *(Quase: todo controle da ficha é nativo e o foco é visível. G.12 FAZER —
+        reproduzido: digitar 12 num atributo grava 15. G.13–G.15 ADIAR: o perfil e o grid só de mouse, e
+        nome acessível para leitor de tela.)* Dá para operar a ficha só com teclado? *(Contraste, movimento e
+        foco em modal são da F.4.2 — não repetir.)*
+  - [x] **G.1d Efeitos, IDs e console.** *(G.16 DESCARTAR — o id da armadura não tem leitor. G.17 e G.18
+        ADIAR para a L.5 — os 12 `console.*` e um evento sem ouvinte. G.19 ADIAR para a L.1 — o arrasto
+        regrava o grid no Yjs, mas o reenvio da sala custa ~40× mais.)*
         - `createBlankCharacterSheet` (`useCharacterSheet.ts:46`) gera seis IDs de armadura no mesmo tick
           com `Date.now()` + sufixo curto.
         - **12** `console.*` no cliente sobrevivendo ao logger estruturado *(ARQ-07, parte 1; contados em
           29/09 — os 3 do `server/logger.ts` são o próprio logger)*.
         - ~~`StatBlock.handleSet` altera `stats` sem tocar em `currentStats`.~~ *Resolvida na C.6.*
-  - [ ] **G.1e Testes de componente** *(ARQ-08)*. **27** componentes `.tsx` e **3** arquivos de teste
+  - [x] **G.1e Testes de componente** *(ARQ-08)*. *(G.20 ADIAR — seis dos sete FAZER são defeito de
+        componente que nenhum teste pegaria; cada um traz o seu teste, e a tela sem sintoma não ganha.)*
+        **27** componentes `.tsx` e **3** arquivos de teste
         que renderizam componente (`ui-smoke`, `combat-ui`, `invite-button`). Quais telas quebram sem
         ninguém ver? O filtro vale: teste novo só onde houve sintoma ou regra de jogo na tela.
-  - [ ] **G.1f Mapa de cortes** *(ARQ-05)*. `MultiplayerRoom` **1.028**, `TacticalGrid` **792** (não
+  - [x] **G.1f Mapa de cortes** *(ARQ-05)*. *(G.21 — cortes em cinco arquivos, o `App` incluído, todos
+        ADIAR com a L.3 de dona. O que mais barateia teste: os sockets do `MultiplayerRoom` num hook.)*
+        `MultiplayerRoom` **1.028** *(1.049 em 10/10)*, `TacticalGrid` **792** (não
         estava na lista), `FriendsList` **723**, `CyberpunkMenu` **609**. Mesmo formato da E.1f — insumo
         da L.3, sem executar.
-- [ ] **G.2** Calibragem e PR do ledger — passo X.2.
+  - [x] **G.1g Regra de jogo e mesa** *(acrescentada na varredura, 10/10/2026: a leitura achou quatro
+        defeitos fora das perguntas das áreas)*. *(G.22 FAZER — reproduzido: o NPC gerado não tem armadura
+        no braço nem na perna esquerdos, e **3 em cada 10 acertos** nele ignoram a armadura. G.23 FAZER —
+        a perda de Humanidade do cromo é sorteada de 2 a 8, qualquer que seja a fórmula do implante; duas
+        fontes (S1, S8) dizem que é a do item. G.24 FAZER — reproduzido: o chat da mesa não acompanha a
+        mensagem nova. G.25 ADIAR para a M.4 — as notas de versão chamam a v0.4.0 de atual.)*
+- [ ] **G.2** Calibragem e PR do ledger — passo X.2. *(10/10/2026 — calibragem feita: a primeira passada
+      deu 10 FAZER em 25 (40%); com a pergunta 2 levada a sério, G.01, G.02 e G.05 viraram ADIAR — **7 em
+      25, 28%**. Ledger no PR, com a correção da ADR 0004 (G.09). Fecha com o merge.)*
 - [ ] **G.3** Executar só os FAZER — passo X.3.
 - [ ] **G.4** 🔒 Portão, se a G.3 mudou código — passo X.4.
 - [ ] **G.5** 🧠 Estado durável — passo X.5.
@@ -1108,7 +1138,7 @@ público mudar.
 | R | 🔨 | Pendências da revisão pós-D (segurança da mesa, Node, backup) | ✅ | 10/10/2026 |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
-| G | 🔍 | Varredura: frontend | ⬜ | — |
+| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER; aguardando o merge (G.2) | 🔄 | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
