@@ -61,14 +61,14 @@ uma regra só foi aceita quando **duas ou mais concordam**. Onde só há inferê
 
 | # | Fonte | O que ela sustenta |
 |---|---|---|
-| S1 | [Ficha do Roll20 para CP2020](https://github.com/Roll20/roll20-character-sheets/blob/master/Cyberpunk%202020/Cyberpunk2020.html) — fórmulas executáveis | Efeito de ferimento (÷2, ÷3, −2), atributo de cada Special Ability, `1d10!!`, Run/Leap/Carry/Lift |
+| S1 | [Ficha do Roll20 para CP2020](https://github.com/Roll20/roll20-character-sheets/blob/master/Cyberpunk%202020/Cyberpunk2020.html) — fórmulas executáveis | Efeito de ferimento (÷2, ÷3, −2), atributo de cada Special Ability, `1d10!!`, Run/Leap/Carry/Lift; perda de humanidade por implante (G.23) |
 | S2 | [Ficha cyberpunk.co.uk v1.1](https://www.cyberpunk.co.uk/assets/pdf/cp2020v1.1.pdf) — auxílio de jogo não oficial | Modificador de stun por nível (0 a −9), tabela de local de impacto, lista de perícias por atributo |
 | S3 | [Character Generation Walkthrough](https://www.salroth.com/cp2020/files/CyberPunk2020.pdf) | Atributo das Special Abilities, efeito de Combat Sense, listas de perícias |
 | S4 | [GameRant — dicas para o CP2020](https://gamerant.com/cyberpunk-2077-tabletop-2020-pro-tips/) | Efeito de ferimento (Sério −2 REF; Crítico ½; Mortal ⅓), stun e death save |
 | S5 | [2d4chan — Cyberpunk 2020](https://2d4chan.org/mediawiki/index.php/Cyberpunk_2020) | Resolução, 10 encadeia, 1 é falha + tabela de fumble, saves, BTM nunca zera o dano, iniciativa |
 | S6 | [Writeup de SirPhoebos](https://writeups.letsyouandhimfight.com/sirphoebos/cyberpunk-2020/) | Combat Sense; Interface (INT), Streetdeal e Authority (COOL) |
 | S7 | [Octopus Carnival — On Cyberpsychosis](https://bira.github.io/octopus-carnival/2023/10/23/on-cyberpsychosis.html) | Humanidade = EMP × 10; −1 EMP a cada 10 de Humanidade perdida |
-| S8 | [Sistema Cyberpunk 2020 do Foundry VTT](https://github.com/2020-Fission/cyberpunk2020) — `lookups.js` e `role-skills.db` | Arma → perícia (escopeta → Rifle); atributo de 7 habilidades especiais; Jury Rig, Medical Tech e Combat Sense **sem** atributo |
+| S8 | [Sistema Cyberpunk 2020 do Foundry VTT](https://github.com/2020-Fission/cyberpunk2020) — `lookups.js` e `role-skills.db` | Arma → perícia (escopeta → Rifle); atributo de 7 habilidades especiais; Jury Rig, Medical Tech e Combat Sense **sem** atributo; o custo de humanidade do implante, rolado uma vez (`item-sheet.js`, G.23) |
 | S9 | [Módulo cp2020-augmented do Foundry](https://github.com/ryno4ever16/cp2020-augmented) — `DamageApplicator.js` | Sequência de dano com página do livro: SP e BTM mínimo 1 (p. 98–99); cabeça dobra (p. 103) "sem dizer quando" |
 | S10 | [FNFFAutoFire](https://github.com/krze/FNFFAutoFire) — calculadora de rajada | Aplica SP → BTM → ×2 na cabeça |
 
@@ -172,6 +172,7 @@ ferimento. É o que **toda** rolagem lê. **C.6.**
 | Fonte de modificação | Status |
 |---|---|
 | Humanidade → EMP | **C.6** — soma o `actualHL` de **todo** implante da ficha, instalado ou não, igual ao painel de cromo. O livro cobra a humanidade na instalação; o modelo não distingue "nunca instalado" de "removido". **ADIAR** — gatilho: um jogador usar o botão de desinstalar para planejar compra, e o EMP cair por cromo que ele não tem |
+| **Perda de Humanidade de cada implante** *(G.23, 11/10/2026)* | O implante tem um **custo de humanidade** — um número ou uma fórmula de dados (`2d6`, `1d6/2`, `0.5`, `3d6`…) —, **rolado uma vez** ao instalar; o resultado é a perda **daquele** implante, e a ficha soma a de cada um. **S8:** o `humanityCost` do item, e um botão que rola a fórmula (ou usa o número) e guarda em `humanityLoss` (`module/item/item-sheet.js`, conferido de novo em 11/10). **S1:** a perda é uma coluna por implante (HL), somada. Nenhuma das duas sorteia um valor que ignore o item. **Código antes:** `2 + round(random × 6)` — de 2 a 8, qualquer que fosse a fórmula digitada. **G.3g** — `rollHumanityLoss` (`src/rules/character.ts`), com o RNG injetado: número inteiro vale o número; `NdM±X` rola pelo parser do dano; o que ele não lê (`1d6/2`, `0.5`) **o jogador digita**, como na S1. A divisão no parser segue o gatilho da [ADR 0004](./adr/0004-dice-roller.md). *Cuidado:* a busca aberta devolve o **RED** (custo fixo, teto de humanidade) — nada daqui vem dele |
 | Ferimento → REF/INT/COOL | **C.6** |
 | Cromo que soma atributo (ex.: lace muscular) | **ADIAR** — `CyberwareItem` não tem campo de atributo. **Gatilho:** Fase K modelar o efeito de implante (K.2) |
 | EV da armadura → REF | **ADIAR para a K** (RUL-11). A armadura padrão é modelada **uma peça por localização**; somar o EV por peça contaria a mesma jaqueta várias vezes. Precisa de modelo de peça antes |
