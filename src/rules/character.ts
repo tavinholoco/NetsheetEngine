@@ -1,9 +1,9 @@
 // ============================================================
 // NETSHEET ENGINE — PERSONAGEM: ATRIBUTOS DERIVADOS (Fase C)
 // ============================================================
-// BTM (C.2), efeito de ferimento (C.5), atributos correntes (C.6) e os alvos
-// de stun e death save (C.7). Tudo derivado das tabelas do livro
-// (tables.ts), sem estado e sem rede.
+// BTM (C.2), efeito de ferimento (C.5), atributos correntes (C.6), os alvos
+// de stun e death save (C.7) e a perda de humanidade de um implante (G.23).
+// Tudo derivado das tabelas do livro (tables.ts), sem estado e sem rede.
 //
 // `deriveCurrentStats` é o ÚNICO lugar que decide com que número uma rolagem
 // entra. Cliente e servidor chamam a mesma função, e o servidor nunca confia
@@ -19,6 +19,7 @@ import {
   type BodyTypeRow,
   type WoundLevelRow
 } from './tables';
+import { parseDamageFormula, rollDamageFormula, type Rng } from './dice';
 
 export const STAT_NAMES: readonly StatName[] = ['INT', 'REF', 'TECH', 'COOL', 'ATTR', 'LUCK', 'MA', 'BODY', 'EMP'];
 
@@ -84,6 +85,31 @@ export function empAfterHumanityLoss(emp: number, loss: number): number {
 /** Humanidade máxima: EMP × 10. */
 export function humanityFromEmp(emp: number): number {
   return emp * HUMANITY_PER_EMP;
+}
+
+/** Custo fixo: um inteiro, sem dado. */
+const FIXED_HUMANITY_COST = /^\d{1,3}$/;
+
+/**
+ * G.23 — o custo de humanidade do implante dá para resolver aqui? Número
+ * inteiro ou `NdM±X` (o parser do dano). `1d6/2` e `0.5` não: o jogador digita.
+ */
+export function humanityCostIsReadable(cost: string): boolean {
+  const text = String(cost).trim();
+  return FIXED_HUMANITY_COST.test(text) || parseDamageFormula(text) !== null;
+}
+
+/**
+ * G.23 — a perda de humanidade de UM implante, rolada uma vez ao instalar, a
+ * partir do custo do item (S8, S1 — ver a conferência). Número vale o número;
+ * `NdM±X` rola com o RNG injetado; o resto devolve `null` (o jogador digita).
+ * Nunca negativa.
+ */
+export function rollHumanityLoss(rng: Rng, cost: string): number | null {
+  const text = String(cost).trim();
+  if (FIXED_HUMANITY_COST.test(text)) return Number(text);
+  const roll = rollDamageFormula(rng, text);
+  return roll ? Math.max(0, roll.total) : null;
 }
 
 // ------------------------------------------------------------

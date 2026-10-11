@@ -11,20 +11,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { useRoomStore } from '../stores/useRoomStore';
+import { stubRoomTransport } from '../test/roomTransport';
 import type { GameRoom } from '../types/multiplayer';
-
-/** WebSocket inerte: o teste é do cabeçalho, não do transporte. */
-class FakeWebSocket {
-  static OPEN = 1;
-  readyState = 0;
-  binaryType = 'arraybuffer';
-  onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
-  onmessage: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  send() {}
-  close() {}
-}
 
 const CODE = 'NC-2020-K7Q9XD';
 
@@ -55,8 +43,7 @@ function entrarComo(peerId: string, gmPeerId: string) {
 }
 
 beforeEach(() => {
-  vi.stubGlobal('WebSocket', FakeWebSocket);
-  vi.stubGlobal('EventSource', class { close() {} });
+  stubRoomTransport();
   vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })));
 });
 

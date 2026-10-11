@@ -3,9 +3,10 @@
  * ========================================================================
  * Invariantes estruturais (o gerador usa Math.random — não testamos valores
  * exatos, e sim a validade do que ele produz em qualquer execução):
- * atributos na faixa CP2020, ficha saudável, armadura cobrindo as 4
- * localizações equipadas com SP ≥ 8, arsenal com fórmula de dano válida,
- * perícia de habilidade especial marcada e cyberware com perda de HL.
+ * atributos na faixa CP2020, ficha saudável, armadura equipada com SP ≥ 8 (os
+ * seis locais de impacto, dos dois lados, estão no npc-armor — G.22), arsenal
+ * com fórmula de dano válida, perícia de habilidade especial marcada e
+ * cyberware com perda de HL.
  */
 import { describe, it, expect } from 'vitest';
 import { generateRandomNpc, NPC_ARCHETYPES } from '../utils/npcGenerator';
@@ -36,7 +37,7 @@ describe('generateRandomNpc — invariantes para todos os arquétipos', () => {
       // Saudável ao nascer
       expect(npc.woundLevel).toBe(0);
 
-      // Armadura cobre as 4 localizações equipadas com SP >= 8
+      // Armadura equipada com SP >= 8 (os seis locais: npc-armor)
       const locations = npc.armor.map((a) => a.location);
       expect(locations).toEqual(expect.arrayContaining(['Head', 'Torso', 'Right Arm', 'Right Leg']));
       expect(npc.armor.every((a) => a.equipped)).toBe(true);

@@ -765,37 +765,61 @@ varrer código que acabou de ser reestilizado. Segue o
       deu 10 FAZER em 25 (40%); com a pergunta 2 levada a sério, G.01, G.02 e G.05 viraram ADIAR — **7 em
       25, 28%**. Ledger mergeado no PR #39 em 11/10/2026, com a correção da ADR 0004 (G.09), sem mudança de
       veredicto; `master` verde nos 4 jobs.)*
-- [ ] **G.3** Executar só os FAZER — passo X.3. Os sete, cada um com o teste que o [ledger](./varreduras/G-frontend.md)
+- [x] **G.3** Executar só os FAZER — passo X.3. Os sete, cada um com o teste que o [ledger](./varreduras/G-frontend.md)
       nomeia **escrito antes** e a prova revertendo; um commit por item; G.3, G.4 e G.5 num PR só, como o
       #24 da E. Ordem pelo peso na mesa — os três primeiros mexem no combate:
-  - [ ] **G.3a** **G.22 — o NPC gerado ganha armadura no braço e na perna esquerdos**, com o SP das peças da
+      *(11/10/2026 — os sete, **+47 testes** em seis arquivos, cada um visto falhando com o código antigo e
+      conferido na tela do build de produção local. Mais um commit de revisão: o WebSocket falso dos testes
+      da mesa virou o `src/test/roomTransport.ts`.)*
+  - [x] **G.3a** **G.22 — o NPC gerado ganha armadura no braço e na perna esquerdos**, com o SP das peças da
         direita (`utils/npcGenerator.ts:245–248`). Só dado; o servidor usa o mesmo gerador. NPC já gerado numa
         mesa aberta segue como está. Teste: `npc-armor` — cada arquétipo, os dois braços e as duas pernas
         com o mesmo SP.
-  - [ ] **G.3b** **G.06 — clique duplo não repete a ação.** Duas peças: (1) `joinRoom` e `createRoom` devolvem
+        *(11/10/2026 — `npc-armor` (14), derivado de `HIT_LOCATIONS`: os 14 falham com o gerador antigo.)*
+  - [x] **G.3b** **G.06 — clique duplo não repete a ação.** Duas peças: (1) `joinRoom` e `createRoom` devolvem
         a chamada **em voo** em vez de abrir outra, como o `reconnectInFlight` (`api/rooms.ts:106–114`) — cobre
         também a reentrada do `RoomPage` —, e os dois botões mostram "Entrando…"/"Criando…" desligados; (2)
         aplicar dano, NPC ataca e próximo turno ficam desligados enquanto a requisição está em voo. Teste:
         `double-click` — dois cliques com a resposta pendente fazem **uma** requisição.
-  - [ ] **G.3c** **G.07 — o botão "Remover" do GM**, com `confirm()`, ao lado de cada outro jogador, chamando o
+        *(11/10/2026 — a tela usa o `useInFlight` (`src/hooks/`), uma ação por chave: o ref barra o clique
+        que chega antes do render, o estado desliga o botão. `double-click` (7); provado por camada — sem a
+        API, os 2 de API falham; sem a tela, os 4 de botão.)*
+  - [x] **G.3c** **G.07 — o botão "Remover" do GM**, com `confirm()`, ao lado de cada outro jogador, chamando o
         `deletePlayer` que já existe (`MultiplayerRoom.tsx:459`). O servidor já barra quem não é GM (R.3) — a
         G.4 confere. Teste: `room-modals` — o GM vê o botão (não ao lado de si), o jogador não.
-  - [ ] **G.3d** **G.04 — os dois modais leem o jogador da sala**: o estado guarda o `peerId`, não a cópia do
+        *(11/10/2026 — ícone `UserX` no papel `fault` (ação destrutiva, decisão 10b), com nome para leitor de
+        tela. `room-modals`, os 4 de G.07. Na tela: o `confirm` pergunta, o servidor tira o jogador e o chat
+        registra.)*
+  - [x] **G.3d** **G.04 — os dois modais leem o jogador da sala**: o estado guarda o `peerId`, não a cópia do
         `RoomPlayer` (`MultiplayerRoom.tsx:100–101`). Teste: no mesmo `room-modals`, a sala muda o ferimento
         com o modal aberto e o modal acende o nível novo.
-  - [ ] **G.3e** **G.24 — o chat da mesa acompanha a mensagem nova**, só quando quem lê já está no fim (o
+        *(11/10/2026 — `room-modals`, os 2 de G.04. Na tela, o roteiro do ledger (clicar 5, depois 2): o
+        modal acende 0–5 e depois 0–2. De carona: se o jogador sai, o modal fecha.)*
+  - [x] **G.3e** **G.24 — o chat da mesa acompanha a mensagem nova**, só quando quem lê já está no fim (o
         `scrollIntoView` do `AiAssistant`). Teste: `room-chat`. *O jsdom não tem layout: o teste define
         `scrollHeight`/`clientHeight`/`scrollTop` à mão ou espia o `scrollIntoView`.*
-  - [ ] **G.3f** **G.12 — atributo digitado entra como digitado**: o texto é livre enquanto digita, e o grampo
+        *(11/10/2026 — `scrollTop` na própria caixa, não `scrollIntoView` (que rolaria a página também). O
+        gatilho é o id da última mensagem: no teto de 100 (E.3b) a contagem para de crescer — o teste pega.
+        A caixa ganhou `role="log"`. `room-chat` (5).)*
+  - [x] **G.3f** **G.12 — atributo digitado entra como digitado**: o texto é livre enquanto digita, e o grampo
         (2–15) roda no `blur` (`StatBlock.tsx:32–35`). Teste: `stat-input` — "12" grava 12; sair com 40 grava 15.
-  - [ ] **G.3g** **G.23 — a perda de Humanidade sai da fórmula do implante.** **Começa pela conferência:** a
+        *(11/10/2026 — o número entra assim que cabe na faixa; sair vazio devolve o valor que estava.
+        `stat-input` (6): com o código antigo, "12" vira `'15'`, o sintoma do ledger.)*
+  - [x] **G.3g** **G.23 — a perda de Humanidade sai da fórmula do implante.** **Começa pela conferência:** a
         linha da regra com as duas fontes, S8 e S1 (a evidência está no G.23 do ledger), antes do código. A
         rolagem mora em `src/rules/` (o motor único), com o RNG injetado: fórmula `NdM±X` rola pelo parser que
         existe (`parseDamageFormula`, `rules/dice.ts:153`), número usa o número, e o que o parser não lê
         (`1d6/2`, `0.5`) o jogador digita. Teste: `cyberware-humanity` — nunca um valor fora do que a fórmula
         permite.
-- [ ] **G.4** 🔒 Portão, se a G.3 mudou código — passo X.4.
-- [ ] **G.5** 🧠 Estado durável — passo X.5.
+        *(11/10/2026 — a linha na [conferência](./CONFERENCIA_CP2020.md#atributos-correntes), com a S8 lida de
+        novo; `rollHumanityLoss` e `humanityCostIsReadable` em `rules/character.ts`. `cyberware-humanity`
+        (9): com o sorteio antigo, um `1d6` deu 8.)*
+- [x] **G.4** 🔒 Portão, se a G.3 mudou código — passo X.4. *(11/10/2026 — entrada no
+      [registro](./SEGURANCA.md#fase-g--varredura-frontend), sem achado novo: nenhuma rota nem sessão nova;
+      dois `join` seguidos viram um — menos sessões emitidas; +230 bytes por NPC no reenvio da sala.)*
+- [ ] **G.5** 🧠 Estado durável — passo X.5. *(11/10/2026 — caixas, ledger com os sete FAZER marcados, linha
+      de base (**792** testes, 57 arquivos), E2E 7/7, `audit:colors` e conflitos em 0, e o PR #41 (G.3–G.5).
+      **Falta o passo 6:** depois do merge, o `master` verde — aí marcar esta caixa e a data abaixo.)*
 - [ ] ✅ **Fase G concluída em:** ____/____/______
 
 ---
@@ -1167,7 +1191,7 @@ público mudar.
 | R | 🔨 | Pendências da revisão pós-D (segurança da mesa, Node, backup) | ✅ | 10/10/2026 |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
-| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); a executar na G.3 | 🔄 | — |
+| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); falta o `master` verde depois do merge | 🔄 | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
@@ -1179,11 +1203,11 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a R e a F (10/10/2026) — **vale até a G.3**: a G.0–G.2 não mudou código |
+| Verificação | Ao fechar a G.3 (11/10/2026) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **745** testes, 51 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version`)* — `vitest` 4.1.11 |
+| `npx vitest run` | **792** testes, 57 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |

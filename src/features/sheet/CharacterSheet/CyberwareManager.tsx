@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { CharacterSheet, CyberwareItem } from '../../../types/cyberpunk';
 import { humanityFromEmp, humanityRemaining } from '../../../utils/derivedStats';
+import { humanityCostIsReadable, rollHumanityLoss } from '../../../rules/character';
+import { clientRng } from '../../../utils/diceEngine';
 import { Cpu, Plus, Trash2, Power, AlertTriangle } from 'lucide-react';
 
 interface CyberwareManagerProps {
@@ -16,6 +18,8 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [costEb, setCostEb] = useState(500);
   const [humanityLoss, setHumanityLoss] = useState('1d6');
+  // G.23 — o custo que o parser não lê (`1d6/2`, `0.5`): a perda, o jogador digita.
+  const [typedLoss, setTypedLoss] = useState('');
   const [installed, setInstalled] = useState(true);
 
   const cyberware = sheet.cyberware || [];
@@ -23,20 +27,28 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
   const maxHumanity = humanityFromEmp(sheet.stats.EMP);
   const humanityLeft = humanityRemaining(sheet.stats.EMP, cyberware);
 
+  const costReadable = humanityCostIsReadable(humanityLoss);
+  const typedLossValue = /^\d{1,3}$/.test(typedLoss.trim()) ? Number(typedLoss.trim()) : null;
+  const canInstall = name.trim() !== '' && (costReadable || typedLossValue !== null);
+
   const addCyberware = () => {
-    if (!name.trim()) return;
+    if (!canInstall) return;
+    // G.23 — a perda é a do implante, rolada uma vez (S8, S1). Era 2 a 8 ao
+    // acaso, qualquer que fosse a fórmula.
+    const actualHL = rollHumanityLoss(clientRng, humanityLoss) ?? typedLossValue ?? 0;
     const item: CyberwareItem = {
       id: 'cw_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       name: name.trim(),
       category,
       costEb,
       humanityLoss,
-      actualHL: Math.round(Math.random() * 6) + 2,
+      actualHL,
       installed,
       notes: ''
     };
     onChange({ cyberware: [...cyberware, item] });
     setName('');
+    setTypedLoss('');
     setShowAdd(false);
   };
 
@@ -173,14 +185,31 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
               />
             </div>
             <div className="flex items-center space-x-2">
-              <label className="text-micro text-muted shrink-0">Perda HL:</label>
+              <label htmlFor="cw-humanity-cost" className="text-micro text-muted shrink-0">Perda HL:</label>
               <input
+                id="cw-humanity-cost"
                 type="text"
                 value={humanityLoss}
                 onChange={(e) => setHumanityLoss(e.target.value)}
+                title="Número ou dados (1d6, 2d6+1): rolado uma vez ao instalar"
                 className="w-full bg-raised border border-field text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
               />
             </div>
+            {!costReadable && (
+              <div className="flex items-center space-x-2 sm:col-span-2">
+                <label htmlFor="cw-typed-loss" className="text-micro text-muted">
+                  Essa fórmula não rola aqui — a perda que você rolou:
+                </label>
+                <input
+                  id="cw-typed-loss"
+                  type="number"
+                  min={0}
+                  value={typedLoss}
+                  onChange={(e) => setTypedLoss(e.target.value)}
+                  className="w-20 bg-raised border border-field text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between pt-1">
             <label className="flex items-center space-x-1.5 text-micro text-fg-soft cursor-pointer">
@@ -194,7 +223,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
             </label>
             <button
               onClick={addCyberware}
-              disabled={!name.trim()}
+              disabled={!canInstall}
               className="px-3 py-1.5 bg-cyber-500 hover:bg-cyber-400 disabled:opacity-40 text-black font-black text-micro uppercase rounded transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 inline mr-1" />

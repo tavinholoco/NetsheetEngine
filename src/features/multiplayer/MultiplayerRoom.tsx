@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CharacterSheet } from '../../types/cyberpunk';
 import {
   RoomPlayer,
@@ -17,6 +17,7 @@ import { useSheetStore } from '../../stores/useSheetStore';
 import { woundStateOf } from '../../rules/damage';
 import { mortalLevel, woundRow } from '../../rules/character';
 import { useUiStore } from '../../stores/useUiStore';
+import { useInFlight } from '../../hooks/useInFlight';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
 import { apiUrl, wsUrl } from '../../api/base';
@@ -30,6 +31,7 @@ import {
   LogOut,
   Skull,
   UserPlus,
+  UserX,
   Crosshair,
   Eye,
   Lock,
@@ -97,18 +99,21 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const yjsActiveRef = useRef(false);
   const [initiativeName, setInitiativeName] = useState('');
   const [initiativeScore, setInitiativeScore] = useState(10);
-  const [selectedHealthPlayer, setSelectedHealthPlayer] = useState<RoomPlayer | null>(null);
-  const [inspectedPlayer, setInspectedPlayer] = useState<RoomPlayer | null>(null);
+  // G.04 — os modais guardam QUEM, e leem o jogador da sala a cada render: com a
+  // cópia tirada no clique, o Bio-Monitor não acendia o nível que o próprio GM
+  // acabara de aplicar.
+  const [healthPeerId, setHealthPeerId] = useState<string | null>(null);
+  const [inspectedPeerId, setInspectedPeerId] = useState<string | null>(null);
   // F.4.2 — os modais abrem por estado, sem DialogTrigger: o Radix não sabe a
   // quem devolver o foco ao fechar. Guarda quem o tinha ao abrir.
   const quemAbriuModal = useRef<HTMLElement | null>(null);
   const abrirSaude = (p: RoomPlayer) => {
     quemAbriuModal.current = document.activeElement as HTMLElement | null;
-    setSelectedHealthPlayer(p);
+    setHealthPeerId(p.peerId);
   };
   const abrirInspecao = (p: RoomPlayer) => {
     quemAbriuModal.current = document.activeElement as HTMLElement | null;
-    setInspectedPlayer(p);
+    setInspectedPeerId(p.peerId);
   };
   const devolverFoco = (e: Event) => {
     e.preventDefault();
@@ -133,6 +138,32 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const isGm = !!room && room.gmPeerId === peerId;
   const players = room?.players || {};
   const npcs = room?.npcs || {};
+  const selectedHealthPlayer = healthPeerId ? players[healthPeerId] ?? null : null;
+  const inspectedPlayer = inspectedPeerId ? players[inspectedPeerId] ?? null : null;
+
+  // G.24 — o chat acompanha a mensagem nova, só quando quem lê já está no fim
+  // (quem rolou para cima para reler fica onde está). Na mesa, a rolagem só
+  // existe no chat (T5.4). O gatilho é a ÚLTIMA mensagem, não a contagem: no
+  // teto de 100 (E.3b) a contagem para de crescer. Só a caixa rola, não a página.
+  const chatBox = useRef<HTMLDivElement | null>(null);
+  const chatAtBottom = useRef(true);
+  const chatBoxRef = useCallback((el: HTMLDivElement | null) => {
+    chatBox.current = el;
+    if (el) {
+      chatAtBottom.current = true; // a caixa (re)aparece mostrando a última
+      el.scrollTop = el.scrollHeight;
+    }
+  }, []);
+  const onChatScroll = () => {
+    const el = chatBox.current;
+    if (el) chatAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+  };
+  const chatList = room?.chatMessages;
+  const lastChatId = chatList?.[chatList.length - 1]?.id;
+  useLayoutEffect(() => {
+    const el = chatBox.current;
+    if (el && chatAtBottom.current) el.scrollTop = el.scrollHeight;
+  }, [lastChatId]);
 
   const ensurePeerId = roomsApi.getPeerId;
 
@@ -304,7 +335,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     return () => clearTimeout(t);
   }, [view, peerId, sessionToken, sheet, roomCode]);
 
-  const createRoom = async () => {
+  // G.06 — criar, entrar e as ações de combate do GM: uma por vez, com o botão
+  // desligado enquanto a requisição não volta.
+  const { run, isBusy } = useInFlight();
+
+  const createRoom = () => {
     if (!user) {
       onOpenAuthModal();
       return;
@@ -314,24 +349,28 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       return;
     }
     setErrorMsg('');
-    try {
-      await roomsApi.createRoom({ code: roomCode.trim(), name: roomName, gmHandle: handle });
-      useRoomStore.getState().setView('active');
-    } catch (e: any) {
-      setErrorMsg(e?.message || 'Erro ao criar sala.');
-    }
+    run('create', async () => {
+      try {
+        await roomsApi.createRoom({ code: roomCode.trim(), name: roomName, gmHandle: handle });
+        useRoomStore.getState().setView('active');
+      } catch (e: any) {
+        setErrorMsg(e?.message || 'Erro ao criar sala.');
+      }
+    });
   };
 
-  const joinRoom = async (code?: string) => {
+  const joinRoom = (code?: string) => {
     const targetCode = (code || roomCode).trim();
     if (!targetCode) return;
     setErrorMsg('');
-    try {
-      await roomsApi.joinRoom({ code: targetCode, handle, sheet });
-      useRoomStore.getState().setView('active');
-    } catch (e: any) {
-      setErrorMsg(e?.message || 'Sala não encontrada.');
-    }
+    run('join', async () => {
+      try {
+        await roomsApi.joinRoom({ code: targetCode, handle, sheet });
+        useRoomStore.getState().setView('active');
+      } catch (e: any) {
+        setErrorMsg(e?.message || 'Sala não encontrada.');
+      }
+    });
   };
 
   const sendChat = async (text?: string) => {
@@ -362,11 +401,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const rollTableSave = () => requestTableRoll('save');
   const rollTableStun = () => requestTableRoll('stun');
 
-  // Helper: ação autenticada fire-and-forget (T7.3 — camada api). A api lança
-  // ApiError com a mensagem do servidor; o banner mostra o motivo.
-  const roomAction = (p: Promise<unknown>) => {
-    p.catch((e: any) => setErrorMsg(e?.message || 'Ação negada pelo servidor.'));
-  };
+  // Helper: ação autenticada (T7.3 — camada api). A api lança ApiError com a
+  // mensagem do servidor; o banner mostra o motivo. Devolve a promessa já
+  // tratada, para quem precisa saber quando a requisição voltou (G.06).
+  const roomAction = (p: Promise<unknown>): Promise<void> =>
+    p.then(
+      () => {},
+      (e: any) => setErrorMsg(e?.message || 'Ação negada pelo servidor.')
+    );
 
   // Fase 5 (T5.3) — grid editado pelo TacticalGrid:
   // - Yjs ativo → escreve no doc CRDT (latência zero, o servidor espelha e
@@ -456,8 +498,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     roomAction(roomsApi.deleteNpc(roomCode, npcId));
   };
 
-  const deletePlayer = (targetPeerId: string) => {
-    roomAction(roomsApi.deletePlayer(roomCode, targetPeerId));
+  // G.07 — o GM tira alguém da mesa (assento órfão, mesa cheia, convidado que
+  // não devia estar ali). O servidor revoga a sessão e fecha o socket (R.3).
+  const deletePlayer = (p: RoomPlayer) => {
+    if (!confirm(`Remover ${p.handle} da mesa? O assento sai e a sessão é encerrada.`)) return;
+    roomAction(roomsApi.deletePlayer(roomCode, p.peerId));
   };
 
   const addInitiative = () => {
@@ -477,7 +522,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   };
 
   const nextTurn = () => {
-    roomAction(roomsApi.nextTurn(roomCode));
+    run('nextTurn', () => roomAction(roomsApi.nextTurn(roomCode)));
   };
 
   // R.11 — sem a lista do lobby, o convite é o link /room/CÓDIGO.
@@ -556,10 +601,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             />
             <button
               onClick={createRoom}
-              disabled={!user}
+              disabled={!user || isBusy('create')}
               className="w-full py-2.5 bg-ok-500 hover:bg-ok-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-xs uppercase rounded shadow-glow-15 shadow-ok-500/40 transition-all cursor-pointer"
             >
-              🌐 Criar Mesa como GM
+              {isBusy('create') ? 'Criando…' : '🌐 Criar Mesa como GM'}
             </button>
           </div>
 
@@ -577,9 +622,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             />
             <button
               onClick={() => joinRoom()}
-              className="w-full py-2.5 bg-accent-500 hover:bg-accent-400 text-black font-black text-xs uppercase rounded shadow-glow-15 shadow-accent-500/40 transition-all cursor-pointer"
+              disabled={isBusy('join')}
+              className="w-full py-2.5 bg-accent-500 hover:bg-accent-400 disabled:opacity-40 disabled:cursor-wait text-black font-black text-xs uppercase rounded shadow-glow-15 shadow-accent-500/40 transition-all cursor-pointer"
             >
-              🎮 Entrar na Mesa
+              {isBusy('join') ? 'Entrando…' : '🎮 Entrar na Mesa'}
             </button>
             <p className="text-micro text-subtle leading-relaxed">
               As mesas não aparecem numa lista: peça ao Mestre o código ou o link do convite.
@@ -687,7 +733,13 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               </span>
               <span className="text-micro text-subtle">{chatMessages.length} mensagens</span>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+            <div
+              ref={chatBoxRef}
+              onScroll={onChatScroll}
+              role="log"
+              aria-label="Mensagens da mesa"
+              className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2"
+            >
               {chatMessages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.senderHandle === 'SISTEMA_NET' ? 'justify-center' : ''}`}>
                   {msg.senderHandle === 'SISTEMA_NET' ? (
@@ -816,6 +868,16 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                           <Crosshair className="w-3 h-3" />
                         </button>
                       )}
+                      {isGm && p.peerId !== peerId && (
+                        <button
+                          onClick={() => deletePlayer(p)}
+                          title="Remover da mesa"
+                          aria-label={`Remover ${p.handle} da mesa`}
+                          className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-fault-400 cursor-pointer"
+                        >
+                          <UserX className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -942,7 +1004,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               <div className="p-3 border-t border-line">
                 <button
                   onClick={nextTurn}
-                  className="w-full py-2.5 bg-signal-500 hover:bg-signal-400 text-black font-black text-xs uppercase rounded cursor-pointer transition-all"
+                  disabled={isBusy('nextTurn')}
+                  className="w-full py-2.5 bg-signal-500 hover:bg-signal-400 disabled:opacity-40 disabled:cursor-wait text-black font-black text-xs uppercase rounded cursor-pointer transition-all"
                 >
                   ⚔️ Próximo Turno
                 </button>
@@ -980,7 +1043,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           Esc fecha, role="dialog" com o título ligado. Eram feitos à mão. */}
 
       {/* Modal: editar saúde (GM) */}
-      <Dialog open={selectedHealthPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setSelectedHealthPlayer(null); }}>
+      <Dialog open={selectedHealthPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setHealthPeerId(null); }}>
         <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-sm border-2 border-danger-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-danger-500/30 font-sans">
           {selectedHealthPlayer && (
             <>
@@ -1012,7 +1075,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       </Dialog>
 
       {/* Modal: inspecionar ficha */}
-      <Dialog open={inspectedPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setInspectedPlayer(null); }}>
+      <Dialog open={inspectedPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setInspectedPeerId(null); }}>
         <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-md border-2 border-accent-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-accent-500/30 max-h-[80vh] overflow-y-auto custom-scrollbar font-sans">
           {inspectedPlayer && (
             <>

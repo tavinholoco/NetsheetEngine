@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CharacterSheet, StatName } from '../../../types/cyberpunk';
 import { humanityFromEmp, runFromMa, walkFromMa } from '../../../utils/derivedStats';
 import { bodyTypeFor, deriveCurrentStats } from '../../../rules/character';
+import { STAT_MAX, STAT_MIN } from '../../../rules/sheetSchema';
 import { Heart, Shield, Brain, Wind, Flame } from 'lucide-react';
 
 interface StatBlockProps {
@@ -23,16 +24,53 @@ const STAT_LABELS: Record<StatName, { label: string; color: string; icon: React.
   EMP: { label: 'Empatia', color: 'text-cyber-300', icon: <Heart className="w-3.5 h-3.5" /> }
 };
 
+/**
+ * G.12 — o texto é livre enquanto se digita: o número entra na ficha assim que
+ * cabe na faixa (2–15), e o grampo só roda ao sair do campo. Grampeado a cada
+ * tecla, "12" virava 15 (o "1" virava 2, e "22" virava 15). Sair com o campo
+ * vazio devolve o valor que estava.
+ */
+const StatInput: React.FC<{ value: number; onCommit: (next: number) => void; label: string }> = ({ value, onCommit, label }) => {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const type = (text: string) => {
+    setDraft(text);
+    const n = parseInt(text);
+    if (n >= STAT_MIN && n <= STAT_MAX && n !== value) onCommit(n);
+  };
+
+  const leave = () => {
+    if (draft === null) return;
+    const n = parseInt(draft);
+    if (!Number.isNaN(n)) {
+      const next = Math.min(STAT_MAX, Math.max(STAT_MIN, n));
+      if (next !== value) onCommit(next);
+    }
+    setDraft(null);
+  };
+
+  return (
+    <input
+      type="number"
+      value={draft ?? value}
+      onChange={(e) => type(e.target.value)}
+      onBlur={leave}
+      onKeyDown={(e) => e.key === 'Enter' && leave()}
+      aria-label={label}
+      className="w-12 min-w-0 bg-raised border border-accent-700 text-center text-xl font-mono text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
+    />
+  );
+};
+
 export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
   const stats = sheet.stats;
 
   const handleChange = (stat: StatName, delta: number) => {
-    const next = Math.min(15, Math.max(2, (stats[stat] || 0) + delta));
+    const next = Math.min(STAT_MAX, Math.max(STAT_MIN, (stats[stat] || 0) + delta));
     onChange({ stats: { ...stats, [stat]: next } });
   };
 
-  const handleSet = (stat: StatName, raw: number) => {
-    const next = Math.min(15, Math.max(2, raw || 0));
+  const handleSet = (stat: StatName, next: number) => {
     onChange({ stats: { ...stats, [stat]: next } });
   };
 
@@ -86,11 +124,10 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
                 >
                   −
                 </button>
-                <input
-                  type="number"
+                <StatInput
                   value={val}
-                  onChange={(e) => handleSet(stat, parseInt(e.target.value))}
-                  className="w-12 min-w-0 bg-raised border border-accent-700 text-center text-xl font-mono text-signal-400 rounded py-1 focus:border-accent-400 focus:outline-none"
+                  onCommit={(next) => handleSet(stat, next)}
+                  label={`${stat} — ${meta.label}`}
                 />
                 <button
                   onClick={() => handleChange(stat, 1)}

@@ -239,13 +239,16 @@ export function generateRandomNpc(archetypeId?: string): CharacterSheet {
     });
   }
 
-  // Armor
+  // Armor — uma peça por local de impacto (o dano lê o SP por local); braços e
+  // pernas cobrem os dois lados (G.22: o esquerdo ficava sem armadura).
   const armorSp = archetype.threatLevel === 'Chefe de Gangue' ? 18 : archetype.threatLevel === 'Veterano' ? 14 : 10;
   const armor: ArmorPiece[] = [
     { id: 'arm_head_' + Date.now(), name: 'Capacete Tático', location: 'Head', sp: armorSp, ev: 0, equipped: true },
     { id: 'arm_torso_' + Date.now(), name: 'Colete Kevlar Reforçado', location: 'Torso', sp: armorSp, ev: 0, equipped: true },
-    { id: 'arm_arms_' + Date.now(), name: 'Proteção de Braços', location: 'Right Arm', sp: armorSp - 2, ev: 0, equipped: true },
-    { id: 'arm_legs_' + Date.now(), name: 'Calças Balísticas', location: 'Right Leg', sp: armorSp - 2, ev: 0, equipped: true }
+    { id: 'arm_rarm_' + Date.now(), name: 'Proteção de Braços', location: 'Right Arm', sp: armorSp - 2, ev: 0, equipped: true },
+    { id: 'arm_larm_' + Date.now(), name: 'Proteção de Braços', location: 'Left Arm', sp: armorSp - 2, ev: 0, equipped: true },
+    { id: 'arm_rleg_' + Date.now(), name: 'Calças Balísticas', location: 'Right Leg', sp: armorSp - 2, ev: 0, equipped: true },
+    { id: 'arm_lleg_' + Date.now(), name: 'Calças Balísticas', location: 'Left Leg', sp: armorSp - 2, ev: 0, equipped: true }
   ];
 
   return {

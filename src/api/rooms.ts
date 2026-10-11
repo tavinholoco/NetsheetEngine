@@ -172,25 +172,47 @@ export async function authedFetch<T>(path: string, body: object): Promise<T> {
 // R.11 — não há mais lista de salas: o lobby deixou de listá-las (a sala se
 // acha pelo código ou pelo link que o GM manda).
 
+// G.06 — criar e entrar devolvem a chamada que já está em voo, como o
+// `reconnectInFlight`: o segundo clique (ou a reentrada do `RoomPage` junto com
+// o clique) não abre outra. Dois `join` com o mesmo token deixavam um assento
+// órfão (o segundo cai no `seat_taken` e entra com outro peerId); dois `create`,
+// duas salas (cada um sorteia um sufixo).
+let createInFlight: Promise<JoinResponse> | null = null;
+let joinInFlight: { code: string; promise: Promise<JoinResponse> } | null = null;
+
 /**
  * POST /api/rooms/create — cria uma mesa (o chamador vira GM). R.11: o código
  * enviado é o prefixo que o GM digitou + um sufixo aleatório (`inviteCode`) —
  * é ele o convite. Guarda o código que o SERVIDOR devolveu.
  */
-export async function createRoom(input: { code: string; name: string; gmHandle: string }): Promise<JoinResponse> {
-  const res = await apiFetch<JoinResponse>('/api/rooms/create', {
-    method: 'POST',
-    body: JSON.stringify({ ...input, code: inviteCode(input.code), gmPeerId: getPeerId() })
+export function createRoom(input: { code: string; name: string; gmHandle: string }): Promise<JoinResponse> {
+  if (createInFlight) return createInFlight;
+  const attempt = (async () => {
+    const res = await apiFetch<JoinResponse>('/api/rooms/create', {
+      method: 'POST',
+      body: JSON.stringify({ ...input, code: inviteCode(input.code), gmPeerId: getPeerId() })
+    });
+    persistSession(res.sessionToken, res.room, res.room.code);
+    return res;
+  })().finally(() => {
+    createInFlight = null;
   });
-  persistSession(res.sessionToken, res.room, res.room.code);
-  return res;
+  createInFlight = attempt;
+  return attempt;
 }
 
 /** POST /api/rooms/join — entra numa mesa existente (ou volta ao próprio assento, R.1). */
-export async function joinRoom(input: { code: string; handle: string; sheet: CharacterSheet }): Promise<JoinResponse> {
-  const res = await postJoin(input.code, input.handle, input.sheet);
-  persistSession(res.sessionToken, res.room, input.code);
-  return res;
+export function joinRoom(input: { code: string; handle: string; sheet: CharacterSheet }): Promise<JoinResponse> {
+  if (joinInFlight?.code === input.code) return joinInFlight.promise;
+  const attempt = (async () => {
+    const res = await postJoin(input.code, input.handle, input.sheet);
+    persistSession(res.sessionToken, res.room, input.code);
+    return res;
+  })().finally(() => {
+    if (joinInFlight?.promise === attempt) joinInFlight = null;
+  });
+  joinInFlight = { code: input.code, promise: attempt };
+  return attempt;
 }
 
 /** POST /api/rooms/:code/heartbeat — mantém isOnline=true (T3.4). */
