@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CharacterSheet } from '../../types/cyberpunk';
 import {
   RoomPlayer,
@@ -140,6 +140,30 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const npcs = room?.npcs || {};
   const selectedHealthPlayer = healthPeerId ? players[healthPeerId] ?? null : null;
   const inspectedPlayer = inspectedPeerId ? players[inspectedPeerId] ?? null : null;
+
+  // G.24 — o chat acompanha a mensagem nova, só quando quem lê já está no fim
+  // (quem rolou para cima para reler fica onde está). Na mesa, a rolagem só
+  // existe no chat (T5.4). O gatilho é a ÚLTIMA mensagem, não a contagem: no
+  // teto de 100 (E.3b) a contagem para de crescer. Só a caixa rola, não a página.
+  const chatBox = useRef<HTMLDivElement | null>(null);
+  const chatAtBottom = useRef(true);
+  const chatBoxRef = useCallback((el: HTMLDivElement | null) => {
+    chatBox.current = el;
+    if (el) {
+      chatAtBottom.current = true; // a caixa (re)aparece mostrando a última
+      el.scrollTop = el.scrollHeight;
+    }
+  }, []);
+  const onChatScroll = () => {
+    const el = chatBox.current;
+    if (el) chatAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+  };
+  const chatList = room?.chatMessages;
+  const lastChatId = chatList?.[chatList.length - 1]?.id;
+  useLayoutEffect(() => {
+    const el = chatBox.current;
+    if (el && chatAtBottom.current) el.scrollTop = el.scrollHeight;
+  }, [lastChatId]);
 
   const ensurePeerId = roomsApi.getPeerId;
 
@@ -709,7 +733,13 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               </span>
               <span className="text-micro text-subtle">{chatMessages.length} mensagens</span>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+            <div
+              ref={chatBoxRef}
+              onScroll={onChatScroll}
+              role="log"
+              aria-label="Mensagens da mesa"
+              className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2"
+            >
               {chatMessages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.senderHandle === 'SISTEMA_NET' ? 'justify-center' : ''}`}>
                   {msg.senderHandle === 'SISTEMA_NET' ? (
