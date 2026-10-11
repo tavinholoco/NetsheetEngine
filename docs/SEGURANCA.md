@@ -676,7 +676,38 @@ preso) — com teste ou prova por script em cada item.
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
 
-### Fases G, H, I e J — varreduras
+### Fase G — Varredura: frontend
+
+**11/10/2026 — G.3** (os sete FAZER do [ledger](./varreduras/G-frontend.md): armadura do NPC, clique
+duplo, remover jogador, modais da mesa, chat que acompanha, atributo digitado, perda de Humanidade).
+Fecha a **G.4**. O ledger não tinha achado de segurança aberto.
+
+1. **Entrada nova?** Nenhuma no servidor — nenhuma rota, mensagem de WebSocket ou campo novo. No
+   cliente, um campo: a **perda de Humanidade digitada** quando a fórmula do implante não rola aqui
+   (`1d6/2`). Ela vai para a ficha do próprio jogador, como já ia o número sorteado; ao entrar na mesa, o
+   `sheetSchema` grampeia o `actualHL` em 0–100, como antes. O atributo digitado continua no 2–15, agora
+   grampeado ao sair do campo — e o servidor grampeia de novo.
+2. **Dado novo sai?** Nenhum. O `confirm` do "Remover" mostra o *handle*, que já está na lista.
+3. **Autorização nova?** Nenhuma. O botão "Remover" chama a rota que existia desde a Fase 0, e quem
+   decide é o servidor: só o GM (`gm_only`), revogando a sessão e fechando o socket (R.3). **E quem
+   recebe a sessão?** Nada muda na emissão: o `join` continua provando o assento com o token (R.1). O que
+   a G.3 mudou é que dois `join` seguidos do mesmo navegador viram **um** — antes, o segundo chegava com o
+   token que o primeiro acabara de revogar, caía no `seat_taken` e ganhava um assento novo (o órfão do
+   G.06). Menos sessões emitidas, não mais.
+4. **Jogador convidado hostil?** Nada novo. Forçar o botão "Remover" pelo DevTools dá o mesmo 403 que
+   chamar a API à mão. A trava do clique duplo é só da tela: um script que manda dano duas vezes continua
+   aplicando duas — mas só o GM aplica dano, e o limitador de taxa do REST segue valendo.
+5. **Estado novo sem limite?** Nenhum. O `useInFlight` guarda uma chave por ação (cinco nomes fixos), e
+   a API, uma chamada em voo de cada tipo, soltas quando a resposta volta.
+6. **Custo por requisição a serviço externo?** Menor: o clique duplo deixa de mandar a segunda requisição.
+   A banda cresce **230 bytes por NPC** em cada reenvio da sala (as duas peças de armadura do lado
+   esquerdo) — numa mesa com 4 NPCs, ~0,9 KB em ~48 KB, uns 2%.
+
+**Sem dependência nova.** **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança:
+são defeitos de tela e de regra, e o único com cara de moderação (o G.07) é um botão que faltava para
+uma porta que o servidor já guardava.
+
+### Fases H, I e J — varreduras
 
 *(cada uma a preencher no seu passo X.4 — só se a execução dos FAZER mudar código)*
 

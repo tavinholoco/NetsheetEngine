@@ -137,7 +137,7 @@ ficha tem o mesmo defeito: mostra a ficha de quando abriu.
 
 **Reversível:** sim.
 
-**VEREDITO:** FAZER
+**VEREDITO:** FAZER — ✅ **feito** na G.3d (11/10/2026).
 - Teste que reproduz: `src/__tests__/room-modals.test.tsx` — a sala muda o ferimento com o modal aberto,
   e o modal acende o nível novo.
 
@@ -209,7 +209,7 @@ enquanto a requisição está em voo.
 
 **Reversível:** sim.
 
-**VEREDITO:** FAZER
+**VEREDITO:** FAZER — ✅ **feito** na G.3b (11/10/2026).
 - Teste que reproduz: `src/__tests__/double-click.test.tsx` — dois cliques com a resposta pendente fazem
   **uma** requisição (entrar, aplicar dano, próximo turno); e `joinRoom` chamado duas vezes em seguida
   devolve a mesma promessa.
@@ -242,7 +242,7 @@ que o grid já usa para "limpar tokens"), chamando o `deletePlayer` que existe.
 
 **Reversível:** sim.
 
-**VEREDITO:** FAZER
+**VEREDITO:** FAZER — ✅ **feito** na G.3c (11/10/2026).
 - Teste que reproduz: `src/__tests__/room-modals.test.tsx` — o GM vê "Remover" ao lado dos outros
   jogadores (não ao lado de si), confirmar chama a API com o `peerId`; o jogador não vê o botão.
 
@@ -375,7 +375,7 @@ estiver completo).
 
 **Reversível:** sim.
 
-**VEREDITO:** FAZER
+**VEREDITO:** FAZER — ✅ **feito** na G.3f (11/10/2026).
 - Teste que reproduz: `src/__tests__/stat-input.test.tsx` — digitar "12" grava 12; "1" sozinho não vira 2
   antes de sair do campo; sair com 40 grava 15.
 
@@ -585,7 +585,7 @@ direitas).
 
 **Reversível:** sim — NPC já gerado numa mesa aberta segue como está; o próximo vem certo.
 
-**VEREDITO:** FAZER
+**VEREDITO:** FAZER — ✅ **feito** na G.3a (11/10/2026).
 - Teste que reproduz: `src/__tests__/npc-armor.test.ts` — para cada arquétipo, os dois braços têm o mesmo
   SP, e as duas pernas também; nenhum local de impacto fica com 0 onde o arquétipo tem armadura.
 
@@ -620,7 +620,7 @@ Roll20 faz (S1). A divisão no parser segue o gatilho da ADR 0004.
 
 **Reversível:** sim — implante já instalado mantém a perda que tem.
 
-**VEREDITO:** FAZER
+**VEREDITO:** FAZER — ✅ **feito** na G.3g (11/10/2026).
 - Teste que reproduz: `src/__tests__/cyberware-humanity.test.tsx` — com RNG injetado, `2d6` dá a soma dos
   dois dados; `3` dá 3; `1d6/2` pede o número ao jogador; nunca um valor fora do que a fórmula permite.
 
@@ -645,7 +645,7 @@ para não arrancar a leitura de quem rolou para cima.
 
 **Reversível:** sim.
 
-**VEREDITO:** FAZER
+**VEREDITO:** FAZER — ✅ **feito** na G.3e (11/10/2026).
 - Teste que reproduz: `src/__tests__/room-chat.test.tsx` — chega mensagem nova com a caixa no fim: a caixa
   vai para o fim; com a caixa lá em cima, fica onde está.
 
