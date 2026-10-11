@@ -818,7 +818,7 @@ varrer código que acabou de ser reestilizado. Segue o
       [registro](./SEGURANCA.md#fase-g--varredura-frontend), sem achado novo: nenhuma rota nem sessão nova;
       dois `join` seguidos viram um — menos sessões emitidas; +230 bytes por NPC no reenvio da sala.)*
 - [ ] **G.5** 🧠 Estado durável — passo X.5. *(11/10/2026 — caixas, ledger com os sete FAZER marcados, linha
-      de base (**792** testes, 57 arquivos), E2E 7/7, `audit:colors` e conflitos em 0, e o PR da G.3–G.5.
+      de base (**792** testes, 57 arquivos), E2E 7/7, `audit:colors` e conflitos em 0, e o PR #41 (G.3–G.5).
       **Falta o passo 6:** depois do merge, o `master` verde — aí marcar esta caixa e a data abaixo.)*
 - [ ] ✅ **Fase G concluída em:** ____/____/______
 
@@ -1191,7 +1191,7 @@ público mudar.
 | R | 🔨 | Pendências da revisão pós-D (segurança da mesa, Node, backup) | ✅ | 10/10/2026 |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
-| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão; falta o `master` verde depois do merge | 🔄 | — |
+| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); falta o `master` verde depois do merge | 🔄 | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
