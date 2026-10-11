@@ -92,7 +92,8 @@ const FIXED_HUMANITY_COST = /^\d{1,3}$/;
 
 /**
  * G.23 — o custo de humanidade do implante dá para resolver aqui? Número
- * inteiro ou `NdM±X` (o parser do dano). `1d6/2` e `0.5` não: o jogador digita.
+ * inteiro ou `NdM±X` (o parser do dano). `1d6/2` e `0.5` não: o jogador digita a
+ * perda, inteira — a ficha guarda inteiro, e a fração fica com ADIAR na conferência.
  */
 export function humanityCostIsReadable(cost: string): boolean {
   const text = String(cost).trim();
