@@ -140,6 +140,15 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const npcs = room?.npcs || {};
   const selectedHealthPlayer = healthPeerId ? players[healthPeerId] ?? null : null;
   const inspectedPlayer = inspectedPeerId ? players[inspectedPeerId] ?? null : null;
+  // Quem sai some da sala, e o modal fecha. Esquecer QUEM era: quem sai pelo
+  // "Sair" volta com o mesmo peerId (o sessionStorage o guarda), e o modal
+  // reabriria sozinho na cara do GM.
+  const healthGone = healthPeerId !== null && selectedHealthPlayer === null;
+  const inspectedGone = inspectedPeerId !== null && inspectedPlayer === null;
+  useEffect(() => {
+    if (healthGone) setHealthPeerId(null);
+    if (inspectedGone) setInspectedPeerId(null);
+  }, [healthGone, inspectedGone]);
 
   // G.24 — o chat acompanha a mensagem nova, só quando quem lê já está no fim
   // (quem rolou para cima para reler fica onde está). Na mesa, a rolagem só
@@ -499,9 +508,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   };
 
   // G.07 — o GM tira alguém da mesa (assento órfão, mesa cheia, convidado que
-  // não devia estar ali). O servidor revoga a sessão e fecha o socket (R.3).
+  // não devia estar ali). O servidor revoga a sessão, fecha o socket e recusa a
+  // volta daquele assento (R.3, `removed_by_gm`): a pessoa só volta por uma aba
+  // nova — o GM precisa saber disso antes de tirar um amigo que só caiu.
   const deletePlayer = (p: RoomPlayer) => {
-    if (!confirm(`Remover ${p.handle} da mesa? O assento sai e a sessão é encerrada.`)) return;
+    if (!confirm(`Remover ${p.handle} da mesa? A sessão é encerrada, e ${p.handle} só volta abrindo o convite numa aba nova.`)) return;
     roomAction(roomsApi.deletePlayer(roomCode, p.peerId));
   };
 
