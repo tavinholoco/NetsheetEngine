@@ -761,10 +761,39 @@ varrer código que acabou de ser reestilizado. Segue o
         a perda de Humanidade do cromo é sorteada de 2 a 8, qualquer que seja a fórmula do implante; duas
         fontes (S1, S8) dizem que é a do item. G.24 FAZER — reproduzido: o chat da mesa não acompanha a
         mensagem nova. G.25 ADIAR para a M.4 — as notas de versão chamam a v0.4.0 de atual.)*
-- [ ] **G.2** Calibragem e PR do ledger — passo X.2. *(10/10/2026 — calibragem feita: a primeira passada
+- [x] **G.2** Calibragem e PR do ledger — passo X.2. *(10/10/2026 — calibragem feita: a primeira passada
       deu 10 FAZER em 25 (40%); com a pergunta 2 levada a sério, G.01, G.02 e G.05 viraram ADIAR — **7 em
-      25, 28%**. Ledger no PR, com a correção da ADR 0004 (G.09). Fecha com o merge.)*
-- [ ] **G.3** Executar só os FAZER — passo X.3.
+      25, 28%**. Ledger mergeado no PR #39 em 11/10/2026, com a correção da ADR 0004 (G.09), sem mudança de
+      veredicto; `master` verde nos 4 jobs.)*
+- [ ] **G.3** Executar só os FAZER — passo X.3. Os sete, cada um com o teste que o [ledger](./varreduras/G-frontend.md)
+      nomeia **escrito antes** e a prova revertendo; um commit por item; G.3, G.4 e G.5 num PR só, como o
+      #24 da E. Ordem pelo peso na mesa — os três primeiros mexem no combate:
+  - [ ] **G.3a** **G.22 — o NPC gerado ganha armadura no braço e na perna esquerdos**, com o SP das peças da
+        direita (`utils/npcGenerator.ts:245–248`). Só dado; o servidor usa o mesmo gerador. NPC já gerado numa
+        mesa aberta segue como está. Teste: `npc-armor` — cada arquétipo, os dois braços e as duas pernas
+        com o mesmo SP.
+  - [ ] **G.3b** **G.06 — clique duplo não repete a ação.** Duas peças: (1) `joinRoom` e `createRoom` devolvem
+        a chamada **em voo** em vez de abrir outra, como o `reconnectInFlight` (`api/rooms.ts:106–114`) — cobre
+        também a reentrada do `RoomPage` —, e os dois botões mostram "Entrando…"/"Criando…" desligados; (2)
+        aplicar dano, NPC ataca e próximo turno ficam desligados enquanto a requisição está em voo. Teste:
+        `double-click` — dois cliques com a resposta pendente fazem **uma** requisição.
+  - [ ] **G.3c** **G.07 — o botão "Remover" do GM**, com `confirm()`, ao lado de cada outro jogador, chamando o
+        `deletePlayer` que já existe (`MultiplayerRoom.tsx:459`). O servidor já barra quem não é GM (R.3) — a
+        G.4 confere. Teste: `room-modals` — o GM vê o botão (não ao lado de si), o jogador não.
+  - [ ] **G.3d** **G.04 — os dois modais leem o jogador da sala**: o estado guarda o `peerId`, não a cópia do
+        `RoomPlayer` (`MultiplayerRoom.tsx:100–101`). Teste: no mesmo `room-modals`, a sala muda o ferimento
+        com o modal aberto e o modal acende o nível novo.
+  - [ ] **G.3e** **G.24 — o chat da mesa acompanha a mensagem nova**, só quando quem lê já está no fim (o
+        `scrollIntoView` do `AiAssistant`). Teste: `room-chat`. *O jsdom não tem layout: o teste define
+        `scrollHeight`/`clientHeight`/`scrollTop` à mão ou espia o `scrollIntoView`.*
+  - [ ] **G.3f** **G.12 — atributo digitado entra como digitado**: o texto é livre enquanto digita, e o grampo
+        (2–15) roda no `blur` (`StatBlock.tsx:32–35`). Teste: `stat-input` — "12" grava 12; sair com 40 grava 15.
+  - [ ] **G.3g** **G.23 — a perda de Humanidade sai da fórmula do implante.** **Começa pela conferência:** a
+        linha da regra com as duas fontes, S8 e S1 (a evidência está no G.23 do ledger), antes do código. A
+        rolagem mora em `src/rules/` (o motor único), com o RNG injetado: fórmula `NdM±X` rola pelo parser que
+        existe (`parseDamageFormula`, `rules/dice.ts:153`), número usa o número, e o que o parser não lê
+        (`1d6/2`, `0.5`) o jogador digita. Teste: `cyberware-humanity` — nunca um valor fora do que a fórmula
+        permite.
 - [ ] **G.4** 🔒 Portão, se a G.3 mudou código — passo X.4.
 - [ ] **G.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase G concluída em:** ____/____/______
@@ -1138,7 +1167,7 @@ público mudar.
 | R | 🔨 | Pendências da revisão pós-D (segurança da mesa, Node, backup) | ✅ | 10/10/2026 |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
-| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER; aguardando o merge (G.2) | 🔄 | — |
+| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); a executar na G.3 | 🔄 | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
@@ -1150,7 +1179,7 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a R e a F (10/10/2026 — antes da G.0) |
+| Verificação | Ao fechar a R e a F (10/10/2026) — **vale até a G.3**: a G.0–G.2 não mudou código |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
