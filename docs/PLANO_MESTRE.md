@@ -814,12 +814,45 @@ varrer código que acabou de ser reestilizado. Segue o
         *(11/10/2026 — a linha na [conferência](./CONFERENCIA_CP2020.md#atributos-correntes), com a S8 lida de
         novo; `rollHumanityLoss` e `humanityCostIsReadable` em `rules/character.ts`. `cyberware-humanity`
         (9): com o sorteio antigo, um `1d6` deu 8.)*
+  - [x] **G.3h** **Revisão do código da G.3** *(pedido do dono depois do merge do #41, 11/10/2026)*: o diff
+        inteiro lido de novo atrás de inconsistência, erro de lógica e defeito, e cada achado pelo filtro.
+        **Quatro consertos e dois documentos corrigidos**, cada conserto com o teste antes; **quatro ADIAR**.
+    - [x] **O modal de quem saiu reabria sozinho** (defeito da G.3d). O estado guardava o `peerId` e não o
+          esquecia; quem sai pelo "Sair" volta com o **mesmo** `peerId` (o `sessionStorage` o guarda), e o
+          Bio-Monitor ou a inspeção reabriam na tela do GM. `room-modals` +2; conferido no navegador (o
+          jogador sai e volta pela API, e o modal continua fechado).
+    - [x] **O "Remover" não avisava que a pessoa não volta pela mesma aba** (G.3c × R.3): o servidor recusa a
+          volta daquele `peerId` (`removed_by_gm`). O `confirm` diz agora. `room-modals` +1.
+    - [x] **A perda de Humanidade digitada é inteira, e o campo não dizia** (G.3g): `1d6/2` dá fração na S8,
+          o `actualHL` é inteiro, e "2.5" deixava o "Instalar" mudo — o defeito do G.09. O rótulo pede o
+          inteiro; a fração virou **ADIAR** na [conferência](./CONFERENCIA_CP2020.md#atributos-correntes)
+          (é formato persistido). `cyberware-humanity` +1.
+    - [x] **Dois testes do `double-click` terminavam com a resposta resolvendo depois** do teste, escrevendo
+          na store do seguinte. Agora esperam — e o do próximo turno prova que a trava **solta** (com o
+          `useInFlight` sem soltar a chave, ele falha).
+    - [x] **Documentos:** a convenção do `useInFlight` no `CLAUDE.md` dizia "todo botão que manda ação ao
+          servidor", mais largo que o código; e o [protocolo](./PROTOCOLO_MULTIPLAYER.md) ganhou a regra que
+          a G.06 criou — nunca dois `join` em paralelo — e o limite dela.
+    - **ADIAR**, cada um com gatilho:
+      - "Gerar NPC", "Gerar Jogador" e "Rolar iniciativa" **sem a trava**: em dobro, um NPC ou uma ficha a
+        mais, ou a iniciativa rolada duas vezes — à vista de todos e desfazível (o "✕" do NPC em dobro só
+        reenvia a sala, sem erro). **Gatilho:** acontecer numa sessão real ou na H.1a. Versão de uma linha:
+        o `run` do `useInFlight`, como nos outros.
+      - A perda digitada aceita até 999, e o `sheetSchema` grampeia 100 por implante quando a ficha entra
+        na mesa — a ficha local e a da mesa divergiriam. **Gatilho:** alguém digitar acima de 100 (nenhuma
+        fórmula do livro passa de 3d6).
+      - O cartão do token remonta (`key={token.id}`) ao trocar de token, e a trava de dano e ataque começa
+        de novo. **Gatilho:** o GM trocar de token e voltar no meio de uma resposta lenta, e repetir a ação.
+      - O `reconnectSession` não compartilha a trava do `joinRoom`. Hoje não se cruzam; o caminho em que
+        cruzariam está no protocolo. **Gatilho:** a H.1c ou a H.1e, que mexem nele.
 - [x] **G.4** 🔒 Portão, se a G.3 mudou código — passo X.4. *(11/10/2026 — entrada no
       [registro](./SEGURANCA.md#fase-g--varredura-frontend), sem achado novo: nenhuma rota nem sessão nova;
-      dois `join` seguidos viram um — menos sessões emitidas; +230 bytes por NPC no reenvio da sala.)*
+      dois `join` seguidos viram um — menos sessões emitidas; +230 bytes por NPC no reenvio da sala. A G.3h
+      ganhou um adendo, também sem achado.)*
 - [ ] **G.5** 🧠 Estado durável — passo X.5. *(11/10/2026 — caixas, ledger com os sete FAZER marcados, linha
-      de base (**792** testes, 57 arquivos), E2E 7/7, `audit:colors` e conflitos em 0, e o PR #41 (G.3–G.5).
-      **Falta o passo 6:** depois do merge, o `master` verde — aí marcar esta caixa e a data abaixo.)*
+      de base (**796** testes, 57 arquivos), E2E 7/7, `audit:colors` e conflitos em 0, o PR #41 (G.3–G.5) e o
+      #42 (G.3h). O passo 6 do #41 foi conferido: `master` verde nos 4 jobs, `db-sync` em dia.
+      **Falta:** o merge do #42 e o `master` verde depois dele — aí marcar esta caixa e a data abaixo.)*
 - [ ] ✅ **Fase G concluída em:** ____/____/______
 
 ---
@@ -1191,7 +1224,7 @@ público mudar.
 | R | 🔨 | Pendências da revisão pós-D (segurança da mesa, Node, backup) | ✅ | 10/10/2026 |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
-| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); falta o `master` verde depois do merge | 🔄 | — |
+| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos; falta o merge dela e o `master` verde | 🔄 | — |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
@@ -1203,11 +1236,11 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a G.3 (11/10/2026) |
+| Verificação | Ao fechar a G.3 e a revisão G.3h (11/10/2026) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **792** testes, 57 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9)* — `vitest` 4.1.11 |
+| `npx vitest run` | **796** testes, 57 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |

@@ -8,7 +8,7 @@
  * requisições saíram.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { CombatPanel } from '../features/multiplayer/CombatPanel';
@@ -117,7 +117,11 @@ describe('G.06 — o lobby mostra a espera', () => {
     expect(net.urls.filter((u) => u.endsWith('/api/rooms/join'))).toHaveLength(1);
     const esperando = screen.getByRole('button', { name: /entrando/i }) as HTMLButtonElement;
     expect(esperando.disabled).toBe(true);
+
+    // A resposta volta dentro do teste: nada fica resolvendo depois dele e
+    // escrevendo na store do teste seguinte.
     net.releaseAll();
+    await waitFor(() => expect(useRoomStore.getState().view).toBe('active'));
   });
 });
 
@@ -138,7 +142,12 @@ describe('G.06 — o GM não repete a ação de combate', () => {
     await user.dblClick(screen.getByRole('button', { name: /próximo turno/i }));
 
     expect(net.urls.slice(antes).filter((u) => u.endsWith('/initiative'))).toHaveLength(1);
+    const botao = screen.getByRole('button', { name: /próximo turno/i }) as HTMLButtonElement;
+    expect(botao.disabled).toBe(true);
+
+    // Voltou a resposta: o botão religa (a trava solta), dentro do teste.
     net.releaseAll();
+    await waitFor(() => expect(botao.disabled).toBe(false));
   });
 
   const NPC = { peerId: 'npc_1', handle: 'Booster', role: 'Nomad', sheet: SHEET, isOnline: true, joinedAt: '' } as RoomPlayer;

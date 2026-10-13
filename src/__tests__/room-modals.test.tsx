@@ -143,3 +143,51 @@ describe('G.04 — os modais leem o jogador da sala, não a foto de quando abrir
     expect(within(screen.getByRole('dialog')).getByText('7/10')).toBeTruthy();
   });
 });
+
+describe('Revisão da G.3 — o modal de quem saiu não reabre sozinho', () => {
+  /** O jogador sai (o "Sair" apaga o registro dele da sala). */
+  function sai(peerId: string) {
+    const room = useRoomStore.getState().room!;
+    const players = { ...room.players };
+    delete players[peerId];
+    act(() => useRoomStore.getState().setRoom({ ...room, players }));
+  }
+
+  // Quem sai pelo "Sair" volta com o MESMO peerId: o sessionStorage o guarda, e
+  // o `join` sem assento cria um novo com ele.
+  it('o Bio-Monitor fecha quando o jogador sai, e continua fechado quando ele volta', async () => {
+    entrarComo('peer_dono');
+    render(<MultiplayerRoom onOpenAuthModal={() => {}} />);
+    await userEvent.click(screen.getAllByTitle('Editar bio-monitor')[0]);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    sai('peer_vex');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    salaMuda(VEX);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('a inspeção de ficha, igual', async () => {
+    entrarComo('peer_dono');
+    render(<MultiplayerRoom onOpenAuthModal={() => {}} />);
+    const vexRow = screen.getByText('Vex').closest('div[draggable]') as HTMLElement;
+    await userEvent.click(within(vexRow).getByTitle('Inspecionar ficha'));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    sai('peer_vex');
+    salaMuda(VEX);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('Revisão da G.3 — remover avisa que o assento não volta pela mesma aba', () => {
+  // R.3: o servidor lembra o peerId removido e recusa o `join` dele
+  // (`removed_by_gm`). A pessoa só volta abrindo o convite em outra aba.
+  it('o confirm diz isso ao GM antes de remover', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    entrarComo('peer_dono');
+    render(<MultiplayerRoom onOpenAuthModal={() => {}} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Remover Vex da mesa' }));
+    expect(confirm.mock.calls[0][0]).toMatch(/aba nova/);
+  });
+});

@@ -71,7 +71,15 @@ enviado no corpo (anti-impersonificação).
   reconexão, preserva a ficha persistida (last-write-wins por `updatedAt`; o ferimento é sempre o do
   servidor — decisão 7a) e emite um token novo, sem duplicar o jogador. Se vier **409** `seat_taken`,
   a sessão daquele assento se perdeu: o cliente entra como jogador novo, com outro `peerId`, **uma vez
-  só**, e o GM remove o assento antigo.
+  só**, e o GM remove o assento antigo (o botão "Remover", desde a G.3).
+- **Nunca dois `join` em paralelo (G.06, 11/10/2026).** Cada `join` aceito revoga o token anterior; um
+  segundo `join` simultâneo do mesmo navegador chegaria com o token já revogado, cairia no `seat_taken` e
+  abriria um assento órfão. O `joinRoom` e o `createRoom` de `src/api/rooms.ts` devolvem a chamada que já
+  está em voo (o clique duplo e a reentrada do `RoomPage` viram uma). *O `reconnectSession` tem trava
+  própria e não compartilha a do `joinRoom`. Hoje eles não se cruzam no uso comum: a reentrada do
+  `RoomPage` roda com a mesa ainda no lobby (o deep link), e a reconexão só depois de um 401 da mesa
+  ativa. Cruzariam se a página da sala abrisse com a mesa já ativa e o token vencido ao mesmo tempo —
+  caminho da H.1c e da H.1e, que conferem refresh e duas abas.*
 
 ---
 

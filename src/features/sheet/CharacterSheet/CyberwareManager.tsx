@@ -18,7 +18,8 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [costEb, setCostEb] = useState(500);
   const [humanityLoss, setHumanityLoss] = useState('1d6');
-  // G.23 — o custo que o parser não lê (`1d6/2`, `0.5`): a perda, o jogador digita.
+  // G.23 — o custo que o parser não lê (`1d6/2`, `0.5`): a perda, o jogador digita
+  // — inteira, como a ficha a guarda (`actualHL`); a fração ele arredonda.
   const [typedLoss, setTypedLoss] = useState('');
   const [installed, setInstalled] = useState(true);
 
@@ -198,12 +199,13 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
             {!costReadable && (
               <div className="flex items-center space-x-2 sm:col-span-2">
                 <label htmlFor="cw-typed-loss" className="text-micro text-muted">
-                  Essa fórmula não rola aqui — a perda que você rolou:
+                  Essa fórmula não rola aqui — a perda que você rolou (inteira; arredonde a fração):
                 </label>
                 <input
                   id="cw-typed-loss"
                   type="number"
                   min={0}
+                  step={1}
                   value={typedLoss}
                   onChange={(e) => setTypedLoss(e.target.value)}
                   className="w-20 bg-raised border border-field text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"

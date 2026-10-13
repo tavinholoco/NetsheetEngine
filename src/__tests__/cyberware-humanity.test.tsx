@@ -122,4 +122,20 @@ describe('G.23 — instalar um implante na ficha', () => {
     await f.user.click(screen.getByRole('button', { name: 'Instalar' }));
     expect(f.implantes().map((c) => [c.humanityLoss, c.actualHL])).toEqual([['1d6/2', 2]]);
   });
+
+  // Revisão da G.3: `1d6/2` pode dar 2,5 (a S8 não arredonda), mas a ficha guarda
+  // a perda inteira. Com "2.5" o botão ficava desligado sem dizer por quê.
+  it('o campo diz que a perda é inteira, e "2.5" não instala', async () => {
+    const f = ficha();
+    await f.user.click(screen.getByRole('button', { name: /adicionar ciberimplante/i }));
+    await f.user.type(screen.getByPlaceholderText(/Kerenzikov/), 'Interface');
+    const campo = screen.getByLabelText('Perda HL:');
+    await f.user.clear(campo);
+    await f.user.type(campo, '1d6/2');
+    const digitada = screen.getByLabelText(/perda que você rolou/i);
+    expect(digitada.closest('div')?.textContent).toMatch(/inteira/);
+
+    await f.user.type(digitada, '2.5');
+    expect((screen.getByRole('button', { name: 'Instalar' }) as HTMLButtonElement).disabled).toBe(true);
+  });
 });
