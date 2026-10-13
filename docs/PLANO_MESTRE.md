@@ -849,11 +849,12 @@ varrer código que acabou de ser reestilizado. Segue o
       [registro](./SEGURANCA.md#fase-g--varredura-frontend), sem achado novo: nenhuma rota nem sessão nova;
       dois `join` seguidos viram um — menos sessões emitidas; +230 bytes por NPC no reenvio da sala. A G.3h
       ganhou um adendo, também sem achado.)*
-- [ ] **G.5** 🧠 Estado durável — passo X.5. *(11/10/2026 — caixas, ledger com os sete FAZER marcados, linha
+- [x] **G.5** 🧠 Estado durável — passo X.5. *(11/10/2026 — caixas, ledger com os sete FAZER marcados, linha
       de base (**796** testes, 57 arquivos), E2E 7/7, `audit:colors` e conflitos em 0, o PR #41 (G.3–G.5) e o
-      #42 (G.3h). O passo 6 do #41 foi conferido: `master` verde nos 4 jobs, `db-sync` em dia.
-      **Falta:** o merge do #42 e o `master` verde depois dele — aí marcar esta caixa e a data abaixo.)*
-- [ ] ✅ **Fase G concluída em:** ____/____/______
+      #42 (G.3h). **Passo 6 conferido nos dois:** depois do #41 (11/10) e do #42 (13/10), o `master` ficou
+      verde nos 4 jobs, com o `db-sync` em dia ("Remote database is up to date" — a G não teve migration).
+      No fechamento, os ADIAR da G com gatilho na H e na I foram levados à H.0 e à I.0, como a E fez.)*
+- [x] ✅ **Fase G concluída em:** 13/10/2026 *(código em 11/10)*
 
 ---
 
@@ -895,6 +896,27 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           o `SIGTERM` 60 s depois. O H.1j confere o que se perde — o ledger tem a previsão.
         - **Socket que não lê agora é derrubado** (E.03, 1 MiB): na rede estrangulada do H.1b, conferir
           que um jogador lento de verdade **não** cai por isso.
+      - *Levados pela G (13/10/2026), do [ledger](./varreduras/G-frontend.md) e da revisão G.3h — todos
+        ADIAR com gatilho que a H pode disparar:*
+        - **O console já tem um erro do React a cada edição da ficha** (G.01: `Cannot update a component
+          (App) while rendering…`). A H lê o console de três abas: se ele esconder um erro de verdade, o
+          gatilho dispara, e a versão de uma linha (o `syncSheetStore` num `useLayoutEffect`) entra.
+        - **No dev, o deep link volta para `/`** (G.02). Por isso os cenários de refresh e deep link (H.1c,
+          H.1d) vão no build de produção. Se a H precisar do HMR, o gatilho dispara — a versão de uma linha
+          está no ledger.
+        - **Trocar de ficha com a mesa aberta leva o ferimento para a ficha nova** (G.03) — o mesmo caminho
+          da H.1i. Se a H.1i mexer nele, os dois se resolvem juntos.
+        - **O menu consulta o perfil a cada troca de aba, sem `catch`** (G.11): uma rejeição sem tratamento
+          no console numa sessão da H dispara o gatilho.
+        - **"Gerar NPC", "Gerar Jogador" e "Rolar iniciativa" não têm a trava do clique duplo** (G.3h). A
+          H.1a monta a mesa de base com eles: se dobrarem ali, o gatilho dispara, e a versão é o `run` do
+          `useInFlight`.
+        - **O `reconnectSession` tem trava própria, separada da do `joinRoom`** (G.3h). Onde os dois se
+          cruzariam (a página da sala aberta com a mesa já ativa e o token vencido) está no
+          [protocolo](./PROTOCOLO_MULTIPLAYER.md) — a H.1c e a H.1e conferem.
+        - **As linhas citadas nas pistas acima mudaram**: a G levou o `MultiplayerRoom` de 1.049 para 1.123
+          linhas (o `wsEverOpen` do E.14 saiu da `:171` para a `:227`). Medir de novo no dia, como manda o
+          passo X.0.
 - [ ] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`.
   - [ ] **H.1a Mesa de base:** GM + 2 jogadores em 3 abas, do zero ao combate. O que os outros cenários
         comparam.
@@ -948,6 +970,11 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
       - **O `VITE_API_URL` só importa quando o site sair do Render** (regra 4 do
         [custo zero](#-contrato-de-custo-zero)) — hoje o site e a API são o mesmo origin, e a regra 4
         **não tem fase dona**. Ver a I.1e.
+      - *Levados pela G (13/10/2026), do [ledger](./varreduras/G-frontend.md):*
+        - **A rede de amigos não mostra erro, e o chat dela trava** quando a nuvem recusa a mensagem (G.10,
+          ADIAR) — o gatilho é a própria I.1b olhar os caminhos do Supabase no cliente.
+        - **A tela diz "sincronizado" quando não está** (G.08, ADIAR) — o gatilho é a primeira ficha na nuvem,
+          mas o caminho (o aviso de sucesso quando o save falha) é da I.1b.
 - [ ] **I.1** Varredura por área → ledger em `docs/varreduras/I-integracao.md`.
   - [ ] **I.1a Inventário de rotas.** Uma linha por endpoint: quem chama no cliente, tipo de request e
         response compartilhado ou escrito duas vezes à mão, códigos de erro tratados. *Se eu mudar este
@@ -1224,7 +1251,7 @@ público mudar.
 | R | 🔨 | Pendências da revisão pós-D (segurança da mesa, Node, backup) | ✅ | 10/10/2026 |
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
-| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos; falta o merge dela e o `master` verde | 🔄 | — |
+| G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
 | H | 🔍 | Varredura: multiplayer | ⬜ | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
@@ -1236,7 +1263,7 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a G.3 e a revisão G.3h (11/10/2026) |
+| Verificação | Ao fechar a G (11–13/10/2026) — **vale até a H.3**: a H.0–H.2 não mudam código |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
