@@ -923,8 +923,12 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           linhas (o `wsEverOpen` do E.14 saiu da `:171` para a `:227`). Medir de novo no dia, como manda o
           passo X.0.
 - [ ] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`.
-  - [ ] **H.1a Mesa de base:** GM + 2 jogadores em 3 abas, do zero ao combate. O que os outros cenários
+  - [x] **H.1a Mesa de base:** GM + 2 jogadores em 3 abas, do zero ao combate. O que os outros cenários
         comparam.
+        *(14/10/2026 — tudo bateu, sem item: três contextos isolados do Playwright contra o build de
+        produção, 0 erro de console, o ferimento igual na mesa e na ficha local. A régua: um chat custa
+        6,7 KB por aba, o ataque mais o dano ~72 KB, 45 s parada 0,5 KB. Os gatilhos da G.3h e do G.01 não
+        dispararam.)*
   - [ ] **H.1b Rede estrangulada:** chat, rolagem, token movido e dano chegam, e na ordem? Broadcast
         completo e update Yjs incremental podem chegar fora de ordem.
   - [ ] **H.1c Refresh no meio do combate** — do jogador e do GM.

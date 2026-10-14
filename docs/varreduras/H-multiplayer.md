@@ -48,3 +48,48 @@ em `8203479`** (14/10/2026), o código varrido.
 | H.1i — a reconexão resolve a ficha por *last-write-wins* com o `updatedAt` do cliente | ✅ `pickSheet` (`roomManager.ts:555–561`): o `updatedAt` vem da ficha que o navegador manda; empate fica com o cliente (`>=`) |
 | H.1k — a habilidade especial não é rolável na mesa | ✅ igual: o tipo `skill` procura só em `sheet.skills` (`roomManager.ts:1177–1182`) |
 | ***Pista nova, achada num comentário do código:*** os fechamentos 4400–4499 são permanentes, "mas o cliente ainda não olha o código: reconecta e cai no re-join (T3.3). Pista da Fase H." (`server.ts:889–896`) | ✅ o comentário bate com o cliente: o `onclose` (`MultiplayerRoom.tsx:267`) não lê `ev.code`. O **4409** (socket substituído — R.4, no máximo 3 por jogador) e o **4400** (saída e expulsão) caem no mesmo "reconecta em 3 s". O plano não tinha essa pista: vai ao H.1e (4409) e ao H.1f (4400) |
+
+---
+
+## H.1a — Mesa de base: GM + 2 jogadores, do zero ao combate
+
+*Pergunta: o que acontece quando nada quebra?* É a régua dos outros cenários.
+
+**Como:** o build de produção num processo próprio (porta 3201, sem persistência — o log JSON do
+servidor capturado), e **três contextos isolados do Playwright** — GM, Ana e Beto, cada um com o próprio
+`localStorage` e `sessionStorage`, como três aparelhos. Abas do mesmo navegador dividiriam a ficha local
+(`cyberpunk_active_sheet_v1`) e falseariam o cenário. O GM entra pelo deep link com a sala semeada por
+REST; os jogadores, pelo lobby com o código. Roteiro fora do repositório (`h1a.mjs`, no scratchpad da
+sessão).
+
+**O que se esperava e o que aconteceu** — tudo bateu:
+
+| Passo | Resultado |
+|---|---|
+| Entrar | GM em ~0,4 s, cada jogador em ~0,9 s (com o `join` e o WebSocket). Os três veem "3 jogadores" |
+| Chat da Ana | chega ao GM e ao Beto em **4–6 ms** |
+| Death save do Beto | o resultado do servidor aparece nas outras duas abas |
+| "Gerar NPC" (2×) e "Rolar iniciativa" pela tela do GM | 2 NPCs e 4 entradas na iniciativa, vistas pelos três; "Próximo Turno" passa a vez |
+| O NPC ataca a Ana (o servidor rola) e o GM aplica 25 no torso do Beto | o chat narra o pipeline inteiro ("25 − SP 14 = 11 → BTM −2 = 9 → Crítico (9/40)") e os stun saves; o ferimento na mesa e **na ficha local** de cada jogador é o mesmo (decisão 7a) |
+| Console das três abas | **0** erros e **0** avisos. *O G.01 não aparece no build de produção* (é aviso do React só no dev) — não esconde erro nenhum aqui |
+| Log do servidor | só `server_started` e o `persistence_disabled` esperado sem banco; nenhum `warn` de transporte |
+
+**Os números da régua** (por aba, contados nos quadros do WebSocket):
+
+| Ação | O que cada aba recebe |
+|---|---|
+| Uma mensagem de chat | 1 quadro com a sala inteira — **6,7 KB** com 3 jogadores de ficha em branco e o chat curto |
+| O ataque do NPC + o dano do GM | 6 quadros, **71,5 KB** — 4 reenvios da sala (~16 KB cada, já com 2 NPCs) e 2 updates do Yjs (o token muda de cor com o ferimento) |
+| 45 s parada | 11 quadros, **0,5 KB** — o awareness dos outros dois e o do próprio servidor, que o `y-protocols` renova a cada ~15 s; cada aba manda 6 (o heartbeat de 20 s e o próprio awareness) |
+| A sala no fim | **17,2 KB** |
+
+**Os gatilhos levados pela G, conferidos aqui:**
+- *"Gerar NPC" e "Rolar iniciativa" sem a trava* (G.3h): **não dobraram** — com o servidor local, a resposta
+  volta em milissegundos e o clique comum não repete. O gatilho segue de pé para a mesa no ar (o Render
+  acordando é o caso do G.06).
+- *O erro do React no console* (G.01): não existe no build de produção. O gatilho não dispara pela H.
+- *O menu consultando o perfil* (G.11): sem login, não consulta. Não dispara.
+
+**Itens:** nenhum. Os sinais estranhos da primeira passada não eram defeito — 12 de dano não furam a ficha
+em branco (SP 14 em todo local) e o chat diz isso; os "6 tokens para 3 assentos" são 2 coberturas, o NPC
+padrão do grid e os 3 jogadores.
