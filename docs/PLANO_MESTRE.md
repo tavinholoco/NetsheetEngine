@@ -871,7 +871,12 @@ do log. Onde: o **build de produção local** (`npm run build` e `npm start` com
 Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwright. *(ARQ-08, parte
 3.)* Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
-- [ ] **H.0** 🔍 **Premissas** — medidas em 29/09/2026:
+- [x] **H.0** 🔍 **Premissas** — medidas em 29/09/2026:
+      *(14/10/2026 — as pistas conferidas contra o `master` em `8203479`: **todas bateram**, e as linhas
+      das pistas da E e da G foram medidas de novo. Duas coisas a mais: as revogações que não são expulsão
+      **não fecham o socket** de quem perdeu a sessão, e um comentário do `server.ts` guardava uma pista
+      que o plano não tinha — o cliente não lê o código de fechamento 4400/4409. O Registro de sessões
+      segue vazio: a H corre sem sessão real. Tabela no topo do [ledger](./varreduras/H-multiplayer.md).)*
       - ~~**O stream SSE só confere o token na abertura** — a expulsão não derruba um stream aberto.~~
         *Resolvida para a expulsão na R.3:* a rota fecha o stream do expulso (`ssePeer`). Resta a
         pergunta para outras revogações — no H.1e.
