@@ -453,9 +453,12 @@ sessão, não um log nosso — anotado para a J conferir os logs do Render.
 `wsEverOpen` nasce `false`; se essa tentativa falha — a rede ainda fora, o servidor reiniciando —, o `:272`
 abre o SSE, e do SSE não há volta. No SSE, o jogador **perde o arrasto do próprio token** (o REST do grid é
 do GM) e o cursor do GM; e o servidor registra um `sse_fallback` que é queda de rede, não proxy — o dado com
-que a L.6 vai decidir se o SSE fica.
+que a L.6 vai decidir se o SSE fica. **E o grid congela na tela dele** (medido no H.1h): a tela desenha
+`yjsGrid || room.tacticalGrid` (`:659`), e o `yjsGrid` da última conexão nunca é limpo — o GM move o token e
+só quem está no SSE não vê. Quem *nunca* teve WebSocket (o proxy corporativo) não sofre disso: o `yjsGrid`
+dele é nulo e a tela segue o JSON.
 
-**Onde:** `features/multiplayer/MultiplayerRoom.tsx:226–283`.
+**Onde:** `features/multiplayer/MultiplayerRoom.tsx:226–283` e `:659`.
 
 **Quem sente hoje:** todo jogador cuja rede pisca por mais de 3 s — Wi-Fi, celular — ou que estava na mesa
 quando o servidor reiniciou devagar. Ninguém ainda numa sessão real, mas a primeira sessão em celular passa
@@ -466,7 +469,8 @@ quem entrou pelo lobby o duplica) e a L.6 decide com um número inflado.
 
 **Versão 10× menor:** guardar o "já abriu uma vez" fora da rodada do efeito (um `useRef`): depois de uma
 conexão que funcionou, a queda tenta o WebSocket de novo, com espera crescente, em vez de abrir o SSE; o SSE
-fica para quem **nunca** conectou — o proxy corporativo, o caso que o `sse_fallback` quer contar. *A maior*
+fica para quem **nunca** conectou — o proxy corporativo, o caso que o `sse_fallback` quer contar. Junto, uma
+linha: zerar o `yjsGrid` quando o socket cai, para a tela voltar ao JSON enquanto não houver Yjs. *A maior*
 (o SSE tentar voltar ao WebSocket de tempos em tempos) só se a pequena não cobrir.
 
 **Reversível:** sim.
@@ -474,4 +478,37 @@ fica para quem **nunca** conectou — o proxy corporativo, o caso que o `sse_fal
 **VEREDITO:** FAZER
 - Teste que reproduz: `src/__tests__/room-transport.test.tsx` — com um WebSocket falso controlável (uma
   variação do `stubRoomTransport`): o socket abre, cai, a tentativa seguinte falha, e o cliente **tenta o
-  WebSocket de novo** em vez de abrir o `EventSource`; e quem nunca conectou continua caindo no SSE.
+  WebSocket de novo** em vez de abrir o `EventSource`; quem nunca conectou continua caindo no SSE; e, sem
+  Yjs, o grid da tela é o da sala (um token movido pelo JSON aparece).
+
+---
+
+## H.1h — O último socket fecha e alguém reconecta no mesmo instante
+
+*Pergunta do plano: o `destroyRoomYjs` (`server.ts:1302`) descarta o doc — a reconexão perde movimento do
+grid?* É também o exemplo que a [ADR 0002](../adr/0002-yjs-websockets.md) dá para o seu gatilho.
+
+**Como:** GM e Ana, cada um atrás de um proxy que derruba o socket na hora (`killWs`), com a aba do grid
+aberta; a Ana arrasta o próprio token pela tela (o arrasto de verdade, que passa pelo Yjs). A posição que
+cada tela desenha vem do `title` do token ("… - Setor C6"). Roteiro `h1h.mjs`.
+
+| Corrida | Resultado |
+|---|---|
+| A Ana move; **os dois sockets caem juntos** (o último fecha → o doc é destruído) e voltam em 3 s | todos em **C6**, a mesma casa do servidor; **5 tokens** em cada tela, nenhum duplicado |
+| A Ana move e tudo cai **com o update ainda no caminho** | o movimento que não chegou some da tela dela na volta: todos na casa do servidor. Coerente — o que a mesa não recebeu não aconteceu |
+| O GM cai; a Ana move; o GM volta | todos em **G8** |
+| *De carona:* a Ana no SSE depois de ter tido WebSocket; o GM move o token dela | o servidor e o GM em A1; **a tela da Ana continua em G8** — o grid congela. Anotado no **H.09**, que é o mesmo caminho |
+
+**Por que não perde:** todo update do Yjs aceito é espelhado no JSON na mesma hora (`mirrorDocToJson`,
+`server.ts:1050–1113`), e o JSON é a verdade durável (T5.1); o doc que nasce na volta é semeado dele
+(`getRoomYjs`, `:953–967`). Do lado do cliente, cada conexão cria um `YjsGridConnection` novo, com um doc
+vazio (`MultiplayerRoom.tsx:236–250`) — não há duas histórias do mesmo grid para o CRDT fundir, que seria
+onde um token duplicaria.
+
+**O gatilho da ADR 0002** ("um bug de convergência do grid"): **na minha leitura, não disparou.** O CRDT
+convergiu nas três corridas, inclusive na que a ADR cita. O grid congelado do SSE é um bug de convergência
+do grid na tela, mas nasce de o cliente guardar uma cópia velha do Yjs depois que o Yjs saiu — uma linha no
+H.09 o resolve, e trocar o CRDT pelo protocolo de intenção não seria a versão menor. *Vai à calibragem
+(H.2) como leitura a confirmar: reabrir uma ADR é decisão do dono.*
+
+**Itens:** nenhum novo — o grid congelado foi para o H.09.

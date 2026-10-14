@@ -961,8 +961,12 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         REST do grid é do GM) e só fica sabendo pelo "Acesso Negado". O `sse_fallback` aparece, com o *user
         agent*. **H.09 FAZER — o E.14 reproduzido:** uma queda de ~6 s deixa a jogadora no SSE para sempre, e o
         log conta a queda como proxy.)*
-  - [ ] **H.1h Último socket fecha e alguém reconecta no mesmo instante:** o `destroyRoomYjs`
+  - [x] **H.1h Último socket fecha e alguém reconecta no mesmo instante:** o `destroyRoomYjs`
         (`server.ts:1302`, depois da E) descarta o doc — a reconexão perde movimento do grid?
+        *(14/10/2026 — não perde: o CRDT convergiu nas três corridas (os dois sockets caindo juntos, o
+        movimento em voo, o GM caindo enquanto a Ana move), sem token duplicado — o JSON é espelhado a cada
+        update. De carona, **o grid congela na tela de quem caiu para o SSE**: foi para o H.09. O gatilho da
+        ADR 0002, na leitura desta varredura, não disparou — vai à H.2 para o dono confirmar.)*
   - [ ] **H.1i Ficha editada em duas abas:** a reconexão resolve por **last-write-wins com o
         `updatedAt` do cliente** — o relógio do navegador decide quem ganha.
   - [ ] **H.1j** *(no ar)* **O Render troca a instância com a mesa aberta:** um merge no `master` no
