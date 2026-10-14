@@ -414,3 +414,64 @@ toma o assento e a antiga troca de `peerId` (H.1e), então ninguém chega a 3 so
 - **Razão:** o re-join (401 → 403 `removed_by_gm`) já leva o expulso ao lobby com a mensagem, e o 4409 não
   ocorre; ler o código não mudaria o que a pessoa vê. *Se o H.05 virar FAZER* (a aba antiga parar em vez de
   trocar de `peerId`), o 4409 volta a ser possível e a pergunta reabre com ele.
+
+---
+
+## H.1g — A queda para o SSE
+
+*Pergunta do plano: bloqueado o WebSocket, o que deixa de funcionar, o jogador fica sabendo, e o
+`sse_fallback` aparece no log?* E a premissa do E.14: o cliente cai para o SSE numa queda de rede comum.
+
+**Como:** dois proxies (`slowproxy.mjs` com `blockWs`, que derruba o pedido de *upgrade* como um proxy
+corporativo): **(A)** o Beto atrás dele desde a entrada; **(B)** a Ana no WebSocket, que perde a conexão
+numa queda de ~6 s (o socket derrubado e o *upgrade* bloqueado até a rede voltar). Roteiro `h1g.mjs`.
+
+| Pergunta | (A) WebSocket bloqueado desde o início |
+|---|---|
+| Entra? | sim, em ~1 s, pelo SSE |
+| Chat, rolagem, presença | funcionam — o chat chega a ele em 8 ms; o dele (POST) ao GM em 87 ms; o heartbeat pelo POST o mantém online |
+| **O que deixa de funcionar** | **mover o próprio token**: sem o Yjs, o cliente manda o grid pelo REST (`MultiplayerRoom.tsx:426–432`), e essa rota é **só do GM** (`roomManager.ts:757–759`) — o arrasto volta "Acesso Negado! Apenas o Mestre da Mesa pode alterar o mapa tático." E o cursor do GM, que só existe no awareness |
+| O jogador fica sabendo? | só pelo "Acesso Negado" quando tenta mover; nada diz que ele está no modo de reserva |
+| `sse_fallback` no log? | sim, com o *user agent* |
+
+| (B) Queda de ~6 s com o WebSocket funcionando | Resultado |
+|---|---|
+| Depois da queda | a tentativa de 3 s cai no bloqueio, e a Ana vai para o SSE — o E.14 **reproduzido** |
+| 60 s depois, com a rede boa | **continua no SSE**: nenhuma tentativa de WebSocket a mais. Recebe o chat, mas **não move o próprio token** (`403 gm_only`) até recarregar a página |
+| O log | um `sse_fallback` com o `peerId` dela — **uma queda de rede contada como proxy corporativo** |
+
+*De carona, para a J.1e* ("o token na URL: onde a URL do *upgrade* aparece em log?"): no **console do
+próprio navegador**, a falha do WebSocket imprime a URL inteira, com o `?token=`. É o navegador do dono da
+sessão, não um log nosso — anotado para a J conferir os logs do Render.
+
+### H.09 — Uma queda de rede breve deixa o jogador no SSE para sempre, sem mover o próprio token
+
+**Área:** H.1g *(a premissa do E.14, reproduzida)*
+
+**Sintoma observado:** reproduzido: o `wsEverOpen` é uma variável de cada rodada do efeito
+(`MultiplayerRoom.tsx:227`). A queda depois de conectar agenda uma rodada nova em 3 s (`:275–281`), e nela o
+`wsEverOpen` nasce `false`; se essa tentativa falha — a rede ainda fora, o servidor reiniciando —, o `:272`
+abre o SSE, e do SSE não há volta. No SSE, o jogador **perde o arrasto do próprio token** (o REST do grid é
+do GM) e o cursor do GM; e o servidor registra um `sse_fallback` que é queda de rede, não proxy — o dado com
+que a L.6 vai decidir se o SSE fica.
+
+**Onde:** `features/multiplayer/MultiplayerRoom.tsx:226–283`.
+
+**Quem sente hoje:** todo jogador cuja rede pisca por mais de 3 s — Wi-Fi, celular — ou que estava na mesa
+quando o servidor reiniciou devagar. Ninguém ainda numa sessão real, mas a primeira sessão em celular passa
+por isso.
+
+**Se eu não fizer:** dá retrabalho (o jogador tem de recarregar para mover o token — e, sem o H.03, o F5 de
+quem entrou pelo lobby o duplica) e a L.6 decide com um número inflado.
+
+**Versão 10× menor:** guardar o "já abriu uma vez" fora da rodada do efeito (um `useRef`): depois de uma
+conexão que funcionou, a queda tenta o WebSocket de novo, com espera crescente, em vez de abrir o SSE; o SSE
+fica para quem **nunca** conectou — o proxy corporativo, o caso que o `sse_fallback` quer contar. *A maior*
+(o SSE tentar voltar ao WebSocket de tempos em tempos) só se a pequena não cobrir.
+
+**Reversível:** sim.
+
+**VEREDITO:** FAZER
+- Teste que reproduz: `src/__tests__/room-transport.test.tsx` — com um WebSocket falso controlável (uma
+  variação do `stubRoomTransport`): o socket abre, cai, a tentativa seguinte falha, e o cliente **tenta o
+  WebSocket de novo** em vez de abrir o `EventSource`; e quem nunca conectou continua caindo no SSE.

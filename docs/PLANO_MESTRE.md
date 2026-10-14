@@ -955,8 +955,12 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         e permanente: **H.06 ADIAR (o mais perto da linha)** — o GM que fecha a aba e volta pelo convite é
         jogador novo, e o cargo fica num assento que ninguém reclama; H.07 ADIAR — o cargo pode ir para uma
         ficha gerada. H.08 DESCARTAR: o código 4400/4409 não lido não muda nada na tela.)*
-  - [ ] **H.1g Queda para SSE** (bloquear o WebSocket): o que deixa de funcionar, o jogador fica
+  - [x] **H.1g Queda para SSE** (bloquear o WebSocket): o que deixa de funcionar, o jogador fica
         sabendo, e o `sse_fallback` aparece no log?
+        *(14/10/2026 — no SSE funcionam chat, rolagem e presença; **o jogador não move o próprio token** (o
+        REST do grid é do GM) e só fica sabendo pelo "Acesso Negado". O `sse_fallback` aparece, com o *user
+        agent*. **H.09 FAZER — o E.14 reproduzido:** uma queda de ~6 s deixa a jogadora no SSE para sempre, e o
+        log conta a queda como proxy.)*
   - [ ] **H.1h Último socket fecha e alguém reconecta no mesmo instante:** o `destroyRoomYjs`
         (`server.ts:1302`, depois da E) descarta o doc — a reconexão perde movimento do grid?
   - [ ] **H.1i Ficha editada em duas abas:** a reconexão resolve por **last-write-wins com o
