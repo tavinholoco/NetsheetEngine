@@ -935,7 +935,12 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         converge. O jogador lento **não cai** pelo teto de 1 MiB do E.03 — só num túnel de 90 s, e a volta é
         limpa (mesmo assento, alcança em 4 s). H.01 ADIAR para a L.1: numa rajada ele fica 7–9 s atrás,
         porque cada ação reenvia a sala inteira. H.02 ADIAR: cada queda deixa a conexão Yjs velha viva.)*
-  - [ ] **H.1c Refresh no meio do combate** — do jogador e do GM.
+  - [x] **H.1c Refresh no meio do combate** — do jogador e do GM.
+        *(14/10/2026 — quem entrou pelo link do convite ou pelo deep link volta ao mesmo assento, com o
+        ferimento e a vez. **H.03 FAZER — reproduzido:** quem entrou pelo lobby fica em `/multiplayer`, e o F5
+        o devolve ao lobby; entrando de novo, ganha outro `peerId` — o jogador duplica, e **o GM que criou a
+        mesa pela tela vira jogador comum: a mesa fica sem Mestre**. H.04 ADIAR: dois F5 com o `join` em voo
+        duplicam o assento (1 em 3), gatilho na H.1j.)*
   - [ ] **H.1d Servidor reiniciado com a mesa aberta:** restore, sessões persistidas (B.4) e o fluxo
         401 → `join` **com o token** que a R.1 impôs.
   - [ ] **H.1e O mesmo jogador em duas abas:** o `join` com token revoga as sessões antigas

@@ -173,3 +173,94 @@ fechado.
 **VEREDITO:** ADIAR
 - **Gatilho:** a memória da aba crescer numa sessão longa, ou alguém mexer no `onclose` — a pista dos
   códigos 4400/4409 (H.0, H.1e, H.1f) mexe: a linha vai junto.
+
+---
+
+## H.1c — Refresh no meio do combate, do jogador e do GM
+
+*Pergunta: quem dá F5 com a luta rolando volta ao mesmo lugar — assento, ferimento, vez na iniciativa?*
+
+**Como:** a mesa da H.1a com um NPC, a iniciativa rolada e 25 de dano no torso da Ana e do Beto. A Ana entra
+pelo **link do convite** (`/room/CÓDIGO`, o caminho da R.11); o Beto, pelo **lobby, digitando o código**; o
+GM, pelo deep link. Cada um dá F5 (`page.reload()`). Roteiros `h1c.mjs`, `h1c-gm.mjs` e `h1c-f5duplo.mjs`.
+
+| Quem dá F5 | Resultado |
+|---|---|
+| Ana (entrou pelo link) | ✅ volta sozinha à mesa, **mesmo `peerId`**, ferimento 9 na mesa e na ficha local, a mesma entrada na iniciativa; o chat não ganha mensagem nenhuma |
+| GM (entrou pelo deep link) | ✅ volta como GM ("Poderes do GM" na tela) e passa o turno |
+| **Beto (entrou pelo código)** | ❌ cai no **lobby, com o campo do código vazio**. Digitando de novo, entra com **outro `peerId`**: a mesa fica com **dois "Beto"**, e a iniciativa aponta para o velho — ver H.03 |
+| **GM que criou a mesa pela tela** | ❌ **perde o GM** — ver H.03 |
+| Ana, dois F5 seguidos com o `join` do primeiro em voo (400 ms de atraso) | ❌ em 1 de 3 rodadas, **assento duplicado** — ver H.04 |
+
+**O gatilho da G.3h** (o `reconnectSession` com trava própria): não cruzou com o `joinRoom` aqui. Depois do
+F5 a store começa vazia, e quem reentra é o `RoomPage`; a reconexão só roda num 401 com a mesa ativa.
+
+### H.03 — Depois do F5, quem entrou pelo lobby volta como outra pessoa — e o GM perde a mesa
+
+**Área:** H.1c
+
+**Sintoma observado:** reproduzido. Quem entra pelo lobby — o jogador que digita o código, e **todo GM que
+cria a mesa pela tela** — fica com a URL `/multiplayer`: nem o `createRoom` nem o `joinRoom` da tela mudam a
+URL (`MultiplayerRoom.tsx:351–383`), e só o `RoomPage` (`/room/:código`) reidrata a sessão do
+`sessionStorage` (`pages/RoomPage.tsx:37`). No F5, a página cai no lobby com o campo vazio. Entrando de novo
+pelo código, o `getPeerId` olha só a store, que o F5 esvaziou, e **sorteia um `peerId` novo por cima do
+antigo no `sessionStorage`** (`api/rooms.ts:35–44`); o `join` vai sem token e cria outro assento.
+- **Jogador:** dois assentos com o mesmo nome; o velho fica com a vez na iniciativa e some para offline em
+  60 s — o GM tem de remover (o botão da G.3c).
+- **GM:** o GM novo é um **jogador comum** — "Gerar NPC" dá `403 gm_only`, e o `gmPeerId` da sala fica no
+  assento velho, sem token que o reclame. Nem o link do convite devolve o GM depois disso: o `peerId`
+  antigo já foi sobrescrito. **A mesa fica sem Mestre** e o único remédio é criar outra (perdem-se NPCs,
+  iniciativa e chat). *O clique em "Criar" não foi feito — exige login, e o Supabase local estava fora do
+  ar —; o estado que ele deixa (o `persistSession` grava o `peerId` e o token no `sessionStorage`, a URL
+  fica `/multiplayer`) foi montado pelo roteiro a partir do código, e o F5 dali em diante é o real.*
+
+**Onde:** `features/multiplayer/MultiplayerRoom.tsx:351–383` (a mesa fica ativa sem a URL da sala);
+`pages/RoomPage.tsx:37`; `api/rooms.ts:35–44`.
+
+**Quem sente hoje:** todo GM que cria mesa e recarrega a página — e o celular recarrega sozinho a aba que
+ficou em segundo plano. Aparece na primeira sessão real.
+
+**Se eu não fizer:** perde dado — a mesa inteira fica sem GM, no meio do jogo.
+
+**Versão 10× menor:** quando a mesa fica ativa pelo lobby (criar ou entrar), trocar a URL por
+`/room/CÓDIGO` (`navigate(…, { replace: true })`). O F5 cai no `RoomPage`, que já volta ao mesmo assento
+com o token — o caminho que a Ana e o GM do deep link provaram acima. *A maior* (o `getPeerId` ler o
+`sessionStorage`, e o lobby lembrar o código) só se a pequena não cobrir.
+
+**Reversível:** sim.
+
+**VEREDITO:** FAZER
+- Teste que reproduz: `src/__tests__/room-refresh.test.tsx` — entrar e criar pelo lobby deixam a URL em
+  `/room/CÓDIGO`; e o "F5" (stores zeradas, o app montado de novo na URL atual com o `sessionStorage`)
+  manda o `join` com o **mesmo `peerId` e o token** (com o `stubRoomTransport`).
+
+### H.04 — Dois F5 seguidos, com o `join` do primeiro em voo, duplicam o assento
+
+**Área:** H.1c
+
+**Sintoma observado:** reproduzido em 1 de 3 rodadas, pelo caminho que funciona (o link do convite): com
+400 ms de atraso, o segundo F5 logo depois de o primeiro carregamento mandar o `join`. O primeiro `join`
+chega ao servidor (o proxy entrega o que já saiu do navegador, como uma rede de verdade), **revoga o token**
+e emite outro, que ninguém recebe; o segundo carregamento chega com o token revogado, cai no `seat_taken`
+e o `postJoin` entra com `peerId` novo (`api/rooms.ts:101`). É o assento órfão do G.06, agora entre dois
+carregamentos da página — a trava do `joinInFlight` vive em memória e morre no F5. Se for o GM, ele vira
+jogador, como no H.03.
+
+**Onde:** `api/rooms.ts:89–104` (`seat_taken` → `rotatePeerId`); `server/roomManager.ts:524–533` e `:668`
+(o `join` aceito revoga o token anterior).
+
+**Quem sente hoje:** ninguém ainda. A janela é o tempo de ida e volta do `join` — dezenas a centenas de ms.
+*Exceto se* o Render entregar o `join` de quem já recarregou quando a instância acorda: aí a janela vira o
+minuto do despertar, e o F5 de impaciência é o gesto natural. Isso só se vê no ar (H.1j).
+
+**Se eu não fizer:** dá retrabalho (o GM remove o assento duplicado); perde o GM no pior caso.
+
+**Versão 10× menor:** no servidor, o `join` aceitar como prova, por alguns segundos, o token que **outro
+`join` do mesmo assento** acabou de substituir (não o que a saída ou a expulsão revogaram). Mexe na prova
+de posse da R.1 — passa pelo portão.
+
+**Reversível:** sim, mas é autorização.
+
+**VEREDITO:** ADIAR
+- **Gatilho:** um assento duplicado ou um GM perdido depois de F5 numa sessão real, ou a H.1j mostrar que o
+  Render entrega o `join` de quem já recarregou durante o despertar.
