@@ -621,3 +621,48 @@ adiado de "reconexão e last-write-wins" ([`ARQUITETURA.md`](../ARQUITETURA.md#d
 bug de convergência de **ficha**) segue ADIAR: não houve bug.
 
 **Itens:** nenhum.
+
+---
+
+## H.1k — A habilidade especial na mesa
+
+*Pergunta do plano: não é rolável — o tipo `skill` procura em `sheet.skills`, e ela mora em
+`specialAbilityName` (visto na C.8). Na ficha funciona.*
+
+**Como:** a Ana (Solo, Combat Sense) na mesa; uma perícia de verdade posta na ficha dela pela sincronia, e
+os pedidos de rolagem direto à API com a sessão dela — porque a tela não tem por onde. Roteiro `h1k.mjs`.
+
+| Pergunta | Resultado |
+|---|---|
+| A barra de rolagem da mesa | **só ataque, dano, stun save e death save** (`MultiplayerRoom.tsx:408–411`). Nenhum botão de perícia: o tipo `skill` do servidor (`roomManager.ts:1177–1182`) e do `TableRollKind` (`types/multiplayer.ts:65`) **não tem chamador no cliente** — o padrão "construído de ponta a ponta e nunca ligado" do `CLAUDE.md` |
+| Uma perícia pela API | `200`, "Rolagem: Awareness / Notice" — o caminho funciona |
+| A habilidade especial pela API | `400 invalid_input`, "Perícia não encontrada na sua ficha." — a pista do plano, confirmada |
+| *De carona:* a ficha **gerada** | guarda a habilidade especial como uma perícia (`isSpecialAbility: true`, `utils/npcGenerator.ts:137–144`) com o atributo escolhido **pelo ternário que a C.8 tirou da ficha** — Solo → REF, Netrunner → INT, o resto → EMP: o RUL-07 vivo em outro lugar. Sem leitor hoje: a mesa não rola perícia |
+
+### H.12 — A mesa não rola perícia — nem a habilidade especial
+
+**Área:** H.1k
+
+**Sintoma observado:** nenhum na mesa — ninguém jogou ainda. Medido: não há botão de perícia na mesa, e o
+tipo `skill` só existe no servidor. Pela API, a habilidade especial não rola, e a da ficha gerada rolaria
+com o atributo errado em 7 dos 10 papéis.
+
+**Onde:** `features/multiplayer/MultiplayerRoom.tsx:408–411` (a barra); `server/roomManager.ts:1177–1182`;
+`utils/npcGenerator.ts:137–144`.
+
+**Quem sente hoje:** ninguém. Na sessão, quem quiser rolar perícia rola na aba de dados da ficha — que não
+vai para o chat da mesa.
+
+**Se eu não fizer:** nada até alguém pedir.
+
+**Versão 10× menor, quando pedirem:** uma lista das perícias da ficha (mais a habilidade especial) na barra
+da mesa, mandando `{ type: "roll", kind: "skill" }`; e, no servidor, a habilidade especial pelo
+`specialAbilityRoll` de `src/rules/roles.ts:51` — a regra da C.8 —, nunca pelo atributo que o gerador
+gravou.
+
+**Reversível:** sim.
+
+**VEREDITO:** ADIAR — o plano já dizia "sem sintoma de mesa até alguém pedir".
+- **Gatilho:** alguém da mesa pedir para rolar perícia ou a habilidade especial na mesa numa sessão real.
+  Quando disparar, o atributo da ficha gerada vai junto (ou o gerador passa a gravar a habilidade como a
+  ficha grava).

@@ -980,9 +980,12 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
   - [ ] **H.1j** *(no ar)* **O Render troca a instância com a mesa aberta:** um merge no `master` no
         meio da sessão publica sozinho (30 s entre `SIGTERM` e `SIGKILL`); e a volta depois de hibernar
         leva ~1 min ([free](https://render.com/docs/free)).
-  - [ ] **H.1k Habilidade especial na mesa:** não é rolável — o tipo `skill` procura em `sheet.skills`,
+  - [x] **H.1k Habilidade especial na mesa:** não é rolável — o tipo `skill` procura em `sheet.skills`,
         e ela mora em `specialAbilityName` (visto na C.8). Na ficha funciona. Sem sintoma de mesa até
         alguém pedir.
+        *(14/10/2026 — confirmado pela API, e é maior: a mesa **não tem botão de perícia nenhum**; o tipo
+        `skill` só existe no servidor. De carona, a ficha gerada guarda a habilidade especial com o
+        atributo do ternário que a C.8 tirou da ficha. H.12 ADIAR, gatilho: alguém pedir.)*
 - [ ] **H.2** Calibragem e PR do ledger — passo X.2.
 - [ ] **H.3** Executar só os FAZER — passo X.3.
 - [ ] **H.4** 🔒 Portão, se a H.3 mudou código — passo X.4.
