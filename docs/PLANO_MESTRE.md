@@ -949,8 +949,12 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         (401 → `seat_taken`) **vira outro jogador em silêncio** — dois assentos com o mesmo nome. H.05 ADIAR,
         com o H.04: os dois pedem ao servidor distinguir "token substituído por outro `join`". O 4409 da pista
         nova não dispara: a rotação separa os `peerId`.)*
-  - [ ] **H.1f O GM sai** (T1.8): existe janela de dois GMs ou de nenhum? A variante do SEC-07 pelo
+  - [x] **H.1f O GM sai** (T1.8): existe janela de dois GMs ou de nenhum? A variante do SEC-07 pelo
         *handle* do GM segue ADIAR (R.1).
+        *(14/10/2026 — dois GMs, nunca: o "Sair" passa o cargo e revoga o token no mesmo passo. Nenhum GM, sim,
+        e permanente: **H.06 ADIAR (o mais perto da linha)** — o GM que fecha a aba e volta pelo convite é
+        jogador novo, e o cargo fica num assento que ninguém reclama; H.07 ADIAR — o cargo pode ir para uma
+        ficha gerada. H.08 DESCARTAR: o código 4400/4409 não lido não muda nada na tela.)*
   - [ ] **H.1g Queda para SSE** (bloquear o WebSocket): o que deixa de funcionar, o jogador fica
         sabendo, e o `sse_fallback` aparece no log?
   - [ ] **H.1h Último socket fecha e alguém reconecta no mesmo instante:** o `destroyRoomYjs`

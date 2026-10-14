@@ -171,8 +171,8 @@ fechado.
 **Reversível:** sim.
 
 **VEREDITO:** ADIAR
-- **Gatilho:** a memória da aba crescer numa sessão longa, ou alguém mexer no `onclose` — a pista dos
-  códigos 4400/4409 (H.0, H.1e, H.1f) mexe: a linha vai junto.
+- **Gatilho:** a memória da aba crescer numa sessão longa, ou alguém mexer no `onclose` — a H.1g (a queda
+  para o SSE, E.14) mexe nele: a linha vai junto.
 
 ---
 
@@ -319,3 +319,98 @@ minutos — **o mesmo mecanismo do H.04**, que pede o contrário (aceitar o subs
 **VEREDITO:** ADIAR
 - **Gatilho:** um assento duplicado por duas abas numa sessão real, ou o H.04 virar FAZER — os dois saem do
   mesmo mecanismo, e um conserto só serve aos dois.
+
+---
+
+## H.1f — O GM sai (T1.8)
+
+*Pergunta do plano: existe janela de dois GMs ou de nenhum?* E a pista nova da H.0: o expulso recebe o
+fechamento **4400**, que o cliente não lê.
+
+**Como:** GM, Ana, Beto e Caio, os jogadores pelo link do convite. O GM remove o Caio; depois clica em
+"Sair"; depois a GM nova (a Ana) **fecha a aba**; e numa segunda sala, o GM gera uma ficha, um jogador entra
+e o GM sai logo em seguida. Roteiro `h1f.mjs`.
+
+| Passo | Resultado |
+|---|---|
+| O GM remove o Caio | o Caio vê "O Mestre removeu você desta mesa" em **0,8 s** — pelo REST: o primeiro pedido dele volta 401, e o `join` da reconexão, `403 removed_by_gm` (R.3). Sem pedido REST, o heartbeat cai para o POST no máximo em 20 s e leva ao mesmo lugar |
+| O GM clica em "Sair" | o cargo vai **na hora** para a Ana, a primeira online (`roomManager.ts:1635–1659`); só ela vê os poderes; o token do GM antigo dá 401 no mesmo passo. **Nunca há dois GMs**: o `gmPeerId` é um campo só, e a saída revoga a sessão antes de responder |
+| A GM nova fecha a aba | offline aos **68 s**; o `gmPeerId` **continua no assento dela**; o Beto leva `403 gm_only`. A Ana volta pelo link do convite numa aba nova: é **jogadora nova** (outro `peerId`, dois assentos "Ana") e também leva 403. **A mesa fica sem GM** — ver H.06 |
+| O GM gera uma ficha, a Dani entra, o GM sai | o cargo vai para a **ficha gerada** ("Blitz 'Talon'"), que nenhuma pessoa controla — ver H.07 |
+
+**Resposta à pergunta do plano:** janela de **dois** GMs, não. Janela de **nenhum**, sim — e não é janela,
+é permanente, por três portas: o F5 do GM que entrou pelo lobby (H.03), o GM que fecha a aba (H.06) e o
+cargo herdado por uma ficha gerada (H.07). A quarta, sem ninguém online, deixa o `gmPeerId` vazio e devolve
+o cargo a quem entrar com o *handle* do GM (`:596–599`) — é a variante do SEC-07 que segue ADIAR (R.1) e é
+também a única volta de um GM que saiu sozinho.
+
+### H.06 — O GM que fecha a aba deixa a mesa sem Mestre para sempre
+
+**Área:** H.1f
+
+**Sintoma observado:** reproduzido. A identidade na mesa — o `peerId` e o token — mora no
+`sessionStorage`, que morre com a aba. O GM que fecha a aba e volta pelo link do convite (o jeito natural de
+voltar) entra como jogador novo; o `gmPeerId` fica no assento antigo, que nada mais reclama: a sessão dele
+nunca sai (a transferência do T1.8 só roda no "Sair"), e ficar offline não passa o cargo. *A restauração de
+aba do navegador (Ctrl+Shift+T, "continuar de onde parou") devolve o `sessionStorage` — o caso é a aba
+fechada e aberta de novo pelo link.*
+
+**Onde:** `api/rooms.ts:35–68` (a sessão no `sessionStorage`); `server/roomManager.ts:1635–1659` (o cargo
+só passa no `leaveRoom`).
+
+**Quem sente hoje:** ninguém ainda; aparece no dia em que o GM fechar a aba no meio de uma sessão.
+
+**Se eu não fizer:** perde dado — a mesa fica sem GM, e o remédio é criar outra (NPCs, iniciativa e chat
+ficam para trás).
+
+**Versão 10× menor:** guardar a credencial **do GM** também no `localStorage`, por código de sala, e o
+`RoomPage` usá-la quando o `sessionStorage` estiver vazio — só o GM; o jogador continua "aba nova é outra
+pessoa" (R.11). A maior é o assento por conta (a versão maior da R.1): o GM já está logado para criar a
+mesa. *Trade-off da menor:* um GM com duas abas cai no H.05 — a antiga vira jogador.
+
+**Reversível:** sim.
+
+**VEREDITO:** ADIAR — *o item mais perto da linha nesta varredura; vai destacado na calibragem (H.2).*
+- **Gatilho:** um GM perder a mesa por fechar a aba numa sessão real; ou o conserto do H.03 mostrar que a
+  credencial do GM no `localStorage` cabe junto, sem o trade-off.
+
+### H.07 — O cargo de GM pode ir para uma ficha gerada
+
+**Área:** H.1f
+
+**Sintoma observado:** reproduzido: o T1.8 passa o cargo ao primeiro assento **online**
+(`roomManager.ts:1637`), e a ficha gerada pelo GM nasce online, com `lastActiveAt` do momento em que foi
+gerada (`:860`). Se o GM gera fichas antes de os jogadores chegarem e sai em menos de ~60 s, o cargo vai
+para a ficha — e a mesa fica sem GM.
+
+**Onde:** `server/roomManager.ts:1636–1641`.
+
+**Quem sente hoje:** ninguém — a janela é de um minuto depois de gerar.
+
+**Se eu não fizer:** no caso raro, a mesa fica sem GM.
+
+**Versão 10× menor:** uma linha — o T1.8 escolher só entre assentos com sessão (as pessoas); a ficha gerada
+não tem.
+
+**Reversível:** sim.
+
+**VEREDITO:** ADIAR
+- **Gatilho:** acontecer numa sessão real, ou alguém mexer no T1.8 (o H.06 mexe, se virar FAZER).
+
+### H.08 — O cliente não lê o código de fechamento (4400/4409)
+
+**Área:** H.1f *(a pista nova da H.0, do comentário em `server.ts:889–896`)*
+
+**Sintoma observado:** nenhum que se veja. Medido: o expulso chega ao lobby com a mensagem certa pelo REST,
+em 0,8 s (no pior caso, 20 s pelo heartbeat); o que o código não lido custa é uma tentativa de WebSocket a
+mais, que volta 401. E o **4409** (socket substituído) **não acontece** com o desenho atual: cada aba nova
+toma o assento e a antiga troca de `peerId` (H.1e), então ninguém chega a 3 sockets.
+
+**Onde:** `features/multiplayer/MultiplayerRoom.tsx:267`.
+
+**Quem sente hoje:** ninguém.
+
+**VEREDITO:** DESCARTAR
+- **Razão:** o re-join (401 → 403 `removed_by_gm`) já leva o expulso ao lobby com a mensagem, e o 4409 não
+  ocorre; ler o código não mudaria o que a pessoa vê. *Se o H.05 virar FAZER* (a aba antiga parar em vez de
+  trocar de `peerId`), o 4409 volta a ser possível e a pergunta reabre com ele.
