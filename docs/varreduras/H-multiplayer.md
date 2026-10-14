@@ -264,3 +264,58 @@ de posse da R.1 — passa pelo portão.
 **VEREDITO:** ADIAR
 - **Gatilho:** um assento duplicado ou um GM perdido depois de F5 numa sessão real, ou a H.1j mostrar que o
   Render entrega o `join` de quem já recarregou durante o despertar.
+
+---
+
+## H.1e — O mesmo jogador em duas abas
+
+*Pergunta do plano: o `join` com token revoga as sessões antigas (`roomManager.ts:668`) e não fecha o socket
+da outra aba — o que ela vê?*
+
+**Como:** a Ana entra pelo link do convite e **duplica a aba** — no navegador, "Duplicar" copia o
+`sessionStorage` (o mesmo `peerId` e o mesmo token) e as duas abas dividem o `localStorage` (a mesma ficha
+local). No Playwright, uma página nova no mesmo contexto com o `sessionStorage` copiado. Depois, mais duas
+duplicatas, para o teto de 3 sockets por jogador (R.4, o fechamento 4409 da pista nova da H.0). Roteiro
+`h1e.mjs`.
+
+| Passo | Resultado |
+|---|---|
+| A aba 2 abre | reentra pelo `RoomPage` com o token e fica com o assento; o token da aba 1 deixa de valer. **O socket da aba 1 segue aberto** — e manda chat por ele: a mensagem chega à mesa |
+| ~1 s depois | o primeiro pedido REST da aba 1 — a sincronia da ficha — volta **401**; a reconexão automática tenta o `join` com o token revogado, recebe **409 `seat_taken`** e entra com **`peerId` novo**: a mesa ganha uma **segunda "Ana"**, com uma cópia da ficha. Nada na tela da aba 1 diz que ela virou outra pessoa |
+| Abas 3 e 4 | a mesma coisa em cadeia: cada aba nova toma o assento, a anterior vira jogador novo no primeiro REST. **O 4409 não dispara** — a rotação separa os `peerId`, e nenhum jogador chega a 3 sockets. As quatro abas seguem recebendo a mesa |
+| Log do servidor | nada além do `server_started`; no console das abas que rodaram, o 401 e o 409 |
+
+**Resposta à pergunta do plano:** a aba antiga vê tudo e age por um tempo com a sessão revogada (o socket
+foi autenticado no *upgrade* e não é conferido de novo); no primeiro REST, vira outro jogador. *Para a J.1e*
+("sessão revogada fecha o socket?"): fora da expulsão e da saída, que fecham (R.3), a única revogação é
+essa — a do mesmo assento por um `join` mais novo. Quem segue agindo é a mesma pessoa, no mesmo navegador,
+que tem o token novo na outra aba: não é escalada.
+
+### H.05 — A aba antiga vira outro jogador, em silêncio
+
+**Área:** H.1e
+
+**Sintoma observado:** reproduzido: duplicar a aba da mesa deixa **dois assentos com o mesmo nome** em ~1 s
+— a aba antiga, no primeiro 401, cai no `seat_taken` e o `postJoin` entra com `peerId` novo
+(`api/rooms.ts:101`), dentro da reconexão automática (`:113–143`). O desenho da R.1 usa essa rotação para o
+caso "a sessão se perdeu" (o servidor caiu antes de persistir); aqui a sessão não se perdeu, **outra aba a
+pegou**, e o servidor responde igual nos dois casos.
+
+**Onde:** `api/rooms.ts:89–104` e `:107–143`; `server/roomManager.ts:524–533`.
+
+**Quem sente hoje:** ninguém ainda — exige duas abas com a mesma sessão (duplicar a aba; abrir o link numa
+aba nova é outro jogador por desenho, R.11).
+
+**Se eu não fizer:** dá retrabalho: o GM remove o assento duplicado; o jogador que seguir na aba antiga joga
+com um personagem que não está na iniciativa.
+
+**Versão 10× menor:** o servidor dizer a diferença — um `code` próprio para "o token foi substituído por
+outro `join` deste assento" — e a reconexão, nesse caso, parar com um aviso ("esta mesa está aberta em
+outra aba") em vez de entrar como jogador novo. Pede ao servidor lembrar os tokens substituídos por alguns
+minutos — **o mesmo mecanismo do H.04**, que pede o contrário (aceitar o substituído por um instante).
+
+**Reversível:** sim, mas mexe na prova de posse da R.1.
+
+**VEREDITO:** ADIAR
+- **Gatilho:** um assento duplicado por duas abas numa sessão real, ou o H.04 virar FAZER — os dois saem do
+  mesmo mecanismo, e um conserto só serve aos dois.

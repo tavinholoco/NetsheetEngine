@@ -943,8 +943,12 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         duplicam o assento (1 em 3), gatilho na H.1j.)*
   - [ ] **H.1d Servidor reiniciado com a mesa aberta:** restore, sessões persistidas (B.4) e o fluxo
         401 → `join` **com o token** que a R.1 impôs.
-  - [ ] **H.1e O mesmo jogador em duas abas:** o `join` com token revoga as sessões antigas
+  - [x] **H.1e O mesmo jogador em duas abas:** o `join` com token revoga as sessões antigas
         (`roomManager.ts:668`, depois da E) e não fecha o socket da outra aba — o que ela vê?
+        *(14/10/2026 — duplicar a aba: a antiga segue vendo e agindo pelo socket aberto, e no primeiro REST
+        (401 → `seat_taken`) **vira outro jogador em silêncio** — dois assentos com o mesmo nome. H.05 ADIAR,
+        com o H.04: os dois pedem ao servidor distinguir "token substituído por outro `join`". O 4409 da pista
+        nova não dispara: a rotação separa os `peerId`.)*
   - [ ] **H.1f O GM sai** (T1.8): existe janela de dois GMs ou de nenhum? A variante do SEC-07 pelo
         *handle* do GM segue ADIAR (R.1).
   - [ ] **H.1g Queda para SSE** (bloquear o WebSocket): o que deixa de funcionar, o jogador fica
