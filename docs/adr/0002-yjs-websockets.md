@@ -135,3 +135,17 @@ mão, e agora a lista é a mesma que define o doc.
 **O gatilho desta ADR não disparou** — ele é bug de *convergência*, e este é de *autorização*, com
 conserto de duas linhas. Fica registrado como evidência para a Fase H: se a H achar o segundo buraco
 da mesma classe, o protocolo de intenção (`{ move: tokenId, x, y }`) passa a ter sintoma.
+
+## Revisão de 14/10/2026 — a Fase H conferiu o gatilho: não disparou
+
+A varredura de multiplayer ([ledger](../varreduras/H-multiplayer.md#h1h--o-último-socket-fecha-e-alguém-reconecta-no-mesmo-instante))
+rodou a corrida que esta ADR cita como exemplo, e mais duas, com o arrasto de token de verdade pela tela:
+os dois sockets da sala caindo juntos (o último fecha, o `destroyRoomYjs` descarta o doc) e voltando; o
+movimento em voo no instante da queda; e o GM caindo enquanto a jogadora move. **O CRDT convergiu nas três**,
+sem token duplicado: todo update aceito é espelhado no JSON na hora, o doc que nasce na volta é semeado dele,
+e o cliente cria um doc novo a cada conexão — não há duas histórias do mesmo grid para fundir.
+
+O que apareceu foi outra coisa: quem cai para o SSE fica com o grid do Yjs **congelado na tela** (o H.09 do
+ledger). É um bug de convergência do grid *na tela*, mas nasce de o cliente guardar a cópia do Yjs depois que
+o Yjs saiu — uma linha resolve, e o protocolo de intenção não seria a versão menor. **A leitura foi ao dono
+na calibragem da H (H.2) e o merge do #44 a aprovou.** O gatilho continua o mesmo.
