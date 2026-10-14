@@ -6,19 +6,25 @@
 awareness (`server.ts`), as sessões e a reconexão (`server/roomManager.ts`, `server/wsLimits.ts`); no
 cliente, o efeito de transporte e o heartbeat (`features/multiplayer/MultiplayerRoom.tsx`), a camada CRDT
 (`lib/yjsConnection.ts`, `lib/gridDoc.ts`) e a sessão (`api/rooms.ts`, `pages/RoomPage.tsx`).
-**Itens levantados:** __ · **FAZER:** __ · **ADIAR:** __ · **DESCARTAR:** __
-**Proporção FAZER:** __%
+**Itens levantados:** 12 · **FAZER:** 2 · **ADIAR:** 9 · **DESCARTAR:** 1 *(sem o H.1j, que é no ar e
+depende do dono — ver a seção dele)*
+**Proporção FAZER:** 17% — abaixo de 1/3 (ver [H.2](#h2--calibragem)).
 
 **Como é feito.** A H não é teste automatizado: é **quebrar de propósito, cenário por cenário**, com o log
 aberto. Cada cenário do plano (H.1a–H.1k) é uma seção, com o que se esperava, o que aconteceu e os eventos
-do log. Onde: o **build de produção local** (`npm run build` e o `netsheet-prod`, porta 3100), que não
-gasta hora nem banda do Render — só o H.1j precisa do ar. A rede estrangulada vem do DevTools ou do
-`setOffline` do Playwright; o GM sem login, de uma sala criada por REST (o método do
-[`CLAUDE.md`](../../CLAUDE.md)). Nenhum código do repositório muda nesta etapa (X.1); o que reproduz fora
-dele fica no scratchpad.
+do log. Onde: o **build de produção** (`npm run build`, o `dist/server.cjs` com `NODE_ENV=production`),
+num processo por roteiro, que não gasta hora nem banda do Render — só o H.1j precisa do ar. As pessoas são
+**contextos isolados do Playwright** (cada um com o próprio `localStorage`, como aparelhos diferentes); a
+rede ruim vem de um **proxy TCP** entre o navegador e o servidor (atraso, banda, túnel, *upgrade* do
+WebSocket derrubado) — o throttling do DevTools não garante o WebSocket; o GM sem login, de uma sala
+criada por REST (o método do [`CLAUDE.md`](../../CLAUDE.md)). Nenhum código do repositório muda nesta etapa
+(X.1). Os roteiros — `lib.mjs`, o `slowproxy.mjs` e um `h1*.mjs` por cenário — estão em
+[`scripts/multiplayer/`](../../scripts/multiplayer/lib.mjs), versionados no PR do ledger para o H.1j e a H.3 os reusarem: são
+ferramenta de varredura, fora do CI e do vitest, como o `scripts/visual/` da F.
 
-**Numeração:** por cenário, na ordem em que os itens foram achados. **As linhas citadas são as do `master`
-em `8203479`** (14/10/2026), o código varrido.
+**Numeração:** por cenário, na ordem em que os itens foram achados. As seções seguem a ordem em que os
+cenários **rodaram** — o H.1d esperou o Docker subir o Supabase local, e veio depois do H.1h. **As linhas
+citadas são as do `master` em `8203479`** (14/10/2026), o código varrido.
 
 ---
 
@@ -59,8 +65,7 @@ em `8203479`** (14/10/2026), o código varrido.
 servidor capturado), e **três contextos isolados do Playwright** — GM, Ana e Beto, cada um com o próprio
 `localStorage` e `sessionStorage`, como três aparelhos. Abas do mesmo navegador dividiriam a ficha local
 (`cyberpunk_active_sheet_v1`) e falseariam o cenário. O GM entra pelo deep link com a sala semeada por
-REST; os jogadores, pelo lobby com o código. Roteiro fora do repositório (`h1a.mjs`, no scratchpad da
-sessão).
+REST; os jogadores, pelo lobby com o código. Roteiro `h1a.mjs`.
 
 **O que se esperava e o que aconteceu** — tudo bateu:
 
@@ -101,7 +106,7 @@ padrão do grid e os 3 jogadores.
 *Pergunta: chat, rolagem, token movido e dano chegam, e na ordem? E o jogador lento cai pelo teto de
 1 MiB do E.03?*
 
-**Como:** o Beto passa por um **proxy TCP** de rede ruim (fora do repositório, `slowproxy.mjs`): 300 ms de
+**Como:** o Beto passa por um **proxy TCP** de rede ruim (`slowproxy.mjs`): 300 ms de
 atraso em cada sentido, **50 KB/s** de descida e 25 KB/s de subida — o "3G lento" do DevTools —, e uma
 janela de 128 KB que para de ler do servidor quando enche, para o `bufferedAmount` do `ws` crescer como
 numa rede de verdade. O throttling do DevTools não serve: não garante o WebSocket. O site carrega rápido
@@ -666,3 +671,53 @@ gravou.
 - **Gatilho:** alguém da mesa pedir para rolar perícia ou a habilidade especial na mesa numa sessão real.
   Quando disparar, o atributo da ficha gerada vai junto (ou o gerador passa a gravar a habilidade como a
   ficha grava).
+
+---
+
+## H.1j — *(no ar)* O Render troca a instância com a mesa aberta — **pendente, depende do dono**
+
+*Pergunta do plano: um merge no `master` no meio da sessão publica sozinho (30 s entre `SIGTERM` e
+`SIGKILL`); e a volta depois de hibernar leva ~1 min.*
+
+É o único cenário que não roda no build local: precisa do deploy de verdade, e o deploy só acontece com um
+merge no `master` — que é do dono. **O roteiro proposto** (custo: uns minutos de instância e alguns MB de
+banda; nenhum monitor, regra 3 do custo zero):
+
+1. Pouco antes de um merge do dono, uma **mesa de teste em produção** (GM e dois jogadores pelo Playwright
+   contra `netsheetengine.onrender.com`), com NPC, iniciativa e ferimento; o merge acontece com ela aberta —
+   a exceção deliberada, e combinada, ao "nunca mergear com mesa aberta".
+2. Durante o deploy: quando cada socket cai, se a volta cai no SSE (o H.09 no ar), o que se perde do estado
+   (o `flushAllPending` do `SIGTERM` contra os ~1,5 min da E.06), e se alguém volta como outro jogador (H.11).
+3. Depois de ≥15 min parada, a **volta da hibernação**: o tempo até o primeiro `join` responder, e o que o
+   H.04 pergunta — se o Render entrega o `join` de quem recarregou a página durante o despertar.
+4. A mesa de teste sai (todos saem pela API), e o resultado vira esta seção.
+
+**Itens:** a anotar quando rodar.
+
+---
+
+## H.2 — Calibragem
+
+**12 itens, 2 FAZER (17%).** Abaixo de 1/3 na primeira passada — a régua não precisou de ajuste. Os dois
+FAZER são reproduzidos, sentidos na mesa e sem versão mais barata que esperar:
+
+| FAZER | O que quebra |
+|---|---|
+| H.03 — o F5 de quem entrou pelo lobby | o jogador volta como outra pessoa; **o GM que criou a mesa pela tela perde o cargo** — a mesa fica sem Mestre |
+| H.09 — a queda breve que prende no SSE | o jogador para de mover o próprio token, o grid congela na tela dele, e o `sse_fallback` conta queda como proxy |
+
+**Os que ficaram perto da linha** — vão ao dono destacados, porque o merge é que aprova o veredito:
+- **H.06 (o GM que fecha a aba perde a mesa) — ADIAR.** O dano é o mesmo do H.03 (mesa sem Mestre), mas a
+  porta é menos comum (fechar a aba e voltar pelo link, não o F5), e a versão menor tem um custo: a
+  credencial do GM no `localStorage` faz um GM com duas abas cair no H.05. Se o dono preferir FAZER, a
+  versão menor cabe no mesmo PR do H.03.
+- **H.04 e H.05 (o assento duplicado) — ADIAR, juntos.** Saem do mesmo mecanismo no servidor (distinguir o
+  token substituído por outro `join`); o H.1j pode disparar o gatilho do H.04.
+- **A ADR 0002 — o gatilho não disparou, na leitura desta varredura** (H.1h): o CRDT convergiu nas três
+  corridas; o grid congelado é a cópia velha do Yjs na tela, e uma linha do H.09 o resolve. Reabrir a ADR é
+  decisão do dono.
+
+**Nenhum achado de segurança aberto.** O H.05 e o H.04 tocam a prova de posse da R.1, mas nenhum dá a
+ninguém um assento ou um poder que não tinha — o que sobra é o dono do assento virando outra pessoa. A
+J.1e herda duas respostas: a única revogação que não fecha o socket é a do mesmo assento por um `join` mais
+novo (H.1e), e o token do *upgrade* aparece no console do próprio navegador (H.1g).
