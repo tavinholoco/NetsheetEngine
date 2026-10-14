@@ -125,3 +125,10 @@ local. O contorno reversível: feche o Docker Desktop, renomeie **as duas** past
 (`%LOCALAPPDATA%\Docker\run` e `%LOCALAPPDATA%\docker-secrets-engine`, para `*.orfao-<data>`) e abra
 o Docker de novo. Renomear uma só não basta: o arranque que quebra no segundo *socket* deixa um
 *socket* velho novo na primeira pasta.
+
+*14/10/2026 (Fase H):* o contorno funcionou de novo — dessa vez o Docker saiu sozinho, sem a janela de
+erro, depois de uns minutos sem subir o motor (o *pipe* `dockerDesktopLinuxEngine` nunca apareceu). E o
+**Supabase local** (`npx supabase start`) falhou por outro motivo: o contêiner do **Studio** não ficou
+saudável e o CLI desligou tudo. Subiu sem os serviços que a mesa e os testes de RLS não usam:
+`npx supabase start -x studio,edge-runtime,logflare,vector,imgproxy,mailpit`. Isso é do Supabase local;
+o `npm run backup:db` precisa do Docker (o `pg_dump` roda num contêiner), não do Supabase local de pé.

@@ -363,6 +363,37 @@ nenhuma fase é dona da regra 4. **ADIAR — gatilho:** o painel do Render mostr
 100 h num mês (o mesmo número do risco 1 abaixo), ou a mesa abrir para gente de fora dos convidados.
 Quando disparar, vira item junto com a I.1e — o cross-origin só se testa de verdade com o site fora.)*
 
+*(14/10/2026 — **o frontend no Vercel, medido**, a pedido do dono, que já usa o plano Hobby em outros
+projetos. Só o site — o servidor da mesa fica no Render: o WebSocket das Functions do Vercel (beta desde
+06/2026) cai na duração máxima, 5 min no Hobby, e cada conexão pode cair em outra instância, sem memória
+dividida — e a sala, o doc Yjs e o reenvio vivem na memória de um processo só.)*
+- **O peso no Hobby é desprezível.** A primeira visita baixa **~0,25 MB comprimido** (medido no build: o JS de
+  entrada 182 KB, o CSS 16 KB e as 4 fontes `woff2` latinas; o resto é sob demanda), e as visitas seguintes
+  vêm do cache (nomes com hash). Pessimista — 10 pessoas × 20 visitas/mês, todas sem cache: **~66 MB de 100 GB**
+  de transferência (0,07%) e **~3.000 de 1.000.000** de requisições na CDN (0,3%); nenhuma Function; um build
+  de ~25 s por push, contra 100 deploys/dia. As cotas são **por conta**, divididas com os outros projetos do
+  dono; estourar pausa o recurso **até completar 30 dias**, sem cobrança — o NetSheet cairia junto se outro
+  projeto estourasse, o incidente de setembro pelo avesso. O Hobby é só para uso não comercial (o NetSheet
+  é), e não aceita repositório de organização do GitHub (o daqui é da conta pessoal).
+  ([Hobby](https://vercel.com/docs/plans/hobby), [limites](https://vercel.com/docs/limits),
+  [WebSockets](https://vercel.com/docs/functions/websockets))
+- **O que já está pronto:** o `vercel.json` (build `build:web`, saída `dist`, o *rewrite* do deep link), o
+  `VITE_API_URL` (REST, SSE e WebSocket derivam dele — T10.2) e o `CORS_ORIGINS` do servidor; o caminho está
+  no [`DEPLOY.md`](./DEPLOY.md#frontend-estático-vercelnetlify--backend-no-render).
+- **O que muda, e entra junto se for feito:** (1) **dois deploys por merge** — o site no Vercel em ~1 min, a
+  API no Render em alguns: um PR que mude os dois lados deixa o cliente novo falando com o servidor velho no
+  intervalo; (2) **o CSP** sai do `helmet` do Express e teria de ser copiado para os `headers` do
+  `vercel.json` (o `fonts-csp` só confere o do servidor); (3) **a origem muda**, e o `localStorage` não
+  migra — quem tem ficha só no navegador a perde de vista (hoje não há jogador nem ficha em produção: é o
+  momento mais barato de trocar); (4) `CORS_ORIGINS` no Render e a URL nova no Auth do Supabase, passos do
+  dono no painel.
+- **O ganho é pequeno:** a visita só para a ficha deixa de acordar o Render (as ~3–15 h/mês da estimativa) e
+  a página abre na hora com o servidor dormindo. A banda que pesa no Render é a da mesa, e ela não muda.
+- **Segue ADIAR, com o gatilho de cima.** Pendente do dono: as horas e a banda do NetSheet em outubro na página
+  de uso do Render — **o primeiro mês sem o monitor do Better Stack**. Se passar de 100 h, ou se a primeira
+  sessão mostrar a espera do despertar como problema, vira item da I (com a I.1e), feito antes de entrar
+  jogador.
+
 **Os riscos reais — os dois de uso normal ainda sem sintoma; o de abuso, calculado na revisão pós-D:**
 
 1. **Aba esquecida.** ~~O lobby consulta a lista de salas a cada **8 s**, e~~ a mesa manda heartbeat a
@@ -922,7 +953,15 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         - **As linhas citadas nas pistas acima mudaram**: a G levou o `MultiplayerRoom` de 1.049 para 1.123
           linhas (o `wsEverOpen` do E.14 saiu da `:171` para a `:227`). Medir de novo no dia, como manda o
           passo X.0.
-- [ ] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`.
+> **Para a sessão que retoma a H** *(escrito em 14/10/2026, ao parar)*: a H.0, os cenários locais
+> (H.1a–i, H.1k) e a H.2 estão feitos — ledger com **12 itens, 2 FAZER**, mergeado no **#44**. Falta, nesta
+> ordem: o **H.1j** (no ar, com o dono — o roteiro está na caixa dele), a **H.3** (os FAZER, uma caixa por
+> item), a **H.4** e a **H.5**. Os roteiros de mesa estão em
+> [`scripts/multiplayer/`](../scripts/multiplayer/lib.mjs) (`npm run build` antes); o H.1d e a conferência do
+> H.11 exigem o Supabase local — o contorno do Docker e o `supabase start` sem o Studio estão no
+> [`BACKUP.md`](./BACKUP.md#se-o-docker-não-subir-windows).
+
+- [ ] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`. *(Só falta o H.1j.)*
   - [x] **H.1a Mesa de base:** GM + 2 jogadores em 3 abas, do zero ao combate. O que os outros cenários
         comparam.
         *(14/10/2026 — tudo bateu, sem item: três contextos isolados do Playwright contra o build de
@@ -980,16 +1019,61 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
   - [ ] **H.1j** *(no ar)* **O Render troca a instância com a mesa aberta:** um merge no `master` no
         meio da sessão publica sozinho (30 s entre `SIGTERM` e `SIGKILL`); e a volta depois de hibernar
         leva ~1 min ([free](https://render.com/docs/free)).
+        *(Pendente, depende do dono. O merge do #44 (14/10, 23:33) já publicou — sem mesa aberta, então não
+        serviu. **Não precisa de merge:** o botão **"Manual Deploy → Deploy latest commit"** do painel do
+        Render refaz o build e troca a instância do mesmo jeito.)* O roteiro, combinado com o dono antes:
+        1. Um `scripts/multiplayer/h1j.mjs` novo: a biblioteca aceita qualquer `base` — aqui
+           `https://netsheetengine.onrender.com`, sem o `startServer`. Mesa de teste com GM e dois jogadores
+           (a sala por REST, como nos outros), NPC, iniciativa e ferimento. Uma requisição ao
+           `/api/health` antes, para acordar o serviço — nada de monitor (regra 3).
+        2. O dono clica no Manual Deploy com a mesa aberta. Observar: quando cada socket cai, se a volta cai
+           no SSE (o H.09 no ar, se a H.3b ainda não entrou), o que se perde do estado (o `flushAllPending`
+           do `SIGTERM` contra os ~1,5 min da E.06) e se alguém volta como outro jogador (H.11).
+        3. A mesa parada ≥15 min (o serviço hiberna): o tempo até o primeiro `join` responder, e o gatilho do
+           **H.04** — o Render entrega o `join` de quem recarregou a página durante o despertar?
+        4. Todos saem pela API (a sala some do banco de produção), e o resultado vai para a seção do H.1j no
+           ledger, que já tem o roteiro.
   - [x] **H.1k Habilidade especial na mesa:** não é rolável — o tipo `skill` procura em `sheet.skills`,
         e ela mora em `specialAbilityName` (visto na C.8). Na ficha funciona. Sem sintoma de mesa até
         alguém pedir.
         *(14/10/2026 — confirmado pela API, e é maior: a mesa **não tem botão de perícia nenhum**; o tipo
         `skill` só existe no servidor. De carona, a ficha gerada guarda a habilidade especial com o
         atributo do ternário que a C.8 tirou da ficha. H.12 ADIAR, gatilho: alguém pedir.)*
-- [ ] **H.2** Calibragem e PR do ledger — passo X.2.
-- [ ] **H.3** Executar só os FAZER — passo X.3.
-- [ ] **H.4** 🔒 Portão, se a H.3 mudou código — passo X.4.
-- [ ] **H.5** 🧠 Estado durável — passo X.5.
+- [x] **H.2** Calibragem e PR do ledger — passo X.2.
+      *(14/10/2026 — calibragem: **2 FAZER em 12, 17%**, abaixo de 1/3 na primeira passada. Ledger e roteiros
+      mergeados no **PR #44** em 14/10/2026; `master` verde, deploy no ar. **O merge aprovou os veredictos como
+      estavam**, inclusive os dois que foram destacados ao dono: o **H.06** fica ADIAR (o GM que fecha a aba
+      perde a mesa — a versão menor, a credencial do GM no `localStorage`, cabe no PR do H.03 se o dono pedir)
+      e o gatilho da **ADR 0002 não disparou** (a revisão está na própria ADR).)*
+- [ ] **H.3** Executar só os FAZER — passo X.3. Teste que reproduz **escrito antes**, a prova revertendo,
+      um commit por item, e a conferência na tela pelo roteiro do cenário (`scripts/multiplayer/`). H.3, H.4 e
+      H.5 num PR só, como o #41 da G. As linhas citadas são as do ledger (`master` em `8203479`); medir de novo.
+  - [ ] **H.3a** **H.03 — a mesa ativa pelo lobby troca a URL por `/room/CÓDIGO`** (`navigate(…, { replace:
+        true })`) ao criar e ao entrar (`MultiplayerRoom.tsx:351–383`). O F5 passa a cair no `RoomPage`, que já
+        volta ao mesmo assento com o token — o caminho que a H.1c provou. Conferir que o efeito "aba → URL"
+        do `App` (`:94–115`) não briga (o `pathToTab('/room/X')` já dá `multiplayer`) e que o "Sair" em
+        `/room/CÓDIGO` volta ao lobby com o código. Teste: `room-refresh` — criar e entrar pelo lobby deixam
+        a URL em `/room/CÓDIGO`; e o "F5" (stores zeradas, o app montado de novo na URL atual com o
+        `sessionStorage`) manda o `join` com o **mesmo `peerId` e o token**. Na tela: `h1c.mjs` (o Beto volta
+        com o mesmo `peerId`); o `h1c-gm.mjs` monta o estado de antes do conserto (`/multiplayer`) — ajustar
+        para partir de `/room/CÓDIGO`, a URL que o conserto deixa.
+  - [ ] **H.3b** **H.09 — depois de uma conexão que funcionou, a queda tenta o WebSocket de novo**, com espera
+        crescente, em vez de abrir o SSE: o "já abriu uma vez" sai da rodada do efeito para um `useRef`
+        (`MultiplayerRoom.tsx:226–283`); o SSE fica para quem **nunca** conectou (o proxy corporativo, o que
+        o `sse_fallback` quer contar). E, na mesma mudança, zerar o `yjsGrid` quando o socket cai, para a
+        tela voltar ao JSON da sala (`:659`). Teste: `room-transport` — um WebSocket falso controlável (uma
+        variação do `stubRoomTransport`): abre, cai, a tentativa seguinte falha, e o cliente tenta o
+        WebSocket de novo, não o `EventSource`; quem nunca conectou ainda cai no SSE; sem Yjs, o grid da tela é
+        o da sala. Na tela: `h1g.mjs` (parte B — a Ana volta ao WebSocket) e `h1h.mjs` (parte 4 — o grid não
+        congela).
+  - [ ] **H.3c** **H.02 — o gatilho dispara com a H.3b** ("alguém mexer no `onclose`"): a conexão Yjs velha
+        recebe `destroy()` quando o socket cai, antes de zerar o ref (`MultiplayerRoom.tsx:267–271`). Teste:
+        no mesmo `room-transport`, a queda chama o `destroy()` da conexão velha (ou: nenhum `setInterval` a
+        mais por queda — medido +2 no H.1b).
+- [ ] **H.4** 🔒 Portão, se a H.3 mudou código — passo X.4. *(Vai mudar: a URL depois de entrar e a reconexão
+      do transporte. A pergunta 3 pesa — o F5 volta ao assento com o token, e nenhum caminho novo emite sessão.)*
+- [ ] **H.5** 🧠 Estado durável — passo X.5. *(Inclui rodar `scripts/multiplayer/h1a.mjs` como régua: 0 erro de
+      console e os números da H.1a.)*
 - [ ] ✅ **Fase H concluída em:** ____/____/______
 
 ---
@@ -1020,6 +1104,14 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
           ADIAR) — o gatilho é a própria I.1b olhar os caminhos do Supabase no cliente.
         - **A tela diz "sincronizado" quando não está** (G.08, ADIAR) — o gatilho é a primeira ficha na nuvem,
           mas o caminho (o aviso de sucesso quando o save falha) é da I.1b.
+      - *Levados pela H (14/10/2026):*
+        - **O frontend no Vercel foi medido** (a nota de 14/10 na [regra 4](#-contrato-de-custo-zero)): o custo
+          no Hobby é desprezível, e os quatro pontos que mudam (dois deploys por merge, o CSP fora do Express,
+          a origem nova sem o `localStorage`, `CORS_ORIGINS` e o Auth do Supabase) são o que a I.1e confere se
+          a regra 4 disparar.
+        - **O `DEPLOY.md` se contradiz sobre o CORS** (seção do frontend estático): diz que o servidor responde
+          a "qualquer origin" e, logo abaixo, que "não responde CORS por padrão" desde a T10.6. Vale o
+          segundo (`server.ts:123–129`) — a I.1e corrige o texto.
 - [ ] **I.1** Varredura por área → ledger em `docs/varreduras/I-integracao.md`.
   - [ ] **I.1a Inventário de rotas.** Uma linha por endpoint: quem chama no cliente, tipo de request e
         response compartilhado ou escrito duas vezes à mão, códigos de erro tratados. *Se eu mudar este
@@ -1297,7 +1389,7 @@ público mudar.
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
 | G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
-| H | 🔍 | Varredura: multiplayer | ⬜ | — |
+| H | 🔍 | Varredura: multiplayer — ledger com 12 itens, 2 FAZER (#44, 14/10); faltam o H.1j (no ar, com o dono) e a H.3–H.5 | 🟡 | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
@@ -1319,6 +1411,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia) |
 | Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
+| `node scripts/multiplayer/h1a.mjs` | A mesa de base da H.1a (14/10/2026): três contextos, do zero ao combate, **0** erro de console; um chat custa **6,7 KB** por aba, o ataque mais o dano **~72 KB**, 45 s parada **0,5 KB**; a sala no fim, **17,2 KB**. `npm run build` antes; sobe o próprio servidor |
 | `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
 | `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 107 `black`/`white`, à parte. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
 | `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4), e **o CI exige** (F.2.10) |

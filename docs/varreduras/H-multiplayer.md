@@ -178,6 +178,8 @@ fechado.
 **VEREDITO:** ADIAR
 - **Gatilho:** a memória da aba crescer numa sessão longa, ou alguém mexer no `onclose` — a H.1g (a queda
   para o SSE, E.14) mexe nele: a linha vai junto.
+- **⚡ Gatilho disparado (14/10/2026, depois do merge do ledger):** o conserto do H.09 (H.3b) mexe no `onclose`.
+  O item vira a **H.3c** do plano, com teste — como o protocolo manda com gatilho que dispara.
 
 ---
 
@@ -683,9 +685,12 @@ gravou.
 merge no `master` — que é do dono. **O roteiro proposto** (custo: uns minutos de instância e alguns MB de
 banda; nenhum monitor, regra 3 do custo zero):
 
-1. Pouco antes de um merge do dono, uma **mesa de teste em produção** (GM e dois jogadores pelo Playwright
-   contra `netsheetengine.onrender.com`), com NPC, iniciativa e ferimento; o merge acontece com ela aberta —
-   a exceção deliberada, e combinada, ao "nunca mergear com mesa aberta".
+1. Uma **mesa de teste em produção** (GM e dois jogadores pelo Playwright contra
+   `netsheetengine.onrender.com` — um `h1j.mjs` com a biblioteca de `scripts/multiplayer/` apontada para a
+   URL do ar), com NPC, iniciativa e ferimento; e, com ela aberta, o deploy — **o "Manual Deploy → Deploy
+   latest commit" do painel do Render**, que troca a instância como um merge sem precisar de um. É a exceção
+   deliberada, e combinada, ao "nunca mergear com mesa aberta". *(O merge do #44, em 14/10, publicou sem
+   mesa aberta: não serviu.)*
 2. Durante o deploy: quando cada socket cai, se a volta cai no SSE (o H.09 no ar), o que se perde do estado
    (o `flushAllPending` do `SIGTERM` contra os ~1,5 min da E.06), e se alguém volta como outro jogador (H.11).
 3. Depois de ≥15 min parada, a **volta da hibernação**: o tempo até o primeiro `join` responder, e o que o
