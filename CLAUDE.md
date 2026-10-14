@@ -117,6 +117,10 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   semeie a sala por REST com o `gmPeerId` do navegador (a D.3–D.5 fizeram assim). **O build de produção,**
   com o helmet (onde o CSP vale), é a configuração `netsheet-prod` (porta 3100; `npm run build` antes) — e
   `scripts/visual/` captura, compara pixel a pixel e confere a tipografia contra ela (Fase F).
+- **A mesa com várias pessoas e rede ruim:** `scripts/multiplayer/` (Fase H) — um contexto isolado do
+  Playwright por pessoa (abas do mesmo navegador dividem a ficha local), o build de produção num processo
+  próprio e um proxy TCP de rede lenta, túnel e WebSocket bloqueado (o throttling do DevTools não garante o
+  WebSocket). Um roteiro por cenário do ledger da H; `npm run build` antes.
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.
