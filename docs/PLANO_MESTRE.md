@@ -871,7 +871,12 @@ do log. Onde: o **build de produção local** (`npm run build` e `npm start` com
 Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwright. *(ARQ-08, parte
 3.)* Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
-- [ ] **H.0** 🔍 **Premissas** — medidas em 29/09/2026:
+- [x] **H.0** 🔍 **Premissas** — medidas em 29/09/2026:
+      *(14/10/2026 — as pistas conferidas contra o `master` em `8203479`: **todas bateram**, e as linhas
+      das pistas da E e da G foram medidas de novo. Duas coisas a mais: as revogações que não são expulsão
+      **não fecham o socket** de quem perdeu a sessão, e um comentário do `server.ts` guardava uma pista
+      que o plano não tinha — o cliente não lê o código de fechamento 4400/4409. O Registro de sessões
+      segue vazio: a H corre sem sessão real. Tabela no topo do [ledger](./varreduras/H-multiplayer.md).)*
       - ~~**O stream SSE só confere o token na abertura** — a expulsão não derruba um stream aberto.~~
         *Resolvida para a expulsão na R.3:* a rota fecha o stream do expulso (`ssePeer`). Resta a
         pergunta para outras revogações — no H.1e.
@@ -918,29 +923,69 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           linhas (o `wsEverOpen` do E.14 saiu da `:171` para a `:227`). Medir de novo no dia, como manda o
           passo X.0.
 - [ ] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`.
-  - [ ] **H.1a Mesa de base:** GM + 2 jogadores em 3 abas, do zero ao combate. O que os outros cenários
+  - [x] **H.1a Mesa de base:** GM + 2 jogadores em 3 abas, do zero ao combate. O que os outros cenários
         comparam.
-  - [ ] **H.1b Rede estrangulada:** chat, rolagem, token movido e dano chegam, e na ordem? Broadcast
+        *(14/10/2026 — tudo bateu, sem item: três contextos isolados do Playwright contra o build de
+        produção, 0 erro de console, o ferimento igual na mesa e na ficha local. A régua: um chat custa
+        6,7 KB por aba, o ataque mais o dano ~72 KB, 45 s parada 0,5 KB. Os gatilhos da G.3h e do G.01 não
+        dispararam.)*
+  - [x] **H.1b Rede estrangulada:** chat, rolagem, token movido e dano chegam, e na ordem? Broadcast
         completo e update Yjs incremental podem chegar fora de ordem.
-  - [ ] **H.1c Refresh no meio do combate** — do jogador e do GM.
-  - [ ] **H.1d Servidor reiniciado com a mesa aberta:** restore, sessões persistidas (B.4) e o fluxo
+        *(14/10/2026 — um proxy TCP de 3G lento (50 KB/s) no Beto: tudo chega e **na ordem**, e o token
+        converge. O jogador lento **não cai** pelo teto de 1 MiB do E.03 — só num túnel de 90 s, e a volta é
+        limpa (mesmo assento, alcança em 4 s). H.01 ADIAR para a L.1: numa rajada ele fica 7–9 s atrás,
+        porque cada ação reenvia a sala inteira. H.02 ADIAR: cada queda deixa a conexão Yjs velha viva.)*
+  - [x] **H.1c Refresh no meio do combate** — do jogador e do GM.
+        *(14/10/2026 — quem entrou pelo link do convite ou pelo deep link volta ao mesmo assento, com o
+        ferimento e a vez. **H.03 FAZER — reproduzido:** quem entrou pelo lobby fica em `/multiplayer`, e o F5
+        o devolve ao lobby; entrando de novo, ganha outro `peerId` — o jogador duplica, e **o GM que criou a
+        mesa pela tela vira jogador comum: a mesa fica sem Mestre**. H.04 ADIAR: dois F5 com o `join` em voo
+        duplicam o assento (1 em 3), gatilho na H.1j.)*
+  - [x] **H.1d Servidor reiniciado com a mesa aberta:** restore, sessões persistidas (B.4) e o fluxo
         401 → `join` **com o token** que a R.1 impôs.
-  - [ ] **H.1e O mesmo jogador em duas abas:** o `join` com token revoga as sessões antigas
+        *(14/10/2026 — com o Supabase local de verdade e a queda brusca (no Windows, o processo morre sem o
+        `flushAllPending`): o restore volta com a sala e as sessões, e quem tinha o token gravado segue igual.
+        H.10 ADIAR — o *debounce* reinicia a cada mutação, e uma rajada de 10 s nunca foi gravada: a queda
+        perdeu a rajada inteira. H.11 ADIAR — quem deu F5 na janela volta como outro jogador. O diagrama do
+        handshake segue ADIAR: não fez falta.)*
+  - [x] **H.1e O mesmo jogador em duas abas:** o `join` com token revoga as sessões antigas
         (`roomManager.ts:668`, depois da E) e não fecha o socket da outra aba — o que ela vê?
-  - [ ] **H.1f O GM sai** (T1.8): existe janela de dois GMs ou de nenhum? A variante do SEC-07 pelo
+        *(14/10/2026 — duplicar a aba: a antiga segue vendo e agindo pelo socket aberto, e no primeiro REST
+        (401 → `seat_taken`) **vira outro jogador em silêncio** — dois assentos com o mesmo nome. H.05 ADIAR,
+        com o H.04: os dois pedem ao servidor distinguir "token substituído por outro `join`". O 4409 da pista
+        nova não dispara: a rotação separa os `peerId`.)*
+  - [x] **H.1f O GM sai** (T1.8): existe janela de dois GMs ou de nenhum? A variante do SEC-07 pelo
         *handle* do GM segue ADIAR (R.1).
-  - [ ] **H.1g Queda para SSE** (bloquear o WebSocket): o que deixa de funcionar, o jogador fica
+        *(14/10/2026 — dois GMs, nunca: o "Sair" passa o cargo e revoga o token no mesmo passo. Nenhum GM, sim,
+        e permanente: **H.06 ADIAR (o mais perto da linha)** — o GM que fecha a aba e volta pelo convite é
+        jogador novo, e o cargo fica num assento que ninguém reclama; H.07 ADIAR — o cargo pode ir para uma
+        ficha gerada. H.08 DESCARTAR: o código 4400/4409 não lido não muda nada na tela.)*
+  - [x] **H.1g Queda para SSE** (bloquear o WebSocket): o que deixa de funcionar, o jogador fica
         sabendo, e o `sse_fallback` aparece no log?
-  - [ ] **H.1h Último socket fecha e alguém reconecta no mesmo instante:** o `destroyRoomYjs`
+        *(14/10/2026 — no SSE funcionam chat, rolagem e presença; **o jogador não move o próprio token** (o
+        REST do grid é do GM) e só fica sabendo pelo "Acesso Negado". O `sse_fallback` aparece, com o *user
+        agent*. **H.09 FAZER — o E.14 reproduzido:** uma queda de ~6 s deixa a jogadora no SSE para sempre, e o
+        log conta a queda como proxy.)*
+  - [x] **H.1h Último socket fecha e alguém reconecta no mesmo instante:** o `destroyRoomYjs`
         (`server.ts:1302`, depois da E) descarta o doc — a reconexão perde movimento do grid?
-  - [ ] **H.1i Ficha editada em duas abas:** a reconexão resolve por **last-write-wins com o
+        *(14/10/2026 — não perde: o CRDT convergiu nas três corridas (os dois sockets caindo juntos, o
+        movimento em voo, o GM caindo enquanto a Ana move), sem token duplicado — o JSON é espelhado a cada
+        update. De carona, **o grid congela na tela de quem caiu para o SSE**: foi para o H.09. O gatilho da
+        ADR 0002, na leitura desta varredura, não disparou — vai à H.2 para o dono confirmar.)*
+  - [x] **H.1i Ficha editada em duas abas:** a reconexão resolve por **last-write-wins com o
         `updatedAt` do cliente** — o relógio do navegador decide quem ganha.
+        *(14/10/2026 — não decide nada que importe, sem item: com o relógio 2 h atrasado a edição entra na
+        mesa. A ficha de um assento tem um escritor só além do servidor (que só escreve o ferimento), e a
+        sincronia grava sem comparar `updatedAt` logo depois de cada reentrada. Duas abas: é o H.05.)*
   - [ ] **H.1j** *(no ar)* **O Render troca a instância com a mesa aberta:** um merge no `master` no
         meio da sessão publica sozinho (30 s entre `SIGTERM` e `SIGKILL`); e a volta depois de hibernar
         leva ~1 min ([free](https://render.com/docs/free)).
-  - [ ] **H.1k Habilidade especial na mesa:** não é rolável — o tipo `skill` procura em `sheet.skills`,
+  - [x] **H.1k Habilidade especial na mesa:** não é rolável — o tipo `skill` procura em `sheet.skills`,
         e ela mora em `specialAbilityName` (visto na C.8). Na ficha funciona. Sem sintoma de mesa até
         alguém pedir.
+        *(14/10/2026 — confirmado pela API, e é maior: a mesa **não tem botão de perícia nenhum**; o tipo
+        `skill` só existe no servidor. De carona, a ficha gerada guarda a habilidade especial com o
+        atributo do ternário que a C.8 tirou da ficha. H.12 ADIAR, gatilho: alguém pedir.)*
 - [ ] **H.2** Calibragem e PR do ledger — passo X.2.
 - [ ] **H.3** Executar só os FAZER — passo X.3.
 - [ ] **H.4** 🔒 Portão, se a H.3 mudou código — passo X.4.
