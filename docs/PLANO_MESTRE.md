@@ -941,8 +941,13 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         o devolve ao lobby; entrando de novo, ganha outro `peerId` — o jogador duplica, e **o GM que criou a
         mesa pela tela vira jogador comum: a mesa fica sem Mestre**. H.04 ADIAR: dois F5 com o `join` em voo
         duplicam o assento (1 em 3), gatilho na H.1j.)*
-  - [ ] **H.1d Servidor reiniciado com a mesa aberta:** restore, sessões persistidas (B.4) e o fluxo
+  - [x] **H.1d Servidor reiniciado com a mesa aberta:** restore, sessões persistidas (B.4) e o fluxo
         401 → `join` **com o token** que a R.1 impôs.
+        *(14/10/2026 — com o Supabase local de verdade e a queda brusca (no Windows, o processo morre sem o
+        `flushAllPending`): o restore volta com a sala e as sessões, e quem tinha o token gravado segue igual.
+        H.10 ADIAR — o *debounce* reinicia a cada mutação, e uma rajada de 10 s nunca foi gravada: a queda
+        perdeu a rajada inteira. H.11 ADIAR — quem deu F5 na janela volta como outro jogador. O diagrama do
+        handshake segue ADIAR: não fez falta.)*
   - [x] **H.1e O mesmo jogador em duas abas:** o `join` com token revoga as sessões antigas
         (`roomManager.ts:668`, depois da E) e não fecha o socket da outra aba — o que ela vê?
         *(14/10/2026 — duplicar a aba: a antiga segue vendo e agindo pelo socket aberto, e no primeiro REST

@@ -512,3 +512,80 @@ H.09 o resolve, e trocar o CRDT pelo protocolo de intenção não seria a versã
 (H.2) como leitura a confirmar: reabrir uma ADR é decisão do dono.*
 
 **Itens:** nenhum novo — o grid congelado foi para o H.09.
+
+---
+
+## H.1d — O servidor cai e volta com a mesa aberta
+
+*Pergunta do plano: o restore, as sessões persistidas (B.4) e o fluxo 401 → `join` **com o token** que a
+R.1 impôs.*
+
+**Como:** o build de produção **com o Supabase local de verdade** (o Docker subiu com o contorno do
+[`BACKUP.md`](../BACKUP.md), e o Supabase sem o Studio, que não ficava saudável). GM, Ana e Beto pelo link,
+com NPC, iniciativa e ferimento; uma **rajada** de 10 s de chat (1 mensagem por segundo); e, na janela antes
+da queda, dano no Beto, o Caio entrando e a Ana dando F5. Então o processo morre e sobe de novo na mesma
+porta. *No Windows, matar o processo é a **queda brusca** — o `SIGTERM` não roda o `flushAllPending`*; o
+desligamento educado do deploy é do H.1j. A data da última gravação vem do próprio banco. Roteiro `h1d.mjs`.
+
+| Pergunta | Resultado |
+|---|---|
+| O restore | ✅ `persistence_restored` com a sala, as 3 sessões gravadas, o NPC e a iniciativa |
+| Quem tinha o token gravado (GM, Beto) | ✅ volta sozinho: o token vale, o mesmo `peerId`, o GM segue GM (gera NPC). O socket reabre — a volta levou ~4 s, e as tentativas de 3 s pegaram o servidor de pé (nenhum `sse_fallback` no servidor novo). Num servidor mais lento, quem tem token válido cai no SSE — o **H.09** |
+| **A rajada** | ❌ a última gravação no banco ficou **antes da rajada**: o *debounce* reinicia a cada mutação, e com uma por segundo ele nunca disparou. Na queda, foram-se **as 10 mensagens, o dano do Beto e a entrada do Caio** — 13 s de mesa, não 2 — ver H.10 |
+| O dano do Beto (dado na janela) | perdido; a ficha local dele, que tinha recebido o ferimento, volta a 0 com a mesa (decisão 7a: vale a do servidor). O GM viu o dano no chat antes da queda e não vê depois |
+| O Caio (entrou na janela) | o token não vale; no primeiro heartbeat (401), a reconexão entra de novo — **o mesmo `peerId`**, porque o assento dele nem estava na sala gravada ✅ |
+| **A Ana (F5 na janela)** | ❌ a sala voltou com o assento dela e o token **de antes do F5**; o token novo não estava no banco. No primeiro 401, o `join` com o token novo cai no `seat_taken` e ela entra com **outro `peerId`**: duas "Ana", a velha offline com o ferimento — ver H.11 |
+| O stream SSE com o token que não voltou | `401`, e o `EventSource` não tenta mais (é o padrão); quem resgata é o heartbeat pelo POST, em até 20 s |
+| Presença | quem voltou aparece offline até o próximo heartbeat (≤ 20 s) — passageiro |
+
+**O diagrama adiado da sequência do handshake** (decidir aqui, pela H.0): **segue ADIAR.** Não fez falta
+para depurar a reconexão: o protocolo em prosa e os pedidos de rede de cada aba bastaram. O gatilho fica.
+
+### H.10 — A sala só é gravada 2 s depois da última mutação — e nunca durante uma rajada
+
+**Área:** H.1d
+
+**Sintoma observado:** medido: o `queueRoomPersist` limpa o timer e agenda outro a cada mutação
+(`roomPersistence.ts:46–56`), sem espera máxima. Com uma ação por segundo, a sala não foi gravada nenhuma vez
+em 10 s; uma queda brusca no meio perde **a rajada inteira** — e uma rajada de combate (arrastos de token,
+rolagens, chat) pode durar minutos.
+
+**Onde:** `server/roomPersistence.ts:46–56`.
+
+**Quem sente hoje:** ninguém — só a queda brusca perde: o deploy manda `SIGTERM`, e o `flushAllPending`
+(`:155`) grava o pendente. Queda brusca é *crash* — um `unhandled_error` que derrube o processo, falta de
+memória, a instância morta pela plataforma.
+
+**Se eu não fizer:** perde dado, no dia de uma queda brusca com a mesa ativa.
+
+**Versão 10× menor:** uma espera máxima — gravar pelo menos a cada N segundos mesmo com mutação contínua (o
+`maxWait` de um *debounce* comum). Três linhas.
+
+**Reversível:** sim.
+
+**VEREDITO:** ADIAR
+- **Gatilho:** uma queda que não seja deploy no log de uma sessão real (`unhandled_error`, o processo
+  reiniciado no painel do Render), ou a L.1 mexer na persistência (o broadcast por diferença passa por aqui).
+
+### H.11 — O token novo de um F5 recente não está no banco
+
+**Área:** H.1d
+
+**Sintoma observado:** reproduzido: o `join` aceito troca o token (`roomManager.ts:668–669`), e a rota só o
+grava pelo mesmo *debounce* (o `broadcastRoomUpdate` da rota, `server.ts:554`). Quem deu F5 nos 2 s antes de uma queda — ou durante uma
+rajada, pelo H.10 — volta com um token que o servidor restaurado não conhece, e o assento dele tem o token
+antigo: `seat_taken`, e ele vira **outro jogador** (se for o GM, perde o cargo — o H.03 por outra porta).
+
+**Onde:** `server.ts:518–563` (a rota do `join`); `server/roomPersistence.ts:46–56`.
+
+**Quem sente hoje:** ninguém — exige um F5 e uma queda brusca na mesma janela.
+
+**Se eu não fizer:** no caso raro, assento duplicado ou GM perdido.
+
+**Versão 10× menor:** a rota do `join` gravar **na hora** (`persistRoomNow`) em vez de pelo *debounce* —
+`join` é raro, e é ele que cria e troca a credencial. Uma linha.
+
+**Reversível:** sim.
+
+**VEREDITO:** ADIAR
+- **Gatilho:** o mesmo do H.10 — e se o H.10 virar FAZER, este vai junto, no mesmo arquivo.
