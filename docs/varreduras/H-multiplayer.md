@@ -589,3 +589,35 @@ antigo: `seat_taken`, e ele vira **outro jogador** (se for o GM, perde o cargo �
 
 **VEREDITO:** ADIAR
 - **Gatilho:** o mesmo do H.10 — e se o H.10 virar FAZER, este vai junto, no mesmo arquivo.
+
+---
+
+## H.1i — Ficha editada em duas abas
+
+*Pergunta do plano: a reconexão resolve por last-write-wins com o `updatedAt` do cliente — o relógio do
+navegador decide quem ganha?*
+
+**Como:** (A) a Ana com o **relógio do navegador 2 h atrasado** (`page.clock`) entra, edita o apelido fora da
+mesa, volta com F5 e leva dano do GM; (B) a Ana em duas abas do mesmo assento, a segunda renomeando a ficha.
+Roteiro `h1i.mjs`.
+
+| Caso | Resultado |
+|---|---|
+| (A) Relógio atrasado: editar e voltar | a edição **entra na mesa** ("Ana-v2"); o `updatedAt` gravado é o do relógio dela (11:57 com o real em 13:57) |
+| (A) O GM fere a Ana | 9 pontos na mesa e na ficha local |
+| (B) Duas abas, a segunda renomeia | o nome novo vai ao mesmo assento; a ficha local, que as duas abas dividem, fica com ele. A aba antiga só se separa no primeiro REST dela — o **H.05** |
+
+**Por que o relógio não decide nada que importe:** a ficha de um assento tem **um escritor só** além do
+servidor — o navegador daquele assento —, e o servidor só escreve o ferimento, que a reconexão nunca toma do
+cliente (decisão 7a, `withServerWound`, `roomManager.ts:615`). O *last-write-wins* da reconexão
+(`pickSheet`, `:555–561`) compara duas versões do mesmo navegador. E a sincronia da ficha (`POST /sheet`)
+grava **sem comparar** `updatedAt` (`:673–707`) e roda logo depois de cada reentrada: o que a reconexão
+escolher dura no máximo os 600 ms da sincronia. *O caso composto* — uma queda brusca que perca a última
+sincronia (H.10) **e** o relógio atrasado — deixaria a mesa com a versão antiga até a próxima edição; não vale
+item próprio, vai com o H.10.
+
+**Os gatilhos:** o G.03 (trocar de ficha com a mesa aberta) não foi tocado — o caminho é outro. O diagrama
+adiado de "reconexão e last-write-wins" ([`ARQUITETURA.md`](../ARQUITETURA.md#diagramas-adiados), gatilho:
+bug de convergência de **ficha**) segue ADIAR: não houve bug.
+
+**Itens:** nenhum.

@@ -972,8 +972,11 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         movimento em voo, o GM caindo enquanto a Ana move), sem token duplicado — o JSON é espelhado a cada
         update. De carona, **o grid congela na tela de quem caiu para o SSE**: foi para o H.09. O gatilho da
         ADR 0002, na leitura desta varredura, não disparou — vai à H.2 para o dono confirmar.)*
-  - [ ] **H.1i Ficha editada em duas abas:** a reconexão resolve por **last-write-wins com o
+  - [x] **H.1i Ficha editada em duas abas:** a reconexão resolve por **last-write-wins com o
         `updatedAt` do cliente** — o relógio do navegador decide quem ganha.
+        *(14/10/2026 — não decide nada que importe, sem item: com o relógio 2 h atrasado a edição entra na
+        mesa. A ficha de um assento tem um escritor só além do servidor (que só escreve o ferimento), e a
+        sincronia grava sem comparar `updatedAt` logo depois de cada reentrada. Duas abas: é o H.05.)*
   - [ ] **H.1j** *(no ar)* **O Render troca a instância com a mesa aberta:** um merge no `master` no
         meio da sessão publica sozinho (30 s entre `SIGTERM` e `SIGKILL`); e a volta depois de hibernar
         leva ~1 min ([free](https://render.com/docs/free)).
