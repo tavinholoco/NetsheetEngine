@@ -929,8 +929,12 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         produção, 0 erro de console, o ferimento igual na mesa e na ficha local. A régua: um chat custa
         6,7 KB por aba, o ataque mais o dano ~72 KB, 45 s parada 0,5 KB. Os gatilhos da G.3h e do G.01 não
         dispararam.)*
-  - [ ] **H.1b Rede estrangulada:** chat, rolagem, token movido e dano chegam, e na ordem? Broadcast
+  - [x] **H.1b Rede estrangulada:** chat, rolagem, token movido e dano chegam, e na ordem? Broadcast
         completo e update Yjs incremental podem chegar fora de ordem.
+        *(14/10/2026 — um proxy TCP de 3G lento (50 KB/s) no Beto: tudo chega e **na ordem**, e o token
+        converge. O jogador lento **não cai** pelo teto de 1 MiB do E.03 — só num túnel de 90 s, e a volta é
+        limpa (mesmo assento, alcança em 4 s). H.01 ADIAR para a L.1: numa rajada ele fica 7–9 s atrás,
+        porque cada ação reenvia a sala inteira. H.02 ADIAR: cada queda deixa a conexão Yjs velha viva.)*
   - [ ] **H.1c Refresh no meio do combate** — do jogador e do GM.
   - [ ] **H.1d Servidor reiniciado com a mesa aberta:** restore, sessões persistidas (B.4) e o fluxo
         401 → `join` **com o token** que a R.1 impôs.

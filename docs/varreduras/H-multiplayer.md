@@ -93,3 +93,83 @@ sessão).
 **Itens:** nenhum. Os sinais estranhos da primeira passada não eram defeito — 12 de dano não furam a ficha
 em branco (SP 14 em todo local) e o chat diz isso; os "6 tokens para 3 assentos" são 2 coberturas, o NPC
 padrão do grid e os 3 jogadores.
+
+---
+
+## H.1b — Rede estrangulada
+
+*Pergunta: chat, rolagem, token movido e dano chegam, e na ordem? E o jogador lento cai pelo teto de
+1 MiB do E.03?*
+
+**Como:** o Beto passa por um **proxy TCP** de rede ruim (fora do repositório, `slowproxy.mjs`): 300 ms de
+atraso em cada sentido, **50 KB/s** de descida e 25 KB/s de subida — o "3G lento" do DevTools —, e uma
+janela de 128 KB que para de ler do servidor quando enche, para o `bufferedAmount` do `ws` crescer como
+numa rede de verdade. O throttling do DevTools não serve: não garante o WebSocket. O site carrega rápido
+(no ar ele vem comprimido e em cache) e o 3G começa na entrada da mesa. A sala tem o tamanho de uma mesa
+de verdade: 3 pessoas, 4 fichas geradas e 4 NPCs — **35 KB**, 47 KB no fim. GM e Ana direto.
+
+**O que aconteceu:**
+
+| Pergunta | Resultado |
+|---|---|
+| Ordem | Seis mensagens da Ana entremeadas com dano e token movido pelo GM: o Beto vê `ord-1…ord-6` **na ordem**, e o token na mesma casa que o servidor (B7). Um socket TCP só não reordena; o reenvio da sala sai antes do update do Yjs que o causou (`mirrorDocToJson` chama o `broadcastRoomUpdate`, `server.ts:1111`), e a tela usa o grid do Yjs quando ele existe (`MultiplayerRoom.tsx:659`) — os dois caminhos não se atropelam |
+| Atraso | A rajada de 12 ações custou **437 KB por aba**; o Beto viu a última **7,4 s** depois do GM. A rolagem dele chega ao GM em 0,9 s (subida curta, um quadro pequeno) |
+| Carga normal (1 ação a cada 3 s, 45 s) | nada cortado; o caminho guardou até 192 KB |
+| Rajada (2 ações/s, 20 s) | nada cortado; o Beto alcança **9 s** depois do fim |
+| Túnel de 30 s (só a descida para) | nada cortado; alcança em 9,5 s |
+| **Túnel de 90 s, os dois sentidos**, a mesa agindo a cada 2 s | o Beto aparece **offline aos 59 s** (o heartbeat de 60 s); o teto corta **aos 73 s** (`slow_consumer_closed`, 1.064.765 bytes). Na volta, o cliente reconecta sozinho em 3 s, recebe a sala atual e alcança em **4,4 s** — mais rápido que sem o corte, porque não baixa o atraso. Mesmo assento, de volta a online, 0 erro de console |
+
+**Resposta à pergunta do E.03:** um jogador lento de verdade **não cai** pelo teto — só a queda longa de
+rede, e aí cair é o certo: a volta é limpa. *Ressalva:* no loopback o kernel do Windows absorve parte do
+buffer; num caminho de verdade o `bufferedAmount` cresce antes, e o corte viria mais cedo que 73 s. O
+efeito do corte (reconectar e baixar a sala atual) é o mesmo.
+
+### H.01 — Na rede lenta, o jogador fica segundos atrás: cada ação reenvia a sala inteira
+
+**Área:** H.1b
+
+**Sintoma observado:** medido, não sentido: com 50 KB/s e a sala de 35–47 KB, cada ação na mesa custa ~1 s
+de descida para o jogador lento. Uma rajada de combate o deixa **7–9 s** atrás do resto da mesa — o chat,
+o dano e o token chegam todos, na ordem, mas atrasados.
+
+**Onde:** `server.ts:353–418` (`broadcastRoomUpdate` manda a sala inteira a cada conexão) — o **ARQ-01**.
+
+**Quem sente hoje:** ninguém ainda — o Registro de sessões está vazio, e 50 KB/s é o pior caso (o 3G lento
+do DevTools; 4G passa de 1 MB/s).
+
+**Se eu não fizer:** fica lento para quem joga no celular em rede ruim.
+
+**Versão 10× menor:** não há — o conserto é o broadcast por diferença, que já é a L.1. O que este item
+acrescenta é o número para a L.0 decidir: o atraso cresce com o tamanho da sala, não com a distância.
+
+**Reversível:** —
+
+**VEREDITO:** ADIAR — dona: a **L.1**.
+- **Gatilho:** um jogador da mesa jogar em rede móvel e o atraso aparecer numa sessão real (anotar no
+  Registro de sessões), ou os gatilhos que a L.1 já tem (banda acima de 2,5 GB no mês, `ws_rate_limited`).
+
+### H.02 — A conexão Yjs velha não é destruída quando o socket cai
+
+**Área:** H.1b *(lido na H.0, medido aqui)*
+
+**Sintoma observado:** medido: a cada queda do WebSocket a aba fica com **+2 `setInterval` vivos** (de 4 para
+6 depois do túnel de 90 s, contados com um `setInterval` instrumentado). O `onclose` zera o
+`yjsConnRef` sem chamar o `destroy()` (`MultiplayerRoom.tsx:267–271`), e o efeito, ao rodar de novo,
+encontra o ref vazio e não destrói nada (`:286–289`). Ficam o intervalo de 25 s do `YjsGridConnection`
+(`yjsConnection.ts:86–89`), o de 3 s do `Awareness` do `y-protocols` e o `Y.Doc` do grid. Nada chega à
+tela: os retornos de chamada da conexão velha olham o `disposed` do efeito antigo, e o socket dela está
+fechado.
+
+**Onde:** `features/multiplayer/MultiplayerRoom.tsx:267–289`.
+
+**Quem sente hoje:** ninguém — dois timers e um doc pequeno por queda.
+
+**Se eu não fizer:** nada que se veja numa sessão; memória da aba cresce um pouco a cada queda.
+
+**Versão 10× menor:** uma linha — `yjsConnRef.current?.destroy()` no `onclose` antes de zerar o ref.
+
+**Reversível:** sim.
+
+**VEREDITO:** ADIAR
+- **Gatilho:** a memória da aba crescer numa sessão longa, ou alguém mexer no `onclose` — a pista dos
+  códigos 4400/4409 (H.0, H.1e, H.1f) mexe: a linha vai junto.
