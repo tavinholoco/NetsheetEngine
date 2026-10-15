@@ -126,8 +126,9 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
   14/10/2026):** as duas ficaram vivas **~20 s**, não os 60 s da doc, e o que a velha recebeu nesse tempo se
   perdeu; os jogadores voltaram sozinhos em 3 s, no mesmo assento. O Render publica a cada push no
   `master` (e no "Manual Deploy"), então a regra é de quem mergeia: PR de código, só fora de sessão de
-  jogo. O conserto no código é ADIAR, com gatilho no H.13 do
-  [ledger da H](./varreduras/H-multiplayer.md).
+  jogo. O conserto no código — a passagem de bastão entre as instâncias — é a **H.3d** do plano (o H.13 do
+  [ledger da H](./varreduras/H-multiplayer.md), FAZER desde 15/10/2026). **Até ele ser provado no ar, a regra
+  vale inteira.**
 - Se escalar horizontalmente no futuro, será preciso um pub/sub compartilhado
   (ex.: Redis/Postgres LISTEN) — fora do escopo atual (documentado no
   ADR-0002).

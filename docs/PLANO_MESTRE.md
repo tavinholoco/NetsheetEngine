@@ -953,10 +953,11 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         - **As linhas citadas nas pistas acima mudaram**: a G levou o `MultiplayerRoom` de 1.049 para 1.123
           linhas (o `wsEverOpen` do E.14 saiu da `:171` para a `:227`). Medir de novo no dia, como manda o
           passo X.0.
-> **Estado em 14/10/2026, à noite:** a H.0–H.4 estão feitas. O H.1j rodou no ar, combinado com o dono (ele
-> clicou no "Manual Deploy" com a mesa de teste aberta), e a H.3 executou os dois FAZER e o H.02 que o conserto
-> disparou — tudo no PR desta sessão. **Falta só a H.5:** o merge do PR, o `master` verde depois dele (passo 6)
-> e a data da fase. Uma sessão nova que abra aqui confere o `master` e marca.
+> **Estado em 15/10/2026:** a H.0–H.2, a H.3a–c e a H.4 estão feitas, no PR #46. O H.1j rodou no ar, combinado
+> com o dono (ele clicou no "Manual Deploy" com a mesa de teste aberta), e a H.3 executou os dois FAZER e o H.02
+> que o conserto disparou. **O dono decidiu o H.13 como FAZER** (15/10, no #46): é a **H.3d**, a passagem de
+> bastão entre instâncias, com o H.10 e o H.11 — ~2 dias, dois PRs e mais um teste no ar com ele. **Falta:** a
+> H.3d, pelas caixas dela, e a H.5 (o `master` verde depois de cada merge, e a data da fase).
 
 - [x] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`. *(14/10/2026 — os dez cenários
       locais no #44; o H.1j, no ar, depois do merge dele.)*
@@ -1021,7 +1022,7 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         aberta; roteiro `scripts/multiplayer/h1j.mjs`, ensaiado antes no build local com duas instâncias. **As
         duas instâncias ficaram vivas ~20 s**, não os 60 s da doc do Render: perdeu-se o que a velha recebeu
         pelo WebSocket nesse intervalo (1 mensagem), e os três voltaram em 3 s ao mesmo assento, sem SSE —
-        **H.13 ADIAR**, o E.06 medido. **A hibernação:** o despertar levou ~22 s, e um `join` abortado aos 4 s
+        **H.13** — o E.06 medido; ADIAR na primeira leitura, FAZER por decisão do dono (a H.3d). **A hibernação:** o despertar levou ~22 s, e um `join` abortado aos 4 s
         não chegou ao servidor — o gatilho do **H.04** não disparou. A mesa de teste saiu do banco no fim.)*
   - [x] **H.1k Habilidade especial na mesa:** não é rolável — o tipo `skill` procura em `sheet.skills`,
         e ela mora em `specialAbilityName` (visto na C.8). Na ficha funciona. Sem sintoma de mesa até
@@ -1035,8 +1036,8 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
       estavam**, inclusive os dois que foram destacados ao dono: o **H.06** fica ADIAR (o GM que fecha a aba
       perde a mesa — a versão menor, a credencial do GM no `localStorage`, cabe no PR do H.03 se o dono pedir)
       e o gatilho da **ADR 0002 não disparou** (a revisão está na própria ADR). *Com o H.13, do H.1j: 13 itens,
-      2 FAZER, 15% — vai destacado ao dono no PR da H.3.*)*
-- [x] **H.3** Executar só os FAZER — passo X.3. Teste que reproduz **escrito antes**, a prova revertendo,
+      2 FAZER, 15%. O dono decidiu o H.13 como FAZER no #46 (15/10): **3 FAZER, 23%** — a H.3d.*)*
+- [ ] **H.3** Executar só os FAZER — passo X.3. Teste que reproduz **escrito antes**, a prova revertendo,
       um commit por item, e a conferência na tela pelo roteiro do cenário (`scripts/multiplayer/`). H.3, H.4 e
       H.5 num PR só, como o #41 da G. As linhas citadas são as do ledger (`master` em `8203479`); medir de novo.
       *(14/10/2026 — os três, **+9 testes** em dois arquivos novos, cada um visto falhando com o código antigo e
@@ -1073,18 +1074,57 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         mais por queda — medido +2 no H.1b).
         *(14/10/2026 — `room-transport` +1, falha com 0 chamadas ao `destroy`. No `h1b-tunel.mjs`, 4 intervalos
         vivos antes e depois do túnel de 90 s — eram 4 → 6.)*
+  - [ ] **H.3d** **H.13 — a passagem de bastão entre instâncias no deploy** *(FAZER por decisão do dono, 15/10/2026,
+        no PR #46 — o [H.13 do ledger](./varreduras/H-multiplayer.md#h13--no-deploy-com-mesa-aberta-o-que-a-instância-velha-recebe-nos-20-s-depois-de-a-nova-subir-se-perde)
+        tem o desenho e as versões descartadas)*. Hoje, num deploy, a nova instância lê a mesa do banco ao ligar e as
+        duas seguem separadas por ~20 s; o que vai à velha some (H.1j). **O conserto:** só uma instância manda na mesa
+        por vez. A nova anota no banco que quer assumir e não abre a porta (o servidor só escuta depois do restore,
+        `server.ts:1417`, e o Render só troca o tráfego com o `/api/health` respondendo); a velha, que confere a
+        anotação a cada 2 s, para de aceitar ações, fecha os sockets, grava tudo e marca que entregou; só então a nova
+        lê o banco e escuta. Sem marca de vida da velha (morta, ou o serviço hibernava), a nova assume depois de alguns
+        segundos — a volta da hibernação não espera. **Preço:** um "reconectando" de uns 5–20 s a cada deploy, no
+        lugar da perda em silêncio; uma escrita no banco a cada 2 s com o serviço acordado. ~2 dias. De carona, no
+        mesmo arquivo da persistência, o **H.10** e o **H.11**, com os gatilhos disparados por ela.
+    - [ ] **H.3d.0** 🔍 **Premissas** (com o dono no painel do Render — o login é dele): (1) no log do deploy de
+          14/10 (~22:34 BRT; o log do Hobby guarda 7 dias, até ~21/10), a instância velha registrou o
+          `server_shutdown` — recebeu o `SIGTERM`? (2) o serviço Docker tem o health check `/api/health` no painel,
+          e o Render espera ele responder antes de trocar o tráfego? (3) quanto o Render leva da porta aberta à
+          troca — é o que dura o "reconectando". Uma premissa que caia muda o desenho antes do código.
+    - [ ] **H.3d.1** **PR da migration** (decisão 5): uma tabela de uma linha — quem manda, a última marca de vida,
+          quem entregou —, com RLS ligado e **sem política**: só a service role lê e escreve, como a `rooms`.
+          **Backup antes** (`npm run backup:db`, decisão 8, anotado no [registro](./BACKUP.md#registro-de-backups)),
+          o merge, e a conferência em produção com `npx supabase migration list --linked` antes do PR do código.
+    - [ ] **H.3d.2** **O teste que reproduz, antes do código:** o ensaio `H1J_LOCAL=1 node scripts/multiplayer/h1j.mjs`
+          (duas instâncias com o Supabase local, atrás de um proxy que faz o papel do Render) perde o que vai à velha
+          depois de a nova subir — 5 mensagens em 14/10. E os testes do módulo, com um banco falso: com a velha viva,
+          a nova espera a entrega; com a marca de vida velha, assume na hora; a velha que vê a troca entrega; um erro
+          de rede na renovação **não** é troca; depois de entregar, a velha não grava mais nada.
+    - [ ] **H.3d.3** **PR do código:** o módulo da passagem (`server/instanceLease.ts`: assumir, renovar a cada 2 s,
+          entregar); o boot na ordem assumir → esperar a entrega → restaurar → escutar; a velha que entrega recusa
+          ações e *upgrade* com `503 server_restarting` (código novo na tabela do `server/errors.ts`), fecha os
+          sockets e o SSE, grava, para o vigia de presença e o coletor, e só então marca que entregou; o cliente tenta
+          de novo sozinho por alguns segundos diante do `server_restarting`. **De carona:** o H.10 (gravar pelo menos
+          a cada N s mesmo em rajada — o `maxWait`) e o H.11 (o `join` grava na hora), cada um com o seu teste.
+          **Portão** (adendo à H.4): a pergunta 3 pesa — uma instância manda a outra parar, e só a service role
+          escreve na tabela —, e a 5 (a tabela tem uma linha). ADR 0007 (a passagem de bastão), protocolo,
+          `DEPLOY.md` e o diagrama de contêineres. **Prova:** o ensaio local perde 0.
+    - [ ] **H.3d.4** **No ar, com o dono:** o H.1j de novo — a mesa de teste, o "Manual Deploy" clicado por ele —:
+          0 mensagem perdida, e quanto dura o "reconectando". A regra "nunca mergear com mesa aberta" só sai do
+          `CLAUDE.md` e do `DEPLOY.md` se este passo provar a perda zero.
 - [x] **H.4** 🔒 Portão, se a H.3 mudou código — passo X.4. *(Vai mudar: a URL depois de entrar e a reconexão
       do transporte. A pergunta 3 pesa — o F5 volta ao assento com o token, e nenhum caminho novo emite sessão.)*
       *(14/10/2026 — entrada no [registro](./SEGURANCA.md#fase-h--varredura-multiplayer), sem achado: nenhuma
       rota nem sessão nova — uma emissão a menos (a chegada a `/room/CÓDIGO` não repete o `join`); o código da
       mesa na barra de endereço já estava no cabeçalho e no convite, e o `helmet` manda `no-referrer`.)*
+      *A H.3d traz o seu adendo — está na caixa H.3d.3.*
 - [ ] **H.5** 🧠 Estado durável — passo X.5. *(Inclui rodar `scripts/multiplayer/h1a.mjs` como régua: 0 erro de
       console e os números da H.1a.)*
       *(14/10/2026 — feito antes do PR: caixas, ledger, linha de base (**805** testes, 59 arquivos), E2E 7/7, o
       smoke de WebSocket 5/5, `audit:colors` e conflitos em 0, `audit:ci` limpo, e a régua `h1a.mjs`: 0 erro de
       console, 6,7 KB por chat, 0,5 KB em 45 s parada. Documentos que a H.3 tornou falsos: o protocolo (§1, §2, a
       nota dos códigos de fechamento, §7), a seta do SSE no diagrama de contêineres, e o "≥60 s / ~1,5 min" do
-      deploy no `DEPLOY.md` e no `CLAUDE.md`. **Falta:** o merge do PR e o `master` verde depois dele.)*
+      deploy no `DEPLOY.md` e no `CLAUDE.md`. **Falta:** o merge do #46 e o `master` verde depois dele; e, com a
+      H.3d (15/10), o mesmo passo para os PRs dela — a linha de base volta a ser medida no fim.)*
 - [ ] ✅ **Fase H concluída em:** ____/____/______
 
 ---
@@ -1400,7 +1440,7 @@ público mudar.
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
 | G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
-| H | 🔍 | Varredura: multiplayer — ledger com 13 itens, 2 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perde ~20 s, não ~1,5 min) e a H.3 com os dois FAZER e o H.02; falta o merge e o `master` verde | 🟡 | — |
+| H | 🔍 | Varredura: multiplayer — ledger com 13 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perde ~20 s, não ~1,5 min), a H.3a–c com dois FAZER e o H.02 (#46); falta a H.3d — o H.13, FAZER por decisão do dono (15/10), a passagem de bastão entre instâncias | 🟡 | — |
 | I | 🔍 | Varredura: integração | ⬜ | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |

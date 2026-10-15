@@ -371,7 +371,7 @@ Entra no `DEPLOY.md` neste mesmo PR. O conserto técnico (a nova instância rele
   passa a ter o roteiro do que conferir.
 - *Medido no H.1j (14/10/2026), com o deploy provocado e combinado:* as duas instâncias ficaram vivas **~20 s**,
   não 60 s, e perdeu-se o que a velha recebeu nesse intervalo. O gatilho disparou por desenho; o item segue no
-  **H.13** do [ledger da H](./H-multiplayer.md#h13--no-deploy-com-mesa-aberta-o-que-a-instância-velha-recebe-nos-20-s-depois-de-a-nova-subir-se-perde), ADIAR, com a regra de processo e gatilho novo.
+  **H.13** do [ledger da H](./H-multiplayer.md#h13--no-deploy-com-mesa-aberta-o-que-a-instância-velha-recebe-nos-20-s-depois-de-a-nova-subir-se-perde), que o dono decidiu **FAZER** em 15/10/2026 — a passagem de bastão entre instâncias, na H.3d do plano.
 
 ### E.07 — Remover alguém da iniciativa no meio da rodada pula a vez de outro
 

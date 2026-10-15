@@ -6,10 +6,11 @@
 awareness (`server.ts`), as sessões e a reconexão (`server/roomManager.ts`, `server/wsLimits.ts`); no
 cliente, o efeito de transporte e o heartbeat (`features/multiplayer/MultiplayerRoom.tsx`), a camada CRDT
 (`lib/yjsConnection.ts`, `lib/gridDoc.ts`) e a sessão (`api/rooms.ts`, `pages/RoomPage.tsx`).
-**Itens levantados:** 13 · **FAZER:** 2 · **ADIAR:** 10 · **DESCARTAR:** 1 *(12 na varredura local; o H.13
+**Itens levantados:** 13 · **FAZER:** 3 · **ADIAR:** 9 · **DESCARTAR:** 1 *(12 na varredura local; o H.13
 veio do H.1j, no ar)*
-**Proporção FAZER:** 15% — abaixo de 1/3 (ver [H.2](#h2--calibragem)). Os dois FAZER, e o H.02 que o conserto
-do H.09 disparou, foram executados na [H.3](#h3--os-fazer-executados).
+**Proporção FAZER:** 23% — abaixo de 1/3 (ver [H.2](#h2--calibragem)). Dois FAZER, e o H.02 que o conserto do
+H.09 disparou, foram executados na [H.3](#h3--os-fazer-executados); o terceiro, o **H.13**, virou FAZER por
+decisão do dono em 15/10/2026 e é a **H.3d** do plano — com o H.10 e o H.11, que mexem no mesmo arquivo.
 
 **Como é feito.** A H não é teste automatizado: é **quebrar de propósito, cenário por cenário**, com o log
 aberto. Cada cenário do plano (H.1a–H.1k) é uma seção, com o que se esperava, o que aconteceu e os eventos
@@ -574,6 +575,8 @@ memória, a instância morta pela plataforma.
 **VEREDITO:** ADIAR
 - **Gatilho:** uma queda que não seja deploy no log de uma sessão real (`unhandled_error`, o processo
   reiniciado no painel do Render), ou a L.1 mexer na persistência (o broadcast por diferença passa por aqui).
+- **⚡ Gatilho disparado (15/10/2026):** a H.3d (o H.13) mexe na persistência antes da L.1 — o que o gatilho
+  pedia era alguém mexer ali. As três linhas entram nela, com teste.
 
 ### H.11 — O token novo de um F5 recente não está no banco
 
@@ -597,6 +600,7 @@ antigo: `seat_taken`, e ele vira **outro jogador** (se for o GM, perde o cargo �
 
 **VEREDITO:** ADIAR
 - **Gatilho:** o mesmo do H.10 — e se o H.10 virar FAZER, este vai junto, no mesmo arquivo.
+- **⚡ Gatilho disparado (15/10/2026), com o do H.10:** a linha entra na H.3d, com teste.
 
 ---
 
@@ -738,18 +742,32 @@ e reler o banco, ou a velha recusar mutação depois do `SIGTERM`) segue grande.
 
 **Reversível:** —
 
-**VEREDITO:** ADIAR — *o gatilho do E.06 ("estado perdido depois de um deploy com mesa aberta — o cenário da
-H.1j") disparou aqui por desenho: o H.1j era o teste dele. A medição encolheu o dano de ~1,5 min para ~20 s
-e não mudou quem o sente; vai destacado ao dono no PR.*
-- **Gatilho:** precisar publicar com mesa aberta (um conserto urgente durante a sessão), ou estado perdido
-  depois de um deploy numa sessão real.
+**VEREDITO:** FAZER — *por decisão do dono (15/10/2026, no PR #46), depois de ver o tamanho do conserto.* Na
+primeira leitura (14/10) foi ADIAR: o gatilho do E.06 ("estado perdido depois de um deploy com mesa aberta — o
+cenário da H.1j") disparou por desenho, a medição encolheu o dano de ~1,5 min para ~20 s, e quem sente seguia
+sendo ninguém enquanto valesse "nunca mergear com mesa aberta". A regra de processo cobre o merge do dono; o
+conserto tira a perda de qualquer troca de instância.
+- **A versão escolhida — a passagem de bastão:** só uma instância manda na mesa por vez. A nova anota no banco
+  que quer assumir e não abre a porta (o servidor só escuta depois do restore, e o Render só troca o tráfego
+  com o health respondendo); a velha, que confere a anotação a cada 2 s, para de aceitar ações, fecha os
+  sockets, grava tudo e marca que entregou; só então a nova lê o banco e escuta. Sem marca de vida da velha
+  (morta, ou o serviço hibernava), a nova assume depois de alguns segundos. O preço: um "reconectando" de uns
+  5–20 s a cada deploy, no lugar da perda em silêncio — a medir no ar.
+- **Descartadas:** a nova reler o banco quando os jogadores voltam (troca a perda do WebSocket pela das ações do
+  GM por REST); tirar o deploy sem interrupção (só com disco persistente, pago); o aviso pelo Realtime do
+  Supabase (a chave anônima é pública: qualquer visitante mandaria a instância parar).
+- **Teste que reproduz:** o ensaio `H1J_LOCAL=1 node scripts/multiplayer/h1j.mjs` — duas instâncias com o
+  Supabase local, atrás de um proxy que faz o papel do Render — perde o que vai à velha depois de a nova subir
+  (5 mensagens em 14/10); depois do conserto, 0. E os testes do módulo da passagem com um banco falso.
+- **Onde:** a **H.3d** do plano, em dois PRs (a migration primeiro, decisão 5) e mais um H.1j no ar com o dono.
 
 ---
 
 ## H.2 — Calibragem
 
 **12 itens, 2 FAZER (17%).** Abaixo de 1/3 na primeira passada — a régua não precisou de ajuste. *Com o
-H.13 do H.1j (14/10, depois do merge do ledger): 13 itens, 2 FAZER, **15%**.* Os dois
+H.13 do H.1j (14/10, depois do merge do ledger): 13 itens, 2 FAZER, **15%**; com a decisão do dono de 15/10
+(o H.13 FAZER): **3 FAZER, 23%**.* Os dois
 FAZER são reproduzidos, sentidos na mesa e sem versão mais barata que esperar:
 
 | FAZER | O que quebra |
@@ -764,9 +782,10 @@ FAZER são reproduzidos, sentidos na mesa e sem versão mais barata que esperar:
   versão menor cabe no mesmo PR do H.03.
 - **H.04 e H.05 (o assento duplicado) — ADIAR, juntos.** Saem do mesmo mecanismo no servidor (distinguir o
   token substituído por outro `join`); o H.1j pode disparar o gatilho do H.04.
-- **H.13 (o deploy com mesa aberta perde ~20 s) — ADIAR**, *acrescentado depois do H.1j (14/10)*: o gatilho do
-  E.06 disparou por desenho — o H.1j era o teste dele —, a medição encolheu o dano (~20 s, não ~1,5 min) e quem
-  sente continua sendo ninguém enquanto valer "nunca mergear com mesa aberta". O H.1j também respondeu ao
+- **H.13 (o deploy com mesa aberta perde ~20 s) — ADIAR na primeira leitura, FAZER por decisão do dono
+  (15/10, no #46)**, *acrescentado depois do H.1j (14/10)*: o gatilho do E.06 disparou por desenho — o H.1j era o
+  teste dele —, e a medição encolheu o dano (~20 s, não ~1,5 min). O dono viu o tamanho do conserto (~2 dias,
+  dois PRs, mais um teste no ar) e decidiu fazer: é a H.3d. O H.1j também respondeu ao
   **H.04**: o Render não entregou o `join` abortado no despertar — o gatilho não disparou.
 - **A ADR 0002 — o gatilho não disparou, na leitura desta varredura** (H.1h): o CRDT convergiu nas três
   corridas; o grid congelado é a cópia velha do Yjs na tela, e uma linha do H.09 o resolve. Reabrir a ADR é
@@ -789,6 +808,7 @@ a prova revertendo e a conferência na tela pelo roteiro do cenário, contra o b
 | **H.3a** — H.03 | O `RoomPage` é a página das duas rotas (`/multiplayer` e `/room/:código`): no lobby, a mesa que fica ativa leva a URL para `/room/CÓDIGO` (`replace`); e ele não repete o `join` de uma sessão viva no mesmo código | `room-refresh` (4): os 4 falham com o código antigo; sem só a guarda do `join`, os 4 falham de novo (o token trocava à toa) | `h1c.mjs`: o Beto, que entra pelo código, volta do F5 ao mesmo assento (3 assentos, sem duplicata). `h1c-gm.mjs`, agora com o caminho de verdade — login no Supabase local com um usuário descartável, "Criar Mesa como GM" e F5: o GM segue GM e gera NPC. O "Sair" em `/room/CÓDIGO` volta ao lobby com a URL da sala e o campo vazio — como o de quem entrou pelo convite desde a R.11; sem sintoma, fica |
 | **H.3b** — H.09 | O "já conectou nesta mesa" num `useRef`: quem já conectou tenta o WebSocket de novo, com espera crescente (3, 6, 12… até 30 s; volta a 3 s quando conecta); o SSE fica para quem nunca conectou. Quando o socket cai, a tela volta ao grid da sala | `room-transport` (4), com um WebSocket que o teste abre, derruba e faz falhar (`controlRoomTransport`): 3 falham com o código antigo, e o do proxy (nunca conectou → SSE) passa nos dois; sem só o `setYjsGrid(null)`, o do grid falha | `h1g.mjs`: depois da queda de ~6 s, a Ana volta ao WebSocket e arrasta o próprio token pela tela; **um** `sse_fallback` no log — o do Beto, atrás do proxy. `h1h.mjs`: o grid da Ana segue a mesa em 4 s |
 | **H.3c** — H.02 | O `onclose` destrói a conexão Yjs do socket que caiu antes de zerar o ref | `room-transport` +1: falha com 0 chamadas ao `destroy` | `h1b-tunel.mjs`: 4 `setInterval` vivos antes e depois do túnel de 90 s (eram 4 → 6) |
+| **H.3d** — H.13, com o H.10 e o H.11 | *Em aberto* — a passagem de bastão entre instâncias (ver o H.13). FAZER por decisão do dono em 15/10 | — | — |
 
 **O que a H.3 mudou no comportamento, além do sintoma:** com o WebSocket bloqueado *no meio* da sessão (um
 proxy que passa a barrar o *upgrade*), quem já conectou não cai mais no SSE — tenta o WebSocket até 30 s em 30 s
