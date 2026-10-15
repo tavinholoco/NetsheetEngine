@@ -87,7 +87,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 796 testes ao fechar a revisão G.3h, 11/10 (ver "Linha de base atual" no plano)
+npx vitest run            # 805 testes ao fechar a H.3, 14/10 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
@@ -120,7 +120,11 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
 - **A mesa com várias pessoas e rede ruim:** `scripts/multiplayer/` (Fase H) — um contexto isolado do
   Playwright por pessoa (abas do mesmo navegador dividem a ficha local), o build de produção num processo
   próprio e um proxy TCP de rede lenta, túnel e WebSocket bloqueado (o throttling do DevTools não garante o
-  WebSocket). Um roteiro por cenário do ledger da H; `npm run build` antes.
+  WebSocket). Um roteiro por cenário do ledger da H; `npm run build` antes. Dois são diferentes: o
+  `h1j.mjs` roda **contra o ar**, combinado com o dono (ele clica no "Manual Deploy"; o roteiro aborta se
+  houver mesa aberta e apaga a sua no fim — `H1J_LOCAL=1` é o ensaio local), e o `h1c-gm.mjs` faz login de
+  verdade com um usuário descartável no **Supabase local** (recusa qualquer outro). Os testes de tela do
+  transporte (cair, voltar, cair no SSE) usam o `controlRoomTransport` de `src/test/roomTransport.ts`.
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.

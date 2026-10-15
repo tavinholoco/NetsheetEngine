@@ -47,7 +47,7 @@ flowchart TB
 
     SPA -->|"REST + sessionToken"| API
     SPA -->|"upgrade ?token="| WSS
-    SPA -.->|"quando WS falha"| SSE
+    SPA -.->|"quando o WS nunca conecta"| SSE
     SPA -->|"anon key + JWT do usuario"| SB
     SPA <--> LS
 

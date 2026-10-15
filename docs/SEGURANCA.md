@@ -720,7 +720,41 @@ uma porta que o servidor já guardava.
 5. **Estado novo sem limite?** Nenhum.
 6. **Custo por requisição a serviço externo?** Nenhum.
 
-### Fases H, I e J — varreduras
+### Fase H — Varredura: multiplayer
+
+**14/10/2026 — H.3** (os dois FAZER do [ledger](./varreduras/H-multiplayer.md) e o ADIAR que o conserto
+disparou: a mesa ativa pelo lobby em `/room/CÓDIGO`, a queda breve que não prende no SSE, a conexão Yjs que
+morre com o socket). Fecha a **H.4**. O ledger não tinha achado de segurança aberto, e o H.1j — no ar, com a
+mesa de teste — não mudou código nem deixou dado: a mesa saiu do banco no fim.
+
+1. **Entrada nova?** Nenhuma no servidor — nenhuma rota, mensagem ou campo. No cliente, o `RoomPage` passa a
+   ser também a página do lobby, e o código que vai para a URL é o que o servidor devolveu no `create` ou o
+   que a pessoa digitou e o `join` aceitou.
+2. **Dado novo sai?** Nenhum. O código da mesa — que é o convite desde a R.11 — vai para a barra de endereço
+   de quem entrou pelo lobby; já estava no cabeçalho da sala (selecionável) e na URL de quem entrou pelo
+   convite. O histórico do navegador guarda a URL, como já guardava a do convite. Para fora, nada: o
+   `helmet` manda `Referrer-Policy: no-referrer`.
+3. **Autorização nova?** Nenhuma. O F5 em `/room/CÓDIGO` volta ao assento pelo `join` **com o token** (R.1) —
+   o caminho que o convite já usava. **E quem recebe a sessão prova o quê?** O mesmo de antes; e uma
+   emissão a menos: chegar à URL da sala com a sessão viva não manda outro `join` (sem a guarda, o token
+   trocaria à toa a cada entrada pelo lobby). A reconexão do WebSocket leva o mesmo token na URL do
+   *upgrade*, conferido a cada tentativa, como antes.
+4. **Jogador convidado hostil?** Nada novo. As tentativas de WebSocket do cliente são do próprio navegador,
+   com o próprio token; um script que abra sockets já era barrado pelos tetos da R.4 (3 por jogador) e da
+   R.16.
+5. **Estado novo sem limite?** Nenhum — o contrário: a queda deixava dois `setInterval` e um `Y.Doc` vivos na
+   aba (H.02), e agora não deixa. O contador de tentativas cresce, mas a espera para em 30 s.
+6. **Custo por requisição a serviço externo?** Desprezível. Quem já conectou e perde o WebSocket tenta de
+   novo até 30 s em 30 s, um pedido de *upgrade* de ~1 KB cada, em vez de abrir um stream SSE; e o
+   `sse_fallback` deixa de contar queda de rede, o que corrige o número com que a L.6 decide o SSE.
+
+**Sem dependência nova.** **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança: o
+H.03 e o H.09 são defeitos de mesa (o assento e o grid), publicados no ledger desde o #44. Os roteiros novos
+(`h1j.mjs` contra o ar, `h1c-gm.mjs` com login) não guardam credencial: o primeiro não usa conta, e o segundo
+cria um usuário descartável **só no Supabase local** — recusa qualquer outro — com senha aleatória que não
+imprime, e o apaga no fim.
+
+### Fases I e J — varreduras
 
 *(cada uma a preencher no seu passo X.4 — só se a execução dos FAZER mudar código)*
 

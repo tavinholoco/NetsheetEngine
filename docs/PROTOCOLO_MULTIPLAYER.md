@@ -26,12 +26,14 @@ da sala (`GameRoom` em JSON) para todos os membros.
 | Transporte | Papel | Quando |
 |---|---|---|
 | **WebSocket** (`/ws/rooms/:code`) | Transporte base — chat, rolagens, iniciativa, grid CRDT | Sempre que conecta |
-| **SSE** (`/api/rooms/:code/stream`) | Fallback automático | Se o WS não conectar (firewall/proxy) |
+| **SSE** (`/api/rooms/:code/stream`) | Fallback automático | Se o WS **nunca** conectar nesta mesa (firewall/proxy) |
 | **REST** (`/api/rooms/*`) | Criação/entrada na sala e fallback de ações | Ações pontuais + fallback de chat/roll |
 
 O cliente (`MultiplayerRoom.tsx`) tenta o WebSocket primeiro; se **nunca** conectar, cai para o
-SSE. Se o WS cair **depois** de conectar, reconecta em ~3s. Ambos os transportes entregam o
-**mesmo payload**: a sala inteira serializada em JSON.
+SSE. Se o WS cair **depois** de conectar, tenta o WebSocket de novo, com espera crescente — 3 s, 6 s,
+12 s… até 30 s, e volta a 3 s quando conecta — e **não** cai para o SSE *(H.3b, 14/10/2026: antes, uma
+queda breve seguida de uma tentativa que falhava levava ao SSE para sempre — o H.09)*. Ambos os
+transportes entregam o **mesmo payload**: a sala inteira serializada em JSON.
 
 ---
 
@@ -76,10 +78,15 @@ enviado no corpo (anti-impersonificação).
   segundo `join` simultâneo do mesmo navegador chegaria com o token já revogado, cairia no `seat_taken` e
   abriria um assento órfão. O `joinRoom` e o `createRoom` de `src/api/rooms.ts` devolvem a chamada que já
   está em voo (o clique duplo e a reentrada do `RoomPage` viram uma). *O `reconnectSession` tem trava
-  própria e não compartilha a do `joinRoom`. Hoje eles não se cruzam no uso comum: a reentrada do
-  `RoomPage` roda com a mesa ainda no lobby (o deep link), e a reconexão só depois de um 401 da mesa
-  ativa. Cruzariam se a página da sala abrisse com a mesa já ativa e o token vencido ao mesmo tempo —
-  caminho da H.1c e da H.1e, que conferem refresh e duas abas.*
+  própria e não compartilha a do `joinRoom`. Eles não se cruzam: a reentrada do `RoomPage` só manda
+  `join` com a mesa ainda no lobby (o deep link, o F5), e a reconexão só depois de um 401 da mesa ativa.
+  O caminho em que cruzariam — a página da sala aberta com a mesa já ativa — deixou de mandar `join` na
+  H.3a; a H.1c e a H.1e não os viram cruzar.*
+- **A mesa ativa mora em `/room/CÓDIGO` (H.3a — H.03, 14/10/2026).** É a única URL que reabre a sessão do
+  `sessionStorage` no F5. Quem cria ou entra pelo lobby (`/multiplayer`) tem a URL trocada para a da sala
+  (`replace`) assim que a mesa fica ativa — antes, o F5 devolvia o jogador ao lobby e ele entrava de novo
+  como outra pessoa, e o GM que criou a mesa pela tela perdia o cargo. Chegar a `/room/CÓDIGO` com a
+  sessão já viva não manda outro `join` (que trocaria o token à toa).
 
 ---
 
@@ -175,9 +182,11 @@ ws(s)://<host>/ws/rooms/:code?token=<sessionToken>
 
 **Close codes:** `4400–4499` = fechamento permanente (ex.: `4400` sessão encerrada no leave ou na
 expulsão; `4409` conexão substituída — o jogador abriu mais de 3 sockets, R.4). `1009` = quadro
-acima de 1 MiB (R.4). *Nota da revisão pós-D:* o cliente hoje **não** olha o código — reconecta em
-~3 s depois de qualquer fechamento, e o 401 do handshake o leva ao SSE e ao re-join (T3.3). É pista
-da Fase H.
+acima de 1 MiB (R.4). *O cliente **não** olha o código* (conferido na H: o H.08 foi DESCARTAR — ler o
+código não mudaria o que a pessoa vê): depois de qualquer fechamento, tenta o WebSocket de novo, com a
+espera crescente do §1. Um 401 no handshake leva ao SSE só quem nunca conectou; quem já conectou segue
+tentando, e o primeiro REST — o heartbeat, em até 20 s — volta 401 e faz o re-join (T3.3), que traz o
+token novo.
 
 **Tetos (R.4 — SEC-10), por jogador (sala + `peerId`), em janela de 60 s** — os números estão em
 `server/wsLimits.ts`, com o porquê de cada um:
@@ -266,9 +275,10 @@ GET /api/rooms/:code/stream?token=<sessionToken>   (EventSource)
 
 - **Exige sessão da sala** desde a Fase B (B.3 — SEC-02); sem token válido, **401**. O token vai na
   query porque `EventSource` não permite header customizado — ver §2.
-- **Instrumentado (B.7):** cada conexão emite o log `sse_fallback`. Como o cliente só abre
-  `EventSource` quando o WebSocket falha, toda conexão aqui é uma queda de fallback — e é esse número
-  que a Fase L (L.6) usa para decidir se o fallback fica ou sai.
+- **Instrumentado (B.7):** cada conexão emite o log `sse_fallback`. O cliente só abre `EventSource`
+  quando o WebSocket **nunca** conectou nesta mesa — o proxy que barra o *upgrade* —, e é esse número
+  que a Fase L (L.6) usa para decidir se o fallback fica ou sai. *Até a H.3b (14/10/2026), uma queda de
+  rede comum também abria o SSE e entrava na conta (E.14, H.09).*
 - Headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache, no-transform`.
 - Envia o **estado inicial** imediatamente e depois cada broadcast como `data: <room JSON>\n\n`.
 - Keep-alive: `: ping\n\n` a cada **15s** (atravessa proxies).

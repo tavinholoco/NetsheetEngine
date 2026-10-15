@@ -838,7 +838,9 @@ app.get("/api/rooms/:code/stream", (req, res) => {
   // Fase B (B.7) — INSTRUMENTAÇÃO DO FALLBACK, para a Fase L decidir com dado.
   //
   // O cliente sempre tenta WebSocket primeiro; só abre EventSource quando o WS
-  // falha. Então TODA conexão aqui é, por definição, uma queda de fallback.
+  // NUNCA conectou nesta mesa. Então toda conexão aqui é uma queda de fallback.
+  // (Até a H.3b, 14/10/2026, uma queda de rede breve também abria o SSE — E.14,
+  // H.09 — e entrava nesta conta.)
   //
   // Por que medir antes de decidir: o suporte a WebSocket passa de 99%, e o
   // motivo real de manter o fallback é proxy corporativo que quebra o

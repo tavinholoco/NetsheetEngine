@@ -148,4 +148,6 @@ e o cliente cria um doc novo a cada conexão — não há duas histórias do mes
 O que apareceu foi outra coisa: quem cai para o SSE fica com o grid do Yjs **congelado na tela** (o H.09 do
 ledger). É um bug de convergência do grid *na tela*, mas nasce de o cliente guardar a cópia do Yjs depois que
 o Yjs saiu — uma linha resolve, e o protocolo de intenção não seria a versão menor. **A leitura foi ao dono
-na calibragem da H (H.2) e o merge do #44 a aprovou.** O gatilho continua o mesmo.
+na calibragem da H (H.2) e o merge do #44 a aprovou.** O gatilho continua o mesmo. *(Resolvido na H.3b,
+14/10/2026: quem já conectou não cai mais no SSE — tenta o WebSocket de novo —, e quando o socket cai a tela
+volta ao grid da sala em vez da cópia do Yjs.)*
