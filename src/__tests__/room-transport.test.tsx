@@ -16,6 +16,7 @@ import * as encoding from 'lib0/encoding';
 import * as syncProtocol from 'y-protocols/sync';
 import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { writeGridToDoc } from '../lib/gridDoc';
+import { YjsGridConnection } from '../lib/yjsConnection';
 import { useRoomStore } from '../stores/useRoomStore';
 import { controlRoomTransport, ControlledWebSocket, ControlledEventSource } from '../test/roomTransport';
 import type { GameRoom, TacticalGridState } from '../types/multiplayer';
@@ -82,6 +83,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.useRealTimers();
   vi.unstubAllGlobals();
   useRoomStore.getState().resetRoom();
@@ -120,6 +122,19 @@ describe('H.09 — a queda depois de uma conexão que funcionou', () => {
     expect(net.streams).toHaveLength(1);
     await wait(60_000);
     expect(net.sockets).toHaveLength(1);
+  });
+});
+
+describe('H.02 — a conexão Yjs morre com o socket', () => {
+  it('a queda destrói a conexão Yjs velha (antes, os timers dela seguiam vivos: +2 por queda)', async () => {
+    const destroy = vi.spyOn(YjsGridConnection.prototype, 'destroy');
+    act(() => net.sockets[0].open());
+    act(() => net.sockets[0].drop());
+    expect(destroy).toHaveBeenCalledTimes(1);
+    await wait(3000);
+    act(() => last().open());
+    act(() => last().drop());
+    expect(destroy).toHaveBeenCalledTimes(2);
   });
 });
 

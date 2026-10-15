@@ -277,6 +277,10 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     ws.onclose = () => {
       if (disposed) return;
       wsRef.current = null;
+      // H.02 — a conexão Yjs deste socket morre com ele. Só o ref era zerado, e
+      // o efeito seguinte não achava o que destruir: os timers dela (o refresh
+      // de 25 s e o do awareness) e o doc seguiam vivos, um par por queda.
+      yjsConnRef.current?.destroy();
       yjsConnRef.current = null;
       yjsActiveRef.current = false;
       // H.09 — sem Yjs, a tela volta ao grid da sala (o JSON que o servidor
