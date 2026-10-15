@@ -155,6 +155,10 @@ describe('H.03 — o F5 volta ao mesmo assento', () => {
     const peerId = useRoomStore.getState().peerId;
     const token = useRoomStore.getState().sessionToken;
     expect(token).toBe('tok-1');
+    // O F5 é na URL em que a pessoa está. A troca para /room/CÓDIGO vem num efeito
+    // depois do render: o store já diz "ativa" um instante antes de a URL mudar, e
+    // ler a URL nesse instante "recarregava" /multiplayer — falhou no CI (15/10).
+    await waitFor(() => expect(path()).toBe(`/room/${CODE}`));
 
     reload(path()!);
     await waitFor(() => expect(server.joins()).toHaveLength(2));
@@ -169,6 +173,7 @@ describe('H.03 — o F5 volta ao mesmo assento', () => {
     const created = () => server.calls.find((c) => c.path === '/api/rooms/create');
     await waitFor(() => expect(useRoomStore.getState().view).toBe('active'));
     const gmPeerId = created()!.body.gmPeerId;
+    await waitFor(() => expect(path()).toBe(`/room/${created()!.body.code}`)); // ver o teste acima
 
     reload(path()!);
     await waitFor(() => expect(server.joins()).toHaveLength(1));
