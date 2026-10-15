@@ -74,8 +74,8 @@ export async function startServer({ port = 3201, persist = false, env = {} } = {
 }
 
 /** Uma pessoa = um contexto. Guarda console, erros de página e quadros do WS. */
-export async function person(browser, name, { init } = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+export async function person(browser, name, { init, contextOptions = {} } = {}) {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 }, ...contextOptions });
   const page = await ctx.newPage();
   const p = { name, ctx, page, console: [], pageErrors: [], ws: [], framesIn: 0, bytesIn: 0, framesOut: 0, rooms: 0 };
   if (init) await page.addInitScript(init.fn, init.arg);

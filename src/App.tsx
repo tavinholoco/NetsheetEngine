@@ -34,7 +34,6 @@ const PrdViewerLazy = lazy(() => import('./components/PrdViewer').then((m) => ({
 const SheetPageLazy = lazy(() => import('./pages/SheetPage').then((m) => ({ default: m.SheetPage })));
 const DiceRollerLazy = lazy(() => import('./features/sheet/DiceRoller').then((m) => ({ default: m.DiceRoller })));
 const AiAssistantLazy = lazy(() => import('./features/ai/AiAssistant').then((m) => ({ default: m.AiAssistant })));
-const MultiplayerRoomLazy = lazy(() => import('./features/multiplayer/MultiplayerRoom').then((m) => ({ default: m.MultiplayerRoom })));
 const RoomPageLazy = lazy(() => import('./pages/RoomPage').then((m) => ({ default: m.RoomPage })));
 const PresetsManagerLazy = lazy(() => import('./components/PresetsManager').then((m) => ({ default: m.PresetsManager })));
 const UserProfileLazy = lazy(() => import('./features/social/UserProfile').then((m) => ({ default: m.UserProfile })));
@@ -327,9 +326,10 @@ export default function App() {
                     />
                   }
                 />
+                {/* H.03 — o lobby também é o RoomPage: a mesa que fica ativa ali leva a URL para /room/CÓDIGO */}
                 <Route
                   path="/multiplayer"
-                  element={<MultiplayerRoomLazy onOpenAuthModal={() => useUiStore.getState().openAuthModal()} />}
+                  element={<RoomPageLazy onOpenAuthModal={() => useUiStore.getState().openAuthModal()} />}
                 />
                 <Route
                   path="/room/:code"
