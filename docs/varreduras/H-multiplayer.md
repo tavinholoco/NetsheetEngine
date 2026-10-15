@@ -1,14 +1,15 @@
 # Varredura H — multiplayer (WebSocket, SSE, Yjs, awareness, reconexão, presença)
 
-**Data:** 14/10/2026 (aberta)
+**Data:** 14/10/2026 — os cenários locais, o H.1j no ar (combinado com o dono) e a H.3
 **Timebox:** 2 dias
 **Escopo:** o transporte da mesa, dos dois lados — no servidor, o WebSocket, o stream SSE, o doc Yjs e o
 awareness (`server.ts`), as sessões e a reconexão (`server/roomManager.ts`, `server/wsLimits.ts`); no
 cliente, o efeito de transporte e o heartbeat (`features/multiplayer/MultiplayerRoom.tsx`), a camada CRDT
 (`lib/yjsConnection.ts`, `lib/gridDoc.ts`) e a sessão (`api/rooms.ts`, `pages/RoomPage.tsx`).
-**Itens levantados:** 12 · **FAZER:** 2 · **ADIAR:** 9 · **DESCARTAR:** 1 *(sem o H.1j, que é no ar e
-depende do dono — ver a seção dele)*
-**Proporção FAZER:** 17% — abaixo de 1/3 (ver [H.2](#h2--calibragem)).
+**Itens levantados:** 13 · **FAZER:** 2 · **ADIAR:** 10 · **DESCARTAR:** 1 *(12 na varredura local; o H.13
+veio do H.1j, no ar)*
+**Proporção FAZER:** 15% — abaixo de 1/3 (ver [H.2](#h2--calibragem)). Os dois FAZER, e o H.02 que o conserto
+do H.09 disparou, foram executados na [H.3](#h3--os-fazer-executados).
 
 **Como é feito.** A H não é teste automatizado: é **quebrar de propósito, cenário por cenário**, com o log
 aberto. Cada cenário do plano (H.1a–H.1k) é uma seção, com o que se esperava, o que aconteceu e os eventos
@@ -175,7 +176,7 @@ fechado.
 
 **Reversível:** sim.
 
-**VEREDITO:** ADIAR
+**VEREDITO:** ADIAR — ✅ **feito** na H.3c (14/10/2026), com o gatilho disparado.
 - **Gatilho:** a memória da aba crescer numa sessão longa, ou alguém mexer no `onclose` — a H.1g (a queda
   para o SSE, E.14) mexe nele: a linha vai junto.
 - **⚡ Gatilho disparado (14/10/2026, depois do merge do ledger):** o conserto do H.09 (H.3b) mexe no `onclose`.
@@ -236,7 +237,7 @@ com o token — o caminho que a Ana e o GM do deep link provaram acima. *A maior
 
 **Reversível:** sim.
 
-**VEREDITO:** FAZER
+**VEREDITO:** FAZER — ✅ **feito** na H.3a (14/10/2026).
 - Teste que reproduz: `src/__tests__/room-refresh.test.tsx` — entrar e criar pelo lobby deixam a URL em
   `/room/CÓDIGO`; e o "F5" (stores zeradas, o app montado de novo na URL atual com o `sessionStorage`)
   manda o `join` com o **mesmo `peerId` e o token** (com o `stubRoomTransport`).
@@ -482,7 +483,7 @@ linha: zerar o `yjsGrid` quando o socket cai, para a tela voltar ao JSON enquant
 
 **Reversível:** sim.
 
-**VEREDITO:** FAZER
+**VEREDITO:** FAZER — ✅ **feito** na H.3b (14/10/2026).
 - Teste que reproduz: `src/__tests__/room-transport.test.tsx` — com um WebSocket falso controlável (uma
   variação do `stubRoomTransport`): o socket abre, cai, a tentativa seguinte falha, e o cliente **tenta o
   WebSocket de novo** em vez de abrir o `EventSource`; quem nunca conectou continua caindo no SSE; e, sem
@@ -676,34 +677,79 @@ gravou.
 
 ---
 
-## H.1j — *(no ar)* O Render troca a instância com a mesa aberta — **pendente, depende do dono**
+## H.1j — *(no ar)* O Render troca a instância com a mesa aberta
 
 *Pergunta do plano: um merge no `master` no meio da sessão publica sozinho (30 s entre `SIGTERM` e
 `SIGKILL`); e a volta depois de hibernar leva ~1 min.*
 
-É o único cenário que não roda no build local: precisa do deploy de verdade, e o deploy só acontece com um
-merge no `master` — que é do dono. **O roteiro proposto** (custo: uns minutos de instância e alguns MB de
-banda; nenhum monitor, regra 3 do custo zero):
+**Como:** rodado em **14/10/2026, 22:32–22:55 (BRT)**, combinado com o dono, contra
+`netsheetengine.onrender.com`. O roteiro `h1j.mjs` (ensaiado antes no build local, com duas instâncias e o
+Supabase local atrás de um proxy que faz o papel do Render) conferiu que o ar não tinha mesa nenhuma — o
+serviço estava hibernando e acordou em 22 s —, montou a mesa de teste (GM pelo deep link, Ana e Beto pelo
+convite; um NPC, a iniciativa e 25 de dano na Ana) e, no PRONTO, **o dono clicou em "Manual Deploy → Deploy
+latest commit"**. Durante a troca, o GM falou pelo chat da **tela** (vai pelo WebSocket, à instância que tem
+o socket) a cada 20 s, a cada 3 s depois da troca, e pela **API** (vai à instância que recebe o tráfego novo)
+a cada 6 s; o `/api/health` a cada 5 s, só nessa janela, dizia qual processo respondia (o que subiu em
+*agora − uptime*). Depois, todos fecharam a aba e a mesa ficou **18 min** sem nenhuma requisição. Custo: ~25
+min de instância e poucos MB. *O log do Render não foi lido:* o painel estava em manutenção programada até as
+23:00 — não se sabe se a instância velha recebeu o `SIGTERM` (e gravou pelo `flushAllPending`) ou foi morta.
 
-1. Uma **mesa de teste em produção** (GM e dois jogadores pelo Playwright contra
-   `netsheetengine.onrender.com` — um `h1j.mjs` com a biblioteca de `scripts/multiplayer/` apontada para a
-   URL do ar), com NPC, iniciativa e ferimento; e, com ela aberta, o deploy — **o "Manual Deploy → Deploy
-   latest commit" do painel do Render**, que troca a instância como um merge sem precisar de um. É a exceção
-   deliberada, e combinada, ao "nunca mergear com mesa aberta". *(O merge do #44, em 14/10, publicou sem
-   mesa aberta: não serviu.)*
-2. Durante o deploy: quando cada socket cai, se a volta cai no SSE (o H.09 no ar), o que se perde do estado
-   (o `flushAllPending` do `SIGTERM` contra os ~1,5 min da E.06), e se alguém volta como outro jogador (H.11).
-3. Depois de ≥15 min parada, a **volta da hibernação**: o tempo até o primeiro `join` responder, e o que o
-   H.04 pergunta — se o Render entrega o `join` de quem recarregou a página durante o despertar.
-4. A mesa de teste sai (todos saem pela API), e o resultado vira esta seção.
+**A troca de instância:**
 
-**Itens:** a anotar quando rodar.
+| Pergunta | Resultado |
+|---|---|
+| Quanto demorou | a instância nova respondeu o health ~2,5 min depois do clique (o build do Docker) |
+| As duas vivas ao mesmo tempo | **~20 s**, não os 60 s da [doc do Render](https://render.com/docs/deploys) que o E.06 citou: os três sockets caíram juntos 19,7 s depois de a nova subir (7,7 s depois de o health já vir dela) |
+| O que se perdeu | **o que a velha recebeu depois de a nova restaurar do banco** — aqui uma mensagem (`d-8`), a única que caiu na janela (o chat da tela ia a cada 20 s antes da troca). O que foi pela API à nova ficou (9 de 9), o que foi antes de a nova subir também (7 de 7), e o que foi depois de a velha morrer (11 de 11). Com uma mesa jogando (uma ação a cada ~3 s), seriam ~7 ações perdidas — ver H.13 |
+| A volta | os três reconectaram **em 3 s, à instância nova**, no mesmo assento (`peerId` igual), com o ferimento da Ana (9), o NPC e a iniciativa; nenhum pedido fora do 2xx, **0** erro de console |
+| O H.09 no ar (a volta cai no SSE?) | **não** — a tentativa de 3 s já achou a nova de pé. Ninguém no SSE |
+| O H.11 (alguém volta como outro jogador?) | não — ninguém deu F5 na janela, e os tokens de todos estavam no banco desde a entrada |
+
+**A hibernação** (18 min parada; o health voltou com `uptime` de 15 s — processo novo):
+
+| Pergunta | Resultado |
+|---|---|
+| O despertar | o health respondeu em **21,6 s**; o GM, pela tela, estava na mesa em **24,1 s**; o Beto, que recarregou a página aos 5 s (no meio do despertar), em **23,0 s**, no mesmo assento |
+| **O H.04** — o Render entrega o `join` de quem já foi embora? | **não**: um `join` com o token da Ana, mandado no começo do despertar e **abortado aos 4 s** (o que o navegador faz com o F5), não chegou ao servidor — o token antigo dela seguiu valendo (`200`), e ela voltou pela aba de antes ao **mesmo** assento. *Uma tentativa só.* O gatilho do H.04 não disparou |
+| O que voltou do banco | a mesa inteira, até a última mensagem antes de dormir: o banco tinha o estado da instância **nova** — o que a velha possa ter gravado no `SIGTERM` foi coberto pela gravação seguinte da nova |
+| Console | 1 erro no GM e 2 no Beto, sem nenhum pedido da API fora do 2xx — o roteiro só os contava (agora os imprime) |
+
+No fim, todos saíram pela API e o health voltou a mostrar **0** mesa no ar.
+
+### H.13 — No deploy com mesa aberta, o que a instância velha recebe nos ~20 s depois de a nova subir se perde
+
+**Área:** H.1j *(o E.06 da Fase E, medido no ar)*
+
+**Sintoma observado:** medido, com o deploy provocado de propósito: a instância nova restaura a mesa do banco
+ao subir e passa a receber o tráfego novo; a velha segue com os WebSockets por **~20 s** e tudo o que chega a
+ela nesse tempo — chat, rolagem, token movido pelo socket — some quando os sockets reconectam na nova, que
+nunca relê o banco. O que vai por REST (tudo do GM) já cai na nova e fica. Perdeu-se 1 mensagem.
+
+**Onde:** `server.ts` (o restore só no boot) e o deploy do Render — o mesmo lugar do E.06.
+
+**Quem sente hoje:** ninguém, enquanto vale a regra de processo — **nunca mergear com mesa aberta** (no
+`CLAUDE.md` e no `DEPLOY.md`). O H.1j foi a exceção combinada.
+
+**Se eu não fizer:** perde dado só se alguém publicar no meio de uma sessão — ~20 s de mesa, não os ~1,5 min
+que o E.06 previa.
+
+**Versão 10× menor:** é a regra de processo, que já existe. O conserto técnico (a nova esperar a velha morrer
+e reler o banco, ou a velha recusar mutação depois do `SIGTERM`) segue grande.
+
+**Reversível:** —
+
+**VEREDITO:** ADIAR — *o gatilho do E.06 ("estado perdido depois de um deploy com mesa aberta — o cenário da
+H.1j") disparou aqui por desenho: o H.1j era o teste dele. A medição encolheu o dano de ~1,5 min para ~20 s
+e não mudou quem o sente; vai destacado ao dono no PR.*
+- **Gatilho:** precisar publicar com mesa aberta (um conserto urgente durante a sessão), ou estado perdido
+  depois de um deploy numa sessão real.
 
 ---
 
 ## H.2 — Calibragem
 
-**12 itens, 2 FAZER (17%).** Abaixo de 1/3 na primeira passada — a régua não precisou de ajuste. Os dois
+**12 itens, 2 FAZER (17%).** Abaixo de 1/3 na primeira passada — a régua não precisou de ajuste. *Com o
+H.13 do H.1j (14/10, depois do merge do ledger): 13 itens, 2 FAZER, **15%**.* Os dois
 FAZER são reproduzidos, sentidos na mesa e sem versão mais barata que esperar:
 
 | FAZER | O que quebra |
@@ -718,6 +764,10 @@ FAZER são reproduzidos, sentidos na mesa e sem versão mais barata que esperar:
   versão menor cabe no mesmo PR do H.03.
 - **H.04 e H.05 (o assento duplicado) — ADIAR, juntos.** Saem do mesmo mecanismo no servidor (distinguir o
   token substituído por outro `join`); o H.1j pode disparar o gatilho do H.04.
+- **H.13 (o deploy com mesa aberta perde ~20 s) — ADIAR**, *acrescentado depois do H.1j (14/10)*: o gatilho do
+  E.06 disparou por desenho — o H.1j era o teste dele —, a medição encolheu o dano (~20 s, não ~1,5 min) e quem
+  sente continua sendo ninguém enquanto valer "nunca mergear com mesa aberta". O H.1j também respondeu ao
+  **H.04**: o Render não entregou o `join` abortado no despertar — o gatilho não disparou.
 - **A ADR 0002 — o gatilho não disparou, na leitura desta varredura** (H.1h): o CRDT convergiu nas três
   corridas; o grid congelado é a cópia velha do Yjs na tela, e uma linha do H.09 o resolve. Reabrir a ADR é
   decisão do dono.
@@ -726,3 +776,28 @@ FAZER são reproduzidos, sentidos na mesa e sem versão mais barata que esperar:
 ninguém um assento ou um poder que não tinha — o que sobra é o dono do assento virando outra pessoa. A
 J.1e herda duas respostas: a única revogação que não fecha o socket é a do mesmo assento por um `join` mais
 novo (H.1e), e o token do *upgrade* aparece no console do próprio navegador (H.1g).
+
+---
+
+## H.3 — Os FAZER executados
+
+*14/10/2026, na mesma sessão do H.1j.* Cada item com o teste escrito antes (visto falhando com o código antigo),
+a prova revertendo e a conferência na tela pelo roteiro do cenário, contra o build de produção local.
+
+| Item | O conserto | Teste | Na tela |
+|---|---|---|---|
+| **H.3a** — H.03 | O `RoomPage` é a página das duas rotas (`/multiplayer` e `/room/:código`): no lobby, a mesa que fica ativa leva a URL para `/room/CÓDIGO` (`replace`); e ele não repete o `join` de uma sessão viva no mesmo código | `room-refresh` (4): os 4 falham com o código antigo; sem só a guarda do `join`, os 4 falham de novo (o token trocava à toa) | `h1c.mjs`: o Beto, que entra pelo código, volta do F5 ao mesmo assento (3 assentos, sem duplicata). `h1c-gm.mjs`, agora com o caminho de verdade — login no Supabase local com um usuário descartável, "Criar Mesa como GM" e F5: o GM segue GM e gera NPC. O "Sair" em `/room/CÓDIGO` volta ao lobby com a URL da sala e o campo vazio — como o de quem entrou pelo convite desde a R.11; sem sintoma, fica |
+| **H.3b** — H.09 | O "já conectou nesta mesa" num `useRef`: quem já conectou tenta o WebSocket de novo, com espera crescente (3, 6, 12… até 30 s; volta a 3 s quando conecta); o SSE fica para quem nunca conectou. Quando o socket cai, a tela volta ao grid da sala | `room-transport` (4), com um WebSocket que o teste abre, derruba e faz falhar (`controlRoomTransport`): 3 falham com o código antigo, e o do proxy (nunca conectou → SSE) passa nos dois; sem só o `setYjsGrid(null)`, o do grid falha | `h1g.mjs`: depois da queda de ~6 s, a Ana volta ao WebSocket e arrasta o próprio token pela tela; **um** `sse_fallback` no log — o do Beto, atrás do proxy. `h1h.mjs`: o grid da Ana segue a mesa em 4 s |
+| **H.3c** — H.02 | O `onclose` destrói a conexão Yjs do socket que caiu antes de zerar o ref | `room-transport` +1: falha com 0 chamadas ao `destroy` | `h1b-tunel.mjs`: 4 `setInterval` vivos antes e depois do túnel de 90 s (eram 4 → 6) |
+
+**O que a H.3 mudou no comportamento, além do sintoma:** com o WebSocket bloqueado *no meio* da sessão (um
+proxy que passa a barrar o *upgrade*), quem já conectou não cai mais no SSE — tenta o WebSocket até 30 s em 30 s
+e, enquanto isso, recebe a mesa só quando ele volta. É o que o H.09 escolheu ("o SSE fica para quem nunca
+conectou"); a versão maior — o SSE tentando voltar ao WebSocket — segue sem sintoma.
+
+**De carona, sem item novo:** numa das sete rodadas do `h1c-gm.mjs` (login no Supabase local), o console teve
+quatro 401 e uma rejeição não tratada que o navegador mostra como `Object` — a forma do erro do Supabase. As
+outras seis rodadas tiveram 0, e naquela os pedidos não estavam sendo anotados. A forma bate com o **G.11** (o
+`fetchUserProfile` lança o erro do Supabase, e o menu o chama sem `catch` a cada troca de aba), mas não foi
+atribuída nem reproduzida: o gatilho do G.11 ("uma rejeição sem tratamento no console numa sessão da H") fica
+**anotado, não disparado** — o próximo que aparecer, com o pedido, decide.
