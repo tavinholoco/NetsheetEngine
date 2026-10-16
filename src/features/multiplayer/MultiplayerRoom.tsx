@@ -126,6 +126,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const wsRef = useRef<WebSocket | null>(null);
   // Fase 5 (T5.2) — contador para retry do WebSocket após queda (backoff simples)
   const [wsAttempt, setWsAttempt] = useState(0);
+  // H.09 — "já conectou nesta mesa" vive fora da rodada do efeito. Era uma
+  // variável de cada rodada: uma queda breve seguida de uma tentativa que
+  // falhava levava ao SSE para sempre — sem arrastar o próprio token, com o
+  // grid congelado, e com um `sse_fallback` no log que era queda de rede.
+  const wsEverOpenRef = useRef(false);
+  const wsRetriesRef = useRef(0);
 
 
   const handle = user?.displayName || sheet.handle || 'Edgerunner';
@@ -187,7 +193,11 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // Fase 5 (T5.3) — sobre o WS também trafega o protocolo binário do Yjs
   // (grid CRDT + awareness): binário → YjsGridConnection; texto → JSON.
   useEffect(() => {
-    if (view !== 'active' || !roomCode) return;
+    if (view !== 'active' || !roomCode) {
+      wsEverOpenRef.current = false;
+      wsRetriesRef.current = 0;
+      return;
+    }
     let disposed = false;
 
     const handlePayload = (raw: string) => {
@@ -224,14 +234,14 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     };
 
     let sse: EventSource | null = null;
-    let wsEverOpen = false;
     const socketUrl = wsUrl(`/ws/rooms/${roomCode}?token=${encodeURIComponent(sessionToken)}`);
     const ws = new WebSocket(socketUrl);
     ws.binaryType = 'arraybuffer';
     wsRef.current = ws;
 
     ws.onopen = () => {
-      wsEverOpen = true;
+      wsEverOpenRef.current = true;
+      wsRetriesRef.current = 0;
       useRoomStore.getState().setErrorMsg('');
       // Fase 5 (T5.3) — ativa a camada CRDT do grid sobre este socket
       if (!yjsConnRef.current) {
@@ -267,17 +277,27 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     ws.onclose = () => {
       if (disposed) return;
       wsRef.current = null;
+      // H.02 — a conexão Yjs deste socket morre com ele. Só o ref era zerado, e
+      // o efeito seguinte não achava o que destruir: os timers dela (o refresh
+      // de 25 s e o do awareness) e o doc seguiam vivos, um par por queda.
+      yjsConnRef.current?.destroy();
       yjsConnRef.current = null;
       yjsActiveRef.current = false;
-      if (!wsEverOpen && !sse) {
-        // Nunca conectou → SSE (fallback automático)
-        sse = connectSse();
-      } else if (wsEverOpen) {
-        // Caiu depois de conectar → reconecta em ~3s (token pode ter mudado
-        // via T3.3; o effect re-roda quando o token novo chega).
+      // H.09 — sem Yjs, a tela volta ao grid da sala (o JSON que o servidor
+      // espelha); o do Yjs ficaria parado na última posição.
+      setYjsGrid(null);
+      if (!wsEverOpenRef.current) {
+        // Nunca conectou nesta mesa → SSE (o proxy que bloqueia o WebSocket)
+        if (!sse) sse = connectSse();
+      } else {
+        // Caiu depois de conectar → tenta o WebSocket de novo, com espera
+        // crescente: 3 s, 6 s, 12 s… até 30 s (token pode ter mudado via T3.3;
+        // o effect re-roda quando o token novo chega).
+        const delay = Math.min(3000 * 2 ** wsRetriesRef.current, 30_000);
+        wsRetriesRef.current += 1;
         setTimeout(() => {
           if (!disposed) setWsAttempt((a) => a + 1);
-        }, 3000);
+        }, delay);
       }
     };
 

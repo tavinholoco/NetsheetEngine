@@ -78,7 +78,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Dano na cabeça | **Armadura → BTM (mín. 1) → ×2** — o livro não diz quando dobrar; decisão 6 do plano (26/09/2026) |
 | Ferimento na mesa | **Pontos (0–40) na ficha, nível derivado; só servidor e GM escrevem na mesa.** Token sem ficha não recebe dano; penetração escalonada ADIAR — decisão 7 (28/09/2026) |
 | Migration × deploy | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa. O Render publica sem esperar o `db-sync` |
-| Merge × sessão de jogo | **Nunca mergear no `master` com mesa aberta.** Todo deploy do Render roda duas instâncias por ≥60 s, e a mesa perde até ~1,5 min de estado (E.06, `docs/DEPLOY.md`) |
+| Merge × sessão de jogo | **Nunca mergear no `master` com mesa aberta.** Todo deploy do Render roda duas instâncias ao mesmo tempo, e o que a velha recebe nesse intervalo se perde — **~20 s, medidos no ar no H.1j** (14/10/2026; a doc do Render diz 60 s). E.06 e H.13, `docs/DEPLOY.md`. O conserto é a **H.3d** (FAZER, 15/10); a regra só sai depois de ela provar perda zero no ar |
 | Login para criar mesa | **O servidor não exige** (a tela exige). Os tetos da E.03 (30 salas, `MAX_ROOMS`) fecham o esgotamento; exigir login é ADIAR com gatilho — decisão do dono (30/09/2026), em `docs/SEGURANCA.md` |
 | Netrunning | **O netrunner na ficha** (deck, programas, MU) entra na K.5; **a Net jogável na mesa: ADIAR**, fase própria depois da L — gatilho: alguém da mesa jogar de netrunner. Decisão 9 (30/09/2026) |
 | Fonte das regras | **O dono não tem o livro** (corrigido em 30/09/2026). Valem as **fontes secundárias**, aceitas com duas concordando; comprar o PDF oficial é **ADIAR** com gatilho. Cópia do livro sem licença não é fonte. Decisão 11 |
@@ -87,7 +87,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 796 testes ao fechar a revisão G.3h, 11/10 (ver "Linha de base atual" no plano)
+npx vitest run            # 805 testes ao fechar a H.3, 14/10 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
@@ -120,7 +120,11 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
 - **A mesa com várias pessoas e rede ruim:** `scripts/multiplayer/` (Fase H) — um contexto isolado do
   Playwright por pessoa (abas do mesmo navegador dividem a ficha local), o build de produção num processo
   próprio e um proxy TCP de rede lenta, túnel e WebSocket bloqueado (o throttling do DevTools não garante o
-  WebSocket). Um roteiro por cenário do ledger da H; `npm run build` antes.
+  WebSocket). Um roteiro por cenário do ledger da H; `npm run build` antes. Dois são diferentes: o
+  `h1j.mjs` roda **contra o ar**, combinado com o dono (ele clica no "Manual Deploy"; o roteiro aborta se
+  houver mesa aberta e apaga a sua no fim — `H1J_LOCAL=1` é o ensaio local), e o `h1c-gm.mjs` faz login de
+  verdade com um usuário descartável no **Supabase local** (recusa qualquer outro). Os testes de tela do
+  transporte (cair, voltar, cair no SSE) usam o `controlRoomTransport` de `src/test/roomTransport.ts`.
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.

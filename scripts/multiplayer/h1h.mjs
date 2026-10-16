@@ -77,23 +77,25 @@ try {
   sv = await serverView("Ana");
   log("3) o GM cai, a Ana move, o GM volta: servidor", sv.at, "| Ana vê", JSON.stringify(await view(ana, "Ana")), "| GM vê", JSON.stringify(await view(gm, "Ana")));
 
-  // --- 4. De carona: a Ana no SSE (H.09) — o grid da tela acompanha a mesa? ---
+  // --- 4. De carona: a Ana perde o WebSocket por 5 s (H.09) — o grid da tela acompanha a mesa? ---
+  // Antes da H.3b ela caía no SSE e o grid congelava na última posição do Yjs. Desde
+  // então ela tenta o WebSocket de novo (3 s, depois 6 s) e o Yjs volta com a mesa.
   pAna.setProfile({ blockWs: true });
   pAna.killWs();
   await sleep(5000);
   pAna.setProfile({ blockWs: false });
-  log("4) a Ana caiu para o SSE: sockets", sockets(ana));
+  log("4) a Ana perdeu o WebSocket por 5 s: sockets", sockets(ana));
   sv = await serverView("Ana");
   const g = sv.grid;
   const anaTok = g.tokens.find((t) => t.name === "Ana");
   const moved = { ...g, tokens: g.tokens.map((t) => (t.id === anaTok.id ? { ...t, x: 0, y: 0 } : t)) };
   const r = await api(server.base, `/api/rooms/${code}/tactical-grid`, (await session(gm)).token, { gridState: moved });
-  await sleep(2500);
+  const tMove = Date.now();
+  let anaSees = await view(ana, "Ana");
+  while (Date.now() - tMove < 20000 && anaSees?.at !== "A1") { await sleep(500); anaSees = await view(ana, "Ana"); }
   sv = await serverView("Ana");
-  log("4) o GM move o token da Ana para A1 (REST", r.status + "): servidor", sv.at, "| GM vê", JSON.stringify(await view(gm, "Ana")), "| Ana (SSE) vê", JSON.stringify(await view(ana, "Ana")));
-  const chatOk = await api(server.base, `/api/rooms/${code}/message`, (await session(gm)).token, { text: "gm-chat-sse" });
-  await sleep(1500);
-  log("4) e o chat chega à Ana no SSE?", chatOk.status, await ana.page.getByText("gm-chat-sse").first().isVisible().catch(() => false) ? "(aba do grid aberta; conferir no chat)" : "");
+  log("4) o GM move o token da Ana para A1 (REST", r.status + "): servidor", sv.at, "| GM vê", JSON.stringify(await view(gm, "Ana")),
+    "| Ana vê", JSON.stringify(anaSees), anaSees?.at === "A1" ? `em ${Date.now() - tMove} ms` : "— CONGELADO depois de 20 s", "| sockets", sockets(ana));
   const ev = {};
   for (const l of server.logs) if (l.json && l.json.event !== "persistence_disabled") ev[l.json.event] = (ev[l.json.event] || 0) + 1;
   log("eventos:", JSON.stringify(ev));

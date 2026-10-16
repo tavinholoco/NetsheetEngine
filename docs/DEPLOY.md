@@ -122,10 +122,13 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
   instância nova sobe, restaura as salas do banco e passa a receber o tráfego novo; a velha segue com os
   WebSockets de quem estava jogando e só recebe o `SIGTERM` 60 s depois, com mais 30 s de carência
   ([Render — deploys](https://render.com/docs/deploys)). Nesse intervalo, o que o GM faz por REST cai na
-  nova e o que a mesa faz pelo WebSocket, na velha — e a nova nunca relê o banco. **Até ~1,5 min de chat,
-  dano e grid se perdem.** O Render publica a cada push no `master`, então a regra é de quem mergeia:
-  PR de código, só fora de sessão de jogo. O conserto no código é ADIAR, com gatilho no
-  [ledger da E](./varreduras/E-backend.md).
+  nova e o que a mesa faz pelo WebSocket, na velha — e a nova nunca relê o banco. **Medido no ar (H.1j,
+  14/10/2026):** as duas ficaram vivas **~20 s**, não os 60 s da doc, e o que a velha recebeu nesse tempo se
+  perdeu; os jogadores voltaram sozinhos em 3 s, no mesmo assento. O Render publica a cada push no
+  `master` (e no "Manual Deploy"), então a regra é de quem mergeia: PR de código, só fora de sessão de
+  jogo. O conserto no código — a passagem de bastão entre as instâncias — é a **H.3d** do plano (o H.13 do
+  [ledger da H](./varreduras/H-multiplayer.md), FAZER desde 15/10/2026). **Até ele ser provado no ar, a regra
+  vale inteira.**
 - Se escalar horizontalmente no futuro, será preciso um pub/sub compartilhado
   (ex.: Redis/Postgres LISTEN) — fora do escopo atual (documentado no
   ADR-0002).

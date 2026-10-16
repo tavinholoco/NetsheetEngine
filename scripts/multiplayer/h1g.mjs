@@ -77,12 +77,22 @@ try {
   log("B) 60 s depois, com a rede boa: sockets da Ana:", sockets(ana), "(o = aberto, x = fechado) — voltou ao WebSocket?", ana.ws.some((w) => !w.closed));
   await say(gm, "gm-depois-da-queda");
   log("B) a Ana recebe o chat?", await waitText(ana, "gm-depois-da-queda", 5000).then(() => "sim").catch(() => "NÃO"));
+  // Desde a H.3b (H.09), a Ana volta ao WebSocket — e ao Yjs: arrasta o próprio
+  // token pela tela, como antes da queda. (Antes do conserto ela ficava no SSE,
+  // e o REST do grid, que é do GM, devolvia 403.)
   const sA = await session(ana);
+  await ana.page.getByRole("button", { name: /Grid Tático/i }).click();
+  await sleep(800);
+  const tokA = ana.page.locator('[title^="Ana (PLAYER)"]');
+  const beforeA = await tokA.getAttribute("title");
+  const boardA = ana.page.locator('[title^="Ana (PLAYER)"]').locator("xpath=ancestor::div[contains(@class,'absolute') and contains(@class,'inset-0')][1]/..");
+  const boxA = await boardA.boundingBox();
+  await tokA.dragTo(boardA, { targetPosition: { x: boxA.width * 0.15, y: boxA.height * 0.85 } }).catch((e) => log("B) dragTo falhou:", String(e).slice(0, 80)));
+  await sleep(1500);
   st = await roomState(server.base, code, await gmTok());
   const tA = st.tacticalGrid.tokens.find((t) => t.peerId === sA.peerId);
-  const moved = { ...st.tacticalGrid, tokens: st.tacticalGrid.tokens.map((t) => (t.id === tA.id ? { ...t, x: (t.x + 1) % st.tacticalGrid.cols } : t)) };
-  const mv = await api(server.base, `/api/rooms/${code}/tactical-grid`, sA.token, { gridState: moved });
-  log("B) a Ana (agora no SSE) consegue mover o próprio token pelo caminho do SSE?", mv.status, mv.body?.code || "");
+  log("B) a Ana arrasta o próprio token pela tela: antes", beforeA?.replace(/^.*Setor /, ""), "| no servidor depois:", `${tA.x},${tA.y}`,
+    "| pedidos de grid pelo REST:", ana.http.filter((h) => h.includes("tactical-grid")).length);
   const ev = {};
   for (const l of server.logs) if (l.json && l.json.event !== "persistence_disabled") ev[l.json.event] = (ev[l.json.event] || 0) + 1;
   log("eventos do servidor:", JSON.stringify(ev));
