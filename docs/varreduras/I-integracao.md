@@ -1,6 +1,6 @@
 # Varredura I — integração backend ↔ frontend (`src/api/*` contra as rotas do Express)
 
-**Data:** 16/10/2026
+**Data:** 16/10/2026. **Fechada em 16/10/2026.**
 **Timebox:** 1–2 dias (feita em um)
 **Escopo:** a costura, dos dois lados. No cliente, `src/api/` (`http.ts`, `rooms.ts`, `gemini.ts`,
 `base.ts`) e quem o chama (`features/multiplayer/MultiplayerRoom.tsx`, `pages/RoomPage.tsx`,
@@ -491,6 +491,8 @@ repassada**, e a régua não estava frouxa: o único FAZER de código é o achad
 tinha numa linha só; o dono escolheu o conserto antes do ledger, como na E (16/10/2026): o PR de segurança é o
 [#54](https://github.com/tavinholoco/NetsheetEngine/pull/54), e este branch foi empilhado nele, já com o
 texto. **A I.3 fica só com o que o merge deste ledger aprovar** — hoje, nenhum FAZER de código.
+*(16/10/2026 — o #53 e o #54 mergeados juntos; **o merge aprovou os veredictos como estavam**: o I.01 segue
+ADIAR, e a I.3 ficou vazia.)*
 
 **Para a J**, a I deixa duas respostas: o *upgrade* do WebSocket não confere `Origin` e nada do que a I mediu
 depende disso (J.1e); e com o site fora do Render, o CSP sai do Express (J.1f). E uma premissa que envelheceu,

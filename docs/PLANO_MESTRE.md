@@ -609,7 +609,8 @@ de cada fase.
 
 > **Ponto de corte:** com A–D fechadas o jogo roda certo; com a R, roda certo **em produção** (sem ela,
 > qualquer participante tomava o GM, apagava a mesa ou gastava a banda do workspace); com a F, tem a
-> identidade nova. O que resta — as varreduras I e J, a K, a L e a M — é manutenção e profundidade.
+> identidade nova. O que resta — a varredura J, a K, a L e a M — é manutenção e profundidade. *(A I
+> fechou em 16/10/2026; o detalhe dela segue logo abaixo, até o próximo corte para o `historico/`.)*
 
 ---
 
@@ -692,20 +693,33 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
         o site em outra origem, o CORS barra o `X-Session-Token` e o `Authorization`** — o F5 e a IA param,
         reproduzido num Chromium (I.09, ADIAR, gatilho reescrito; a linha é a primeira da I.1e quando
         disparar). O `DEPLOY.md` corrigido (I.05).)*
-- [ ] **I.2** Calibragem e PR do ledger — passo X.2.
+- [x] **I.2** Calibragem e PR do ledger — passo X.2.
       *(16/10/2026 — calibragem: **2 FAZER em 9, 22%**; a primeira contagem deu 4 em 11 (36%), e a repassada
       juntou as correções de documento sem mudar veredito de código. Destacado ao dono: o **I.01** (ADIAR). O
       achado de segurança (I.03, **SEC-16**): o dono escolheu consertar antes do ledger, como na E — o **PR #54**,
       com o portão no `SEGURANCA.md`; o ledger, no **PR #53**, empilhado nele. Mergear o #54 primeiro.)*
-- [ ] **I.3** Executar só os FAZER — passo X.3.
+      *(16/10/2026, 19:27 — os dois mergeados juntos, o #53 levando os commits do #54; o `master` verde nos quatro
+      jobs depois deles, com o `db-sync` em dia (a I não teve migration). **O merge aprovou os veredictos como
+      estavam:** o I.01 segue ADIAR, com o gatilho do ledger.)*
+- [x] **I.3** Executar só os FAZER — passo X.3.
       *(16/10/2026 — os dois FAZER já foram: o I.03 no #54 (antes do ledger, com o teste escrito antes e a prova
       revertendo) e o I.05 no próprio #53. Se o merge do #53 aprovar os veredictos como estão, a I.3 não tem mais
       nada; se o dono virar o **I.01** para FAZER, ele é a I.3.)*
-- [ ] **I.4** 🔒 Portão, se a I.3 mudou código — passo X.4.
+      *(16/10/2026 — **vazia**: o merge aprovou os veredictos como estavam, e o I.01 ficou ADIAR.)*
+- [x] **I.4** 🔒 Portão, se a I.3 mudou código — passo X.4.
       *(16/10/2026 — o do SEC-16 está respondido no [`SEGURANCA.md`](./SEGURANCA.md#fase-i--varredura-integração),
-      no #54.)*
-- [ ] **I.5** 🧠 Estado durável — passo X.5.
-- [ ] ✅ **Fase I concluída em:** ____/____/______
+      no #54.)* *(A I.3 não mudou código: uma linha no registro diz isso. O único código da I é o do SEC-16.)*
+- [x] **I.5** 🧠 Estado durável — passo X.5.
+      *(16/10/2026 — no `master` em `b6b48f9`, depois dos dois merges: caixas, ledger e registro de segurança;
+      linha de base (**868** testes, 65 arquivos — o +26 da I é o SEC-16); E2E 7/7; o smoke de WebSocket 5/5 contra o
+      build de produção; RLS 63/63; `audit:ci` limpo; cores e conflitos em 0. Documentos que a I tornou falsos: a
+      contagem de testes do `CLAUDE.md` e o "ponto de corte" das fases fechadas, que ainda dava a I como pendente. A
+      forma do sistema não mudou — sem diagrama. **Falta:** o merge do PR do fechamento e o `master` verde depois
+      dele.)*
+- [x] ✅ **Fase I concluída em:** 16/10/2026 *(o código, o SEC-16, no #54; o ledger no #53)*
+
+> ***Fase I fechada em 16/10/2026.*** *A próxima é a **Fase J** — a varredura de segurança —, começando pela J.0.
+> A I deixa para ela as respostas e a premissa velha do fim do [I.2 do ledger](./varreduras/I-integracao.md#i2--calibragem).*
 
 ---
 
@@ -967,7 +981,7 @@ público mudar.
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
 | G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
-| I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54 | 🔄 | — |
+| I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
@@ -977,14 +991,14 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a H.3d.5 no código (15/10/2026) |
+| Verificação | Ao fechar a Fase I (16/10/2026) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **842** testes, 63 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1)* — `vitest` 4.1.11 |
+| `npx vitest run` | **868** testes, 65 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
-| `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
+| `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), e de novo ao fechar a I (16/10). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia) |
 | Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |

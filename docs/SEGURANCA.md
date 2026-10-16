@@ -799,6 +799,8 @@ não ganha nem perde poder, só o arrasto do próprio token até recarregar.)*
 **reproduzido antes** e consertado num PR próprio, a pedido do dono, antes do ledger — o precedente da E.
 O ledger público o tinha em uma linha; o texto inteiro é este, e vai ao ar com o conserto. Os outros FAZER
 da I respondem ao portão quando entrarem (a I.4).
+*(16/10/2026, a I.4 no fechamento — **a I.3 não mudou código.** O merge do ledger (#53) manteve o I.01 em
+ADIAR, e o outro FAZER, o I.05, é documento. O único código da I é o deste SEC-16, com o portão abaixo.)*
 
 **SEC-16 — o `peerId` de um convidado desviava o "Remover" do GM** 🟡. O `peerId` é escolhido por quem
 entra (`POST /join`, e o `gmPeerId` do `create`), e o servidor só tirava dele controle e espaço
