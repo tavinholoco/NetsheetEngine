@@ -1238,6 +1238,12 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
         - **O `DEPLOY.md` se contradiz sobre o CORS** (seção do frontend estático): diz que o servidor responde
           a "qualquer origin" e, logo abaixo, que "não responde CORS por padrão" desde a T10.6. Vale o
           segundo (`server.ts:123–129`) — a I.1e corrige o texto.
+      - *Levados pela H.3d (15/10/2026, a passagem de bastão — ADR 0007):*
+        - **O `apiFetch` já tem um retry:** repete o `503 server_restarting` a cada 1,5 s por até 45 s
+          (`src/api/http.ts`) — só esse `code`, que garante que nada foi executado. A I.1d mede o resto
+          (timeout, os outros erros) sem duplicar este.
+        - **No ar, nenhum código de fechamento de WebSocket que o servidor manda chega ao navegador** (`1006`
+          segundos depois — H.3d.4). A I.1c (o 401 no meio da sessão) não pode contar com o `4400` da expulsão.
 - [ ] **I.1** Varredura por área → ledger em `docs/varreduras/I-integracao.md`.
   - [ ] **I.1a Inventário de rotas.** Uma linha por endpoint: quem chama no cliente, tipo de request e
         response compartilhado ou escrito duas vezes à mão, códigos de erro tratados. *Se eu mudar este
