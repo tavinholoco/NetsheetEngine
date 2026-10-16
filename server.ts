@@ -62,6 +62,7 @@ import {
   verifySession,
   sanitizeText,
   isValidRoomCode,
+  isValidPeerId,
   touchPlayer,
   markStalePlayersOffline,
   collectAbandonedRooms,
@@ -271,6 +272,8 @@ const ERR_SESSAO_CONTA = "Sessão inválida ou expirada. Entre novamente.";
 const ERR_FICHA_GRANDE = `Ficha grande demais (máx. ${MAX_SHEET_BYTES / 1024} KB).`;
 // E.3c — antes "Room not found", em inglês, na tela de quem erra o convite.
 const ERR_SALA_NAO_ENCONTRADA = "Sala não encontrada. Confira o código do convite.";
+// I.03 (SEC-16) — o mesmo formato no join e no create.
+const ERR_PEER_ID = "peerId inválido: use só letras, números, _ e - (até 64 caracteres).";
 
 // T1.7 — autor do request é derivado do token de sessão, nunca do peerId livre
 function getSessionPeerId(req: express.Request, code: string): string | null {
@@ -524,6 +527,10 @@ app.post("/api/rooms/create", roomLimiter, (req, res) => {
   if (typeof code !== "string" || !isValidRoomCode(code)) {
     return sendError(res, "invalid_input", "Código de sala inválido. Use 2–24 caracteres alfanuméricos ou hífen (ex.: NC-2020).");
   }
+  // I.03 (SEC-16) — o peerId do GM tem o formato de qualquer outro; sem ele, o servidor gera.
+  if (gmPeerId !== undefined && gmPeerId !== null && gmPeerId !== "" && !isValidPeerId(gmPeerId)) {
+    return sendError(res, "invalid_input", ERR_PEER_ID);
+  }
   // R.2 (SEC-08) — código em uso é outra mesa, com gente dentro: nunca
   // sobrescrever. Antes, qualquer um apagava a mesa com o código do lobby.
   if (getRoom(code)) {
@@ -548,6 +555,11 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   }
   if (typeof peerId !== "string" || !peerId.trim()) {
     return sendError(res, "invalid_input", "peerId é obrigatório.");
+  }
+  // I.03 (SEC-16) — o peerId vira segmento de URL no cliente (o "Remover" do
+  // GM): com um `/`, um `..` ou um `?`, o clique ia a outra rota.
+  if (!isValidPeerId(peerId)) {
+    return sendError(res, "invalid_input", ERR_PEER_ID);
   }
   if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
     return sendError(res, "invalid_input", "Ficha de personagem inválida.");

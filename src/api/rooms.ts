@@ -172,6 +172,15 @@ export async function authedFetch<T>(path: string, body: object): Promise<T> {
 // R.11 — não há mais lista de salas: o lobby deixou de listá-las (a sala se
 // acha pelo código ou pelo link que o GM manda).
 
+/**
+ * Fase I (I.03 — SEC-16) — todo segmento de caminho vai codificado. O
+ * `targetPeerId` do "Remover" é o `peerId` que o outro jogador escolheu ao
+ * entrar: cru, um `a/../../players/<outro>/delete?` virava outra rota depois da
+ * normalização do fetch, e o clique do GM removia outro jogador. O servidor
+ * recusa esse `peerId` na entrada; isto é a segunda camada.
+ */
+const seg = encodeURIComponent;
+
 // G.06 — criar e entrar devolvem a chamada que já está em voo, como o
 // `reconnectInFlight`: o segundo clique (ou a reentrada do `RoomPage` junto com
 // o clique) não abre outra. Dois `join` com o mesmo token deixavam um assento
@@ -217,52 +226,52 @@ export function joinRoom(input: { code: string; handle: string; sheet: Character
 
 /** POST /api/rooms/:code/heartbeat — mantém isOnline=true (T3.4). */
 export function postHeartbeat(code: string): Promise<{ success: boolean; isOnline?: boolean }> {
-  return authedFetch(`/api/rooms/${code}/heartbeat`, {});
+  return authedFetch(`/api/rooms/${seg(code)}/heartbeat`, {});
 }
 
 /** POST /api/rooms/:code/sheet — sincroniza a ficha na mesa. */
 export function syncSheet(code: string, sheet: CharacterSheet): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/sheet`, { sheet });
+  return authedFetch(`/api/rooms/${seg(code)}/sheet`, { sheet });
 }
 
 /** POST /api/rooms/:code/message — envia chat (fallback SSE). */
 export function postMessage(code: string, text: string): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/message`, { text });
+  return authedFetch(`/api/rooms/${seg(code)}/message`, { text });
 }
 
 /** POST /api/rooms/:code/roll — pede rolagem server-authoritative (T5.4). */
 export function postRoll(code: string, kind: TableRollKind, skillName?: string): Promise<{ room: GameRoom; roll: RollResult }> {
-  return authedFetch(`/api/rooms/${code}/roll`, { kind, skillName });
+  return authedFetch(`/api/rooms/${seg(code)}/roll`, { kind, skillName });
 }
 
 /** POST /api/rooms/:code/leave — sai da mesa e fecha o WS do peer. */
 export function leaveRoom(code: string): Promise<{ success: boolean }> {
-  return authedFetch(`/api/rooms/${code}/leave`, {});
+  return authedFetch(`/api/rooms/${seg(code)}/leave`, {});
 }
 
 /** POST /api/rooms/:code/tactical-grid — fallback REST do grid (sem Yjs). */
 export function updateTacticalGrid(code: string, gridState: TacticalGridState): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/tactical-grid`, { gridState });
+  return authedFetch(`/api/rooms/${seg(code)}/tactical-grid`, { gridState });
 }
 
 /** POST /api/rooms/:code/npcs/generate — GM gera NPC na mesa. */
 export function generateNpc(code: string, archetypeId?: string): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/npcs/generate`, { archetypeId });
+  return authedFetch(`/api/rooms/${seg(code)}/npcs/generate`, { archetypeId });
 }
 
 /** POST /api/rooms/:code/players/generate — GM gera jogador na mesa. */
 export function generatePlayers(code: string): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/players/generate`, {});
+  return authedFetch(`/api/rooms/${seg(code)}/players/generate`, {});
 }
 
 /** POST /api/rooms/:code/player-health — GM ajusta ferimento de jogador. */
 export function setPlayerHealth(code: string, targetPeerId: string, woundLevel: number): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/player-health`, { targetPeerId, woundLevel });
+  return authedFetch(`/api/rooms/${seg(code)}/player-health`, { targetPeerId, woundLevel });
 }
 
 /** POST /api/rooms/:code/npcs/:npcId/health — GM ajusta ferimento de NPC. */
 export function setNpcHealth(code: string, npcId: string, woundLevel: number): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/npcs/${npcId}/health`, { woundLevel });
+  return authedFetch(`/api/rooms/${seg(code)}/npcs/${seg(npcId)}/health`, { woundLevel });
 }
 
 /**
@@ -270,7 +279,7 @@ export function setNpcHealth(code: string, npcId: string, woundLevel: number): P
  * do jogador, o id do NPC ou o id de um token. O servidor faz a conta.
  */
 export function applyDamage(code: string, targetId: string, raw: number, location: ArmorLocation): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/damage`, { targetId, raw, location });
+  return authedFetch(`/api/rooms/${seg(code)}/damage`, { targetId, raw, location });
 }
 
 /**
@@ -281,35 +290,35 @@ export function gmAttack(
   code: string,
   input: { attackerId: string; targetId: string; range?: RangeBandKey; difficulty?: number }
 ): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/attack`, input);
+  return authedFetch(`/api/rooms/${seg(code)}/attack`, input);
 }
 
 /** POST /api/rooms/:code/stabilize — GM estabiliza (ou desfaz) quem está em Mortal (D.5). */
 export function setStabilized(code: string, targetId: string, stabilized: boolean): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/stabilize`, { targetId, stabilized });
+  return authedFetch(`/api/rooms/${seg(code)}/stabilize`, { targetId, stabilized });
 }
 
 /** POST /api/rooms/:code/npcs/:npcId/delete — GM remove NPC. */
 export function deleteNpc(code: string, npcId: string): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/npcs/${npcId}/delete`, {});
+  return authedFetch(`/api/rooms/${seg(code)}/npcs/${seg(npcId)}/delete`, {});
 }
 
 /** POST /api/rooms/:code/players/:targetPeerId/delete — GM remove jogador. */
 export function deletePlayer(code: string, targetPeerId: string): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/players/${targetPeerId}/delete`, {});
+  return authedFetch(`/api/rooms/${seg(code)}/players/${seg(targetPeerId)}/delete`, {});
 }
 
 /** POST /api/rooms/:code/initiative — GM define a lista de iniciativa. */
 export function setInitiativeList(code: string, list: InitiativeEntry[]): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/initiative`, { initiativeList: list });
+  return authedFetch(`/api/rooms/${seg(code)}/initiative`, { initiativeList: list });
 }
 
 /** POST /api/rooms/:code/initiative — GM avança o turno. */
 export function nextTurn(code: string): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/initiative`, { action: 'next' });
+  return authedFetch(`/api/rooms/${seg(code)}/initiative`, { action: 'next' });
 }
 
 /** D.4 — o servidor rola 1d10 + REF (+ Combat Sense) para todo combatente com ficha. */
 export function rollInitiative(code: string): Promise<GameRoom> {
-  return authedFetch(`/api/rooms/${code}/initiative`, { action: 'roll' });
+  return authedFetch(`/api/rooms/${seg(code)}/initiative`, { action: 'roll' });
 }
