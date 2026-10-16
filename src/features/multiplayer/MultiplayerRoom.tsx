@@ -132,6 +132,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // grid congelado, e com um `sse_fallback` no log que era queda de rede.
   const wsEverOpenRef = useRef(false);
   const wsRetriesRef = useRef(0);
+  // H.3d — até quando vale a reconexão curta depois de o servidor trocar de
+  // instância (o fechamento 1012).
+  const wsRestartUntilRef = useRef(0);
 
 
   const handle = user?.displayName || sheet.handle || 'Edgerunner';
@@ -242,6 +245,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     ws.onopen = () => {
       wsEverOpenRef.current = true;
       wsRetriesRef.current = 0;
+      wsRestartUntilRef.current = 0;
       useRoomStore.getState().setErrorMsg('');
       // Fase 5 (T5.3) — ativa a camada CRDT do grid sobre este socket
       if (!yjsConnRef.current) {
@@ -274,7 +278,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     ws.onerror = () => {
       // Sem conexão → o onclose decide o fallback SSE
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
       if (disposed) return;
       wsRef.current = null;
       // H.02 — a conexão Yjs deste socket morre com ele. Só o ref era zerado, e
@@ -290,11 +294,17 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         // Nunca conectou nesta mesa → SSE (o proxy que bloqueia o WebSocket)
         if (!sse) sse = connectSse();
       } else {
+        // H.3d — 1012 (Service Restart): o servidor entregou a mesa à instância
+        // nova, no deploy. A velha recusa o WebSocket até o Render trocar o
+        // tráfego (~7–9 s, H.3d.0): tentar a cada 1,5 s por até 1 min, sem a
+        // espera crescente — que, na terceira recusa, já esperaria 12 s.
+        if (ev?.code === 1012) wsRestartUntilRef.current = Date.now() + 60_000;
+        const restarting = Date.now() < wsRestartUntilRef.current;
         // Caiu depois de conectar → tenta o WebSocket de novo, com espera
         // crescente: 3 s, 6 s, 12 s… até 30 s (token pode ter mudado via T3.3;
         // o effect re-roda quando o token novo chega).
-        const delay = Math.min(3000 * 2 ** wsRetriesRef.current, 30_000);
-        wsRetriesRef.current += 1;
+        const delay = restarting ? 1500 : Math.min(3000 * 2 ** wsRetriesRef.current, 30_000);
+        if (!restarting) wsRetriesRef.current += 1;
         setTimeout(() => {
           if (!disposed) setWsAttempt((a) => a + 1);
         }, delay);

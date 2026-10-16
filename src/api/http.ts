@@ -27,26 +27,39 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  let res: Response;
-  try {
-    // T10.2 — frontend estático: VITE_API_URL prefixa a chamada quando o
-    // backend mora em outra origem; vazio = mesmo origin (deploy atual).
-    res = await fetch(apiUrl(path), {
-      ...init,
-      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) }
-    });
-  } catch {
-    throw new ApiError(0, 'Falha de conexão com o servidor.');
-  }
+/**
+ * H.3d (H.13) — num deploy, a instância velha entrega a mesa à nova e responde
+ * `503 server_restarting` sem executar a ação, até o Render levar o tráfego à
+ * nova (~7–9 s, medido na H.3d.0). Tentar de novo é seguro — nada foi feito — e
+ * leva a ação à instância nova: ela demora, não some.
+ */
+const RESTART_RETRY_MS = 1500;
+const RESTART_GIVE_UP_MS = 45_000;
 
-  const data: any = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      typeof data?.error === 'string' ? data.error : `Erro ${res.status}`,
-      typeof data?.code === 'string' ? data.code : undefined
-    );
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const started = Date.now();
+  for (;;) {
+    let res: Response;
+    try {
+      // T10.2 — frontend estático: VITE_API_URL prefixa a chamada quando o
+      // backend mora em outra origem; vazio = mesmo origin (deploy atual).
+      res = await fetch(apiUrl(path), {
+        ...init,
+        headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) }
+      });
+    } catch {
+      throw new ApiError(0, 'Falha de conexão com o servidor.');
+    }
+
+    const data: any = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const code = typeof data?.code === 'string' ? data.code : undefined;
+      if (res.status === 503 && code === 'server_restarting' && Date.now() - started < RESTART_GIVE_UP_MS) {
+        await new Promise((r) => setTimeout(r, RESTART_RETRY_MS));
+        continue;
+      }
+      throw new ApiError(res.status, typeof data?.error === 'string' ? data.error : `Erro ${res.status}`, code);
+    }
+    return data as T;
   }
-  return data as T;
 }

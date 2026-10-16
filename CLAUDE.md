@@ -87,7 +87,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 805 testes ao fechar a H.3, 14/10 (ver "Linha de base atual" no plano)
+npx vitest run            # 841 testes com a H.3d, 15/10 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
@@ -125,6 +125,12 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   houver mesa aberta e apaga a sua no fim — `H1J_LOCAL=1` é o ensaio local), e o `h1c-gm.mjs` faz login de
   verdade com um usuário descartável no **Supabase local** (recusa qualquer outro). Os testes de tela do
   transporte (cair, voltar, cair no SSE) usam o `controlRoomTransport` de `src/test/roomTransport.ts`.
+- **Desde a H.3d (15/10), o boot pede o bastão antes de abrir a porta** (`server/instanceLease.ts`, a
+  `instance_lease` da `0008`, ADR 0007): num deploy, a instância nova espera a velha entregar a mesa (503
+  `server_restarting`, sockets fechados com `1012`, tudo gravado) e só então lê o banco e escuta. **Nunca abrir
+  a porta antes do `lease.acquire()`, nem pôr no painel um *Health Check Path* que responda antes dele:** o
+  serviço não tem health check HTTP, e o Render manda tráfego quando a porta TCP abre (H.3d.0). O bastão só
+  liga em produção com banco; no dev e nos testes fica desligado.
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.

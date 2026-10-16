@@ -61,7 +61,12 @@ export const STATUS_BY_CODE = {
   /** A IA não está configurada no servidor. */
   ai_unavailable: 503,
   /** E.03 — o máximo de salas abertas (`MAX_ROOMS`). */
-  rooms_full: 503
+  rooms_full: 503,
+  /**
+   * H.3d — esta instância entregou a mesa à nova (o deploy): nenhuma ação foi
+   * executada, e o cliente tenta de novo sozinho até o Render trocar o tráfego.
+   */
+  server_restarting: 503
 } as const;
 
 export type ErrorCode = keyof typeof STATUS_BY_CODE;

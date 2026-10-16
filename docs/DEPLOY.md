@@ -124,11 +124,22 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
   ([Render — deploys](https://render.com/docs/deploys)). Nesse intervalo, o que o GM faz por REST cai na
   nova e o que a mesa faz pelo WebSocket, na velha — e a nova nunca relê o banco. **Medido no ar (H.1j,
   14/10/2026):** as duas ficaram vivas **~20 s**, não os 60 s da doc, e o que a velha recebeu nesse tempo se
-  perdeu; os jogadores voltaram sozinhos em 3 s, no mesmo assento. O Render publica a cada push no
+  perdeu; os jogadores voltaram sozinhos em 3 s, no mesmo assento. **No log do Render (H.3d.0, 15/10):** a
+  velha levou o `SIGTERM` 5 s depois de a nova abrir a porta, na troca do tráfego; e o serviço **não tem**
+  *Health Check Path* — o Render testa a porta TCP. O Render publica a cada push no
   `master` (e no "Manual Deploy"), então a regra é de quem mergeia: PR de código, só fora de sessão de
   jogo. O conserto no código — a passagem de bastão entre as instâncias — é a **H.3d** do plano (o H.13 do
-  [ledger da H](./varreduras/H-multiplayer.md), FAZER desde 15/10/2026). **Até ele ser provado no ar, a regra
-  vale inteira.**
+  [ledger da H](./varreduras/H-multiplayer.md), a [ADR 0007](./adr/0007-passagem-de-bastao.md)). **Até ele ser
+  provado no ar (H.3d.4), a regra vale inteira.**
+- **A passagem de bastão (H.3d — ADR 0007):** em produção, a instância nova pede o bastão
+  (`instance_lease`) e só lê o banco e abre a porta depois de a velha entregar — e a velha, ao entregar,
+  recusa ações com `503 server_restarting`, fecha os sockets com `1012` e grava tudo. Os jogadores veem um
+  "reconectando" curto (previsto: ~7–9 s) e o cliente repete as ações sozinho. **Não configure um *Health
+  Check Path* que responda antes do bastão:** o desenho depende de a porta só abrir depois dele. No log de um
+  deploy, a sequência é `lease_released` e `handoff_drained` na velha, `lease_acquired` (`how:
+  handed-over`) na nova. `lease_forced`, `lease_unavailable` ou `lease_orphaned_exit` são a borda — o que
+  cada um quer dizer está na ADR. **O primeiro deploy com este código** ainda perde como antes: a velha não
+  tem o bastão para entregar.
 - Se escalar horizontalmente no futuro, será preciso um pub/sub compartilhado
   (ex.: Redis/Postgres LISTEN) — fora do escopo atual (documentado no
   ADR-0002).

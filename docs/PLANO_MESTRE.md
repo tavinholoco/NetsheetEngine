@@ -1097,21 +1097,30 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           depois do restore — o efeito é o mesmo, e o desenho fica, sem mudar nada no painel. A regra passa a ser
           "nunca abrir a porta antes de ter o bastão". (3) **~5 s** da porta aberta (22:34:48,4) ao `SIGTERM` da velha
           e ao *live* (22:34:54); o processo novo levou 1,4 s do início à porta. O "reconectando" previsto: **~7–9 s**.)*
-    - [ ] **H.3d.1** **PR da migration** (decisão 5): uma tabela de uma linha — quem manda, a última marca de vida,
+    - [x] **H.3d.1** **PR da migration** (decisão 5): uma tabela de uma linha — quem manda, a última marca de vida,
           quem entregou —, com RLS ligado e **sem política**: só a service role lê e escreve, como a `rooms`.
           **Backup antes** (`npm run backup:db`, decisão 8, anotado no [registro](./BACKUP.md#registro-de-backups)),
           o merge, e a conferência em produção com `npx supabase migration list --linked` antes do PR do código.
           *(15/10/2026 — a `0008_instance_lease.sql`: os privilégios de anon e authenticated **revogados** (o select
           nega, em vez de voltar vazio como na `rooms`) e o RLS ligado sem política, como segunda camada. Os testes
           de RLS foram de **56 para 63**; devolvendo os privilégios no banco local, os 5 de cliente falham. Pela API
-          REST local, a chave anônima leva `401`/`42501`. Backup de 16/10 (UTC) no registro. **Falta:** o merge do
-          dono e a conferência em produção.)*
-    - [ ] **H.3d.2** **O teste que reproduz, antes do código:** o ensaio `H1J_LOCAL=1 node scripts/multiplayer/h1j.mjs`
+          REST local, a chave anônima leva `401`/`42501`. Backup de 16/10 (UTC) no registro. **Mergeado no #47**
+          (16/10, 01:11 UTC), sem mesa aberta; o `master` verde com o `db push`. **Em produção:** o
+          `migration list --linked` mostra a `0008` no remoto, e o schema tem a tabela, a restrição `id = 1`, o RLS
+          ligado e privilégio só da `service_role` — anon e authenticated sem nenhum.)*
+    - [x] **H.3d.2** **O teste que reproduz, antes do código:** o ensaio `H1J_LOCAL=1 node scripts/multiplayer/h1j.mjs`
           (duas instâncias com o Supabase local, atrás de um proxy que faz o papel do Render) perde o que vai à velha
           depois de a nova subir — 5 mensagens em 14/10. E os testes do módulo, com um banco falso: com a velha viva,
           a nova espera a entrega; com a marca de vida velha, assume na hora; a velha que vê a troca entrega; um erro
           de rede na renovação **não** é troca; depois de entregar, a velha não grava mais nada.
-    - [ ] **H.3d.3** **PR do código:** o módulo da passagem (`server/instanceLease.ts`: assumir, renovar a cada 2 s,
+          *(15/10/2026 — o ensaio ficou fiel ao Render da H.3d.0: o tráfego vai à nova quando a porta dela abre, com
+          atraso configurável (`H1J_SWITCH_DELAY_S`), e a velha morre `H1J_OLD_DIES_S` depois. Com o código de antes,
+          perdeu **1** mensagem (a `d-3`, pelo WebSocket à velha depois de a nova abrir a porta). Os testes vieram antes
+          de cada parte e foram vistos falhando: `instance-lease` (18 — os cinco da caixa, mais a hibernação, o prazo, o
+          banco fora do ar, o SIGTERM e a entrega sem sucessor), `room-persistence` (7), `server-handoff` (6),
+          `api-restart` (3) e `room-transport` +2. Mutações no módulo e no servidor, uma por propriedade: cada uma
+          derruba o seu teste.)*
+    - [x] **H.3d.3** **PR do código:** o módulo da passagem (`server/instanceLease.ts`: assumir, renovar a cada 2 s,
           entregar); o boot na ordem assumir → esperar a entrega → restaurar → escutar; a velha que entrega recusa
           ações e *upgrade* com `503 server_restarting` (código novo na tabela do `server/errors.ts`), fecha os
           sockets e o SSE, grava, para o vigia de presença e o coletor, e só então marca que entregou; o cliente tenta
@@ -1120,6 +1129,16 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           **Portão** (adendo à H.4): a pergunta 3 pesa — uma instância manda a outra parar, e só a service role
           escreve na tabela —, e a 5 (a tabela tem uma linha). ADR 0007 (a passagem de bastão), protocolo,
           `DEPLOY.md` e o diagrama de contêineres. **Prova:** o ensaio local perde 0.
+          *(15/10/2026 — feito; a seção [H.3d do ledger](./varreduras/H-multiplayer.md#h3--os-fazer-executados) tem a
+          tabela. **O ensaio perde 0:** na troca instantânea (a comparação com o código de antes) e na fiel ao Render
+          (a troca 5 s depois da porta aberta), em que a velha recusa o WebSocket três vezes e o chat pela tela e pela
+          API leva `503 server_restarting`, tenta de novo e fica. **"Reconectando": 6,1 s.** Dois acréscimos que o
+          desenho não previa: o stream SSE acaba com `retry: 1500` e o pedido de stream à velha recebe 200 — um 503
+          faria o `EventSource` desistir para sempre —; e a velha que entregou e ninguém assumiu sai em 60 s, para o
+          Render a religar. O banco que não responde nem ao pedido desiste em 5 s, não em 30 — o despertar não espera.
+          Portão no [registro](./SEGURANCA.md#fase-h--varredura-multiplayer). O PR abriu depois do merge do #47 e
+          da `0008` conferida em produção. **O deploy do merge dele ainda perde como antes** — a velha não tem o
+          bastão para entregar; o teste no ar é o "Manual Deploy" seguinte.)*
     - [ ] **H.3d.4** **No ar, com o dono:** o H.1j de novo — a mesa de teste, o "Manual Deploy" clicado por ele —:
           0 mensagem perdida, e quanto dura o "reconectando". A regra "nunca mergear com mesa aberta" só sai do
           `CLAUDE.md` e do `DEPLOY.md` se este passo provar a perda zero.
@@ -1463,11 +1482,11 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a H.3 (14/10/2026) |
+| Verificação | Ao fechar a H.3d no código (15/10/2026) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **805** testes, 59 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5)* — `vitest` 4.1.11 |
+| `npx vitest run` | **841** testes, 63 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
@@ -1475,7 +1494,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
 | `node scripts/multiplayer/h1a.mjs` | A mesa de base da H.1a (14/10/2026): três contextos, do zero ao combate, **0** erro de console; um chat custa **6,7 KB** por aba, o ataque mais o dano **~52–72 KB** (depende de o ataque do NPC ferir), 45 s parada **0,5 KB**; a sala no fim, **~17 KB**. Rodada de novo ao fechar a H.3: os mesmos números. `npm run build` antes; sobe o próprio servidor |
-| `node scripts/multiplayer/h1j.mjs` | **No ar, só combinado com o dono** (14/10/2026): o deploy com a mesa aberta deixou as duas instâncias vivas **~20 s**; o despertar da hibernação, **~22 s** |
+| `node scripts/multiplayer/h1j.mjs` | **No ar, só combinado com o dono** (14/10/2026): o deploy com a mesa aberta deixou as duas instâncias vivas **~20 s**; o despertar da hibernação, **~22 s**. **O ensaio local** (`H1J_LOCAL=1`, com o Supabase local; `H1J_SWITCH_DELAY_S=5` imita o Render da H.3d.0) com o bastão da H.3d, 15/10: **0** mensagem perdida e **6,1 s** de "reconectando" (o código de antes perdia 1) |
 | `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
 | `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 107 `black`/`white`, à parte. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
 | `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4), e **o CI exige** (F.2.10) |
