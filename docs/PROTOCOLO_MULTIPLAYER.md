@@ -124,7 +124,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `POST` | `/api/rooms/:code/heartbeat` | qualquer membro | `{}` | `{ success, isOnline }` (sem broadcast) |
 | `POST` | `/api/rooms/:code/leave` | qualquer membro | `{}` | `{ success }` (fecha WS do peer) |
 | `POST` | `/api/rooms/:code/attack` | **GM** | `{ attackerId, targetId, range?, difficulty? }` | `GameRoom` (NPC ataca: ataque, dano, local e ferimento numa mutação — D.3) |
-| `POST` | `/api/rooms/:code/stabilize` | **GM** | `{ targetId, stabilized }` | `GameRoom` (D.5 — só em Mortal; fora dele → 400) |
+| `POST` | `/api/rooms/:code/stabilize` | **GM** | `{ targetId, stabilized }` | `GameRoom` (D.5 — só em Mortal; fora dele → **409** `invalid_state`) |
 | `POST` | `/api/rooms/:code/damage` | **GM** | `{ targetId, raw, location }` | `GameRoom` (conta do livro, death save em Mortal e stun save no chat — D.1/D.5; token sem ficha → 400) |
 | `POST` | `/api/rooms/:code/player-health` | **GM** | `{ targetPeerId, woundLevel }` | `GameRoom` (nível vira o mínimo da caixa em pontos) |
 | `POST` | `/api/rooms/:code/tactical-grid` | **GM** (ou Yjs) | `{ gridState }` | `GameRoom` · **400** `invalid_grid` se a forma não confere (E.02 — até 200 tokens, lado de 1 a 32, só os campos de token; a mesma regra reverte o update Yjs malformado, de qualquer um) |
@@ -242,8 +242,11 @@ reconectar.
 | `initiative` | `{ type, initiativeList }` | `updateInitiative` (GM) |
 
 Qualquer outro `type` ou JSON inválido é ignorado silenciosamente. Tipos de rolagem válidos:
-`attack` (1d10 + REF + WA), `damage` (fórmula da arma + local de impacto), `save`
-(1d10 ≤ BODY), `skill` (1d10 + atributo + nível — `skillName` validado na ficha).
+`attack`, `damage`, `save`, `stun` e `skill` — as fórmulas estão na [§6.1](#61-rolagem-server-authoritative-t54).
+*(Até a I, 16/10/2026, esta lista dava o ataque como "1d10 + REF + WA", de antes da C.3, e esquecia o
+`stun`.)* As três mensagens `initiative` existem no servidor, mas **o cliente não as manda**: passa a vez,
+rola e edita a iniciativa pelo REST (§3.2) — I.04 no
+[ledger da I](./varreduras/I-integracao.md#i04--duas-portas-do-servidor-sem-chamador).
 
 ---
 
