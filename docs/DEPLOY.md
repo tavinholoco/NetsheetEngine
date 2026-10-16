@@ -117,7 +117,10 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
 (T3.2), mas conexões WebSocket/SSE ao vivo são por instância.
 
 - **Mantenha 1 réplica** (as configs abaixo já fixam isso).
-- **⚠️ Não mergeie no `master` com uma mesa aberta** *(Fase E, E.06 — 30/09/2026)*. Mesmo com 1
+- **Mergear com mesa aberta: pode, mas não no meio de um combate** *(desde a H.3d.4, 15/10/2026 — antes, a
+  regra era "não mergeie com uma mesa aberta", da E.06 de 30/09; o histórico vem a seguir)*. A troca de
+  instância não perde nada — provado no ar, 30 de 30 ações —, mas a mesa fica ~5–15 s "reconectando": as ações
+  demoram e se repetem sozinhas. *O porquê da regra antiga:* mesmo com 1
   réplica, **cada deploy roda duas instâncias por pelo menos 60 s**: no deploy sem interrupção, a
   instância nova sobe, restaura as salas do banco e passa a receber o tráfego novo; a velha segue com os
   WebSockets de quem estava jogando e só recebe o `SIGTERM` 60 s depois, com mais 30 s de carência
@@ -129,14 +132,15 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
   *Health Check Path* — o Render testa a porta TCP. O Render publica a cada push no
   `master` (e no "Manual Deploy"), então a regra é de quem mergeia: PR de código, só fora de sessão de
   jogo. O conserto no código — a passagem de bastão entre as instâncias — é a **H.3d** do plano (o H.13 do
-  [ledger da H](./varreduras/H-multiplayer.md), a [ADR 0007](./adr/0007-passagem-de-bastao.md)). **Até ele ser
-  provado no ar (H.3d.4), a regra vale inteira.**
+  [ledger da H](./varreduras/H-multiplayer.md), a [ADR 0007](./adr/0007-passagem-de-bastao.md)), **provado no ar
+  na H.3d.4 (15/10/2026)**.
 - **A passagem de bastão (H.3d — ADR 0007):** em produção, a instância nova pede o bastão
   (`instance_lease`) e só lê o banco e abre a porta depois de a velha entregar — e a velha, ao entregar,
   avisa os navegadores por um quadro de dados e segue aceitando ações por 2 s (H.3d.5: no ar, o fechamento de
   WebSocket que o servidor manda **não chega** ao navegador), depois recusa ações com `503 server_restarting`,
   fecha os sockets e grava tudo. Os jogadores veem um
-  "reconectando" curto (previsto: ~7–9 s) e o cliente repete as ações sozinho. **Não configure um *Health
+  "reconectando" curto (medido no ar: **12,4 s**, a maior parte na troca do próprio Render, que variou de 2 a
+  10 s) e o cliente repete as ações sozinho. **Não configure um *Health
   Check Path* que responda antes do bastão:** o desenho depende de a porta só abrir depois dele. No log de um
   deploy, a sequência é `lease_released` e `handoff_drained` na velha, `lease_acquired` (`how:
   handed-over`) na nova. `lease_forced`, `lease_unavailable` ou `lease_orphaned_exit` são a borda — o que

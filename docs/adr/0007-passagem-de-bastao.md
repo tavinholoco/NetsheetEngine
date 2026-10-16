@@ -84,7 +84,8 @@ Render:                                                                       po
   pedido em ≤ 2 s, entrega, a nova lê e abre a porta, o Render troca em ~5 s). Medido no ar na H.3d.4.
 - **Uma escrita no banco a cada 2 s com o serviço acordado.** Não mantém o serviço acordado: a hibernação do
   Render conta tráfego **de entrada**, e a renovação é de saída. No Supabase gratuito, uma linha atualizada.
-- **A regra "nunca mergear com mesa aberta"** só sai do `CLAUDE.md` e do `DEPLOY.md` quando a H.3d.4 provar a
+- *(Saiu em 15/10/2026: a H.3d.4 refeita com o aviso perdeu 0 de 30, e a regra virou "pode, mas não no meio de um
+  combate", pelo "reconectando" de ~12 s.)* **A regra "nunca mergear com mesa aberta"** só sai do `CLAUDE.md` e do `DEPLOY.md` quando a H.3d.4 provar a
   perda zero no ar.
 - **Segurança (portão da H, adendo da H.3d):** quem escreve na `instance_lease` manda o servidor parar — só a
   service role tem privilégio nela (anon e authenticated revogados, RLS sem política). Nenhuma rota nova, nenhum
@@ -122,6 +123,11 @@ antes só mostra o texto até reconectar, em vez de tratar o aviso como a sala.
 
 O ensaio local ganhou o proxy que segura o fechamento (`H1J_CLOSE_HOLD_S=13`): o código do #48 perde 1
 mensagem, do mesmo jeito que o ar; com o aviso, 0. **O preço:** +2 s no "reconectando" de cada deploy.
+
+**Provado no ar no mesmo dia (23:51, H.3d.4 refeita com o #49):** a velha avisou os 3 sockets, os navegadores
+fecharam o próprio socket na hora (a entrega achou `connections: 0`) e mandaram as ações por REST até a nova —
+**0 perdida, 30 de 30**. O "reconectando" foi de **12,4 s**: 2 s de carência, ~1 s de entrega e 9,7 s da troca do
+próprio Render, que já levou 2,4 e 5 s em outras medições.
 
 ## Gatilho para rever
 
