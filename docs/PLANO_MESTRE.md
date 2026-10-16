@@ -1097,15 +1097,17 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           depois do restore — o efeito é o mesmo, e o desenho fica, sem mudar nada no painel. A regra passa a ser
           "nunca abrir a porta antes de ter o bastão". (3) **~5 s** da porta aberta (22:34:48,4) ao `SIGTERM` da velha
           e ao *live* (22:34:54); o processo novo levou 1,4 s do início à porta. O "reconectando" previsto: **~7–9 s**.)*
-    - [ ] **H.3d.1** **PR da migration** (decisão 5): uma tabela de uma linha — quem manda, a última marca de vida,
+    - [x] **H.3d.1** **PR da migration** (decisão 5): uma tabela de uma linha — quem manda, a última marca de vida,
           quem entregou —, com RLS ligado e **sem política**: só a service role lê e escreve, como a `rooms`.
           **Backup antes** (`npm run backup:db`, decisão 8, anotado no [registro](./BACKUP.md#registro-de-backups)),
           o merge, e a conferência em produção com `npx supabase migration list --linked` antes do PR do código.
           *(15/10/2026 — a `0008_instance_lease.sql`: os privilégios de anon e authenticated **revogados** (o select
           nega, em vez de voltar vazio como na `rooms`) e o RLS ligado sem política, como segunda camada. Os testes
           de RLS foram de **56 para 63**; devolvendo os privilégios no banco local, os 5 de cliente falham. Pela API
-          REST local, a chave anônima leva `401`/`42501`. Backup de 16/10 (UTC) no registro. **Falta:** o merge do
-          dono e a conferência em produção.)*
+          REST local, a chave anônima leva `401`/`42501`. Backup de 16/10 (UTC) no registro. **Mergeado no #47**
+          (16/10, 01:11 UTC), sem mesa aberta; o `master` verde com o `db push`. **Em produção:** o
+          `migration list --linked` mostra a `0008` no remoto, e o schema tem a tabela, a restrição `id = 1`, o RLS
+          ligado e privilégio só da `service_role` — anon e authenticated sem nenhum.)*
     - [x] **H.3d.2** **O teste que reproduz, antes do código:** o ensaio `H1J_LOCAL=1 node scripts/multiplayer/h1j.mjs`
           (duas instâncias com o Supabase local, atrás de um proxy que faz o papel do Render) perde o que vai à velha
           depois de a nova subir — 5 mensagens em 14/10. E os testes do módulo, com um banco falso: com a velha viva,
@@ -1118,7 +1120,7 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           banco fora do ar, o SIGTERM e a entrega sem sucessor), `room-persistence` (7), `server-handoff` (6),
           `api-restart` (3) e `room-transport` +2. Mutações no módulo e no servidor, uma por propriedade: cada uma
           derruba o seu teste.)*
-    - [ ] **H.3d.3** **PR do código:** o módulo da passagem (`server/instanceLease.ts`: assumir, renovar a cada 2 s,
+    - [x] **H.3d.3** **PR do código:** o módulo da passagem (`server/instanceLease.ts`: assumir, renovar a cada 2 s,
           entregar); o boot na ordem assumir → esperar a entrega → restaurar → escutar; a velha que entrega recusa
           ações e *upgrade* com `503 server_restarting` (código novo na tabela do `server/errors.ts`), fecha os
           sockets e o SSE, grava, para o vigia de presença e o coletor, e só então marca que entregou; o cliente tenta
@@ -1134,8 +1136,9 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           desenho não previa: o stream SSE acaba com `retry: 1500` e o pedido de stream à velha recebe 200 — um 503
           faria o `EventSource` desistir para sempre —; e a velha que entregou e ninguém assumiu sai em 60 s, para o
           Render a religar. O banco que não responde nem ao pedido desiste em 5 s, não em 30 — o despertar não espera.
-          Portão no [registro](./SEGURANCA.md#fase-h--varredura-multiplayer). **Falta:** o PR, que só abre depois do
-          merge do #47 e da `0008` conferida em produção.)*
+          Portão no [registro](./SEGURANCA.md#fase-h--varredura-multiplayer). O PR abriu depois do merge do #47 e
+          da `0008` conferida em produção. **O deploy do merge dele ainda perde como antes** — a velha não tem o
+          bastão para entregar; o teste no ar é o "Manual Deploy" seguinte.)*
     - [ ] **H.3d.4** **No ar, com o dono:** o H.1j de novo — a mesa de teste, o "Manual Deploy" clicado por ele —:
           0 mensagem perdida, e quanto dura o "reconectando". A regra "nunca mergear com mesa aberta" só sai do
           `CLAUDE.md` e do `DEPLOY.md` se este passo provar a perda zero.
