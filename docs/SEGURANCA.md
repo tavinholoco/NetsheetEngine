@@ -793,9 +793,66 @@ valendo até a H.3d.4 provar a perda zero no ar. *(Provada em 15/10/2026, 23:51 
 não no meio de um combate". O H.14 — quem entra na janela da troca cai no SSE — não toca segurança: o jogador
 não ganha nem perde poder, só o arrasto do próprio token até recarregar.)*
 
-### Fases I e J — varreduras
+### Fase I — Varredura: integração
 
-*(cada uma a preencher no seu passo X.4 — só se a execução dos FAZER mudar código)*
+**16/10/2026 — SEC-16**, achado na varredura (I.03 do [ledger](./varreduras/I-integracao.md)),
+**reproduzido antes** e consertado num PR próprio, a pedido do dono, antes do ledger — o precedente da E.
+O ledger público o tinha em uma linha; o texto inteiro é este, e vai ao ar com o conserto. Os outros FAZER
+da I respondem ao portão quando entrarem (a I.4).
+
+**SEC-16 — o `peerId` de um convidado desviava o "Remover" do GM** 🟡. O `peerId` é escolhido por quem
+entra (`POST /join`, e o `gmPeerId` do `create`), e o servidor só tirava dele controle e espaço
+(`sanitizeText`). O cliente monta com ele o caminho do "Remover" (`/players/:targetPeerId/delete`, em
+`src/api/rooms.ts`), cru — e o `fetch` do navegador normaliza o caminho antes de mandar: o `..` sobe, o
+`?` começa a query. Reproduzido em 16/10 com o `supertest` contra o `app` e o caminho resolvido pelo mesmo
+parser de URL do `fetch`:
+- **`peerId` `peer_h/x`:** o "Remover" do GM vai a `/players/peer_h/x/delete` → **404** — o GM não tira o
+  convidado da mesa pela tela;
+- **`peerId` `a/../../players/peer_vitima/delete?`:** o GM clica em "Remover" ao lado do hostil — o
+  `confirm` mostra o nome dele — e o pedido vai a `/players/peer_vitima/delete?/delete`, com o token do GM
+  → **200: sai a vítima**, e o hostil fica. A vítima não volta pelo mesmo `peerId` (R.3, `removed_by_gm`);
+- **`peerId` `a/../../npcs/generate?`:** o mesmo clique gera um NPC — qualquer ação de GM da mesma sala que
+  não exija corpo. Outra sala, não: o token do GM só vale na dele.
+
+Exige um convidado com um script — a tela não deixa escolher o `peerId` — e não tira dado de ninguém: é a
+moderação do GM sequestrada. É o padrão *client-side path traversal*: o servidor confere quem pede, mas a
+rota que o cliente monta é escolhida por outro jogador.
+
+**Conserto, em duas camadas:** (1) o servidor recusa `peerId` fora de `[A-Za-z0-9_-]{1,64}` no `join` e
+no `create` — `400 invalid_input`, antes de qualquer assento —, e o `roomManager` repete a regra
+(`isValidPeerId`) para todo caminho que não passe pela rota: o `joinRoom` não senta, e o `createRoom` troca
+o `gmPeerId` por um gerado. Tudo o que o app gera cabe — `peer_<base36>_<base36>` no cliente, `gm_…` e
+`edgerunner_…` no servidor —, e os roteiros e testes do repositório também. (2) O cliente codifica todo
+segmento de caminho de `src/api/rooms.ts` (`encodeURIComponent`: o código da sala, o `npcId`, o
+`targetPeerId`). `peer-id.integration` (22) e `api-paths` (4). **Provado revertendo:** com o código antigo
+inteiro, 21 dos 26 falham — passam só os de controle (os ids que o app gera, o id comum no caminho); só o
+servidor antigo, 18; só o cliente antigo, 3. E neutralizado um trecho por vez, cada um derruba só os seus: a
+rota do `join` 11, a do `create` 3, a defesa do `joinRoom` 1, a do `createRoom` 1, a codificação do id do
+"Remover" 1, a do código da sala 1. O ataque reproduzido de manhã, depois do conserto: o `join` do hostil responde 400
+nos três casos, e o assento não nasce.
+
+**Portão — as seis perguntas sobre este código:**
+
+1. **Entrada nova?** Nenhuma; uma que já existia passou a ser **conferida** — o `peerId` do `join` e o
+   `gmPeerId` do `create`, pelo formato. Antes passava qualquer texto de até 64 caracteres.
+2. **Dado novo sai?** Nenhum: uma mensagem de erro constante, com o `invalid_input` de sempre.
+3. **Autorização nova?** Nenhuma — formato não é autorização. A prova de posse do assento segue a da R.1.
+4. **Jogador convidado hostil?** Não senta com um `peerId` que vira outra rota, e o "Remover" do GM chega
+   sempre ao assento em que ele clicou. **Continua podendo:** entrar com o **nome** de outro jogador — o
+   `confirm` do GM mostra o nome, não o `peerId`, e dois assentos com o mesmo nome já existiam (H.05). O GM
+   remove o assento em que clicou; não é segurança, é a tela. E o `__proto__` cabe no formato — o `join`
+   segue recusando-o por acaso, e o E.22 continua ADIAR.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**O que este PR ensina antes de o conserto estar no ar?** Tudo o que descreve — e o texto vai **junto** com
+o código. O Render publica o `master` em minutos, e a produção não tem mesa nem usuário (o backup de 16/10:
+`rooms` 0, `auth.users` 0): não há assento com `peerId` fora do formato para migrar, nem jogador exposto na
+janela do deploy.
+
+### Fase J — Varredura: segurança
+
+*(a preencher no seu passo X.4 — só se a execução dos FAZER mudar código)*
 
 ### Fase K — Profundidade de sistema
 
@@ -833,6 +890,7 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-13 | Sala sem teto de assentos: cada assento abre até 3 sockets e recebe cada reenvio | R | ✅ fechado 29/09 (R.16) — 16 assentos, contando as fichas geradas; `room.npcs` segue sem teto (pista da E) — *teto de NPCs no SEC-15* |
 | SEC-14 | Grid malformado (REST ou Yjs) trava a sala e, pelo vigia de presença, **derruba o processo** — sem login | E | ✅ fechado 30/09 (E.02) — forma validada nas duas portas; reenvio e vigia isolados |
 | SEC-15 | O tamanho da mesa não tinha teto: salas, NPCs, ficha, chat e buffer de socket lento | E | ✅ fechado 30/09 (E.03) — teto global de sockets: ADIAR, na J.1e |
+| SEC-16 | O `peerId` de um convidado entrava cru no caminho do "Remover" do GM — o clique removia outro jogador ou disparava outra ação de GM | I | ✅ fechado 16/10 (I.03) — formato do `peerId` no servidor e caminho codificado no cliente |
 
 ---
 

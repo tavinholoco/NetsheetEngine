@@ -461,7 +461,7 @@ número real.
 ## 📊 ÍNDICE DE ACHADOS
 
 33 achados da auditoria de 02/09, **12 da [revisão pós-D](./historico/AUDITORIAS_E_PENDENCIAS_R.md#-revisão-pós-d-29092026)** (29/09 — 11 na revisão, 1 no portão das R) e
-**2 da Fase E** (30/09), no fim desta seção. IDs referenciados pelas fases.
+**2 da Fase E** (30/09) e **1 da Fase I** (16/10), no fim desta seção. IDs referenciados pelas fases.
 
 ### Segurança (6)
 
@@ -542,6 +542,16 @@ próprio antes do ledger — detalhe e portão em [`SEGURANCA.md`](./SEGURANCA.m
 |---|---|---|---|
 | SEC-14 | 🔴 Crítico | Grid malformado, pela REST ou pelo Yjs, trava a sala e — pelo vigia de presença, num `setInterval` sem `try` — **derruba o processo**, todas as mesas juntas. Sem login: criar sala não exige login no servidor *(reproduzido com o `npm run dev`)* | ✅ E.3a |
 | SEC-15 | 🟠 Alto | O tamanho da mesa não tinha teto: salas (a instância de 512 MB e os 500 MB do banco em horas), ficha de até ~557 KB, NPCs, chat, e o buffer de socket que não lê *(medido e reproduzido)* | ✅ E.3b |
+
+### Fase I (1) — 16/10/2026
+
+Achado da [varredura de integração](./varreduras/I-integracao.md), **reproduzido** e consertado num PR
+próprio antes do ledger, como na E — detalhe e portão em
+[`SEGURANCA.md`](./SEGURANCA.md#fase-i--varredura-integração).
+
+| ID | Sev. | Achado | Fase |
+|---|---|---|---|
+| SEC-16 | 🟡 Médio | O `peerId` é escolhido por quem entra e ia cru no caminho do "Remover" do GM: com `/`, `..` ou `?`, o clique removia **outro** jogador, disparava outra ação de GM ou não achava a rota — o hostil ficava impossível de remover *(reproduzido)* | ✅ I.03 |
 
 ---
 
