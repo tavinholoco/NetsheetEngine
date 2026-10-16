@@ -93,7 +93,7 @@ npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção 
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
 npm run audit:colors      # cor escrita à mão em src/ — zero, e o CI exige (F.2.10): cor nova é token no @theme
 npx tsx scripts/migrate-colors.ts --conflitos   # duas cores na mesma propriedade do elemento — 0, e o CI exige
-node scripts/test-rls.mjs # 56 testes de RLS — exige Supabase local no Docker
+node scripts/test-rls.mjs # 63 testes de RLS — exige Supabase local no Docker
 npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) — exige Docker; nunca junto do CI
 ```
 

@@ -328,14 +328,25 @@ erDiagram
         jsonb room_state "GameRoom transmitido"
         jsonb sessions "SHA-256 dos tokens"
     }
+    INSTANCE_LEASE {
+        smallint id PK "sempre 1"
+        text holder "a instância que serve"
+        timestamptz holder_beat "marca de vida, 2 s"
+        text claimant "a nova que pede"
+        text released_by "quem entregou"
+    }
 ```
 
 - **`rooms` não tem dono nem chave estrangeira** — é estado do servidor, não do usuário. RLS
   ligada com **zero policies**: só a service role do servidor lê e escreve (`0006`).
 - **`sessions` é coluna própria, fora do `room_state`** (`0007`, B.4): o `room_state` é o objeto
   transmitido a toda a mesa, e o token de sessão ali dentro vazaria para todos.
-- As outras cinco tabelas têm RLS com policies por usuário (`0001`–`0003`), cobertas pelos 56 testes
-  de `scripts/test-rls.mjs`. `profiles.email` saiu na `0004`.
+- **`instance_lease` é o bastão entre instâncias do servidor** (`0008`, H.3d): uma linha só, que diz qual
+  processo serve as mesas — num deploy, a instância nova pede, a velha entrega, e só então a nova lê a `rooms`
+  (ADR 0007). Escrever nela manda o servidor parar, então anon e authenticated **nem leem** (privilégios
+  revogados) e o RLS fica ligado sem política, como segunda camada.
+- As outras cinco tabelas têm RLS com policies por usuário (`0001`–`0003`), cobertas pelos 63 testes
+  de `scripts/test-rls.mjs` (com os da `rooms` e da `instance_lease`). `profiles.email` saiu na `0004`.
 - **A Fase C não mexeu no schema.** A `CharacterSheet` mudou de regra, não de forma: o
   `currentStats` continua no `data` por compatibilidade, e o servidor o recalcula.
 

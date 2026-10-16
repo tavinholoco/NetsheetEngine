@@ -177,6 +177,11 @@ select rls_test.expect_count('select * from public.rooms', 0, 'anon: não lê ro
 select rls_test.expect_denied('insert into public.rooms (code, room_state) values (''RLSNC-1'', ''{}''::jsonb)', 'anon: não insere em rooms');
 select rls_test.expect_affected('update public.rooms set room_state = ''{}''::jsonb', 0, 'anon: NÃO atualiza rooms');
 select rls_test.expect_affected('delete from public.rooms where code = ''RLSNC-1''', 0, 'anon: NÃO deleta de rooms (sem policy de delete)');
+-- instance_lease (H.3d): o bastão entre instâncias — escrever nela manda o
+-- servidor parar. Privilégios revogados: até o select nega.
+select rls_test.expect_denied('select * from public.instance_lease', 'anon: não lê instance_lease');
+select rls_test.expect_denied('update public.instance_lease set claimant = ''anon''', 'anon: NÃO pede o bastão (update)');
+select rls_test.expect_denied('insert into public.instance_lease (id) values (1)', 'anon: não insere em instance_lease');
 select rls_test.expect_denied('insert into storage.objects (bucket_id, name, owner_id) values (''avatars'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b/anon.png'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b'')', 'anon: não faz upload no bucket avatars');
 -- leitura pública (políticas to public): bucket público + listagem de buckets
 select rls_test.expect_count('select * from storage.objects where bucket_id = ''avatars''', 1, 'anon: lê avatares (bucket público)');
@@ -244,9 +249,24 @@ select rls_test.expect_affected('update public.profiles set bio = ''hack'' where
 -- rooms: autenticado também é bloqueado (estado da mesa passa pelo servidor)
 select rls_test.expect_count('select * from public.rooms', 0, 'B: não lê rooms (servidor-only)');
 select rls_test.expect_denied('insert into public.rooms (code, room_state) values (''RLSNC-2'', ''{}''::jsonb)', 'B: não insere em rooms');
+-- instance_lease (H.3d): logado também não manda o servidor parar
+select rls_test.expect_denied('select * from public.instance_lease', 'B: não lê instance_lease');
+select rls_test.expect_denied('update public.instance_lease set claimant = ''B''', 'B: NÃO pede o bastão (update)');
 select rls_test.expect_count('select * from public.direct_messages', 3, 'B: vê chats A-B e B-C (participa dos dois)');
 select rls_test.expect_denied('insert into storage.objects (bucket_id, name, owner_id) values (''avatars'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b/x.png'', ''6dbca66c-511a-4959-8919-a03b1bdeff5b'')', 'B: NÃO faz upload na pasta de A');
 select rls_test.expect_count('select * from public.friend_requests', 3, 'B: vê solicitações em que participa');
+
+-- ============================================================
+-- 4) SERVICE ROLE — o servidor, único dono do bastão (H.3d)
+-- ============================================================
+reset role;
+grant usage on schema rls_test to service_role;
+grant select, insert, update on rls_test.results to service_role;
+grant execute on all functions in schema rls_test to service_role;
+set role service_role;
+
+select rls_test.expect_count('select * from public.instance_lease', 1, 'servidor: lê o bastão (uma linha só)');
+select rls_test.expect_affected('update public.instance_lease set claimant = claimant where id = 1', 1, 'servidor: escreve no bastão');
 
 -- ============================================================
 -- RESUMO (falha explícita se houver algum FAIL — útil p/ CI/T9.5)

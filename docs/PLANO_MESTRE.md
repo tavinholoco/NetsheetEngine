@@ -1085,15 +1085,27 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         segundos — a volta da hibernação não espera. **Preço:** um "reconectando" de uns 5–20 s a cada deploy, no
         lugar da perda em silêncio; uma escrita no banco a cada 2 s com o serviço acordado. ~2 dias. De carona, no
         mesmo arquivo da persistência, o **H.10** e o **H.11**, com os gatilhos disparados por ela.
-    - [ ] **H.3d.0** 🔍 **Premissas** (com o dono no painel do Render — o login é dele): (1) no log do deploy de
+    - [x] **H.3d.0** 🔍 **Premissas** (com o dono no painel do Render — o login é dele): (1) no log do deploy de
           14/10 (~22:34 BRT; o log do Hobby guarda 7 dias, até ~21/10), a instância velha registrou o
           `server_shutdown` — recebeu o `SIGTERM`? (2) o serviço Docker tem o health check `/api/health` no painel,
           e o Render espera ele responder antes de trocar o tráfego? (3) quanto o Render leva da porta aberta à
           troca — é o que dura o "reconectando". Uma premissa que caia muda o desenho antes do código.
+          *(15/10/2026, com o dono logado — a linha do tempo no [H.13 do ledger](./varreduras/H-multiplayer.md#h3d0--as-premissas-no-painel-do-render-15102026).
+          (1) **Sim:** a velha (`lgv8m`) registrou `server_shutdown`/`SIGTERM` às 22:34:53,5, **5 s** depois de a nova
+          abrir a porta, e nenhum erro de gravação depois — não os 60 s da doc. (2) **Caiu em parte:** o campo
+          *Health Check Path* está **vazio**; sem ele, o Render testa a **porta TCP**, e o servidor só abre a porta
+          depois do restore — o efeito é o mesmo, e o desenho fica, sem mudar nada no painel. A regra passa a ser
+          "nunca abrir a porta antes de ter o bastão". (3) **~5 s** da porta aberta (22:34:48,4) ao `SIGTERM` da velha
+          e ao *live* (22:34:54); o processo novo levou 1,4 s do início à porta. O "reconectando" previsto: **~7–9 s**.)*
     - [ ] **H.3d.1** **PR da migration** (decisão 5): uma tabela de uma linha — quem manda, a última marca de vida,
           quem entregou —, com RLS ligado e **sem política**: só a service role lê e escreve, como a `rooms`.
           **Backup antes** (`npm run backup:db`, decisão 8, anotado no [registro](./BACKUP.md#registro-de-backups)),
           o merge, e a conferência em produção com `npx supabase migration list --linked` antes do PR do código.
+          *(15/10/2026 — a `0008_instance_lease.sql`: os privilégios de anon e authenticated **revogados** (o select
+          nega, em vez de voltar vazio como na `rooms`) e o RLS ligado sem política, como segunda camada. Os testes
+          de RLS foram de **56 para 63**; devolvendo os privilégios no banco local, os 5 de cliente falham. Pela API
+          REST local, a chave anônima leva `401`/`42501`. Backup de 16/10 (UTC) no registro. **Falta:** o merge do
+          dono e a conferência em produção.)*
     - [ ] **H.3d.2** **O teste que reproduz, antes do código:** o ensaio `H1J_LOCAL=1 node scripts/multiplayer/h1j.mjs`
           (duas instâncias com o Supabase local, atrás de um proxy que faz o papel do Render) perde o que vai à velha
           depois de a nova subir — 5 mensagens em 14/10. E os testes do módulo, com um banco falso: com a velha viva,
@@ -1458,7 +1470,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | `npx vitest run` | **805** testes, 59 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
-| `node scripts/test-rls.mjs` | 56/56 na Fase B — **não rodado na C nem na D** (Supabase local desligado; nenhuma das duas mexeu em schema nem RLS — a ficha em pontos mora no `data` jsonb) |
+| `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia) |
 | Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
