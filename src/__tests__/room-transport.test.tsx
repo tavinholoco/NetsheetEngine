@@ -141,6 +141,33 @@ describe('H.3d — o servidor trocou de instância (o deploy)', () => {
     expect(net.streams).toHaveLength(0);
   });
 
+  it('o aviso server_restarting: fecha o próprio socket NA HORA, manda por REST e volta em 1,5 s', async () => {
+    // H.3d.4 — no ar, o proxy do Render segurou o fechamento que o servidor manda por
+    // 13–16 s: a tela achava o socket aberto e mandou uma mensagem para o nada. O aviso
+    // é um quadro de dados, que chega na hora; o cliente não espera o fechamento.
+    act(() => net.sockets[0].open());
+    const fecha = vi.spyOn(net.sockets[0], 'close');
+    const envia = vi.spyOn(net.sockets[0], 'send');
+    act(() =>
+      net.sockets[0].receive(
+        JSON.stringify({ type: 'error', code: 'server_restarting', error: 'O servidor está trocando de instância.' })
+      )
+    );
+    expect(fecha).toHaveBeenCalled();
+    expect(useRoomStore.getState().errorMsg).toBe(''); // não é erro de quem joga
+    const chat = screen.getByPlaceholderText('Mensagem para a mesa...');
+    fireEvent.change(chat, { target: { value: 'depois do aviso' } });
+    fireEvent.keyDown(chat, { key: 'Enter' });
+    expect(envia).not.toHaveBeenCalled();
+    const fetches = (globalThis.fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    expect(fetches.some(([url]) => String(url).includes(`/api/rooms/${CODE}/message`))).toBe(true);
+    await wait(1500);
+    expect(net.sockets).toHaveLength(2); // sem o onclose, que o proxy seguraria
+    act(() => last().drop()); // a velha recusa na carência e na troca
+    await wait(1500);
+    expect(net.sockets).toHaveLength(3);
+  });
+
   it('a janela curta acaba com a conexão: uma queda comum depois volta aos 3 s', async () => {
     act(() => net.sockets[0].open());
     act(() => net.sockets[0].restart());

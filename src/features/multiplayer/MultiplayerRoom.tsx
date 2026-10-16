@@ -203,13 +203,16 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     }
     let disposed = false;
 
-    const handlePayload = (raw: string) => {
+    /** Devolve `'restart'` quando o servidor avisa que vai trocar de instância (H.3d.4). */
+    const handlePayload = (raw: string): 'restart' | void => {
       if (disposed) return;
       try {
         const parsed = JSON.parse(raw);
         // Fase 5 (T5.4) — respostas de erro do servidor (roll-error / error)
         if (parsed && typeof parsed === 'object' && typeof parsed.type === 'string' &&
             (parsed.type === 'roll-error' || parsed.type === 'error')) {
+          // H.3d.4 — o aviso da troca de instância não é erro de quem joga.
+          if (parsed.code === 'server_restarting') return 'restart';
           useRoomStore.getState().setErrorMsg(String(parsed.error || 'Ação rejeitada pelo servidor.'));
           return;
         }
@@ -269,7 +272,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     };
     ws.onmessage = (ev) => {
       if (typeof ev.data === 'string') {
-        handlePayload(ev.data);
+        if (handlePayload(ev.data) === 'restart') leaveForRestart();
       } else if (yjsConnRef.current) {
         // Binário → protocolo Yjs (grid CRDT / awareness)
         yjsConnRef.current.handleBinary(ev.data as ArrayBuffer);
@@ -278,7 +281,23 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     ws.onerror = () => {
       // Sem conexão → o onclose decide o fallback SSE
     };
-    ws.onclose = (ev) => {
+    // H.3d.4 — o servidor avisou que vai trocar de instância. No ar, o proxy do
+    // Render segurou o fechamento que o servidor manda por 13–16 s, e a tela mandou
+    // uma mensagem pelo socket morto. Então o cliente fecha o próprio socket na
+    // hora — daqui em diante, as ações vão por REST, que repete o 503 — e volta pelo
+    // caminho do 1012, sem esperar o `onclose`.
+    const leaveForRestart = () => {
+      if (disposed || wsRef.current !== ws) return;
+      ws.onclose = null;
+      try {
+        ws.close();
+      } catch {
+        /* já fechando */
+      }
+      socketGone(1012);
+    };
+    ws.onclose = (ev) => socketGone(ev?.code);
+    function socketGone(code: number | undefined) {
       if (disposed) return;
       wsRef.current = null;
       // H.02 — a conexão Yjs deste socket morre com ele. Só o ref era zerado, e
@@ -298,7 +317,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
         // nova, no deploy. A velha recusa o WebSocket até o Render trocar o
         // tráfego (~7–9 s, H.3d.0): tentar a cada 1,5 s por até 1 min, sem a
         // espera crescente — que, na terceira recusa, já esperaria 12 s.
-        if (ev?.code === 1012) wsRestartUntilRef.current = Date.now() + 60_000;
+        if (code === 1012) wsRestartUntilRef.current = Date.now() + 60_000;
         const restarting = Date.now() < wsRestartUntilRef.current;
         // Caiu depois de conectar → tenta o WebSocket de novo, com espera
         // crescente: 3 s, 6 s, 12 s… até 30 s (token pode ter mudado via T3.3;
@@ -309,7 +328,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           if (!disposed) setWsAttempt((a) => a + 1);
         }, delay);
       }
-    };
+    }
 
     return () => {
       disposed = true;
