@@ -166,6 +166,17 @@ export function isValidRoomCode(code: string): boolean {
   return /^[A-Z0-9-]{2,24}$/.test(code.trim().toUpperCase());
 }
 
+/**
+ * Fase I (I.03 — SEC-16) — o `peerId` vem de quem entra (o `join`, e o
+ * `gmPeerId` do `create`) e vira segmento de URL no cliente
+ * (`/players/:targetPeerId/delete`). Sem formato, um `/`, um `..` ou um `?`
+ * levava o "Remover" do GM a outra rota — a de outro jogador. O cliente gera
+ * `peer_<base36>_<base36>`; o servidor, `gm_…` e `edgerunner_…`.
+ */
+export function isValidPeerId(peerId: unknown): peerId is string {
+  return typeof peerId === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(peerId);
+}
+
 // In-memory store for game rooms
 const rooms: Record<string, GameRoom> = {};
 
@@ -364,7 +375,8 @@ export function createRoom(code: string, roomName: string, gmHandle: string, gmP
   if (roomsAtCapacity()) {
     throw new Error(`Teto de ${MAX_ROOMS} salas atingido (E.03).`);
   }
-  const gmUserPeerId = sanitizeText(gmPeerId, 64) || "gm_" + Date.now().toString(36);
+  // I.03 (SEC-16) — a rota recusa antes (400); fora do formato, o servidor gera.
+  const gmUserPeerId = isValidPeerId(gmPeerId) ? gmPeerId : "gm_" + Date.now().toString(36);
   const safeGmHandle = sanitizeText(gmHandle, 30) || "Mestre de Jogo";
   const gmSheet = generateRandomNpc();
   gmSheet.handle = safeGmHandle;
@@ -570,8 +582,9 @@ export function joinRoom(
   const room = getRoom(code);
   if (!room) return null;
 
-  const safePeerId = sanitizeText(peerId, 64);
-  if (!safePeerId) return null;
+  // I.03 (SEC-16) — a rota responde 400 antes; isto é a defesa em todo caminho.
+  if (!isValidPeerId(peerId)) return null;
+  const safePeerId = peerId;
   // R.3 (SEC-09) — quem o GM removeu não volta pelo mesmo peerId.
   if (wasRemovedByGm(room.code, safePeerId)) return null;
   // R.1 (SEC-07) — assento ocupado só com o token vigente dele.

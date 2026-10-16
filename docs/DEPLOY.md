@@ -199,8 +199,10 @@ Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Render)
 ### Configuração
 
 1. **Backend** (Render — seção acima): suba normalmente.
-   O servidor já responde **CORS em `/api/*`** (qualquer origin — auth por
-   token de sessão, sem cookies).
+   O servidor responde **CORS em `/api/*` só às origins de `CORS_ORIGINS`**
+   (auth por token de sessão, sem cookies) — ver o aviso abaixo. *(Até a I,
+   16/10/2026, esta linha dizia "qualquer origin", o comportamento de antes da
+   T10.6.)*
 2. **Frontend** (Vercel ou Netlify): importe o repo e use as configs prontas:
    - **Vercel** — `vercel.json` (build `npm run build:web`, output `dist`,
      SPA rewrites para os deep-links `/room/ABC123`);
@@ -220,6 +222,15 @@ Cliente estático (Vercel) ──► REST/SSE/WS ──► Express + WS (Render)
 > do frontend (separadas por vírgula) — ex.: `CORS_ORIGINS=https://netsheet.app,https://www.netsheet.app`.
 > Sem isso, o navegador bloqueia as chamadas cross-origin (mesmo origin
 > continua funcionando).
+>
+> **⚠️ E ainda não basta (I.09, medido num Chromium em 16/10/2026):** o
+> `Access-Control-Allow-Headers` do servidor só libera `Content-Type`
+> (`server.ts`, o bloco do CORS). O navegador barra o `X-Session-Token` do
+> `join` — o F5, a reconexão, a prova de posse da R.1 — e o `Authorization`
+> do Netrunner IA: a primeira entrada funciona, e o primeiro F5 cai em "Falha
+> de conexão". Acrescentar os dois cabeçalhos é a primeira linha da I.1e quando
+> a regra 4 do custo zero disparar —
+> [I.09](./varreduras/I-integracao.md#i09--com-o-site-fora-do-render-o-f5-e-a-ia-param-o-cors-não-libera-os-cabeçalhos-que-o-cliente-manda).
 
 ---
 

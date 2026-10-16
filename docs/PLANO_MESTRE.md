@@ -394,6 +394,16 @@ dividida — e a sala, o doc Yjs e o reenvio vivem na memória de um processo s�
   sessão mostrar a espera do despertar como problema, vira item da I (com a I.1e), feito antes de entrar
   jogador.
 
+*(16/10/2026 — **lido na I.1e**, no painel, com a sessão do dono: **o painel não separa as horas por
+serviço**, só a banda. O workspace somava **196,12 h** e **163 MB** em outubro; o NetSheet, **33 MB** de banda.
+Perto de 120 h do total são do monitor até 05/10, e o resto não se divide entre os dois serviços — outubro não
+decide, e o primeiro mês que se lê inteiro é novembro. O gatilho "o NetSheet acima de 100 h" lia um número que
+não existe; **reescrito:** o total do workspace ("Billing" → "Free Instance Hours") acima de 100 h num mês sem o
+monitor — e aí separar a parte do NetSheet pelas partidas no log (`server_started`) antes de decidir —, a
+primeira sessão mostrar a espera do despertar como problema, ou a mesa abrir para gente de fora. E a I.1e mediu
+o que entra junto quando disparar: o CORS barra os cabeçalhos do cliente, e o F5 e a IA param — o
+[I.09](./varreduras/I-integracao.md#i09--com-o-site-fora-do-render-o-f5-e-a-ia-param-o-cors-não-libera-os-cabeçalhos-que-o-cliente-manda).)*
+
 **Os riscos reais — os dois de uso normal ainda sem sintoma; o de abuso, calculado na revisão pós-D:**
 
 1. **Aba esquecida.** ~~O lobby consulta a lista de salas a cada **8 s**, e~~ a mesa manda heartbeat a
@@ -407,6 +417,8 @@ dividida — e a sala, o doc Yjs e o reenvio vivem na memória de um processo s�
    *(05/10/2026: as 100 h de outubro passaram no dia 5 — mas pelo monitor do Better Stack, sem mesa
    nenhuma aberta (ver o incidente abaixo). A causa não é a deste risco: **segue ADIAR**, e o gatilho
    volta a valer com o número de um mês sem o monitor. O mesmo vale para o gatilho da regra 4.)*
+   *(16/10/2026, I.1e: o painel não mostra as horas por serviço. O gatilho passa a ler o total do workspace
+   como teto — acima de 100 h num mês sem o monitor, separar a parte do NetSheet pelo log —, como o da regra 4.)*
 2. **Mesa grande.** A banda cresce com o **quadrado** dos jogadores (sala maior × mais conexões). Com
    6 ou mais jogadores e fichas cheias, uma sessão passa de 0,5 GB. **É o ARQ-01, já na Fase L**
    (broadcast por diferença). **Gatilho para antecipar:** a banda do workspace passar de 2,5 GB num
@@ -426,7 +438,8 @@ dividida — e a sala, o doc Yjs e o reenvio vivem na memória de um processo s�
 
 **Medir em vez de estimar:** a partir de 01/10, a página de uso do workspace no painel do Render mostra
 horas e banda por serviço. Conferir depois da primeira sessão de jogo e trocar esta estimativa pelo
-número real.
+número real. *(16/10/2026, I.1e: **por serviço, só a banda** — as horas são do workspace inteiro, na
+página "Billing".)*
 
 > **⚠️ Incidente de setembro de 2026 — o limite de horas estourou.** Em 26/09 o serviço respondia
 > `503 Service Suspended`: o workspace passou das 750 h do mês. **Causa, segundo o dono:** durante o
@@ -461,7 +474,7 @@ número real.
 ## 📊 ÍNDICE DE ACHADOS
 
 33 achados da auditoria de 02/09, **12 da [revisão pós-D](./historico/AUDITORIAS_E_PENDENCIAS_R.md#-revisão-pós-d-29092026)** (29/09 — 11 na revisão, 1 no portão das R) e
-**2 da Fase E** (30/09), no fim desta seção. IDs referenciados pelas fases.
+**2 da Fase E** (30/09) e **1 da Fase I** (16/10), no fim desta seção. IDs referenciados pelas fases.
 
 ### Segurança (6)
 
@@ -543,6 +556,16 @@ próprio antes do ledger — detalhe e portão em [`SEGURANCA.md`](./SEGURANCA.m
 | SEC-14 | 🔴 Crítico | Grid malformado, pela REST ou pelo Yjs, trava a sala e — pelo vigia de presença, num `setInterval` sem `try` — **derruba o processo**, todas as mesas juntas. Sem login: criar sala não exige login no servidor *(reproduzido com o `npm run dev`)* | ✅ E.3a |
 | SEC-15 | 🟠 Alto | O tamanho da mesa não tinha teto: salas (a instância de 512 MB e os 500 MB do banco em horas), ficha de até ~557 KB, NPCs, chat, e o buffer de socket que não lê *(medido e reproduzido)* | ✅ E.3b |
 
+### Fase I (1) — 16/10/2026
+
+Achado da [varredura de integração](./varreduras/I-integracao.md), **reproduzido** e consertado num PR
+próprio antes do ledger, como na E — detalhe e portão em
+[`SEGURANCA.md`](./SEGURANCA.md#fase-i--varredura-integração).
+
+| ID | Sev. | Achado | Fase |
+|---|---|---|---|
+| SEC-16 | 🟡 Médio | O `peerId` é escolhido por quem entra e ia cru no caminho do "Remover" do GM: com `/`, `..` ou `?`, o clique removia **outro** jogador, disparava outra ação de GM ou não achava a rota — o hostil ficava impossível de remover *(reproduzido)* | ✅ I.03 |
+
 ---
 
 ## 🗂️ AS 13 FASES
@@ -597,7 +620,12 @@ olha, porque cada lado parece correto sozinho.
 
 Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 
-- [ ] **I.0** 🔍 **Premissas** — medidas em 29/09/2026:
+- [x] **I.0** 🔍 **Premissas** — medidas em 29/09/2026:
+      *(16/10/2026 — conferidas contra o `master` em `8dd74da`, no [ledger](./varreduras/I-integracao.md#i0--as-pistas-medidas-em-16102026):
+      **todas bateram**, e a do `RollResult` estava resolvida desde a C (uma interface, dois carimbos sobre o
+      mesmo `RollCore`). Caiu uma premissa do plano, de configuração: **o painel do Render não mostra as horas
+      por serviço** — só do workspace —, e o gatilho da regra 4 e do risco 1 foi reescrito (I.09). E a linha de
+      base ainda dava as migrations até a `0007`.)*
       - **O cliente já sabe ler `code`:** o `ApiError` guarda o `code` do servidor desde a R.1
         (`src/api/http.ts:20`). ~~O que falta é o servidor mandá-lo em todo erro — isso é da **E.1a**.~~
         *Feito na E.3c (30/09): todo erro sai com `code`, e a tabela está no
@@ -630,21 +658,52 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
           (timeout, os outros erros) sem duplicar este.
         - **No ar, nenhum código de fechamento de WebSocket que o servidor manda chega ao navegador** (`1006`
           segundos depois — H.3d.4). A I.1c (o 401 no meio da sessão) não pode contar com o `4400` da expulsão.
-- [ ] **I.1** Varredura por área → ledger em `docs/varreduras/I-integracao.md`.
-  - [ ] **I.1a Inventário de rotas.** Uma linha por endpoint: quem chama no cliente, tipo de request e
+- [x] **I.1** Varredura por área → ledger em `docs/varreduras/I-integracao.md`. *(16/10/2026 — 9 itens, numa
+      sessão: leitura das duas pontas, o `supertest` contra o `app`, um Chromium para o CORS e o painel do
+      Render, com a sessão do dono, só leitura.)*
+  - [x] **I.1a Inventário de rotas.** Uma linha por endpoint: quem chama no cliente, tipo de request e
         response compartilhado ou escrito duas vezes à mão, códigos de erro tratados. *Se eu mudar este
         endpoint, o TypeScript me avisa no cliente — ou descubro em produção?*
-  - [ ] **I.1b Erros.** Todo estado de erro do servidor tem estado de UI? O cliente decide por `code`
+        *(16/10/2026 — 23 rotas e o WebSocket; as 21 chamadas do `api/rooms.ts` batem com o servidor, campo
+        a campo. A resposta é **pela metade**: a resposta divide os tipos, o corpo do pedido não (I.02,
+        ADIAR, gatilho a L.1). **A rota do modificador do GM não tem chamador** — a C.4 ligou só a leitura
+        (I.01, ADIAR, perto da linha). Duas portas sem chamador (I.04, ADIAR), três documentos errados
+        (I.05, FAZER, documento) e **um achado de segurança, o SEC-16 (I.03)** — o `peerId` de um convidado
+        desviava o "Remover" do GM —, consertado antes do ledger no #54.)*
+  - [x] **I.1b Erros.** Todo estado de erro do servidor tem estado de UI? O cliente decide por `code`
         ou por texto? *Referência:* a [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`type`,
         `title`, `status`, `detail`). Pelo filtro, a RFC inteira só com sintoma que o `code` não resolva.
-  - [ ] **I.1c Sessão.** O que o usuário vê quando o token expira ou é revogado no meio da sessão (401)?
-  - [ ] **I.1d Transporte.** `apiFetch` / `authedFetch`: timeout, retry e a restrição da hibernação
+        *(16/10/2026 — **nunca pelo texto**: três `code` e o status 401. Os 26 `code` chegam à tela pelo texto,
+        menos três caminhos do REST que engolem o erro (I.06, ADIAR). A RFC: nenhum sintoma. O G.08 e o G.10
+        olhados — seguem ADIAR.)*
+  - [x] **I.1c Sessão.** O que o usuário vê quando o token expira ou é revogado no meio da sessão (401)?
+        *(16/10/2026 — a sessão não expira; o 401 só nasce de revogação, e cada uma das quatro portas tem
+        tela, menos a do H.05, que já é ADIAR. A expulsão no ar não depende do 4400: o heartbeat pelo REST
+        acha o 401 em até ~20 s. Sem item novo.)*
+  - [x] **I.1d Transporte.** `apiFetch` / `authedFetch`: timeout, retry e a restrição da hibernação
         acima.
-  - [ ] **I.1e Cross-origin** (`VITE_API_URL` → `ws`/`wss`, `CORS_ORIGINS`, o `connect-src` do CSP).
+        *(16/10/2026 — sem timeout, e certo: o Render acorda em ~22 s medidos (I.07, DESCARTAR). Um retry
+        só, o `503 server_restarting`, que garante que nada foi feito; repetir erro de rede repetiria dano
+        (I.08, DESCARTAR).)*
+  - [x] **I.1e Cross-origin** (`VITE_API_URL` → `ws`/`wss`, `CORS_ORIGINS`, o `connect-src` do CSP).
         **Condicional:** se a regra 4 continuar sem dono, o veredito natural é ADIAR com o gatilho dela.
+        *(16/10/2026 — a regra 4 segue sem gatilho disparado, e o gatilho não se lia: o painel só dá as horas
+        do workspace (196,12 h em 16/10, ~120 delas do monitor até 05/10; a banda do NetSheet, 33 MB). **Com
+        o site em outra origem, o CORS barra o `X-Session-Token` e o `Authorization`** — o F5 e a IA param,
+        reproduzido num Chromium (I.09, ADIAR, gatilho reescrito; a linha é a primeira da I.1e quando
+        disparar). O `DEPLOY.md` corrigido (I.05).)*
 - [ ] **I.2** Calibragem e PR do ledger — passo X.2.
+      *(16/10/2026 — calibragem: **2 FAZER em 9, 22%**; a primeira contagem deu 4 em 11 (36%), e a repassada
+      juntou as correções de documento sem mudar veredito de código. Destacado ao dono: o **I.01** (ADIAR). O
+      achado de segurança (I.03, **SEC-16**): o dono escolheu consertar antes do ledger, como na E — o **PR #54**,
+      com o portão no `SEGURANCA.md`; o ledger, no **PR #53**, empilhado nele. Mergear o #54 primeiro.)*
 - [ ] **I.3** Executar só os FAZER — passo X.3.
+      *(16/10/2026 — os dois FAZER já foram: o I.03 no #54 (antes do ledger, com o teste escrito antes e a prova
+      revertendo) e o I.05 no próprio #53. Se o merge do #53 aprovar os veredictos como estão, a I.3 não tem mais
+      nada; se o dono virar o **I.01** para FAZER, ele é a I.3.)*
 - [ ] **I.4** 🔒 Portão, se a I.3 mudou código — passo X.4.
+      *(16/10/2026 — o do SEC-16 está respondido no [`SEGURANCA.md`](./SEGURANCA.md#fase-i--varredura-integração),
+      no #54.)*
 - [ ] **I.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase I concluída em:** ____/____/______
 
@@ -908,7 +967,7 @@ público mudar.
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
 | G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
-| I | 🔍 | Varredura: integração | ⬜ | — |
+| I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54 | 🔄 | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
@@ -935,7 +994,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 107 `black`/`white`, à parte. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
 | `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4), e **o CI exige** (F.2.10) |
 | Mono com negrito (`audit:colors`, coluna `mono+b`) | **0** (F.1.2) — e 0 no navegador, em 12 telas |
-| Migrations em produção | `0001`–`0007` *(a D não teve migration)* |
+| Migrations em produção | `0001`–`0008` *(a `0008_instance_lease` desde 16/10/2026, na H.3d.1 — PR #47; a D não teve migration)* |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
 Renovar até 22/10 — passo a passo no P.2.

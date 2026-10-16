@@ -145,7 +145,8 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   pesquisa e uma opção recomendada (decisão 11). Registre a regra com as suas palavras e a página que
   a fonte cita; **nunca copie texto ou tabela do livro** para o repositório, que é público.
 - Há um padrão recorrente aqui: **coisa construída de ponta a ponta e nunca ligada.** O
-  `combatModifier` e o `currentStats` foram ligados na Fase C; o `@theme` de cores é da Fase F; o
+  `currentStats` foi ligado na Fase C, e o `combatModifier` **pela metade** — a rolagem o soma, e nenhuma
+  tela o escreve (a rota `/settings` não tem chamador: I.01, ADIAR); o `@theme` de cores é da Fase F; o
   `deletePlayer` ganhou botão na G.3 (estava sem desde a Fase 0).
   Antes de construir algo novo, confira se o que existe já resolve.
 - **Botão cuja ação repetida estraga a mesa passa pelo `useInFlight`** (`src/hooks/`, G.06): entrar, criar,
