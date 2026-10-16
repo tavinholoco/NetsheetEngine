@@ -9,7 +9,8 @@ de `server/errors.ts` e as recusas do `server/roomManager.ts`. O resto de cada l
 G (frontend) e da H (transporte).
 **Itens levantados:** 9 · **FAZER:** 2 · **ADIAR:** 5 · **DESCARTAR:** 2
 **Proporção FAZER:** 22% — abaixo de 1/3 depois de uma repassada (ver [I.2](#i2--calibragem)). De código, um
-FAZER só: o achado de segurança.
+FAZER só: o achado de segurança, o **SEC-16** — consertado antes deste ledger, no
+[#54](https://github.com/tavinholoco/NetsheetEngine/pull/54), como na E.
 
 **Como é feito.** Leitura das duas pontas, rota por rota, e medição onde a leitura não basta: um roteiro
 com o `supertest` contra o `app` (sem listener nem banco) para as recusas, um Chromium de verdade com a
@@ -146,15 +147,38 @@ Nenhum teste passa uma chamada do `api/rooms.ts` pelo servidor de verdade.
   uma vez, e é quando o módulo de tipos se paga —, ou uma rota mudar de corpo e o cliente quebrar sem teste
   que pegue.
 
-### I.03 — 🔒 Um achado de segurança aberto
+### I.03 — 🔒 SEC-16: o `peerId` de um convidado desviava o "Remover" do GM
 
 **Área:** I.1a
 
-Reproduzido em 16/10/2026. O repositório é público: o texto vai **junto com o conserto**, nunca antes
-([passo X.2](../PLANO_MESTRE.md#o-roteiro-de-uma-varredura)).
+**Sintoma observado:** reproduzido em 16/10/2026, com o `supertest` contra o `app` e o caminho resolvido pelo
+mesmo parser de URL do `fetch`. O `peerId` é escolhido por quem entra (`POST /join`, e o `gmPeerId` do
+`create`), e o servidor só tirava dele controle e espaço (`sanitizeText`, `roomManager.ts:155`). O cliente o
+punha cru no caminho do "Remover" (`api/rooms.ts:298–300`, `/players/${targetPeerId}/delete`), e o `fetch`
+normaliza o caminho antes de mandar:
+- `peer_h/x` → o "Remover" vai a `/players/peer_h/x/delete` → **404**: o GM não tira o convidado da mesa;
+- `a/../../players/peer_vitima/delete?` → o clique em "Remover" ao lado do hostil (o `confirm` mostra o nome
+  dele) vai a `/players/peer_vitima/delete?/delete`, com o token do GM → **sai a vítima**, e o hostil fica;
+- `a/../../npcs/generate?` → o mesmo clique **gera um NPC** — qualquer ação de GM da sala sem corpo
+  obrigatório.
 
-**VEREDITO:** FAZER — a ordem (um PR de segurança antes do merge deste ledger, como na E, ou o conserto na
-I.3) é decisão do dono.
+**Onde:** `src/api/rooms.ts:298–300`; `server.ts:544–551` (o `join`) e `:522–524` (o `create`);
+`server/roomManager.ts:155`.
+
+**Quem sente hoje:** ninguém — a produção não tem mesa. Mas é o modelo de ameaça da decisão 3: o convidado
+hostil, com um script (a tela não deixa escolher o `peerId`).
+
+**Se eu não fizer:** a moderação do GM sequestrada — e quem sai não volta pelo mesmo `peerId` (R.3).
+
+**Versão 10× menor:** é a feita — o formato do `peerId` no servidor e o `encodeURIComponent` no cliente.
+
+**Reversível:** sim. A entrada fica mais estreita, e nada do que o app gera fica de fora.
+
+**VEREDITO:** FAZER — ✅ **feito antes deste ledger**, num PR de segurança próprio
+([#54](https://github.com/tavinholoco/NetsheetEngine/pull/54)), por decisão do dono (16/10/2026), como na E.
+- Testes que reproduzem, escritos antes: `src/__tests__/peer-id.integration.test.ts` (22) e
+  `src/__tests__/api-paths.test.ts` (4). O texto inteiro, a prova revertendo e o portão estão no
+  [`SEGURANCA.md`](../SEGURANCA.md#fase-i--varredura-integração).
 
 ### I.04 — Duas portas do servidor sem chamador
 
@@ -453,7 +477,7 @@ repassada**, e a régua não estava frouxa: o único FAZER de código é o achad
 
 | FAZER | O que quebra |
 |---|---|
-| I.03 — 🔒 um achado de segurança aberto | o texto vai com o conserto |
+| I.03 — 🔒 SEC-16: o `peerId` de um convidado desviava o "Remover" do GM | o GM remove outro jogador, ou não consegue tirar o hostil da mesa — ✅ feito no #54 |
 | I.05 — três documentos da costura | a sessão fria e o dono lêem o que o código não faz; o `DEPLOY.md` leva a um F5 quebrado |
 
 **Perto da linha — vai ao dono destacado, porque o merge é que aprova o veredito:**
@@ -463,9 +487,14 @@ repassada**, e a régua não estava frouxa: o único FAZER de código é o achad
   e usa a dificuldade livre no ataque do NPC. Nada se perde. Se o dono preferir FAZER, a versão menor é
   pequena e cabe na I.3.
 
-**O achado de segurança.** Um, reproduzido (I.03). Pelo X.2, o texto fica fora deste PR; a ordem — um PR
-de segurança antes do merge deste ledger, com o branch deste empilhado nele, como na E, ou o conserto na I.3
-— é do dono.
+**O achado de segurança.** Um, reproduzido (I.03 — SEC-16). Pelo X.2, a primeira versão deste ledger o
+tinha numa linha só; o dono escolheu o conserto antes do ledger, como na E (16/10/2026): o PR de segurança é o
+[#54](https://github.com/tavinholoco/NetsheetEngine/pull/54), e este branch foi empilhado nele, já com o
+texto. **A I.3 fica só com o que o merge deste ledger aprovar** — hoje, nenhum FAZER de código.
 
 **Para a J**, a I deixa duas respostas: o *upgrade* do WebSocket não confere `Origin` e nada do que a I mediu
-depende disso (J.1e); e com o site fora do Render, o CSP sai do Express (J.1f).
+depende disso (J.1e); e com o site fora do Render, o CSP sai do Express (J.1f). E uma premissa que envelheceu,
+para a J.0 medir: "as 56 de RLS não rodam desde a B" — são **63** desde a `0008`, e rodaram em 15/10 (H.3d.1);
+o número velho segue na J.0, na M.0 e no "O que já está no lugar" do `SEGURANCA.md`. O SEC-16 é o primeiro
+achado do padrão *client-side path traversal* aqui: a J.1b, na tabela de superfície, confere se outro id
+escolhido pelo cliente vira caminho.

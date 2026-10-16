@@ -668,7 +668,8 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
         a campo. A resposta é **pela metade**: a resposta divide os tipos, o corpo do pedido não (I.02,
         ADIAR, gatilho a L.1). **A rota do modificador do GM não tem chamador** — a C.4 ligou só a leitura
         (I.01, ADIAR, perto da linha). Duas portas sem chamador (I.04, ADIAR), três documentos errados
-        (I.05, FAZER, documento) e **um achado de segurança aberto (I.03)**, fora deste texto até o conserto.)*
+        (I.05, FAZER, documento) e **um achado de segurança, o SEC-16 (I.03)** — o `peerId` de um convidado
+        desviava o "Remover" do GM —, consertado antes do ledger no #54.)*
   - [x] **I.1b Erros.** Todo estado de erro do servidor tem estado de UI? O cliente decide por `code`
         ou por texto? *Referência:* a [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`type`,
         `title`, `status`, `detail`). Pelo filtro, a RFC inteira só com sintoma que o `code` não resolva.
@@ -694,10 +695,15 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 - [ ] **I.2** Calibragem e PR do ledger — passo X.2.
       *(16/10/2026 — calibragem: **2 FAZER em 9, 22%**; a primeira contagem deu 4 em 11 (36%), e a repassada
       juntou as correções de documento sem mudar veredito de código. Destacado ao dono: o **I.01** (ADIAR). O
-      achado de segurança (I.03) fica fora do PR do ledger; a ordem do conserto é do dono. Ledger no **PR #53**, à
-      espera do merge.)*
+      achado de segurança (I.03, **SEC-16**): o dono escolheu consertar antes do ledger, como na E — o **PR #54**,
+      com o portão no `SEGURANCA.md`; o ledger, no **PR #53**, empilhado nele. Mergear o #54 primeiro.)*
 - [ ] **I.3** Executar só os FAZER — passo X.3.
+      *(16/10/2026 — os dois FAZER já foram: o I.03 no #54 (antes do ledger, com o teste escrito antes e a prova
+      revertendo) e o I.05 no próprio #53. Se o merge do #53 aprovar os veredictos como estão, a I.3 não tem mais
+      nada; se o dono virar o **I.01** para FAZER, ele é a I.3.)*
 - [ ] **I.4** 🔒 Portão, se a I.3 mudou código — passo X.4.
+      *(16/10/2026 — o do SEC-16 está respondido no [`SEGURANCA.md`](./SEGURANCA.md#fase-i--varredura-integração),
+      no #54.)*
 - [ ] **I.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase I concluída em:** ____/____/______
 
@@ -961,7 +967,7 @@ público mudar.
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
 | G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
-| I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53, à espera do merge; um achado de segurança aberto, fora do ledger | 🔄 | — |
+| I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54 | 🔄 | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
