@@ -1,6 +1,7 @@
 # ADR 0007 — A passagem de bastão entre instâncias no deploy
 
-- **Status:** Aceito — implementado na H.3d (código no PR da H.3d.3; a tabela na migration `0008`, PR #47)
+- **Status:** Aceito — implementado na H.3d (a tabela na migration `0008`, PR #47; o código no #48; o aviso antes
+  do fechamento, depois da primeira prova no ar, na H.3d.5 — ver a [revisão de 15/10](#revisão-de-15102026--o-fechamento-que-o-proxy-segura-h3d4))
 - **Data:** 15/10/2026
 - **Decisores:** o dono (o H.13 virou FAZER no PR #46); o desenho, na H.3d do plano
 - **Fase do plano:** H (varredura do multiplayer) — a caixa H.3d
@@ -89,8 +90,38 @@ Render:                                                                       po
   service role tem privilégio nela (anon e authenticated revogados, RLS sem política). Nenhuma rota nova, nenhum
   dado novo para o cliente: o `server_restarting` não carrega nada da mesa.
 - **O que este ADR não resolve:** o que um navegador manda por um socket que o caminho até ele ainda segura
-  depois de a instância morrer (os ~13 s do H.1j). Com o bastão, a velha fecha os sockets **antes** de morrer, e
-  o caso some do deploy; numa queda brusca (o *crash*), continua — como antes.
+  depois de a instância morrer (os ~13 s do H.1j). ~~Com o bastão, a velha fecha os sockets **antes** de morrer, e
+  o caso some do deploy~~ — *errado: a primeira prova no ar mostrou que o caminho segura também o fechamento que a
+  velha manda; o deploy se resolve com o aviso da [revisão de 15/10](#revisão-de-15102026--o-fechamento-que-o-proxy-segura-h3d4).*
+  Numa queda brusca (o *crash*), sem aviso possível, continua — como antes.
+
+## Revisão de 15/10/2026 — o fechamento que o proxy segura (H.3d.4)
+
+**A primeira prova no ar perdeu 1 mensagem.** O servidor fez tudo como o desenho: a velha (`fm65j`) avisou o
+`handoff_drained` às 22:21:07,7 (3 conexões fechadas, a mesa gravada), marcou que entregou 0,1 s depois, a
+nova (`qhjtx`) assumiu com `how: handed-over` às 22:21:08,3 e abriu a porta; a velha saiu no SIGTERM sem
+gravar nada. Mas os navegadores só viram os sockets fecharem **13–16 s depois** de a velha fechá-los, e sem o
+código `1012` (voltaram na espera de 3 s, não na de 1,5 s). Nesse meio-tempo, a tela do GM achava o socket
+aberto e mandou uma mensagem por ele — para uma instância que já tinha saído. É o mesmo "~13 s que o log não
+explica" do H.1j: **o caminho até o navegador (o proxy do Render, ou o Cloudflare na frente dele) segura o
+fechamento que o servidor manda**, e engole o que o navegador manda enquanto isso. Os quadros de **dados**
+passam na hora — é por eles que a mesa anda.
+
+**Medido logo depois, no ar** (`scripts/multiplayer/h3d-fechamento.mjs`, sem deploy, com a instância viva): um
+quadro de dados do servidor chegou ao cliente em **~145 ms**; o fechamento que o servidor mandou na expulsão
+(`4400`) **não chegou nunca** — o cliente viu a conexão cair 1,7 s depois com **`1006`** (fechamento anormal) e,
+nesse tempo, mandou 3 quadros pelo socket que achava aberto. No build local, o `4400` chega em 0–1 ms. **O código
+de fechamento do servidor não atravessa o caminho do Render:** o `1012` do cliente (H.3d.3) só funciona fora dele.
+
+**O acréscimo (H.3d.5): avisar antes de fechar.** Na entrega, a velha manda a cada socket um quadro de dados —
+`{ type: "error", code: "server_restarting" }` — e **segue aceitando ações por 2 s** (a carência), recusando só
+conexão nova. O cliente que recebe o aviso **fecha o próprio socket na hora** e passa ao REST, que repete o
+`503`; o que ele mandou pelo socket antes de receber o aviso chega à velha dentro da carência e é gravado. Só
+depois da carência a velha entrega como antes. O `type: "error"` é de propósito: o navegador com o bundle de
+antes só mostra o texto até reconectar, em vez de tratar o aviso como a sala.
+
+O ensaio local ganhou o proxy que segura o fechamento (`H1J_CLOSE_HOLD_S=13`): o código do #48 perde 1
+mensagem, do mesmo jeito que o ar; com o aviso, 0. **O preço:** +2 s no "reconectando" de cada deploy.
 
 ## Gatilho para rever
 

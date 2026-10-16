@@ -782,6 +782,11 @@ H.11 — [ADR 0007](./adr/0007-passagem-de-bastao.md)). A migration `0008` foi n
    acordado: a hibernação do Render conta tráfego de entrada, e a renovação é de saída. O H.10 grava uma sala
    em rajada a cada 10 s em vez de nunca — o mesmo número de gravações de uma mesa calma.
 
+*H.3d.5 (15/10, pela H.3d.4 no ar):* o aviso antes do fechamento — um quadro `{ type: "error", code:
+"server_restarting" }` a cada socket e 2 s de carência — não traz dado da mesa (pergunta 2), nem rota, nem
+autorização. Na carência a instância segue sob os mesmos limitadores e só recusa *upgrade* novo (pergunta 4); a
+carência não cresce: são 2 s por entrega (pergunta 5).
+
 **Sem dependência nova.** **O que o PR ensina antes de o conserto estar no ar?** Que um deploy com mesa aberta
 perde o que a velha recebe — publicado no ledger desde o #46. A regra "nunca mergear com mesa aberta" segue
 valendo até a H.3d.4 provar a perda zero no ar.

@@ -793,9 +793,42 @@ horários são os do Render, em Brasília; entre colchetes, a instância:
 **O que o log não explica:** no H.1j, os sockets dos três caíram ~20 s depois de o processo novo começar
 (pelo relógio local, com o começo vindo do `uptime` do health) — ~13 s depois do `SIGTERM` da velha, que não
 escreveu mais nada. O processo grava e sai em menos de 1 s; os 13 s parecem do caminho até o navegador (o
-proxy do Render ou o Cloudflare segurando a conexão de quem já morreu). Com o bastão, não importa: a velha
-fecha os sockets ela mesma, antes da troca — e o que um navegador mandasse por um socket morto nesses 13 s
-também se perdia hoje.
+proxy do Render ou o Cloudflare segurando a conexão de quem já morreu). ~~Com o bastão, não importa: a velha
+fecha os sockets ela mesma, antes da troca~~ — *errado, ver a H.3d.4 logo abaixo: o caminho segura também o
+fechamento que a velha manda.* O que um navegador mandasse por um socket morto nesses 13 s também se perdia hoje.
+
+### H.3d.4 — No ar, com o bastão (15/10/2026, 22:20–22:41)
+
+Combinado com o dono, contra `netsheetengine.onrender.com`, com o #48 no ar: o `h1j.mjs` montou a mesa de teste,
+o dono clicou no "Manual Deploy" e o roteiro observou a troca e, depois, 18 min parada e o despertar. O log do
+Render, lido em seguida (instâncias entre colchetes):
+
+| BRT | O que aconteceu |
+|---|---|
+| 22:17 | *(o deploy do merge do #48, antes do teste)* a nova `[fm65j]` assume `how: free` — a velha não tinha o código do bastão |
+| 22:21:05 | a nova `[qhjtx]` começa |
+| 22:21:07,7 | a velha `[fm65j]`: `handoff_drained` — 3 conexões fechadas, a mesa gravada |
+| 22:21:07,8 | a velha marca que entregou (`lease_released`, 121 ms) |
+| 22:21:08,3–08,5 | a nova assume `handed-over` (esperou 2,4 s), restaura 1 sala e 3 sessões, abre a porta |
+| 22:21:10,9 | a velha leva o SIGTERM com `lease: released` e sai sem gravar |
+| ~22:21:21–24 | **os navegadores veem os sockets caírem** — 13–16 s depois de a velha fechá-los, com `1006` |
+
+| Pergunta | Resultado |
+|---|---|
+| Perdeu alguma coisa? | ❌ **1 mensagem** (`d-5`): a tela do GM achava o socket aberto e a mandou por ele, depois de a velha já ter fechado. O que foi pela API ficou (8 de 8), inclusive a que levou 503 e repetiu |
+| Os assentos | ✅ os três no mesmo assento, com o ferimento da Ana e a iniciativa; nenhum SSE; 0 erro de console |
+| A volta | em ~3 s depois de o navegador ver a queda — a espera comum, não a de 1,5 s: o `1012` não chegou |
+| A hibernação com o bastão | ✅ no *spin-down* (22:37:05) a instância entregou no SIGTERM (`reason: shutdown`), e o despertar (22:40:20) assumiu `handed-over` em 1,7 s; o health em **24,1 s** (eram 21,6 s em 14/10), os três no mesmo assento. A renovação de saída a cada 2 s **não impediu a hibernação** |
+
+**A causa, medida em seguida** (`scripts/multiplayer/h3d-fechamento.mjs`, sem deploy): um quadro de dados do servidor
+chega ao cliente em **~145 ms**; o fechamento que o servidor manda (o `4400` da expulsão) **nunca chega** — o
+cliente vê `1006` 1,7 s depois e, nesse tempo, manda 3 quadros pelo socket que acha aberto. No build local, o
+`4400` chega em 0–1 ms. É o "~13 s que o log não explica" do H.1j. **O conserto é a H.3d.5:** a velha avisa por um
+quadro de dados, segue aceitando ações por 2 s, e o cliente fecha o próprio socket.
+
+**No ensaio local**, o proxy ganhou o fechamento segurado (`H1J_CLOSE_HOLD_S=13`, com `H1J_SWITCH_DELAY_S=3
+H1J_OLD_DIES_S=0`): o código do #48 perde **1** — a mesma assinatura do ar (a volta em 3 s, sem `1012`) —, e com o
+aviso, **0**, com ~6 s de "reconectando".
 
 ---
 
@@ -845,6 +878,7 @@ a prova revertendo e a conferência na tela pelo roteiro do cenário, contra o b
 | **H.3b** — H.09 | O "já conectou nesta mesa" num `useRef`: quem já conectou tenta o WebSocket de novo, com espera crescente (3, 6, 12… até 30 s; volta a 3 s quando conecta); o SSE fica para quem nunca conectou. Quando o socket cai, a tela volta ao grid da sala | `room-transport` (4), com um WebSocket que o teste abre, derruba e faz falhar (`controlRoomTransport`): 3 falham com o código antigo, e o do proxy (nunca conectou → SSE) passa nos dois; sem só o `setYjsGrid(null)`, o do grid falha | `h1g.mjs`: depois da queda de ~6 s, a Ana volta ao WebSocket e arrasta o próprio token pela tela; **um** `sse_fallback` no log — o do Beto, atrás do proxy. `h1h.mjs`: o grid da Ana segue a mesa em 4 s |
 | **H.3c** — H.02 | O `onclose` destrói a conexão Yjs do socket que caiu antes de zerar o ref | `room-transport` +1: falha com 0 chamadas ao `destroy` | `h1b-tunel.mjs`: 4 `setInterval` vivos antes e depois do túnel de 90 s (eram 4 → 6) |
 | **H.3d** — H.13, com o H.10 e o H.11 *(15/10)* | **A passagem de bastão** ([ADR 0007](../adr/0007-passagem-de-bastao.md)): a migration `0008` (a `instance_lease`, uma linha, só a service role — PR #47) e o `server/instanceLease.ts`. A nova pede o bastão e espera de porta fechada; a velha, que renova a marca de vida a cada 2 s, entrega — `503 server_restarting` nas rotas da mesa, WebSocket fechado com `1012`, stream SSE com `retry: 1500` (e 200 no pedido de stream: o `EventSource` desiste de um 503), grava tudo esperando o que estava em voo, congela a persistência — e só então marca. O cliente atravessa sozinho: o `apiFetch` tenta de novo a cada 1,5 s, e o WebSocket fechado com `1012` volta a cada 1,5 s. **H.10:** espera máxima de 10 s no *debounce*. **H.11:** o `join` grava na hora. As gravações de uma sala em fila | `instance-lease` (18), `room-persistence` (7), `server-handoff` (6), `api-restart` (3), `room-transport` +2 — cada parte vista falhando antes; e mutações, uma por propriedade (a nova que não espera, o erro de rede que vira troca, marcar antes de gravar, o SIGTERM que grava depois de entregar; as rotas, o *upgrade*, os sockets e a gravação da entrega) | `h1j.mjs` local: o código de antes perde **1** (a troca na porta aberta, a velha morre 5 s depois); com o bastão, **0** — e **0** na troca fiel ao Render (5 s depois da porta), com o WebSocket recusado três vezes, o chat pela tela e pela API recusado com 503 e repetido, e **6,1 s** de "reconectando". A hibernação do ensaio, igual (8,6 s) |
+| **H.3d.5** — o aviso antes do fechamento *(15/10, pela H.3d.4)* | No ar, o fechamento que o servidor manda não chega ao navegador (`1006` segundos depois). Na entrega, a velha manda a cada socket um quadro de **dados** (`{ type: "error", code: "server_restarting" }`) e segue aceitando ações por **2 s**, recusando só conexão nova; o cliente que recebe o aviso fecha o próprio socket na hora e passa ao REST | `server-handoff` estendido (o aviso, a ação na carência pelo socket e pelo REST, o *upgrade* recusado) e `room-transport` +1, vistos falhando; mutações (sem aviso, sem carência, *upgrade* aceito na carência) | `h1j.mjs` local com o fechamento segurado 13 s: o #48 perde **1**, como o ar; com o aviso, **0**, ~6 s de "reconectando". No ar: a refazer (H.3d.4) |
 
 **O que a H.3 mudou no comportamento, além do sintoma:** com o WebSocket bloqueado *no meio* da sessão (um
 proxy que passa a barrar o *upgrade*), quem já conectou não cai mais no SSE — tenta o WebSocket até 30 s em 30 s

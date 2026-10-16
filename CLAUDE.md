@@ -87,7 +87,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 841 testes com a H.3d, 15/10 (ver "Linha de base atual" no plano)
+npx vitest run            # 842 testes com a H.3d.5, 15/10 (ver "Linha de base atual" no plano)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
@@ -131,6 +131,11 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   a porta antes do `lease.acquire()`, nem pôr no painel um *Health Check Path* que responda antes dele:** o
   serviço não tem health check HTTP, e o Render manda tráfego quando a porta TCP abre (H.3d.0). O bastão só
   liga em produção com banco; no dev e nos testes fica desligado.
+- **No ar, o fechamento de WebSocket que o servidor manda não chega ao navegador** (H.3d.4, medido): o cliente
+  vê `1006` segundos depois, e o que ele manda nesse tempo some; os quadros de dados chegam em ~145 ms. Nada no
+  cliente pode depender do código de fechamento do servidor — por isso a entrega do bastão **avisa por um quadro
+  de dados** e o cliente fecha o próprio socket (H.3d.5). Medir de novo: `scripts/multiplayer/h3d-fechamento.mjs`.
+  O ensaio local só reproduz isso com `H1J_CLOSE_HOLD_S`.
 - **Regra nova ou mudada começa na tabela** (`src/rules/tables.ts`) e na conferência, com fonte.
   O teste deriva da tabela, nunca da implementação. Cuidado com **Cyberpunk RED** e regra de casa
   se passando por 2020 — três premissas do plano original vieram de lá.

@@ -194,6 +194,16 @@ quem já conectou segue tentando, e o primeiro REST — o heartbeat, em até 20 
 **Na entrega do bastão (H.3d)**, o servidor também recusa o *upgrade* com `HTTP/1.1 503` e descarta as
 mensagens que ainda cheguem pelo socket que está fechando: a instância nova não as leria.
 
+**O aviso antes do fechamento (H.3d.5).** No ar, o caminho até o navegador (o proxy do Render ou o Cloudflare)
+**não entrega o fechamento que o servidor manda**: o cliente vê a conexão cair segundos depois (1,7 s numa
+expulsão, 13–16 s num deploy) com **`1006`**, nunca com o código do servidor, e o que ele manda nesse tempo some;
+os quadros de **dados** passam em ~145 ms (H.3d.4, `scripts/multiplayer/h3d-fechamento.mjs`). **Nenhum código de
+fechamento do servidor — `4400`, `4409`, `1012` — chega ao navegador no ar.** Por isso a entrega começa com um quadro de dados a cada socket —
+`{ "type": "error", "code": "server_restarting", "error": "…" }` — e uma **carência de 2 s** em que o servidor
+segue executando as ações (pelo socket e pelo REST) e só recusa *upgrade* novo. O cliente que recebe o aviso
+**fecha o próprio socket na hora**, sem mostrar erro, manda as ações seguintes por REST e volta pelo caminho do
+`1012`. O `type: "error"` é de propósito: um bundle de antes do aviso só mostra o texto até reconectar.
+
 **Tetos (R.4 — SEC-10), por jogador (sala + `peerId`), em janela de 60 s** — os números estão em
 `server/wsLimits.ts`, com o porquê de cada um:
 
@@ -374,8 +384,8 @@ O heartbeat **não** faz broadcast (status já é `true`; só a virada para OFFL
   (`instance_lease`, migration `0008`) e só lê a `rooms` e abre a porta depois de a velha entregar — ou de a
   marca de vida dela passar de 6 s (morta, ou hibernando). Nunca abrir a porta antes do bastão: o Render
   testa a porta TCP e manda tráfego assim que ela abre.
-- **Entrega** (a velha vê o pedido na renovação de 2 s): recusa ações (`server_restarting`), fecha os
-  sockets (`1012`) e os streams (`retry`), para o vigia e o coletor, grava tudo — esperando o que estava em
+- **Entrega** (a velha vê o pedido na renovação de 2 s): avisa os sockets e segue aceitando ações por 2 s
+  (H.3d.5, §4); depois recusa ações (`server_restarting`), fecha os sockets (`1012`) e os streams (`retry`), para o vigia e o coletor, grava tudo — esperando o que estava em
   voo e tentando de novo o que falhou —, **congela a persistência** e só então marca que entregou.
 - **Shutdown** (SIGINT/SIGTERM): quem ainda serve a mesa entrega do mesmo jeito (a hibernação — a próxima
   instância assume na hora); quem já entregou **sai sem gravar nada**, porque o banco já é da nova. Sem
