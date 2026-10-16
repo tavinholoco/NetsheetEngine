@@ -69,10 +69,15 @@ import {
 } from "./server/roomManager.js";
 import {
   queueRoomPersist,
+  persistRoomNow,
   deleteRoomPersisted,
   restoreRoomsFromDb,
-  flushAllPending
+  flushAllPending,
+  freezePersistence,
+  getDb
 } from "./server/roomPersistence.js";
+// Fase H (H.3d — H.13) — a passagem de bastão entre instâncias no deploy.
+import { createInstanceLease, newInstanceId, supabaseLeaseStore, type InstanceLease } from "./server/instanceLease.js";
 
 // Fase 3 — o servidor lê .env.local (VITE_* + chaves de serviço)
 dotenv.config({ path: ['.env', '.env.local'] });
@@ -552,6 +557,10 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
     return sendError(res, "room_not_found", ERR_SALA_NAO_ENCONTRADA);
   }
   broadcastRoomUpdate(result.room.code);
+  // H.11 — o `join` cria ou troca a credencial do assento: vai ao banco na
+  // hora, não pelo debounce. Quem dava F5 logo antes de uma queda voltava com
+  // um token que o servidor restaurado não conhecia — e virava outro jogador.
+  void persistRoomNow(result.room.code);
   res.json({ room: result.room, sessionToken: result.sessionToken });
 });
 
