@@ -491,6 +491,27 @@ app.post("/api/gemini", aiLimiter, async (req, res) => {
 // MULTIPLAYER ROOM API ENDPOINTS (FASE 3)
 // ==========================================
 
+// H.3d (H.13) — a instância que entregou o bastão à nova não executa mais nada
+// da mesa: o que ela aceitasse daqui em diante a nova nunca leria. 503 com um
+// `code` que o cliente conhece — ele tenta de novo sozinho, e a ação cai na
+// instância nova quando o Render trocar o tráfego. O health segue respondendo.
+let draining = false;
+/** O EventSource reconecta sozinho de um stream que ACABA — e o `retry` diz em quanto. */
+const SSE_RETRY_SOON = "retry: 1500\n\n";
+app.use("/api/rooms", (req, res, next) => {
+  if (!draining) return next();
+  // O stream SSE é diferente: o EventSource desiste PARA SEMPRE de uma resposta
+  // que não é 200, e quem está no SSE ficaria sem a mesa depois do deploy. Um
+  // stream que só diz "tente de novo em 1,5 s" e acaba o faz voltar até cair na
+  // instância nova.
+  if (req.method === "GET" && req.path.endsWith("/stream")) {
+    res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
+    res.end(SSE_RETRY_SOON);
+    return;
+  }
+  sendError(res, "server_restarting", "O servidor está trocando de instância. Tente de novo em instantes.");
+});
+
 // R.11 (DOC-07) — o lobby NÃO lista salas. Aqui havia `GET /api/rooms`, que
 // entregava o código de toda sala a qualquer visitante — e com o código
 // qualquer um entrava. A decisão 3 (só convidados do dono) passou a valer: a
@@ -1208,6 +1229,9 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
   }
 
   ws.on("message", (raw: any, isBinary: boolean) => {
+    // H.3d — o que chega entre a entrega do bastão e o fechamento do socket
+    // não é executado: a instância nova não leria.
+    if (draining) return;
     // R.4 — teto de quadros antes de qualquer parse (CPU).
     if (!wsAllow(ws, code, peerId, "frame")) return;
     // Texto → protocolo JSON existente; binário → Yjs (grid CRDT / awareness)
@@ -1421,7 +1445,84 @@ function startRoomCollector(): void {
   }, ROOM_COLLECT_INTERVAL_MS);
 }
 
+// =====================================================================
+// H.3d (H.13) — A PASSAGEM DE BASTÃO ENTRE INSTÂNCIAS
+// =====================================================================
+// Num deploy, o Render liga esta instância enquanto a velha ainda serve a mesa
+// e só manda tráfego para cá quando a porta abre (sem health check HTTP no
+// serviço, o teste é a porta TCP — H.3d.0). Por isso a ordem do boot é: pedir
+// o bastão → esperar a velha entregar → ler o banco → abrir a porta. NUNCA
+// abrir a porta antes do bastão. Desenho na ADR 0007; o módulo, em
+// server/instanceLease.ts.
+let lease: InstanceLease | null = null;
+
+/** Fecha toda conexão de mesa: o WebSocket com 1012 (Service Restart), o stream SSE com o fim. */
+function closeAllRealtime(): number {
+  let closed = 0;
+  for (const key of Object.keys(wsClients)) {
+    for (const ws of wsClients[key]) {
+      try {
+        ws.close(1012, "server_restarting");
+      } catch {
+        /* já fechado */
+      }
+      closed += 1;
+    }
+    delete wsClients[key];
+  }
+  for (const key of Object.keys(sseClients)) {
+    for (const res of sseClients[key]) {
+      try {
+        res.end(SSE_RETRY_SOON);
+      } catch {
+        /* já fechado */
+      }
+      closed += 1;
+    }
+    delete sseClients[key];
+  }
+  return closed;
+}
+
+/**
+ * Para de servir a mesa: recusa ações (`503 server_restarting`), para os
+ * timers que mexem nela, fecha as conexões, grava tudo — inclusive o que
+ * estava em voo — e congela a persistência. Na entrega do bastão (`claimed`),
+ * no SIGTERM (`shutdown`) e quando outra instância forçou (`lost`: aí não
+ * grava nada — o banco já é dela). Exportada para o teste.
+ */
+export async function drainForHandoff(reason: "claimed" | "shutdown" | "lost"): Promise<void> {
+  draining = true;
+  if (reason === "lost") freezePersistence();
+  if (presenceWatcher) clearInterval(presenceWatcher);
+  if (roomCollector) clearInterval(roomCollector);
+  presenceWatcher = null;
+  roomCollector = null;
+  const connections = closeAllRealtime();
+  const flushed = reason === "lost" ? false : await flushAllPending(3);
+  freezePersistence();
+  logger.info("handoff_drained", { reason, connections, flushed, rooms: getAllActiveRooms().length });
+}
+
 async function startServer() {
+  // H.3d — o bastão primeiro, de porta fechada. Só em produção e com banco: no
+  // dev o `tsx` reinicia a cada arquivo salvo, e o processo morto sem SIGTERM
+  // faria cada partida esperar a marca de vida envelhecer.
+  const db = process.env.NODE_ENV === "production" ? getDb() : null;
+  lease = createInstanceLease(db ? supabaseLeaseStore(db) : null, {
+    id: newInstanceId(),
+    onHandoff: (reason) => drainForHandoff(reason),
+    onLost: () => void drainForHandoff("lost"),
+    onOrphaned: () => {
+      // Entregou e ninguém assumiu (a nova morreu no boot): sair, para o Render
+      // religar esta instância — que assume o bastão de novo e lê o banco.
+      logger.error("lease_orphaned_exit", { id: lease?.id });
+      process.exit(1);
+    },
+    log: (event, data, level) => (level === "warn" ? logger.warn(event, data) : logger.info(event, data))
+  });
+  await lease.acquire();
+
   // Fase 3 (T3.2) — restaurar salas persistidas antes de aceitar conexões
   await restoreRoomsFromDb();
 
@@ -1454,7 +1555,9 @@ async function startServer() {
   attachRealtime(server);
 
   server.listen(PORT, HOST, () => {
-    logger.info("server_started", { host: HOST, port: PORT, env: process.env.NODE_ENV || "development", version: APP_VERSION });
+    logger.info("server_started", { host: HOST, port: PORT, env: process.env.NODE_ENV || "development", version: APP_VERSION, lease: lease?.state() });
+    // H.3d — a marca de vida, a cada 2 s, é por onde esta instância vê o pedido da próxima.
+    lease?.start();
   });
 }
 
@@ -1476,6 +1579,12 @@ export function attachRealtime(server: http.Server): void {
     }
     const match = url.pathname.match(/^\/ws\/rooms\/([A-Za-z0-9-]+)$/i);
     if (!match) {
+      socket.destroy();
+      return;
+    }
+    // H.3d — entregou o bastão: o cliente tenta de novo, e o Render o leva à nova.
+    if (draining) {
+      socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
       socket.destroy();
       return;
     }
@@ -1501,13 +1610,17 @@ export function attachRealtime(server: http.Server): void {
 }
 
 // Fase 3 (T3.1) — grava pendências de persistência no shutdown gracioso
+// H.3d — com o bastão: quem ainda serve a mesa (a hibernação) entrega — grava e
+// marca, e a próxima instância assume na hora; quem já entregou (o deploy) sai
+// sem gravar nada, porque o banco já é da nova.
 function shutdown(signal: string) {
-  logger.info("server_shutdown", { signal });
-  if (presenceWatcher) clearInterval(presenceWatcher);
-  if (roomCollector) clearInterval(roomCollector);
-  void flushAllPending().finally(() => {
-    process.exit(0);
-  });
+  logger.info("server_shutdown", { signal, lease: lease?.state() ?? "none" });
+  const done = lease ? lease.shutdown() : drainForHandoff("shutdown");
+  void done
+    .catch((e) => logger.error("shutdown_failed", { message: (e as Error)?.message || String(e) }))
+    .finally(() => {
+      process.exit(0);
+    });
 }
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));

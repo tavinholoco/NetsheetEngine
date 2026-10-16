@@ -125,6 +125,35 @@ describe('H.09 — a queda depois de uma conexão que funcionou', () => {
   });
 });
 
+describe('H.3d — o servidor trocou de instância (o deploy)', () => {
+  it('fecha com 1012: tenta de novo em 1,5 s, e as tentativas recusadas na troca seguem curtas', async () => {
+    act(() => net.sockets[0].open());
+    act(() => net.sockets[0].restart()); // a velha entregou a mesa
+    await wait(1500);
+    expect(net.sockets).toHaveLength(2);
+    act(() => last().drop()); // a velha recusa o WebSocket (503) até o Render trocar
+    await wait(1500);
+    expect(net.sockets).toHaveLength(3);
+    act(() => last().drop());
+    await wait(1500);
+    expect(net.sockets).toHaveLength(4);
+    act(() => last().open()); // a nova
+    expect(net.streams).toHaveLength(0);
+  });
+
+  it('a janela curta acaba com a conexão: uma queda comum depois volta aos 3 s', async () => {
+    act(() => net.sockets[0].open());
+    act(() => net.sockets[0].restart());
+    await wait(1500);
+    act(() => last().open());
+    act(() => last().drop());
+    await wait(1500);
+    expect(net.sockets).toHaveLength(2);
+    await wait(1500);
+    expect(net.sockets).toHaveLength(3);
+  });
+});
+
 describe('H.02 — a conexão Yjs morre com o socket', () => {
   it('a queda destrói a conexão Yjs velha (antes, os timers dela seguiam vivos: +2 por queda)', async () => {
     const destroy = vi.spyOn(YjsGridConnection.prototype, 'destroy');

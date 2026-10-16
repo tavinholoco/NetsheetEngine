@@ -49,6 +49,11 @@ export class ControlledWebSocket {
     this.readyState = 3;
     this.onclose?.({ code: 1006 });
   }
+  /** H.3d — o servidor entregou a mesa à instância nova: fecha com 1012 (Service Restart). */
+  restart() {
+    this.readyState = 3;
+    this.onclose?.({ code: 1012 });
+  }
   receive(data: unknown) {
     this.onmessage?.({ data });
   }
