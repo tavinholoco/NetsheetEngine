@@ -1,6 +1,7 @@
 # Varredura H — multiplayer (WebSocket, SSE, Yjs, awareness, reconexão, presença)
 
-**Data:** 14/10/2026 — os cenários locais, o H.1j no ar (combinado com o dono) e a H.3
+**Data:** 14/10/2026 — os cenários locais, o H.1j no ar (combinado com o dono) e a H.3; a H.3d em 15/10/2026,
+provada no ar no mesmo dia. **Fechada em 16/10/2026.**
 **Timebox:** 2 dias
 **Escopo:** o transporte da mesa, dos dois lados — no servidor, o WebSocket, o stream SSE, o doc Yjs e o
 awareness (`server.ts`), as sessões e a reconexão (`server/roomManager.ts`, `server/wsLimits.ts`); no

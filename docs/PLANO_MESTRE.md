@@ -961,6 +961,8 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
 > *(15/10/2026, 23:55 — **a H.3d está feita e provada no ar**: a migration no #47, o código no #48, o aviso antes
 > do fechamento no #49 — o que a primeira prova no ar pediu —, e a H.3d.4 refeita perdeu 0 de 30. **Falta só a
 > H.5:** o merge do PR do registro, o `master` verde depois dele, e a data da fase.)*
+> ***Fase H fechada em 16/10/2026*** *(o #50 mergeado e o `master` verde). A próxima é a **Fase I** — a varredura da
+> integração backend ↔ frontend —, começando pela I.0.*
 
 - [x] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`. *(14/10/2026 — os dez cenários
       locais no #44; o H.1j, no ar, depois do merge dele.)*
@@ -1183,7 +1185,7 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
       rota nem sessão nova — uma emissão a menos (a chegada a `/room/CÓDIGO` não repete o `join`); o código da
       mesa na barra de endereço já estava no cabeçalho e no convite, e o `helmet` manda `no-referrer`.)*
       *A H.3d traz o seu adendo — está na caixa H.3d.3.*
-- [ ] **H.5** 🧠 Estado durável — passo X.5. *(Inclui rodar `scripts/multiplayer/h1a.mjs` como régua: 0 erro de
+- [x] **H.5** 🧠 Estado durável — passo X.5. *(Inclui rodar `scripts/multiplayer/h1a.mjs` como régua: 0 erro de
       console e os números da H.1a.)*
       *(14/10/2026 — feito antes do PR: caixas, ledger, linha de base (**805** testes, 59 arquivos), E2E 7/7, o
       smoke de WebSocket 5/5, `audit:colors` e conflitos em 0, `audit:ci` limpo, e a régua `h1a.mjs`: 0 erro de
@@ -1196,7 +1198,9 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
       5/5; RLS 63/63; `audit:ci` limpo; cores e conflitos em 0. A régua `h1a.mjs` no código do `master`: 0 erro de
       console, 6,7 KB por chat, ~50 KB no combate (o ataque errou), 0,5 KB em 45 s parada — os números da H.1a.
       **Falta:** o merge do PR do registro (este), o `master` verde depois dele, e a data da fase.)*
-- [ ] ✅ **Fase H concluída em:** ____/____/______
+      *(16/10/2026 — o registro no **#50**, mergeado com o dono aprovando a regra de merge nova; o `master` verde
+      depois dele, os quatro jobs.)*
+- [x] ✅ **Fase H concluída em:** 16/10/2026 *(código em 15/10; a H.3d provada no ar em 15/10, 23:51)*
 
 ---
 
@@ -1234,6 +1238,12 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
         - **O `DEPLOY.md` se contradiz sobre o CORS** (seção do frontend estático): diz que o servidor responde
           a "qualquer origin" e, logo abaixo, que "não responde CORS por padrão" desde a T10.6. Vale o
           segundo (`server.ts:123–129`) — a I.1e corrige o texto.
+      - *Levados pela H.3d (15/10/2026, a passagem de bastão — ADR 0007):*
+        - **O `apiFetch` já tem um retry:** repete o `503 server_restarting` a cada 1,5 s por até 45 s
+          (`src/api/http.ts`) — só esse `code`, que garante que nada foi executado. A I.1d mede o resto
+          (timeout, os outros erros) sem duplicar este.
+        - **No ar, nenhum código de fechamento de WebSocket que o servidor manda chega ao navegador** (`1006`
+          segundos depois — H.3d.4). A I.1c (o 401 no meio da sessão) não pode contar com o `4400` da expulsão.
 - [ ] **I.1** Varredura por área → ledger em `docs/varreduras/I-integracao.md`.
   - [ ] **I.1a Inventário de rotas.** Uma linha por endpoint: quem chama no cliente, tipo de request e
         response compartilhado ou escrito duas vezes à mão, códigos de erro tratados. *Se eu mudar este
@@ -1511,7 +1521,7 @@ público mudar.
 | E | 🔍 | Varredura: backend — 24 itens, 6 FAZER; SEC-14 e SEC-15 | ✅ | 30/09/2026 |
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
 | G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
-| H | 🔍 | Varredura: multiplayer — ledger com 13 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perde ~20 s, não ~1,5 min), a H.3a–c com dois FAZER e o H.02 (#46); falta a H.3d — o H.13, FAZER por decisão do dono (15/10), a passagem de bastão entre instâncias | 🟡 | — |
+| H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração | ⬜ | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
@@ -1581,6 +1591,8 @@ buscar no log do Render e anotar a contagem de cada um (a E.1e confere e complet
 | `unhandled_error` *(E.13)* | Um bug chegou ao usuário como `500` | **Qualquer** ocorrência — investigar na hora |
 | `persistence_save_failed` *(E.13)* | Estado da mesa que não chegou ao banco; em sequência, o E.15 (retry sem espaçar) | Uma sequência de linhas: o banco esteve fora |
 | `rooms_full` *(E.03)* | E.25 — criar sala exigir login | Aparecer sem o dono ter criado as salas |
+| `sse_fallback` no mesmo minuto de um `lease_released` *(H.3d)* | H.14 — quem entra na mesa na janela da troca cai no SSE | Uma vez, numa sessão real |
+| `lease_forced`, `lease_unavailable`, `lease_orphaned_exit` *(H.3d)* | [ADR 0007](./adr/0007-passagem-de-bastao.md) — rever a passagem de bastão | **Qualquer** ocorrência fora de um teste: a troca saiu da borda prevista |
 
 **A primeira sessão não espera a M.2.** Desde as R, a mesa aguenta uma sessão em produção; a H, a
 L.0, a L.1, a L.6 e as estimativas do custo zero dependem desta tabela, e ela está vazia. Jogar cedo
