@@ -761,6 +761,42 @@ conserto tira a perda de qualquer troca de instância.
   (5 mensagens em 14/10); depois do conserto, 0. E os testes do módulo da passagem com um banco falso.
 - **Onde:** a **H.3d** do plano, em dois PRs (a migration primeiro, decisão 5) e mais um H.1j no ar com o dono.
 
+### H.3d.0 — As premissas no painel do Render (15/10/2026)
+
+O log da aplicação de 14/10, lido com o dono logado (o painel estava em manutenção na noite do H.1j). Os
+horários são os do Render, em Brasília; entre colchetes, a instância:
+
+| Hora | Instância | O que o log diz |
+|---|---|---|
+| 22:32:06,5 | `lgv8m` (a velha) | `server_started` — o despertar do H.1j |
+| 22:34:32 | Render | `Deploying...` — a imagem pronta (o clique do dono foi ~2 min antes: o build) |
+| 22:34:47 | `lfm45` (a nova) | o processo começa |
+| 22:34:48,412 | `lfm45` | `persistence_restored`: 1 sala, 3 sessões |
+| 22:34:48,415 | `lfm45` | `server_started` — **a porta abre** |
+| 22:34:53,469 | `lgv8m` | `server_shutdown`, `SIGTERM` — nenhuma linha depois, nenhum `persistence_save_failed` |
+| 22:34:54 | Render | `Your service is live` |
+
+1. **A velha recebeu o `SIGTERM`.** Chegou **5 s depois de a nova abrir a porta** — na troca do tráfego, não
+   60 s depois dela, como a [doc](https://render.com/docs/deploys) descreve. O `flushAllPending` rodou sem erro
+   no log; o que ele tivesse a gravar foi ao banco depois do restore da nova — a nova não leu, e a gravação
+   seguinte dela cobriu. É o H.13 por dentro.
+2. **Não há health check HTTP:** o campo *Health Check Path* das configurações do serviço está **vazio**. Sem
+   ele, o Render testa se a **porta TCP** aceita conexão ([health checks](https://render.com/docs/health-checks))
+   e só manda tráfego para a nova quando ela passa. O servidor só chama o `listen` depois do restore
+   (`server.ts:1447`), então o efeito é o do desenho: **a nova não recebe ninguém enquanto não abre a porta**.
+   O desenho fica, sem mudar nada no painel — e a regra que ele depende vira "nunca abrir a porta antes de ter
+   o bastão". Com a porta fechada, o Render espera até 15 min antes de desistir do deploy.
+3. **Da porta aberta à troca: ~5 s.** O processo novo levou 1,4 s do começo à porta (o restore, 0,1 s). Com o
+   bastão, o "reconectando" previsto é a soma: a velha vê o pedido (≤ 2 s), entrega (~0,5 s), a nova lê o banco
+   e abre a porta (~0,5 s), o Render troca (~5 s) — **~7–9 s**, a medir no H.3d.4.
+
+**O que o log não explica:** no H.1j, os sockets dos três caíram ~20 s depois de o processo novo começar
+(pelo relógio local, com o começo vindo do `uptime` do health) — ~13 s depois do `SIGTERM` da velha, que não
+escreveu mais nada. O processo grava e sai em menos de 1 s; os 13 s parecem do caminho até o navegador (o
+proxy do Render ou o Cloudflare segurando a conexão de quem já morreu). Com o bastão, não importa: a velha
+fecha os sockets ela mesma, antes da troca — e o que um navegador mandasse por um socket morto nesses 13 s
+também se perdia hoje.
+
 ---
 
 ## H.2 — Calibragem
