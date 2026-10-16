@@ -714,8 +714,8 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
       linha de base (**868** testes, 65 arquivos — o +26 da I é o SEC-16); E2E 7/7; o smoke de WebSocket 5/5 contra o
       build de produção; RLS 63/63; `audit:ci` limpo; cores e conflitos em 0. Documentos que a I tornou falsos: a
       contagem de testes do `CLAUDE.md` e o "ponto de corte" das fases fechadas, que ainda dava a I como pendente. A
-      forma do sistema não mudou — sem diagrama. **Falta:** o merge do PR do fechamento e o `master` verde depois
-      dele.)*
+      forma do sistema não mudou — sem diagrama. **Falta:** o merge do PR do fechamento, o **#55**, e o `master` verde
+      depois dele.)*
 - [x] ✅ **Fase I concluída em:** 16/10/2026 *(o código, o SEC-16, no #54; o ledger no #53)*
 
 > ***Fase I fechada em 16/10/2026.*** *A próxima é a **Fase J** — a varredura de segurança —, começando pela J.0.
