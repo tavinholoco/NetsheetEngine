@@ -75,7 +75,7 @@ describe("a entrega do bastão (drainForHandoff)", () => {
     expect(STATUS_BY_CODE.server_restarting).toBe(503);
   });
 
-  it("entrega: fecha o WebSocket com 1012, acaba o stream, grava a mesa — e só então resolve", async () => {
+  it("entrega: avisa, aceita ações na carência, fecha o WebSocket com 1012, acaba o stream, grava a mesa — e só então resolve", async () => {
     const gm = await request(app).post("/api/rooms/create").send({ code, name: "Mesa", gmHandle: "GM", gmPeerId: "peer_gm_h3d" });
     gmToken = gm.body.sessionToken;
     const ana = await request(app).post("/api/rooms/join").send({ code, peerId: "peer_ana_h3d", handle: "Ana", sheet: SHEET });
@@ -84,7 +84,9 @@ describe("a entrega do bastão (drainForHandoff)", () => {
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/rooms/${code}?token=${anaToken}`);
     abertos.push(ws);
     let fechou: number | null = null;
+    const textos: string[] = [];
     ws.on("close", (c) => (fechou = c));
+    ws.on("message", (raw, bin) => { if (!bin) textos.push(raw.toString()); });
     ws.on("error", () => {});
     await new Promise<void>((r, j) => { ws.once("open", () => r()); ws.once("error", j); });
 
@@ -105,11 +107,36 @@ describe("a entrega do bastão (drainForHandoff)", () => {
     // A última ação antes do pedido: ainda no debounce, sem gravar.
     postChatMessage(code, "peer_gm_h3d", "a última antes da troca");
     queueRoomPersist(code);
-    const chatAgora = (await request(app).get(`/api/rooms/${code}`).set("X-Session-Token", gmToken)).body.chatMessages.length;
+    const chatAntes = (await request(app).get(`/api/rooms/${code}`).set("X-Session-Token", gmToken)).body.chatMessages.length;
 
-    await drainForHandoff("claimed");
+    // H.3d.4 — no ar, o proxy do Render segurou o FECHAMENTO do socket por 13–16 s, e a
+    // tela mandou uma mensagem pelo socket morto. Por isso a entrega AVISA primeiro, por
+    // um quadro de dados (que chega na hora), e segue aceitando ações por uma carência.
+    const entrega = drainForHandoff("claimed", { graceMs: 600 });
+    expect(await esperarPor(() => textos.some((t) => t.includes('"server_restarting"')))).toBe(true);
+    const aviso = JSON.parse(textos.find((t) => t.includes('"server_restarting"'))!);
+    // `type: error`: o navegador com o bundle de antes só mostra o texto, não quebra a sala.
+    expect(aviso).toMatchObject({ type: "error", code: "server_restarting" });
 
-    expect(gravadas.filter((g) => g.code === code).at(-1)?.chat).toBe(chatAgora);
+    // Na carência: a mensagem que já vinha pelo socket ainda é executada…
+    ws.send(JSON.stringify({ type: "message", text: "pelo socket, na carência" }));
+    // …o REST também…
+    const rest = await request(app).post(`/api/rooms/${code}/message`).send({ sessionToken: gmToken, text: "pelo REST, na carência" });
+    expect(rest.status).toBe(200);
+    // …mas conexão nova não: ela ficaria presa à velha, que vai fechar.
+    const upgradeNaCarencia = await new Promise<number>((resolve) => {
+      const w2 = new WebSocket(`ws://127.0.0.1:${port}/ws/rooms/${code}?token=${gmToken}`);
+      abertos.push(w2);
+      w2.on("unexpected-response", (_req, res) => resolve(res.statusCode ?? 0));
+      w2.on("open", () => resolve(101));
+      w2.on("error", () => {});
+    });
+    expect(upgradeNaCarencia).toBe(503);
+
+    await entrega;
+
+    // O banco tem a mesa com as duas da carência.
+    expect(gravadas.filter((g) => g.code === code).at(-1)?.chat).toBe(chatAntes + 2);
     expect(await esperarPor(() => fechou !== null)).toBe(true);
     expect(fechou).toBe(1012);
     expect(await esperarPor(() => streamAcabou)).toBe(true);

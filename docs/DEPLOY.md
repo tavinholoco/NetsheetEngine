@@ -133,7 +133,9 @@ persiste salas no Supabase (`rooms` tabela) com debounce e restaura no boot
   provado no ar (H.3d.4), a regra vale inteira.**
 - **A passagem de bastão (H.3d — ADR 0007):** em produção, a instância nova pede o bastão
   (`instance_lease`) e só lê o banco e abre a porta depois de a velha entregar — e a velha, ao entregar,
-  recusa ações com `503 server_restarting`, fecha os sockets com `1012` e grava tudo. Os jogadores veem um
+  avisa os navegadores por um quadro de dados e segue aceitando ações por 2 s (H.3d.5: no ar, o fechamento de
+  WebSocket que o servidor manda **não chega** ao navegador), depois recusa ações com `503 server_restarting`,
+  fecha os sockets e grava tudo. Os jogadores veem um
   "reconectando" curto (previsto: ~7–9 s) e o cliente repete as ações sozinho. **Não configure um *Health
   Check Path* que responda antes do bastão:** o desenho depende de a porta só abrir depois dele. No log de um
   deploy, a sequência é `lease_released` e `handoff_drained` na velha, `lease_acquired` (`how:

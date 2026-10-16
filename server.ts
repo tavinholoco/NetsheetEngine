@@ -1485,13 +1485,61 @@ function closeAllRealtime(): number {
 }
 
 /**
- * Para de servir a mesa: recusa ações (`503 server_restarting`), para os
- * timers que mexem nela, fecha as conexões, grava tudo — inclusive o que
+ * H.3d.4 — o aviso de que a mesa vai mudar de instância. No ar, o proxy do Render
+ * segurou o FECHAMENTO que o servidor manda por 13–16 s: a tela achava o socket
+ * aberto e mandou uma mensagem para uma instância que já tinha saído. Um quadro de
+ * DADOS chega na hora, como cada atualização da mesa; o cliente que o recebe fecha o
+ * próprio socket e passa ao REST. `type: "error"`: o navegador com o bundle de antes
+ * só mostra o texto, não quebra a sala.
+ */
+const RESTART_NOTICE = JSON.stringify({
+  type: "error",
+  code: "server_restarting",
+  error: "O servidor está trocando de instância — reconectando…"
+});
+/**
+ * Quanto a instância segue aceitando ações depois do aviso: o que o jogador mandou
+ * pelo socket antes de recebê-lo ainda está a caminho. Cobre a ida e volta de uma
+ * rede lenta com folga.
+ */
+const HANDOFF_GRACE_MS = 2_000;
+/** Avisou: conexão nova é recusada — ela ficaria presa a esta instância, que vai fechar. */
+let announcing = false;
+
+function announceRestart(): number {
+  let announced = 0;
+  for (const sockets of Object.values(wsClients)) {
+    for (const ws of sockets) {
+      if (ws.readyState !== WebSocket.OPEN) continue;
+      try {
+        ws.send(RESTART_NOTICE);
+        announced += 1;
+      } catch {
+        /* fechando */
+      }
+    }
+  }
+  return announced;
+}
+
+/**
+ * Para de servir a mesa: avisa os sockets e segue aceitando ações por uma
+ * carência (H.3d.4); depois recusa ações (`503 server_restarting`), para os
+ * timers que mexem na mesa, fecha as conexões, grava tudo — inclusive o que
  * estava em voo — e congela a persistência. Na entrega do bastão (`claimed`),
  * no SIGTERM (`shutdown`) e quando outra instância forçou (`lost`: aí não
- * grava nada — o banco já é dela). Exportada para o teste.
+ * avisa nem grava — o banco já é dela). Exportada para o teste.
  */
-export async function drainForHandoff(reason: "claimed" | "shutdown" | "lost"): Promise<void> {
+export async function drainForHandoff(
+  reason: "claimed" | "shutdown" | "lost",
+  { graceMs = HANDOFF_GRACE_MS }: { graceMs?: number } = {}
+): Promise<void> {
+  let announced = 0;
+  if (reason !== "lost") {
+    announcing = true;
+    announced = announceRestart();
+    if (announced > 0) await new Promise((r) => setTimeout(r, graceMs));
+  }
   draining = true;
   if (reason === "lost") freezePersistence();
   if (presenceWatcher) clearInterval(presenceWatcher);
@@ -1501,7 +1549,7 @@ export async function drainForHandoff(reason: "claimed" | "shutdown" | "lost"): 
   const connections = closeAllRealtime();
   const flushed = reason === "lost" ? false : await flushAllPending(3);
   freezePersistence();
-  logger.info("handoff_drained", { reason, connections, flushed, rooms: getAllActiveRooms().length });
+  logger.info("handoff_drained", { reason, announced, connections, flushed, rooms: getAllActiveRooms().length });
 }
 
 async function startServer() {
@@ -1582,8 +1630,9 @@ export function attachRealtime(server: http.Server): void {
       socket.destroy();
       return;
     }
-    // H.3d — entregou o bastão: o cliente tenta de novo, e o Render o leva à nova.
-    if (draining) {
+    // H.3d — entregou o bastão (ou já avisou que vai entregar): o cliente tenta
+    // de novo, e o Render o leva à nova.
+    if (draining || announcing) {
       socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
       socket.destroy();
       return;

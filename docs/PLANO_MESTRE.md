@@ -1142,6 +1142,28 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
     - [ ] **H.3d.4** **No ar, com o dono:** o H.1j de novo — a mesa de teste, o "Manual Deploy" clicado por ele —:
           0 mensagem perdida, e quanto dura o "reconectando". A regra "nunca mergear com mesa aberta" só sai do
           `CLAUDE.md` e do `DEPLOY.md` se este passo provar a perda zero.
+          *(15/10/2026, 22:20–22:41, combinado com o dono — **1 perdida, não 0.** O primeiro deploy do #48 entrou como
+          previsto (a velha sem bastão; a nova `how: free`). No "Manual Deploy" seguinte, **o servidor fez tudo**: a velha
+          avisou `handoff_drained` (3 conexões, gravou), marcou em 0,1 s, a nova assumiu `handed-over` e abriu a porta,
+          a velha saiu no SIGTERM sem gravar. Mas os navegadores viram os sockets fecharem **13–16 s depois**, com
+          `1006`, e a tela do GM mandou uma mensagem pelo socket morto. **O caminho do Render não entrega o fechamento que o
+          servidor manda** — medido em seguida com `scripts/multiplayer/h3d-fechamento.mjs`: dados em ~145 ms, o `4400`
+          da expulsão nunca chegou (`1006` em 1,7 s). É a H.3d.5. **A hibernação com o bastão funcionou no ar:** no
+          *spin-down* (22:37) a instância entregou no SIGTERM, e o despertar (22:40) assumiu `handed-over` em 1,7 s — o
+          health em 24,1 s (eram 21,6 s em 14/10). A renovação a cada 2 s não impediu a hibernação. **Refazer este passo
+          depois da H.3d.5 no ar.** A regra "nunca mergear com mesa aberta" fica.)*
+    - [ ] **H.3d.5** **O aviso antes do fechamento** *(acrescentado em 15/10/2026, pela H.3d.4)*: na entrega, a velha
+          manda a cada socket um quadro de **dados** (`{ type: "error", code: "server_restarting" }` — o bundle de antes só
+          mostra o texto) e segue aceitando ações por **2 s**, recusando só conexão nova; o cliente que recebe o aviso
+          fecha o próprio socket na hora e passa ao REST, que repete o 503. O ensaio local ganha o proxy que segura o
+          fechamento (`H1J_CLOSE_HOLD_S=13`). **Prova:** o ensaio com o fechamento segurado perde 1 com o código do #48 e
+          0 com o aviso; testes vistos falhando antes; ADR 0007 (revisão de 15/10), protocolo, `CLAUDE.md`.
+          *(15/10/2026 — feito no branch `claude/h3d-aviso`: o ensaio segurando 13 s perdeu **1** com o código do #48
+          (a mesma assinatura do ar: volta em 3 s, sem `1012`) e **0** com o aviso; o "reconectando", ~6 s.
+          `server-handoff` estendido (o aviso, a ação na carência pelo socket e pelo REST, o *upgrade* recusado) e
+          `room-transport` +1 (o socket fechado na hora, a mensagem por REST, a volta em 1,5 s sem o `onclose`), vistos
+          falhando; mutações — sem aviso, sem carência, *upgrade* aceito na carência — cada uma derruba o teste. **842**
+          testes.)*
 - [x] **H.4** 🔒 Portão, se a H.3 mudou código — passo X.4. *(Vai mudar: a URL depois de entrar e a reconexão
       do transporte. A pergunta 3 pesa — o F5 volta ao assento com o token, e nenhum caminho novo emite sessão.)*
       *(14/10/2026 — entrada no [registro](./SEGURANCA.md#fase-h--varredura-multiplayer), sem achado: nenhuma
@@ -1482,11 +1504,11 @@ público mudar.
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a H.3d no código (15/10/2026) |
+| Verificação | Ao fechar a H.3d.5 no código (15/10/2026) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **841** testes, 63 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2)* — `vitest` 4.1.11 |
+| `npx vitest run` | **842** testes, 63 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1)* — `vitest` 4.1.11 |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
