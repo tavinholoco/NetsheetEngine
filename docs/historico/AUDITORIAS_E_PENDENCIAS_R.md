@@ -356,7 +356,7 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       [`historico/FASES_A-D.md`](./FASES_A-D.md); **668 idênticas** e 21 com o caminho de
       link ajustado (34 links, porque o arquivo mudou de pasta — âncora que foi junto ficou igual).
       Conferido: toda âncora e todo caminho dos dois arquivos existem. No lugar ficou a tabela
-      [Fases fechadas](../PLANO_MESTRE.md#fases-fechadas--a-b-p-c-d-r-e-f). O plano foi de 2.015 para **1.340
+      [Fases fechadas](../PLANO_MESTRE.md#fases-fechadas--a-b-p-c-d-r-e-f-g-e-h). O plano foi de 2.015 para **1.340
       linhas** — e de ~75 mil para **~47 mil tokens**: de quatro leituras para **duas**. **Ainda não
       cabe numa só.** O próximo corte, com o mesmo método: mover o bloco R quando ele fechar (R.15), a
       revisão pós-D e a auditoria de 03/09. **Gatilho:** o R.15 marcado.
@@ -386,7 +386,7 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       > entraram no `master` a F.0, a F.2 mecânica e a F.1 (#26 a #29). *(30/09, à noite: o PR 3b — F.2b,
       > F.3 e F.4 — foi aberto, o #32. 01/10: o #31 da decisão 11 entrou, e o dono aprovou as capturas
       > do #32. **A próxima sessão — a API voltou em 01/10 — roda o checklist abaixo e, com o #32 no
-      > ar, confere a F.0g e a F.4.4; então abre a [Fase G](../PLANO_MESTRE.md#fase-g---varredura-frontend-12-dias).)*
+      > ar, confere a F.0g e a F.4.4; então abre a [Fase G](./FASE_G.md#fase-g---varredura-frontend-12-dias).)*
       > Exceção: se o checklist de 01/10 falhou (algo ❌ no PR `claude/verificacao-01-10` ou no resumo da
       > tarefa), esse vermelho vem primeiro.
       >
@@ -394,7 +394,7 @@ achados — quatro reproduzidos —, e o filtro manda consertar com teste que re
       > próxima sessão segue esta ordem: **01.13** (a hibernação voltou?), depois os itens do dono —
       > **01.3** (`TRUST_PROXY`), **01.10** (Node no log) e **01.11** (horas e banda) —, a data do bloco
       > R; então a **F.0g** e a **F.4.4** (uma visita ao ar, pelo navegador do app) e a data da F. Só
-      > então a [Fase G](../PLANO_MESTRE.md#fase-g---varredura-frontend-12-dias).
+      > então a [Fase G](./FASE_G.md#fase-g---varredura-frontend-12-dias).
 
       **Checklist de 01/10/2026 — quando a API voltar.** O Render suspendeu o serviço em setembro
       (incidente no [contrato de custo zero](../PLANO_MESTRE.md#-contrato-de-custo-zero)); ele volta na virada do mês e
