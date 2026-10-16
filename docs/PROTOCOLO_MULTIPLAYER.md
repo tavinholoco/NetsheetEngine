@@ -165,6 +165,7 @@ da mensagem, e a sala inexistente respondia "Room not found", em inglês, na tel
 | 500 | `internal_error` | Bug — aparece no log como `unhandled_error` |
 | 502 · 503 | `ai_failed` · `ai_unavailable` | O provedor de IA falhou; a IA não está configurada |
 | 503 | `rooms_full` | O máximo de salas abertas (`MAX_ROOMS` — E.03) |
+| 503 | `server_restarting` | **H.3d:** esta instância entregou a mesa à nova (o deploy — ADR 0007). Toda rota de `/api/rooms` responde isto **sem executar nada**; o `apiFetch` do cliente tenta de novo a cada 1,5 s, por até 45 s, e a ação cai na instância nova quando o Render trocar o tráfego. O stream SSE é a exceção (§7) |
 
 ---
 
@@ -182,11 +183,16 @@ ws(s)://<host>/ws/rooms/:code?token=<sessionToken>
 
 **Close codes:** `4400–4499` = fechamento permanente (ex.: `4400` sessão encerrada no leave ou na
 expulsão; `4409` conexão substituída — o jogador abriu mais de 3 sockets, R.4). `1009` = quadro
-acima de 1 MiB (R.4). *O cliente **não** olha o código* (conferido na H: o H.08 foi DESCARTAR — ler o
-código não mudaria o que a pessoa vê): depois de qualquer fechamento, tenta o WebSocket de novo, com a
-espera crescente do §1. Um 401 no handshake leva ao SSE só quem nunca conectou; quem já conectou segue
-tentando, e o primeiro REST — o heartbeat, em até 20 s — volta 401 e faz o re-join (T3.3), que traz o
-token novo.
+acima de 1 MiB (R.4). `1012` (*Service Restart*) = **H.3d:** a instância entregou a mesa à nova, no deploy
+(ADR 0007). *O cliente só olha o `1012`* (o H.08 foi DESCARTAR para os outros — ler o código não mudaria o
+que a pessoa vê): depois dele, tenta o WebSocket de novo **a cada 1,5 s por até 1 min**, sem a espera
+crescente — a velha recusa o *upgrade* com `503` até o Render trocar o tráfego, ~7–9 s pela H.3d.0. Depois de
+qualquer outro fechamento, a espera crescente do §1. Um 401 no handshake leva ao SSE só quem nunca conectou;
+quem já conectou segue tentando, e o primeiro REST — o heartbeat, em até 20 s — volta 401 e faz o re-join
+(T3.3), que traz o token novo.
+
+**Na entrega do bastão (H.3d)**, o servidor também recusa o *upgrade* com `HTTP/1.1 503` e descarta as
+mensagens que ainda cheguem pelo socket que está fechando: a instância nova não as leria.
 
 **Tetos (R.4 — SEC-10), por jogador (sala + `peerId`), em janela de 60 s** — os números estão em
 `server/wsLimits.ts`, com o porquê de cada um:
@@ -285,6 +291,10 @@ GET /api/rooms/:code/stream?token=<sessionToken>   (EventSource)
 - Cada conexão re-sincroniza o estado completo → reconexão do EventSource é segura.
 - **O stream é encerrado** quando o dono sai da mesa ou é removido pelo GM (R.3): o token só é
   conferido na abertura, então o servidor guarda de quem é cada stream (`ssePeer`) para fechá-lo.
+- **Na entrega do bastão (H.3d):** o stream aberto acaba com `retry: 1500\n\n`, e o pedido de stream que
+  chegar à instância que entregou recebe **200** com o mesmo `retry: 1500\n\n` e o fim — **nunca um 503**: o
+  `EventSource` desiste para sempre de uma resposta que não é 200, mas reconecta sozinho de um stream que
+  acaba. Ele volta a cada 1,5 s até cair na instância nova.
 - O payload é **idêntico** ao do WebSocket (mesma função `broadcastRoomUpdate`).
 
 ---
@@ -346,7 +356,11 @@ O heartbeat **não** faz broadcast (status já é `true`; só a virada para OFFL
 ## 10. Persistência (T3.1/T3.2)
 
 - Toda mutação passa por `broadcastRoomUpdate` → `queueRoomPersist(code)` com **debounce de 2s**
-  (rajadas = 1 write) na tabela `rooms` (`room_state jsonb`) via service-role.
+  (rajadas = 1 write) na tabela `rooms` (`room_state jsonb`) via service-role. **H.10:** com espera
+  máxima de **10 s** — numa rajada contínua, o debounce reiniciava a cada mutação e a sala não era gravada
+  nenhuma vez. As gravações de uma sala vão **em fila**: a última a chegar ao banco é a mais nova.
+- **`join` grava na hora (H.11):** ele cria ou troca a credencial do assento — quem dava F5 logo antes de
+  uma queda voltava com um token que o servidor restaurado não conhecia.
 - **Sessões (B.4 — SEC-03, migration 0007):** gravadas na coluna **`sessions jsonb`**, separada do
   `room_state`. Separada porque o `room_state` guarda o `GameRoom`, que é o objeto transmitido a
   todos os clientes — sessão ali dentro vazaria o token de cada jogador para a mesa inteira. O que
@@ -356,7 +370,16 @@ O heartbeat **não** faz broadcast (status já é `true`; só a virada para OFFL
 - **Mesa encerrada** (último jogador sai): linha removida do banco + doc Yjs destruído.
 - **Mesa abandonada (B.5 — SEC-04):** sem ninguém ativo por `ROOM_ABANDONED_TIMEOUT_MS` (24 h), o
   coletor recolhe — revoga sessões, apaga a linha e destrói o Y.Doc. Varre de 15 em 15 min.
-- **Shutdown** (SIGINT/SIGTERM): `flushAllPending()` grava pendências antes de sair.
+- **Boot com o bastão (H.3d — ADR 0007):** em produção, a instância nova pede o bastão
+  (`instance_lease`, migration `0008`) e só lê a `rooms` e abre a porta depois de a velha entregar — ou de a
+  marca de vida dela passar de 6 s (morta, ou hibernando). Nunca abrir a porta antes do bastão: o Render
+  testa a porta TCP e manda tráfego assim que ela abre.
+- **Entrega** (a velha vê o pedido na renovação de 2 s): recusa ações (`server_restarting`), fecha os
+  sockets (`1012`) e os streams (`retry`), para o vigia e o coletor, grava tudo — esperando o que estava em
+  voo e tentando de novo o que falhou —, **congela a persistência** e só então marca que entregou.
+- **Shutdown** (SIGINT/SIGTERM): quem ainda serve a mesa entrega do mesmo jeito (a hibernação — a próxima
+  instância assume na hora); quem já entregou **sai sem gravar nada**, porque o banco já é da nova. Sem
+  bastão (o dev, ou produção sem banco), `flushAllPending()` grava as pendências antes de sair, como antes.
 
 ---
 

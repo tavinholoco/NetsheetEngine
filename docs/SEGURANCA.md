@@ -754,6 +754,38 @@ H.03 e o H.09 são defeitos de mesa (o assento e o grid), publicados no ledger d
 cria um usuário descartável **só no Supabase local** — recusa qualquer outro — com senha aleatória que não
 imprime, e o apaga no fim.
 
+**15/10/2026 — adendo da H.3d** (o H.13: a passagem de bastão entre instâncias no deploy, com o H.10 e o
+H.11 — [ADR 0007](./adr/0007-passagem-de-bastao.md)). A migration `0008` foi num PR próprio (#47).
+
+1. **Entrada nova?** Uma tabela, a `instance_lease`, que só o servidor lê e escreve — nenhuma rota, campo ou
+   mensagem que o cliente mande. O cliente passa a **ler** duas coisas do servidor: o `code`
+   `server_restarting` de um 503 e o código `1012` de um fechamento de WebSocket. As duas só mudam quando ele
+   tenta de novo, e o que ele manda na nova tentativa é o mesmo pedido de antes.
+2. **Dado novo sai?** Nenhum da mesa. O `server_restarting` é só o erro; o stream SSE na troca leva só
+   `retry: 1500`. O id da instância (o host do contêiner e um sufixo aleatório) vai para o log do Render e
+   para a linha do bastão, nunca para o cliente.
+3. **Autorização nova? E quem recebe o poder prova o quê?** **A que pesa:** escrever na `instance_lease` manda
+   a instância que serve a mesa parar (um `claimant` qualquer faz a velha entregar). Quem pode escrever: **só a
+   service role** — a migration revoga os privilégios de anon e authenticated (o select nega, em vez de voltar
+   vazio) e liga o RLS sem política, como segunda camada; 7 testes de RLS novos, vistos falhando com os
+   privilégios devolvidos. A service role vive só no processo do servidor (regra 3 do diagrama de
+   contêineres). O aviso pelo Realtime do Supabase foi descartado por isto: a chave anônima é pública. A
+   instância nova não ganha sessão nenhuma: lê a `rooms` e as sessões dela como no boot de sempre.
+4. **Jogador convidado hostil?** Não alcança o bastão (pergunta 3). O que ele consegue na troca é o que já
+   conseguia: mandar ações, que a velha recusa sem executar e a nova recebe pelos mesmos limitadores. A
+   retentativa do cliente é dele próprio: 1,5 s entre pedidos, por até 45 s — abaixo do limitador global.
+5. **Estado novo sem limite?** Nenhum: a tabela tem **uma linha** (a restrição `id = 1`). Na persistência, a
+   fila de gravações é uma promessa por sala (o teto de salas, E.03) e some quando a gravação volta; a espera
+   máxima do H.10 é um número por sala com mutação pendente.
+6. **Custo por requisição a serviço externo?** Uma escrita de uma linha no Supabase a cada 2 s **com o serviço
+   acordado** (~43 mil por dia acordado, no plano gratuito, sem cobrança por requisição). Não mantém o serviço
+   acordado: a hibernação do Render conta tráfego de entrada, e a renovação é de saída. O H.10 grava uma sala
+   em rajada a cada 10 s em vez de nunca — o mesmo número de gravações de uma mesa calma.
+
+**Sem dependência nova.** **O que o PR ensina antes de o conserto estar no ar?** Que um deploy com mesa aberta
+perde o que a velha recebe — publicado no ledger desde o #46. A regra "nunca mergear com mesa aberta" segue
+valendo até a H.3d.4 provar a perda zero no ar.
+
 ### Fases I e J — varreduras
 
 *(cada uma a preencher no seu passo X.4 — só se a execução dos FAZER mudar código)*

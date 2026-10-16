@@ -38,6 +38,7 @@ flowchart TB
         VAL["Validacao de entrada<br/>src/rules/sheetSchema"]
         RULES["Motor FNFF autoritativo<br/>src/rules"]
         MEM[("Memoria<br/>salas - sessoes - Y.Doc")]
+        LEASE["Bastao entre instancias<br/>server/instanceLease - H.3d"]
     end
 
     subgraph externo["SERVICOS EXTERNOS"]
@@ -61,12 +62,19 @@ flowchart TB
 
     API -->|"service_role - nunca no cliente"| SB
     API -->|"chave do dono - nunca no cliente"| AI
+    LEASE -->|"service_role - marca de vida a cada 2 s"| SB
+    LEASE -.->|"no deploy: entrega a mesa e congela a gravacao"| MEM
 
     linkStyle 0,1,2,3 stroke-width:2px
     style cliente stroke-dasharray: 6 4
     style servidor stroke-width:2px
     style externo stroke-dasharray: 2 3
 ```
+
+*O "processo único" vale **fora** do deploy. Num deploy, o Render roda duas instâncias ao mesmo tempo
+(H.1j); desde a H.3d (15/10/2026), só uma manda na mesa por vez — a caixa `LEASE`, com o bastão na
+`instance_lease` do Supabase. A nova não abre a porta antes de a velha entregar a mesa
+([ADR 0007](./adr/0007-passagem-de-bastao.md)).*
 
 ### As três regras que este desenho expressa
 
