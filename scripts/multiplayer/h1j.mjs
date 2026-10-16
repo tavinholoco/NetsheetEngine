@@ -24,9 +24,9 @@
 //
 // O ensaio local imita o Render: um proxy HTTP que encaminha cada pedido à instância
 // "corrente" e prende o WebSocket à instância em que abriu; a instância nova sobe com o
-// banco, recebe o tráfego, e a velha morre 20 s depois — mas no Windows morre na hora, sem o
-// flushAllPending do SIGTERM (a diferença está no resultado). A hibernação é o proxy segurando
-// os pedidos enquanto a instância seguinte sobe.
+// banco, recebe o tráfego quando a porta dela abre, e a velha morre H1J_OLD_DIES_S (5) s
+// depois — mas no Windows morre na hora, sem o flushAllPending do SIGTERM (a diferença está
+// no resultado). A hibernação é o proxy segurando os pedidos enquanto a instância seguinte sobe.
 import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
@@ -35,6 +35,13 @@ import { chromium, startServer, person, seedRoom, gmInit, setHandle, session, ro
 const LOCAL = process.env.H1J_LOCAL === "1";
 const IDLE_MIN = Number(process.env.H1J_IDLE_MIN ?? (LOCAL ? 0.2 : 18));
 const SWAP_TIMEOUT_MIN = Number(process.env.H1J_SWAP_TIMEOUT_MIN ?? (LOCAL ? 3 : 25));
+// Ensaio: quanto a velha vive depois de a nova abrir a porta. 5 s é o medido no Render
+// (H.3d.0, 14/10: a porta abriu às 22:34:48,4 e o SIGTERM da velha veio às 22:34:53,5).
+const OLD_DIES_S = Number(process.env.H1J_OLD_DIES_S ?? 5);
+// Ensaio: quanto o proxy leva da porta aberta da nova à troca do tráfego. No Render, ~5 s
+// (o teste TCP e a troca — H.3d.0); 0 é a troca instantânea, a comparação de 15/10. Com o
+// bastão (H.3d), é a janela em que a velha já entregou e responde 503 server_restarting.
+const SWITCH_DELAY_S = Number(process.env.H1J_SWITCH_DELAY_S ?? 0);
 const T0 = Date.now();
 const log = (...a) => console.log(`${((Date.now() - T0) / 1000).toFixed(1).padStart(7)}s`, ...a);
 const rel = (t, ref) => (t == null ? "—" : `${t - ref >= 0 ? "+" : ""}${((t - ref) / 1000).toFixed(1)}s`);
@@ -193,12 +200,18 @@ try {
   if (LOCAL) {
     (async () => {
       await sleep(15_000);
+      // Como o Render (H.3d.0): o tráfego só vai à nova quando a porta dela abre — o
+      // `startServer` espera o health —, e a velha leva o SIGTERM uns 5 s depois da troca.
       log("[ensaio] a instância nova sobe (restaura do banco)…");
       const next = await startServer({ port: 3291 + instances.length, persist: true });
       instances.push(next);
+      if (SWITCH_DELAY_S > 0) {
+        log(`[ensaio] a porta da nova abriu; o proxy troca o tráfego em ${SWITCH_DELAY_S} s (o Render)`);
+        await sleep(SWITCH_DELAY_S * 1000);
+      }
       proxy.setTarget(next.port);
-      log("[ensaio] o tráfego novo vai para a nova; a velha morre em 20 s");
-      await sleep(20_000);
+      log(`[ensaio] o tráfego novo vai para a nova; a velha morre em ${OLD_DIES_S} s`);
+      await sleep(OLD_DIES_S * 1000);
       await instances[instances.length - 2].stop();
       log("[ensaio] a velha morreu (no Windows, sem o flushAllPending)");
     })();
@@ -206,6 +219,7 @@ try {
 
   // --- o laço da janela do deploy ---
   const sent = [];
+  const apiSends = [];
   let n = 0;
   let swapAt = null;
   let newBootAt = null;
@@ -240,8 +254,21 @@ try {
     if (hot && now >= nextApi) {
       nextApi = now + 6000;
       const label = `r-${++n}`;
-      const r = await api(base, `/api/rooms/${code}/message`, await tok(gm), { text: label });
-      sent.push({ label, t: Date.now(), via: `api ${r.status}` });
+      // Como o `apiFetch` do cliente desde a H.3d: o 503 `server_restarting` não
+      // executou nada (a velha entregou a mesa) — tentar de novo a cada 1,5 s. Sem
+      // prender o laço: o chat da tela segue saindo enquanto isto espera.
+      const t = Date.now();
+      apiSends.push((async () => {
+        let r;
+        let tries = 0;
+        for (;;) {
+          r = await api(base, `/api/rooms/${code}/message`, await tok(gm), { text: label });
+          tries += 1;
+          if (r.status === 503 && r.body?.code === "server_restarting" && Date.now() - t < 45_000) { await sleep(1500); continue; }
+          break;
+        }
+        sent.push({ label, t, via: `api ${r.status}${tries > 1 ? " (tentou de novo)" : ""}` });
+      })());
     }
     if (firstDropAt === null) {
       const drops = people.flatMap((p) => p.ws.filter((w) => w.closed && w.closed > tReady).map((w) => w.closed));
@@ -263,6 +290,7 @@ try {
     log(`Nenhuma troca de instância em ${SWAP_TIMEOUT_MIN} min — o deploy não aconteceu. Pulando para a limpeza.`);
   } else {
     // --- o que sobrou ---
+    await Promise.all(apiSends);
     await sleep(3000);
     st = await roomState(base, code, await tok(gm));
     const texts = new Set((st.chatMessages || []).map((m) => m.text));
