@@ -42,6 +42,9 @@ const OLD_DIES_S = Number(process.env.H1J_OLD_DIES_S ?? 5);
 // (o teste TCP e a troca — H.3d.0); 0 é a troca instantânea, a comparação de 15/10. Com o
 // bastão (H.3d), é a janela em que a velha já entregou e responde 503 server_restarting.
 const SWITCH_DELAY_S = Number(process.env.H1J_SWITCH_DELAY_S ?? 0);
+// Ensaio: quanto o proxy segura o fechamento do WebSocket que o servidor manda. No ar
+// (H.3d.4, 15/10), 13–16 s; 0 é o fechamento na hora, como nos ensaios até a H.3d.3.
+const CLOSE_HOLD_S = Number(process.env.H1J_CLOSE_HOLD_S ?? 0);
 const T0 = Date.now();
 const log = (...a) => console.log(`${((Date.now() - T0) / 1000).toFixed(1).padStart(7)}s`, ...a);
 const rel = (t, ref) => (t == null ? "—" : `${t - ref >= 0 ? "+" : ""}${((t - ref) / 1000).toFixed(1)}s`);
@@ -70,16 +73,34 @@ function renderLikeProxy(listenPort, firstTarget) {
   });
   srv.on("upgrade", async (req, sock, head) => {
     await waitAwake();
+    // H.3d.4 — no ar, o caminho até o navegador segurou o FECHAMENTO do WebSocket que o
+    // servidor manda por 13–16 s: o navegador seguiu achando o socket aberto, e o que
+    // ele mandou nesse tempo sumiu. Com H1J_CLOSE_HOLD_S, o proxy faz o mesmo: o quadro
+    // de fechamento do servidor (0x88) e o fim da conexão esperam esse tempo, e o que o
+    // navegador manda enquanto isso é engolido. Os quadros de dados passam na hora.
+    let held = false;
+    const kill = () => { u.destroy(); sock.destroy(); };
+    const holdThenKill = () => {
+      if (held) return;
+      held = true;
+      setTimeout(kill, CLOSE_HOLD_S * 1000);
+    };
     const u = net.connect(target, "127.0.0.1", () => {
       const lines = [`${req.method} ${req.url} HTTP/1.1`];
       for (let i = 0; i < req.rawHeaders.length; i += 2) lines.push(`${req.rawHeaders[i]}: ${req.rawHeaders[i + 1]}`);
       u.write(lines.join("\r\n") + "\r\n\r\n");
       if (head?.length) u.write(head);
-      u.pipe(sock);
-      sock.pipe(u);
+      u.on("data", (chunk) => {
+        if (CLOSE_HOLD_S > 0 && (held || chunk[0] === 0x88)) return holdThenKill();
+        sock.write(chunk);
+      });
+      sock.on("data", (chunk) => {
+        if (!held && !u.destroyed) u.write(chunk);
+      });
     });
-    const kill = () => { u.destroy(); sock.destroy(); };
-    u.on("error", kill); sock.on("error", kill); u.on("close", kill); sock.on("close", kill);
+    const upstreamGone = () => (CLOSE_HOLD_S > 0 ? holdThenKill() : kill());
+    u.on("error", upstreamGone); u.on("close", upstreamGone);
+    sock.on("error", kill); sock.on("close", kill);
   });
   srv.listen(listenPort);
   return {
