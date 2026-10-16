@@ -6,9 +6,9 @@
 awareness (`server.ts`), as sessões e a reconexão (`server/roomManager.ts`, `server/wsLimits.ts`); no
 cliente, o efeito de transporte e o heartbeat (`features/multiplayer/MultiplayerRoom.tsx`), a camada CRDT
 (`lib/yjsConnection.ts`, `lib/gridDoc.ts`) e a sessão (`api/rooms.ts`, `pages/RoomPage.tsx`).
-**Itens levantados:** 13 · **FAZER:** 3 · **ADIAR:** 9 · **DESCARTAR:** 1 *(12 na varredura local; o H.13
-veio do H.1j, no ar)*
-**Proporção FAZER:** 23% — abaixo de 1/3 (ver [H.2](#h2--calibragem)). Dois FAZER, e o H.02 que o conserto do
+**Itens levantados:** 14 · **FAZER:** 3 · **ADIAR:** 10 · **DESCARTAR:** 1 *(12 na varredura local; o H.13
+veio do H.1j, no ar; o H.14, da H.3d.4)*
+**Proporção FAZER:** 21% — abaixo de 1/3 (ver [H.2](#h2--calibragem)). Dois FAZER, e o H.02 que o conserto do
 H.09 disparou, foram executados na [H.3](#h3--os-fazer-executados); o terceiro, o **H.13**, virou FAZER por
 decisão do dono em 15/10/2026 e é a **H.3d** do plano — com o H.10 e o H.11, que mexem no mesmo arquivo.
 
@@ -830,13 +830,62 @@ quadro de dados, segue aceitando ações por 2 s, e o cliente fecha o próprio s
 H1J_OLD_DIES_S=0`): o código do #48 perde **1** — a mesma assinatura do ar (a volta em 3 s, sem `1012`) —, e com o
 aviso, **0**, com ~6 s de "reconectando".
 
+### H.3d.4 de novo — com o aviso (15/10/2026, 23:45–00:12)
+
+Com o #49 no ar (o deploy do merge assumiu `handed-over` do bastão que a instância anterior tinha entregue ao
+hibernar). **Uma rodada perdida antes:** o "Manual Deploy" começou às 23:48, enquanto o roteiro ainda montava a mesa —
+o bastão funcionou (a velha avisou 1 socket, entregou em 2,4 s, a nova assumiu `handed-over`), mas a troca no meio da
+montagem não mede nada, e a limpeza do roteiro levou 503 na janela: a mesa `H1J-9YCMEW` ficou no ar até o coletor
+(24 h). Dela saiu o **H.14** (abaixo). **A rodada que vale**, com o clique depois do PRONTO:
+
+| BRT | O que aconteceu |
+|---|---|
+| 23:51:29 | a nova `[ttrxt]` começa e pede o bastão |
+| ~23:51:30 | a velha `[mbk8c]` vê o pedido, **avisa os 3 sockets** e segue aceitando ações por 2 s |
+| 23:51:32,2 | a velha entrega: `connections: 0` — os três navegadores já tinham fechado o próprio socket no aviso —, a mesa gravada |
+| 23:51:32,4–33,0 | a velha marca (2,2 s com a carência); a nova assume `handed-over`, restaura 2 salas (a do teste e a sobra), abre a porta |
+| 23:51:42,7 | a velha leva o SIGTERM — o Render levou **9,7 s** da porta aberta à troca (2,4 s e 5 s nas medições anteriores) |
+
+| Pergunta | Resultado |
+|---|---|
+| Perdeu alguma coisa? | ✅ **nada** — 30 de 30 (20 pela tela, 10 pela API). Na janela da troca: pela tela, 1 pelo socket e 3 por REST (o GM levou seis 503 e repetiu); pela API, 3 (uma repetiu o 503) |
+| O "reconectando" | **12,4 s**, do aviso ao socket na nova: os três caíram juntos no aviso, o WebSocket foi recusado seis vezes (503) e abriu na nova. São 2 s de carência, ~1 s de entrega e ~9,7 s da troca do Render — a parte que varia |
+| Os assentos | ✅ os três no mesmo assento, com o ferimento e a iniciativa; nenhum SSE |
+| Console | um erro do navegador por tentativa recusada (o *handshake* 503 e o "Failed to load resource" do REST) — 6 a 14 por aba, só na troca |
+| A hibernação (18 min parada) | ✅ o health em **21,7 s** (21,6 s em 14/10; 24,1 s na rodada das 22:21), os três no mesmo assento, o chat inteiro; a limpeza tirou a mesa do teste — fica só a sobra `H1J-9YCMEW` |
+
+### H.14 — Quem entra na mesa na janela da troca cai no SSE
+
+**Área:** H.1j / H.3d *(achado na rodada perdida da H.3d.4, 15/10/2026)*
+
+**Sintoma observado:** no log, um `sse_fallback` às 23:48:21 — a Ana entrava pelo convite durante a carência da
+troca. Na carência e na entrega, a instância velha recusa o *upgrade* com 503; para quem **nunca** conectou nesta
+mesa, uma tentativa de WebSocket que falha é o proxy que bloqueia WebSocket (H.3b), e o cliente abre o SSE — para
+sempre: não arrasta o próprio token, e o grid segue a sala sem o Yjs (H.1g).
+
+**Onde:** o *upgrade* na entrega (`server.ts`, `attachRealtime`) e a decisão do SSE no cliente
+(`MultiplayerRoom.tsx`, o `wsEverOpenRef`).
+
+**Quem sente hoje:** ninguém — exige abrir a página da mesa (ou dar F5) nos ~5–15 s de um deploy com mesa aberta.
+
+**Se eu não fizer:** quem cair assim não move o próprio token até recarregar a página. Não perde dado.
+
+**Versão 10× menor:** na entrega, aceitar o *upgrade* e mandar só o aviso (`server_restarting`) — o cliente marca
+"já conectou", fecha o socket e volta pelo caminho curto, em vez de ir ao SSE. ~10 linhas.
+
+**Reversível:** sim.
+
+**VEREDITO:** ADIAR
+- **Gatilho:** um `sse_fallback` no log de uma sessão real coincidindo com um deploy (o `lease_released` no mesmo
+  minuto), ou um jogador relatar que não arrasta o próprio token depois de uma atualização do servidor.
+
 ---
 
 ## H.2 — Calibragem
 
 **12 itens, 2 FAZER (17%).** Abaixo de 1/3 na primeira passada — a régua não precisou de ajuste. *Com o
 H.13 do H.1j (14/10, depois do merge do ledger): 13 itens, 2 FAZER, **15%**; com a decisão do dono de 15/10
-(o H.13 FAZER): **3 FAZER, 23%**.* Os dois
+(o H.13 FAZER): **3 FAZER, 23%**; com o H.14 da H.3d.4 (ADIAR), 14 itens, **21%**.* Os dois
 FAZER são reproduzidos, sentidos na mesa e sem versão mais barata que esperar:
 
 | FAZER | O que quebra |

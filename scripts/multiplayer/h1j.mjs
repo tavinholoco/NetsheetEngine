@@ -176,11 +176,16 @@ const seatsOf = (st, original) => Object.values(st.players || {}).map((s) => {
 // ===========================================================================
 const h0 = await health(150_000);
 log(`health: v${h0.version}, uptime ${h0.uptime}s, ${h0.rooms.active} mesa(s) e ${h0.rooms.players} jogador(es) no ar, ${h0.ms} ms`);
-if (h0.rooms.active > 0 && !LOCAL) {
+// H1J_SOBRAS: quantas mesas abertas são sobras CONHECIDAS de um teste anterior (ex.: a limpeza
+// que levou 503 na janela de uma troca — H.3d.4, 15/10). Só com o dono conferindo que não há
+// mesa de verdade; o coletor as recolhe em 24 h.
+const SOBRAS = Number(process.env.H1J_SOBRAS ?? 0);
+if (h0.rooms.active > SOBRAS && !LOCAL) {
   log("ABORTADO: já há mesa aberta neste servidor. Trocar a instância agora atropelaria quem está jogando.");
   process.exit(1);
 }
-if (h0.rooms.active > 0) log("(ensaio: as mesas acima são sobras de testes no Supabase local)");
+if (SOBRAS > 0 && !LOCAL) log(`(${h0.rooms.active} mesa(s) no ar; ${SOBRAS} conhecida(s) como sobra de teste)`);
+if (h0.rooms.active > 0 && LOCAL) log("(ensaio: as mesas acima são sobras de testes no Supabase local)");
 const code = "H1J-" + sufixo();
 const { gmPeerId, gmToken } = await seedRoom(base, code, "peer_h1j_gm_" + sufixo().toLowerCase(), "Mestre");
 const browser = await chromium.launch();

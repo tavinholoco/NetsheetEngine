@@ -958,6 +958,9 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
 > que o conserto disparou. **O dono decidiu o H.13 como FAZER** (15/10, no #46): é a **H.3d**, a passagem de
 > bastão entre instâncias, com o H.10 e o H.11 — ~2 dias, dois PRs e mais um teste no ar com ele. **Falta:** a
 > H.3d, pelas caixas dela, e a H.5 (o `master` verde depois de cada merge, e a data da fase).
+> *(15/10/2026, 23:55 — **a H.3d está feita e provada no ar**: a migration no #47, o código no #48, o aviso antes
+> do fechamento no #49 — o que a primeira prova no ar pediu —, e a H.3d.4 refeita perdeu 0 de 30. **Falta só a
+> H.5:** o merge do PR do registro, o `master` verde depois dele, e a data da fase.)*
 
 - [x] **H.1** Varredura por cenário → ledger em `docs/varreduras/H-multiplayer.md`. *(14/10/2026 — os dez cenários
       locais no #44; o H.1j, no ar, depois do merge dele.)*
@@ -1037,7 +1040,7 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
       perde a mesa — a versão menor, a credencial do GM no `localStorage`, cabe no PR do H.03 se o dono pedir)
       e o gatilho da **ADR 0002 não disparou** (a revisão está na própria ADR). *Com o H.13, do H.1j: 13 itens,
       2 FAZER, 15%. O dono decidiu o H.13 como FAZER no #46 (15/10): **3 FAZER, 23%** — a H.3d.*)*
-- [ ] **H.3** Executar só os FAZER — passo X.3. Teste que reproduz **escrito antes**, a prova revertendo,
+- [x] **H.3** Executar só os FAZER — passo X.3. Teste que reproduz **escrito antes**, a prova revertendo,
       um commit por item, e a conferência na tela pelo roteiro do cenário (`scripts/multiplayer/`). H.3, H.4 e
       H.5 num PR só, como o #41 da G. As linhas citadas são as do ledger (`master` em `8203479`); medir de novo.
       *(14/10/2026 — os três, **+9 testes** em dois arquivos novos, cada um visto falhando com o código antigo e
@@ -1074,7 +1077,7 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
         mais por queda — medido +2 no H.1b).
         *(14/10/2026 — `room-transport` +1, falha com 0 chamadas ao `destroy`. No `h1b-tunel.mjs`, 4 intervalos
         vivos antes e depois do túnel de 90 s — eram 4 → 6.)*
-  - [ ] **H.3d** **H.13 — a passagem de bastão entre instâncias no deploy** *(FAZER por decisão do dono, 15/10/2026,
+  - [x] **H.3d** **H.13 — a passagem de bastão entre instâncias no deploy** *(FAZER por decisão do dono, 15/10/2026,
         no PR #46 — o [H.13 do ledger](./varreduras/H-multiplayer.md#h13--no-deploy-com-mesa-aberta-o-que-a-instância-velha-recebe-nos-20-s-depois-de-a-nova-subir-se-perde)
         tem o desenho e as versões descartadas)*. Hoje, num deploy, a nova instância lê a mesa do banco ao ligar e as
         duas seguem separadas por ~20 s; o que vai à velha some (H.1j). **O conserto:** só uma instância manda na mesa
@@ -1139,7 +1142,7 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           Portão no [registro](./SEGURANCA.md#fase-h--varredura-multiplayer). O PR abriu depois do merge do #47 e
           da `0008` conferida em produção. **O deploy do merge dele ainda perde como antes** — a velha não tem o
           bastão para entregar; o teste no ar é o "Manual Deploy" seguinte.)*
-    - [ ] **H.3d.4** **No ar, com o dono:** o H.1j de novo — a mesa de teste, o "Manual Deploy" clicado por ele —:
+    - [x] **H.3d.4** **No ar, com o dono:** o H.1j de novo — a mesa de teste, o "Manual Deploy" clicado por ele —:
           0 mensagem perdida, e quanto dura o "reconectando". A regra "nunca mergear com mesa aberta" só sai do
           `CLAUDE.md` e do `DEPLOY.md` se este passo provar a perda zero.
           *(15/10/2026, 22:20–22:41, combinado com o dono — **1 perdida, não 0.** O primeiro deploy do #48 entrou como
@@ -1152,7 +1155,17 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           *spin-down* (22:37) a instância entregou no SIGTERM, e o despertar (22:40) assumiu `handed-over` em 1,7 s — o
           health em 24,1 s (eram 21,6 s em 14/10). A renovação a cada 2 s não impediu a hibernação. **Refazer este passo
           depois da H.3d.5 no ar.** A regra "nunca mergear com mesa aberta" fica.)*
-    - [ ] **H.3d.5** **O aviso antes do fechamento** *(acrescentado em 15/10/2026, pela H.3d.4)*: na entrega, a velha
+          *(15/10/2026, 23:51 — **refeito com a H.3d.5 no ar (#49): 0 perdida, 30 de 30.** A velha avisou os 3 sockets, os
+          navegadores fecharam o próprio socket na hora (ela entregou com `connections: 0`) e mandaram as ações por REST,
+          que repetiu o 503 até a nova; os três no mesmo assento, sem SSE. **"Reconectando": 12,4 s** — 2 s de carência,
+          ~1 s de entrega e 9,7 s da troca do Render, a parte que varia (já foi 2,4 e 5 s). A hibernação em seguida: o
+          health em 21,7 s, os três no mesmo assento. Uma rodada antes se perdeu: o
+          deploy começou com a mesa ainda sendo montada — o bastão funcionou, mas a sobra `H1J-9YCMEW` ficou para o
+          coletor (24 h), e dela saiu o **H.14** (quem entra na janela da troca cai no SSE — ADIAR). Detalhe no
+          [ledger](./varreduras/H-multiplayer.md#h3d4-de-novo--com-o-aviso-15102026-23450012). **A regra de merge:** a
+          perda zero estava provada, e ela saiu do `CLAUDE.md` e do `DEPLOY.md` — vira "pode, mas não no meio de um
+          combate", pelo "reconectando" de até ~15 s.)*
+    - [x] **H.3d.5** **O aviso antes do fechamento** *(acrescentado em 15/10/2026, pela H.3d.4)*: na entrega, a velha
           manda a cada socket um quadro de **dados** (`{ type: "error", code: "server_restarting" }` — o bundle de antes só
           mostra o texto) e segue aceitando ações por **2 s**, recusando só conexão nova; o cliente que recebe o aviso
           fecha o próprio socket na hora e passa ao REST, que repete o 503. O ensaio local ganha o proxy que segura o
@@ -1163,7 +1176,7 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
           `server-handoff` estendido (o aviso, a ação na carência pelo socket e pelo REST, o *upgrade* recusado) e
           `room-transport` +1 (o socket fechado na hora, a mensagem por REST, a volta em 1,5 s sem o `onclose`), vistos
           falhando; mutações — sem aviso, sem carência, *upgrade* aceito na carência — cada uma derruba o teste. **842**
-          testes.)*
+          testes. Mergeado no **#49**; provado no ar na H.3d.4 refeita: 0 perdida.)*
 - [x] **H.4** 🔒 Portão, se a H.3 mudou código — passo X.4. *(Vai mudar: a URL depois de entrar e a reconexão
       do transporte. A pergunta 3 pesa — o F5 volta ao assento com o token, e nenhum caminho novo emite sessão.)*
       *(14/10/2026 — entrada no [registro](./SEGURANCA.md#fase-h--varredura-multiplayer), sem achado: nenhuma
@@ -1178,6 +1191,11 @@ Rede estrangulada pelo DevTools (perfil lento) ou pelo `setOffline` do Playwrigh
       nota dos códigos de fechamento, §7), a seta do SSE no diagrama de contêineres, e o "≥60 s / ~1,5 min" do
       deploy no `DEPLOY.md` e no `CLAUDE.md`. **Falta:** o merge do #46 e o `master` verde depois dele; e, com a
       H.3d (15/10), o mesmo passo para os PRs dela — a linha de base volta a ser medida no fim.)*
+      *(15/10/2026, 23:58 — a H.3d nos #47, #48 e #49, cada um com o `master` verde depois (o #47 com o `db push` e a
+      `0008` conferida em produção). A linha de base no fim: **842** testes, 63 arquivos; E2E 7/7; smoke de WebSocket
+      5/5; RLS 63/63; `audit:ci` limpo; cores e conflitos em 0. A régua `h1a.mjs` no código do `master`: 0 erro de
+      console, 6,7 KB por chat, ~50 KB no combate (o ataque errou), 0,5 KB em 45 s parada — os números da H.1a.
+      **Falta:** o merge do PR do registro (este), o `master` verde depois dele, e a data da fase.)*
 - [ ] ✅ **Fase H concluída em:** ____/____/______
 
 ---

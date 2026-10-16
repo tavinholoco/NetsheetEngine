@@ -789,7 +789,9 @@ carência não cresce: são 2 s por entrega (pergunta 5).
 
 **Sem dependência nova.** **O que o PR ensina antes de o conserto estar no ar?** Que um deploy com mesa aberta
 perde o que a velha recebe — publicado no ledger desde o #46. A regra "nunca mergear com mesa aberta" segue
-valendo até a H.3d.4 provar a perda zero no ar.
+valendo até a H.3d.4 provar a perda zero no ar. *(Provada em 15/10/2026, 23:51 — 0 de 30; a regra virou "pode, mas
+não no meio de um combate". O H.14 — quem entra na janela da troca cai no SSE — não toca segurança: o jogador
+não ganha nem perde poder, só o arrasto do próprio token até recarregar.)*
 
 ### Fases I e J — varreduras
 
