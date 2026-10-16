@@ -694,7 +694,8 @@ Segue o [roteiro de uma varredura](#o-roteiro-de-uma-varredura).
 - [ ] **I.2** Calibragem e PR do ledger — passo X.2.
       *(16/10/2026 — calibragem: **2 FAZER em 9, 22%**; a primeira contagem deu 4 em 11 (36%), e a repassada
       juntou as correções de documento sem mudar veredito de código. Destacado ao dono: o **I.01** (ADIAR). O
-      achado de segurança (I.03) fica fora do PR do ledger; a ordem do conserto é do dono. À espera do merge.)*
+      achado de segurança (I.03) fica fora do PR do ledger; a ordem do conserto é do dono. Ledger no **PR #53**, à
+      espera do merge.)*
 - [ ] **I.3** Executar só os FAZER — passo X.3.
 - [ ] **I.4** 🔒 Portão, se a I.3 mudou código — passo X.4.
 - [ ] **I.5** 🧠 Estado durável — passo X.5.
@@ -960,7 +961,7 @@ público mudar.
 | F | 🔨 | Reestruturação visual: identidade Cyberpunk 2020 — #27, #28, #29 e #32, tag `v0.4.4`; conferida no ar em 05/10 | ✅ | 05/10/2026 |
 | G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
-| I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), à espera do merge; um achado de segurança aberto, fora do ledger | 🔄 | — |
+| I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53, à espera do merge; um achado de segurança aberto, fora do ledger | 🔄 | — |
 | J | 🔍 | Varredura: segurança | ⬜ | — |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
