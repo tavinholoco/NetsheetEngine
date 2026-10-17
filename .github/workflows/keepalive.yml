@@ -26,10 +26,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Versão fixa, a mesma do db-sync (ci.yml) — o porquê está lá (J.5).
       - name: Instalar Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0
 
       - name: Tocar o banco remoto
         env:
