@@ -153,6 +153,8 @@ e uma, a do SEC-15 ("não prende reenvios num socket parado"), valia só para o 
 
 **VEREDITO:** FAZER *(documento)*. As duas respostas, neste PR. Os dois comentários vão com o J.11 na J.3, que
 mexe no `.gitleaks.toml` de qualquer jeito (este PR é só de documento).
+*(17/10/2026 — ✅ **os dois comentários, na J.3**: o `ci.yml` e o cabeçalho do `.gitleaks.toml` dizem que o gitleaks
+roda em todo PR para o `master` e no push ao `master`, e que branch sem PR conta só com a proteção de push.)*
 
 ---
 
@@ -431,6 +433,11 @@ dos provedores; não barra as regras próprias do `.gitleaks.toml` nem a genéri
 **Reversível:** sim.
 
 **VEREDITO:** FAZER *(configuração, na J.3)* — com os dois comentários do J.01.
+*(17/10/2026 — ✅ **feito na J.3**: todo padrão de caminho ancorado, com os dois separadores (`[/\\]` — o `gitleaks dir`
+do Windows entrega `\`), e o `gitleaks-allowlist.test` (2), escrito antes, confere contra o `git ls-files`. Com a
+allowlist antiga ele lista os 7 arquivos acima; tirada uma âncora por vez, cada uma derruba o seu caso. No binário
+v8.23.3, com um token falso em cada arquivo de um repositório descartável: a antiga só acha o `src/app.ts`, a nova
+acha os workflows, o hook e o `distance.ts` também.)*
 
 ### J.12 — A conferência de segredo no bundle é à mão
 
@@ -499,3 +506,5 @@ gatilho que se lê; os três DESCARTAR, um leitor que não existe. Nenhum veredi
 do ledger, como na E e na I: o PR de segurança é o [#58](https://github.com/tavinholoco/NetsheetEngine/pull/58), e este foi empilhado nele, já
 com o texto. **Mergear o de segurança primeiro.** A J.3 fica com o J.11 (e os comentários do J.01) — o que o merge
 deste ledger aprovar.
+*(17/10/2026 — o #58 e o #59 mergeados, nessa ordem; o `master` verde nos quatro jobs depois deles. **O merge aprovou
+os veredictos como estavam:** o J.07 e o J.10 seguem ADIAR, e a J.3 foi o J.11 e os comentários do J.01.)*

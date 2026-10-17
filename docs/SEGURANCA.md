@@ -860,6 +860,9 @@ janela do deploy.
 **reproduzidos antes** e consertados num PR próprio, a pedido do dono, antes do ledger — o precedente da E e da
 I. O ledger público os tem em uma linha cada; o texto inteiro é este, e vai ao ar com o conserto. Os outros FAZER
 da J respondem ao portão quando entrarem (a J.4).
+*(17/10/2026, a J.4 — **a J.3 mudou configuração do CI, não código do produto**: o J.11, a allowlist do gitleaks, e
+os comentários do J.01. O merge do ledger (#59) manteve os vereditos — o J.07 e o J.10 seguem ADIAR. O portão da J.3
+está no fim desta seção.)*
 
 **SEC-17 — o awareness do Yjs entrava cru na tela dos outros** 🟡. O awareness é o canal do cursor do GM no
 grid (T5.3). O servidor o repassava à mesa como vinha: a R.4 deu teto de tamanho (4 KiB) e de ritmo, e ninguém
@@ -935,6 +938,41 @@ navegador, chega a um jogador.
 texto vai **junto** com o código. O Render publica o `master` em minutos, e a produção não tinha mesa nem usuário
 no último backup (16/10: `rooms` 0, `auth.users` 0).
 
+**17/10/2026 — a J.3: a allowlist do gitleaks ancorada (J.11) e os comentários do J.01.** O gitleaks do CI (v8.23.3)
+procura cada padrão de `[allowlist].paths` em qualquer ponto do caminho, e o `\.git` casava com
+`.github/workflows/`: os dois workflows — onde moram as referências aos secrets do CI —, o `.gitleaks.toml`, o
+`.gitleaks/pre-commit.sh`, o `.gitattributes` e os dois `.gitignore` não eram varridos. Todo padrão de caminho agora é
+ancorado, com os dois separadores (`^\.git[/\\]`, `^dist[/\\]`, `^node_modules[/\\]`, `^package-lock\.json$`…: o modo
+git usa `/`, e o `gitleaks dir` no Windows, `\`), e o `gitleaks-allowlist.test` (2) confere contra o `git ls-files` que
+só fica de fora o que deve. **Provado revertendo:** com a allowlist antiga, o teste lista os 7 arquivos; tirada uma
+âncora por vez, cada uma derruba o seu caso. **E no binário** (o v8.23.3 do CI, instalado na máquina do dono no mesmo
+dia, com o checksum do release conferido), num repositório descartável com um token falso em cada arquivo: com a
+allowlist antiga só o `src/app.ts` é achado — os workflows, o hook e o `distance.ts` passam calados —; com a nova, os
+cinco, no modo git e no modo pasta, e `dist/`, `node_modules/` e `package-lock.json` seguem de fora. A primeira versão,
+só com `/`, deixava o `gitleaks dir` do Windows varrer o `node_modules`: o binário mostrou, e o teste ganhou os caminhos
+com `\`. No histórico deste repositório (275 commits, todos os refs) e na mudança em stage: nenhum vazamento — o CI do
+PR não fica vermelho com os arquivos novos. Os comentários do `ci.yml` e do `.gitleaks.toml` passam a dizer quando o gitleaks
+roda: em todo PR para o `master` e no push ao `master`; branch sem PR conta só com a proteção de push do GitHub
+(`secret_scanning_push_protection: enabled`, conferido pela API no mesmo dia), que barra os padrões dos provedores e
+não lê as regras do `.gitleaks.toml`.
+
+**Portão — as seis perguntas sobre a J.3:**
+
+1. **Entrada nova?** Nenhuma — o servidor e o cliente não mudaram. O que muda é o que o scanner lê: sete arquivos a
+   mais, entre eles os dois workflows, onde o CI referencia os secrets.
+2. **Dado novo sai?** Nenhum. O gitleaks roda com `--redact` no log do Actions, que é público como o repositório: um
+   achado nos arquivos novos sairia redigido como os outros.
+3. **Autorização nova?** Nenhuma. As permissões do job (`contents: read`, `security-events: write`) não mudaram, e
+   nenhuma credencial é emitida.
+4. **Jogador convidado hostil?** Fora de alcance — não há caminho do jogador até o CI. Quem abre PR de um fork roda o
+   CI sem secrets, e agora o token que ele puser num workflow é varrido.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum. Minutos do Actions: os segundos do gitleaks, quase iguais.
+
+**Sem dependência nova** — o teste lê o TOML com uma expressão regular, sem parser. **O que este PR ensina antes de
+estar no ar?** Nada que o ledger público (#59) já não dissesse: o J.11 estava lá com o caminho, e não há segredo nos
+workflows.
+
 ### Fase K — Profundidade de sistema
 
 *(a preencher)*
@@ -1003,7 +1041,10 @@ Registrado para não ser refeito, e para o portão não repetir pergunta já res
   `server/roomManager.ts`, `server/wsLimits.ts`, `server/awarenessGuard.ts` e `src/lib/gridDoc.ts`, com o
   porquê.
 - **helmet + CSP** em produção, CORS por allowlist via `CORS_ORIGINS`.
-- **gitleaks** no CI, com SARIF na aba Security, e hook de pre-commit opcional.
+- **gitleaks** no CI, com SARIF na aba Security, e hook de pre-commit opcional. Roda em todo PR para o `master` e
+  no push ao `master` — branch sem PR conta com a **proteção de push do GitHub**, ligada no repositório. A allowlist
+  de caminhos é **ancorada** desde a J.3 (J.11: o `\.git` solto pulava os workflows), e o
+  `gitleaks-allowlist.test` a confere contra o `git ls-files`.
 - **Rolagens server-authoritative** (T5.4) — o cliente pede, o servidor rola com `crypto.randomInt`.
   O SEC-05 (ficha verbatim) foi fechado na B.2, e o `currentStats` forjado na C.6: os números da
   rolagem saem da ficha saneada, recalculados pelo servidor, com as mesmas regras do cliente

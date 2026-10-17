@@ -1,9 +1,11 @@
 # ============================================================
 # NETSHEET ENGINE — gitleaks configuration
 # ============================================================
-# Scanner de segredos executado no CI (todo push/PR) para impedir
-# que chaves vazem para o GitHub — como aconteceu com a Firebase
-# Web API Key (commit ac6d4cac, resolvido em 08/08/2026).
+# Scanner de segredos executado no CI (todo PR para o master e
+# o push ao master) para impedir que chaves vazem para o GitHub —
+# como aconteceu com a Firebase Web API Key (commit ac6d4cac,
+# resolvido em 08/08/2026). Branch sem PR conta só com a proteção
+# de push do GitHub, que não lê estas regras (J.01).
 #
 # Referência: https://github.com/zricethezav/gitleaks
 # Testar localmente:  gitleaks detect --source . --redact
@@ -71,7 +73,20 @@ keywords = ["key", "secret", "token", "password", "passwd", "pwd", "apikey", "ap
 
 [allowlist]
 description = "Exceções legítimas do repositório"
-paths = ['''node_modules''', '''package-lock.json''', '''bun.lock''', '''dist''', '''\.git''', '''supabase/\.env''', '''\.env\.local''']
+# O gitleaks procura o padrão de caminho em QUALQUER ponto do caminho (sem âncora): um
+# `\.git` solto casava com `.github/workflows/` e tirava os workflows da varredura (J.11,
+# 17/10/2026). Todo padrão aqui é ancorado — o gitleaks-allowlist.test confere contra o
+# `git ls-files`. O separador é `[/\\]`: o modo git (CI, pre-commit) usa `/`, e o
+# `gitleaks dir` no Windows entrega `\`.
+paths = [
+  '''^node_modules[/\\]''',
+  '''^package-lock\.json$''',
+  '''^bun\.lock$''',
+  '''^dist[/\\]''',
+  '''^\.git[/\\]''',
+  '''^supabase[/\\]\.env$''',
+  '''^\.env\.local$''',
+]
 regexes = [
   '''REMOVIDA-SEGURANCA''',
   '''[0-9]{12}-[0-9a-z]{32}\.apps\.googleusercontent\.com''',

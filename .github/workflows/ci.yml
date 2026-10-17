@@ -5,8 +5,11 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
-  # O job de segredos também roda em qualquer branch (push + PR), para
-  # bloquear chaves ANTES de chegarem ao master — ver job secrets-scan.
+  # O job de segredos (secrets-scan) roda em todo PR para o master — antes do
+  # merge — e no push ao master. Branch empurrado sem PR não passa por ele:
+  # conta com a proteção de push do GitHub (secret scanning push protection,
+  # ligada no repositório), que barra os padrões dos provedores no próprio
+  # push — não as regras do .gitleaks.toml (J.01, 17/10/2026).
 
 # T10.5 — um único pipeline em andamento por ref; push em sequência cancela a
 # execução anterior (economiza minutos e evita corridas em estado obsoleto).
