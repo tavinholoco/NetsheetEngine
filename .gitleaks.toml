@@ -71,7 +71,19 @@ keywords = ["key", "secret", "token", "password", "passwd", "pwd", "apikey", "ap
 
 [allowlist]
 description = "Exceções legítimas do repositório"
-paths = ['''node_modules''', '''package-lock.json''', '''bun.lock''', '''dist''', '''\.git''', '''supabase/\.env''', '''\.env\.local''']
+# O gitleaks procura o padrão de caminho em QUALQUER ponto do caminho (sem âncora): um
+# `\.git` solto casava com `.github/workflows/` e tirava os workflows da varredura (J.11,
+# 17/10/2026). Todo padrão aqui é ancorado — o gitleaks-allowlist.test confere contra o
+# `git ls-files`.
+paths = [
+  '''^node_modules/''',
+  '''^package-lock\.json$''',
+  '''^bun\.lock$''',
+  '''^dist/''',
+  '''^\.git/''',
+  '''^supabase/\.env$''',
+  '''^\.env\.local$''',
+]
 regexes = [
   '''REMOVIDA-SEGURANCA''',
   '''[0-9]{12}-[0-9a-z]{32}\.apps\.googleusercontent\.com''',
