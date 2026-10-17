@@ -750,10 +750,13 @@ desde a T1.7 porque todos perguntavam de onde vinha o autor, e ninguém, quem ga
 [roteiro de uma varredura](#o-roteiro-de-uma-varredura). **O que a J achar aberto vai ao ar junto com
 o conserto** (o repo é público).
 
-> ⏸️ ***Parada em 17/10/2026, depois da J.0 — o dono segue numa sessão nova.*** *A próxima sessão continua
-> do primeiro item desmarcado, a **J.1a**. A J.0 e o [ledger](./varreduras/J-seguranca.md) nasceram no branch
-> `claude/j-ledger` (commit `b583c98`): enquanto ele não estiver no `master`, a sessão nova parte desse branch,
-> e não refaz a J.0. Uma pista da J.1d saiu da J nesta parada — a nota está nela.*
+> ⏸️ ***17/10/2026, segunda sessão: a J.1 inteira feita, e dois achados de segurança consertados antes do
+> ledger.*** *A J.0 entrou no `master` no #57. As sete áreas acharam 13 itens, 4 FAZER — dois deles achados de
+> segurança reproduzidos, o **SEC-17** e o **SEC-18**, que o dono escolheu consertar já (como na E e na I): o PR
+> de segurança é o **#58** (`claude/j-seguranca`), e o do ledger, o **#59** (`claude/j-areas`), vai empilhado nele. **Mergear
+> o de segurança primeiro.** O próximo item é a **J.2**: conferir que os dois PRs entraram e o `master` ficou
+> verde. Durante a J, a linha de base é **879** testes em 68 arquivos (+11 do SEC-17/18); a tabela do fim do
+> plano muda na J.5. Uma pista da J.1d saiu da J na primeira parada — a nota está nela.*
 
 - [x] **J.0** 🔍 **Premissas** — medidas em 29/09/2026:
       *(17/10/2026 — conferidas contra o `master` em `954ef0e`, no [ledger](./varreduras/J-seguranca.md#j0--as-pistas-medidas-em-17102026):
@@ -787,20 +790,37 @@ o conserto** (o repo é público).
           anônimo com token, e boa parte viraria "não se aplica". Vale como **consulta pontual** quando
           uma área pedir profundidade: sessão (V7) na J.1c, frontend e CSP (V3) na J.1f.
         - *Risco das duas:* virar teatro de conformidade. Só vira item o que se aplica a uma rota real.
-- [ ] **J.1** Varredura por área → ledger em `docs/varreduras/J-seguranca.md`.
-  - [ ] **J.1a Registro do portão** em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase): toda fase — e
+- [x] **J.1** Varredura por área → ledger em `docs/varreduras/J-seguranca.md`. *(17/10/2026 — 13 itens, numa
+      sessão: leitura das duas pontas, reprodução no build de produção local com o GM no navegador do app e um
+      convidado num script, medição de memória com o `app` num servidor local, a API do GitHub e o código do
+      gitleaks, e o painel do Render com a sessão do dono, só leitura.)*
+  - [x] **J.1a Registro do portão** em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase): toda fase — e
         toda varredura que mudou código — respondeu as seis perguntas? Alguma resposta envelheceu?
-  - [ ] **J.1b Tabela de superfície:** cada endpoint REST, cada tipo de mensagem do WebSocket e o
+        *(17/10/2026 — **todas responderam**, e os cinco PRs fora das fases que mexeram em código não tocam a
+        superfície. Os números do registro batem com o código. Envelheceram duas respostas — o log do Actions
+        "privado", e o rate limit sem a IA e sem a `TRUST_PROXY` (J.01, FAZER, documento, neste PR) — e a do
+        SEC-15, que só valia no reenvio da sala (J.08).)*
+  - [x] **J.1b Tabela de superfície:** cada endpoint REST, cada tipo de mensagem do WebSocket e o
         quadro Yjs × autenticado? autorizado? entrada validada? saída filtrada? Uma linha por rota, sem
         exceção.
+        *(17/10/2026 — 19 linhas de REST e 9 de WebSocket e Yjs no ledger. A única entrada sem conferência de
+        autor nem de forma era o **awareness** do Yjs (J.04). O E.21 segue sem gatilho: o `create` responde
+        "existe" sob o mesmo limitador do `join`. As duas pistas de caminho e URL — o código da sala cru (J.02) e
+        o `avatarUrl` livre (J.03) — DESCARTAR: nenhum leitor que as torne perigosas.)*
         - *Da E (30/09):* a ficha de todo **NPC vai a todos os jogadores** no reenvio (E.20 — a saída não
           é filtrada por papel); e há leitura que responde "esta sala existe?" sob o limitador **global**,
           não o do `join` (E.21 — a conta da R.11 fica 5× otimista, e segue em anos). Os dois ADIAR, com
           gatilho no [ledger](./varreduras/E-backend.md).
-  - [ ] **J.1c Credenciais:** toda emissão — `create`, `join`, *upgrade* do WebSocket, JWT do Supabase
+  - [x] **J.1c Credenciais:** toda emissão — `create`, `join`, *upgrade* do WebSocket, JWT do Supabase
         — e o que quem recebe prova. *(A lição do SEC-07.)*
-  - [ ] **J.1d Entrada:** todo campo que entra em `sheet`, `gridState`, `initiativeList` e no protocolo
+        *(17/10/2026 — sem item novo; a tabela das sete emissões está no ledger. Não medido: o Auth do Supabase
+        **no ar** (o login anônimo, a confirmação de e-mail) — o `config.toml` é o local; o dono confere no
+        painel.)*
+  - [x] **J.1d Entrada:** todo campo que entra em `sheet`, `gridState`, `initiativeList` e no protocolo
         Yjs — **o binário Yjs é entrada de usuário** e tem try/catch e o teto de 1 MiB (R.4).
+        *(17/10/2026 — **o SEC-17 (J.04)**: o awareness do Yjs era repassado sem conferir quem escrevia nem a
+        forma; reproduzido — um convidado derrubava o app de quem estava no grid —, e consertado antes do
+        ledger. O E.22 segue ADIAR, sem gatilho. O quadro de texto de 1 MiB no `JSON.parse` (J.05): DESCARTAR.)*
         - *Da E (30/09):* a **forma** do `gridState` e do update Yjs passou a ser conferida (SEC-14) — a J
           confere se há outra porta sem forma. E ids como `__proto__` acham o protótipo de `players`/`npcs`
           (E.22, ADIAR: hoje só o GM chega, e o `join` os recusa por acaso).
@@ -811,7 +831,12 @@ o conserto** (o repo é público).
           de lá, com DESCARTAR). **Gatilho:** o dono rodar a sonda local
           (`npx vitest run src/__tests__/zz-j-probe.integration.test.ts` — arquivo não rastreado, não commitar)
           e trazer o número para o ledger.
-  - [ ] **J.1e WebSocket**, pela [folha da OWASP](https://cheatsheetseries.owasp.org/cheatsheets/WebSocket_Security_Cheat_Sheet.html):
+  - [x] **J.1e WebSocket**, pela [folha da OWASP](https://cheatsheetseries.owasp.org/cheatsheets/WebSocket_Security_Cheat_Sheet.html):
+        *(17/10/2026 — **o SEC-18 (J.08)**: o teto de 1 MiB da E.03 só valia no reenvio da sala, e o SSE não
+        tinha teto de streams por jogador; medido — 33 MB num socket parado, 150 streams de um assento —, e
+        consertado antes do ledger. O `Origin`: **decisão registrada** no "O que já está no lugar" do
+        `SEGURANCA.md`. O token na URL (J.06) e o coletor que não fecha os sockets (J.07): ADIAR. Os *Request
+        logs* do Render exigem o plano Pro.)*
         - o *upgrade* não confere `Origin`; o que protege de *cross-site WebSocket hijacking* é o token
           ir na query e não em cookie — registrar como decisão, não como acaso;
         - o token na URL: onde a URL do *upgrade* aparece em log (nosso e do Render)?
@@ -819,7 +844,11 @@ o conserto** (o repo é público).
         - *backpressure*: cliente lento acumulando reenvios da sala no buffer (liga com a E.1b).
           *(E.03, 30/09: reproduzido — o heap crescia linear — e fechado **por socket**, 1 MiB. Falta o
           teto **global** de sockets: E.24, ADIAR, gatilho de memória no painel do Render.)*
-  - [ ] **J.1f Configuração e cadeia:**
+  - [x] **J.1f Configuração e cadeia:**
+        *(17/10/2026 — **a allowlist do gitleaks pula os workflows** (J.11, FAZER na J.3): o `\.git` é testado
+        sem âncora e casa com `.github/`. O CSP amplo (J.09), o bucket do avatar listável e sem conta de
+        uploads (J.10), o bundle à mão (J.12) e os alertas do Dependabot desligados (J.13): ADIAR. A proteção
+        de push do GitHub está ligada.)*
         - CSP: `connect-src https:` e `img-src https:` são amplos; apertar para os origins reais.
         - RLS: re-rodar as ~~56~~ 63 e conferir as políticas de storage de avatar. *(J.0, 17/10: 63/63, e
           o storage está na suíte — a J.1f confere o que ela não cobre.)*
@@ -834,7 +863,10 @@ o conserto** (o repo é público).
           `version: latest`. O [guia de hardening do GitHub](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions)
           recomenda SHA para action de terceiro. **ADIAR** — gatilho: uma action usada aqui aparecer
           num incidente de cadeia de suprimento, ou o CLI `latest` quebrar o `db-sync`.
-  - [ ] **J.1g ADIAR herdados:**
+  - [x] **J.1g ADIAR herdados:**
+        *(17/10/2026 — os dois seguem ADIAR, sem gatilho. A variante do *handle* ganhou uma segunda porta: com o
+        `gmPeerId` vazio, um jogador **já sentado** que renomeia a ficha com o *handle* do GM vira GM pelo
+        `checkIsGm`. O conserto, quando vier, cobre as duas.)*
         - **Sair e voltar "curado"** (D.9, 28/09): o `leaveRoom` apaga o registro do jogador, e a volta
           é um join novo, que aceita o ferimento da ficha do cliente. A decisão 7a fechou a sincronia e
           a reconexão, não essa porta. **Gatilho:** um jogador aparecer inteiro depois de sair no meio
@@ -843,6 +875,11 @@ o conserto** (o repo é público).
         - A variante do SEC-07 pelo *handle* do GM (R.1).
 - [ ] **J.2** Calibragem e PR do ledger — passo X.2, com a exceção do repo público levada a sério: na
       J, quase todo FAZER é achado aberto.
+      *(17/10/2026 — calibragem: **4 FAZER em 13, 31%**; nenhum veredito mudou na repassada. Destacados ao dono:
+      o **J.07** e o **J.10** (ADIAR). Os dois achados de segurança (J.04 — **SEC-17**; J.08 — **SEC-18**): o dono
+      escolheu consertar antes do ledger — o PR de segurança é o **#58** (`claude/j-seguranca`), e o do
+      ledger, o **#59** (`claude/j-areas`), empilhado nele. **Falta:** o merge dos dois, o de segurança primeiro, e o `master` verde.
+      Se o merge aprovar os veredictos como estão, a J.3 é o J.11 e os dois comentários do J.01.)*
 - [ ] **J.3** Executar só os FAZER — passo X.3.
 - [ ] **J.4** 🔒 Portão, se a J.3 mudou código — passo X.4.
 - [ ] **J.5** 🧠 Estado durável — passo X.5.
@@ -1244,7 +1281,7 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
-| J | 🔍 | Varredura: segurança | ⬜ | — |
+| J | 🔍 | Varredura: segurança — J.0 no #57; a J.1 com 13 itens, 4 FAZER: o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger; a J.3 com a allowlist do gitleaks | 🔄 | — |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
 | Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona | ⬜ | — |

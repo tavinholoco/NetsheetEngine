@@ -136,7 +136,9 @@ Nasceu do conserto do CI e passa pelas mesmas seis perguntas:
 
 1. **Entrada nova?** Nenhuma — roda por agendamento, sem receber dado externo.
 2. **Dado novo exposto?** Nenhum. O `migration list` só lê a tabela de controle de migrations e a
-   saída vai para o log do Actions, que é privado como o repositório.
+   saída vai para o log do Actions, ~~que é privado como o repositório~~. *(J.01, 17/10/2026: o
+   repositório é público, e o log do Actions também. O que ele mostra é a lista de migrations — que já
+   está no repositório — e os secrets mascarados: a conclusão vale, a premissa não.)*
 3. **Autorização nova?** Não amplia nada: usa os mesmos dois secrets que o `db-sync` já usava.
    Vale registrar que **mais um workflow passa a ter acesso ao PAT do Supabase** — a superfície de um
    vazamento por workflow comprometido cresce de um job para dois.
@@ -986,9 +988,14 @@ Registrado para não ser refeito, e para o portão não repetir pergunta já res
 - **RLS no Supabase** — migrations 0001–0008, com suíte de 63 testes (`scripts/test-rls.mjs`). A
   `rooms` e a `instance_lease` (`0008`) têm RLS ligada e zero policies: só a service role. *(Era "0001–0007"
   e "56" até a J.0, 17/10/2026.)*
-- **Rate limit** — global (600/min), de sala (120/min) e de chat (30/min), com buckets separados por
-  limiter, contando o IP real atrás do proxy do Render (`trust proxy`, R.5). O **WebSocket** tem os
-  mesmos tetos por jogador, mais teto de quadro e de sockets (R.4, `server/wsLimits.ts`).
+- **Rate limit** — global (600/min), de sala (120/min), de chat (30/min) e da IA (10/min), com buckets
+  separados por limiter, contando o IP real atrás do Cloudflare e do proxy do Render (`trust proxy`, R.5;
+  a `TRUST_PROXY` do painel desde 10/10). O **WebSocket** tem os mesmos tetos por jogador, mais teto de
+  quadro e de sockets (R.4, `server/wsLimits.ts`).
+- **O *upgrade* do WebSocket não confere `Origin` — de propósito** (J.1e, 17/10/2026). O *cross-site
+  WebSocket hijacking* depende de uma credencial que o navegador manda sozinho, como um cookie; aqui a
+  autoridade do socket é o token na query, que mora no `sessionStorage` do origin do app e que uma página de
+  outro site não tem. **Se a sessão um dia for para cookie, conferir o `Origin` vira obrigatório.**
 - **Tetos de tamanho** (E.03 — SEC-15): 30 salas abertas, 32 NPCs por sala, ficha de 64 KB, chat de 100
   por um caminho só, 1 MiB esperando por socket — em todo envio desde a J (SEC-18), e 3 streams SSE por
   jogador, como os sockets. E a **forma do grid** conferida nas duas portas, REST e Yjs (E.02 — SEC-14), e
