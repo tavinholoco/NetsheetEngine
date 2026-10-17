@@ -752,7 +752,7 @@ o conserto** (o repo é público).
 
 > ⏸️ ***17/10/2026, terceira sessão: a J.2, a J.3 e a J.4 feitas.*** *O #58 (SEC-17 e SEC-18) e o #59 (o ledger)
 > entraram, e o merge manteve os vereditos. A J.3 — a allowlist do gitleaks ancorada (J.11) e os dois comentários
-> do J.01 — vai num PR próprio (`claude/j3-gitleaks`), com o portão no `SEGURANCA.md`. O próximo item é a **J.5**:
+> do J.01 — vai num PR próprio, o **#60** (`claude/j3-gitleaks`), com o portão no `SEGURANCA.md`. O próximo item é a **J.5**:
 > conferir que esse PR entrou e o `master` ficou verde — o primeiro run do gitleaks com a allowlist nova —, e o
 > estado durável da fase (a linha de base, o E2E, a tabela do fim do plano, os ADIAR novos da J na lista do bloco
 > Q). Durante a J, a linha de base é **881** testes em 69 arquivos (+11 do SEC-17/18, +2 do J.11); a tabela do fim
@@ -897,7 +897,7 @@ o conserto** (o repo é público).
       gitleaks roda em todo PR para o `master` e no push ao `master`, e que branch sem PR conta só com a proteção
       de push do GitHub (`enabled`, relida pela API no dia). O J.01 e o J.11 marcados no
       [ledger](./varreduras/J-seguranca.md#j11--a-allowlist-do-gitleaks-pula-os-workflows-do-ci). Linha de base:
-      **881** testes em 69 arquivos (+2).)*
+      **881** testes em 69 arquivos (+2). No **#60**, com a J.4.)*
 - [x] **J.4** 🔒 Portão, se a J.3 mudou código — passo X.4.
       *(17/10/2026 — os do SEC-17 e do SEC-18 estão no
       [`SEGURANCA.md`](./SEGURANCA.md#fase-j--varredura-segurança), no #58. **A J.3 mudou configuração do CI, não
