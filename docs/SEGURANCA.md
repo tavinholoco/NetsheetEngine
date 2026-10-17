@@ -854,7 +854,84 @@ janela do deploy.
 
 ### Fase J — Varredura: segurança
 
-*(a preencher no seu passo X.4 — só se a execução dos FAZER mudar código)*
+**17/10/2026 — SEC-17 e SEC-18**, achados na varredura (J.04 e J.08 do [ledger](./varreduras/J-seguranca.md)),
+**reproduzidos antes** e consertados num PR próprio, a pedido do dono, antes do ledger — o precedente da E e da
+I. O ledger público os tem em uma linha cada; o texto inteiro é este, e vai ao ar com o conserto. Os outros FAZER
+da J respondem ao portão quando entrarem (a J.4).
+
+**SEC-17 — o awareness do Yjs entrava cru na tela dos outros** 🟡. O awareness é o canal do cursor do GM no
+grid (T5.3). O servidor o repassava à mesa como vinha: a R.4 deu teto de tamanho (4 KiB) e de ritmo, e ninguém
+conferia **quem** escrevia nem **o que** vinha dentro; o cliente punha `state.user.name` direto no JSX.
+Reproduzido em 17/10 no build de produção local, com o GM no navegador e um convidado num script (entrar pela
+REST, abrir o WebSocket, publicar um estado):
+- **um cursor com o nome "Mestre":** na tela do GM aparece "👁 Mestre", na cor do GM — qualquer jogador
+  publicava cursor;
+- **um nome que não é texto** (um objeto): o React lança ao desenhar o grid (o erro #31), e o ErrorBoundary,
+  que é global, troca o **app inteiro** de quem está na aba do grid pela tela "ERRO CRÍTICO NO TERMINAL".
+  Recarregar não adianta: a página nova pede o awareness da mesa e cai de novo, enquanto o convidado renovar o
+  estado (a cada 20 s, no roteiro). O GM ainda chega ao "Remover" pela aba do chat — se souber quem é: o
+  awareness não deixa rastro no chat nem no log.
+
+Exige um convidado com um script — a tela não deixa escolher o estado — e não tira dado de ninguém: é a mesa
+sem o grid, que é a tela do combate.
+
+**SEC-18 — a memória do servidor crescia sem teto por dois caminhos que a E.03 não cobriu** 🟠. A E.03
+(SEC-15) derrubava o socket que não lê — mas só no reenvio da **sala**; o resto ia direto ao `ws.send`. E o SSE
+não tinha o teto de conexões por jogador que a R.4 deu ao WebSocket. Medido em 17/10 com o `app` e o
+`attachRealtime` num servidor local:
+- **o repasse do awareness:** oito jogadores mandando o que a R.4 deixa (1.200 quadros de ~4 KB por minuto,
+  cada um) a 3 sockets que não leem — o buffer de cada socket chegou a **33 MB** (o teto é 1 MiB), linear, e
+  só um reenvio da sala o derrubou. Na sala do próprio atacante não há reenvio nenhum: criar sala não exige
+  login no servidor. O mesmo valia para o repasse do Yjs e para o doc inteiro que o servidor devolve a cada
+  `syncStep1`;
+- **o SSE:** 150 streams abertos com o token de **um** assento, todos aceitos, cada um recebendo a sala inteira a
+  cada mudança — o processo subiu ~135 MB num só reenvio de uma sala de 882 KB. O limitador global (600/min por
+  IP) abre ~450 em 45 s: o bastante para a instância de **512 MB**, com todas as mesas dentro.
+
+Qualquer visitante, sem login, de um IP só. Não foi medido no ar — nunca contra produção. No Linux do Render o
+kernel segura menos buffer que o loopback do Windows, e o resto vai para o processo do mesmo jeito.
+
+**Conserto, em três partes:**
+- (SEC-17, servidor) o awareness é conferido antes de ser aplicado (`server/awarenessGuard.ts`): um cliente por
+  quadro, e por socket — o primeiro `clientID` que ele usar, e nenhum que já seja de outro socket da sala —; o
+  estado na forma do cliente do app (`null`, ou `{ user?: { name?, peerId? }, cursor?: { x, y } | null }`, texto
+  onde é texto, cursor entre 0 e 1); e **cursor, só do GM**. O quadro que falha é descartado inteiro, com um
+  `awareness_rejected` por socket. E o estado de quem fecha o socket sai da mesa na hora (antes, 30 s depois);
+- (SEC-17, cliente) o cursor remoto só aceita nome em texto, cortado em 30, e posição dentro do grid — a segunda
+  camada, para o que chegar de qualquer jeito;
+- (SEC-18) todo envio a um socket da mesa passa por um caminho só (`sendToSocket`), com o teto de 1 MiB: o
+  reenvio da sala, o repasse do awareness e do Yjs, as respostas do sync e os erros; e o SSE ganhou o teto da
+  R.4, **3 streams por jogador**, fechando os mais antigos.
+
+`awareness-guard.integration` (6), `yjs-cursors` (3) e `realtime-backpressure.integration` (2). **Provado
+revertendo:** com o código antigo inteiro, 9 dos 11 falham — passam só os dois controles (o cursor do GM chega à
+mesa; o cursor na forma passa no cliente). E neutralizado um trecho por vez, cada um derruba só os seus: a forma
+e o dono do awareness, 4; a limpeza ao fechar, 1; o cliente, 2; o teto no caminho único, 2 — o novo e o da E.03,
+que agora passa pelo mesmo caminho; o teto do SSE, 1. O ataque de antes, no build corrigido: o grid do GM fica
+de pé, sem "👁 Mestre", e o log diz `awareness_rejected` com o motivo. E o cursor do GM de verdade, movido no
+navegador, chega a um jogador.
+
+**Portão — as seis perguntas sobre este código:**
+
+1. **Entrada nova?** Nenhuma; uma que já existia passou a ser **conferida** — o awareness do Yjs, pela forma,
+   pelo dono e pelo papel. Antes passava qualquer JSON de até 4 KiB.
+2. **Dado novo sai?** Nenhum. Sai **menos**: o awareness fora da forma não é repassado. O log ganha
+   `awareness_rejected` (sala, `peerId` e o motivo — sem o estado).
+3. **Autorização nova?** Uma, pequena: **cursor é do GM**, conferido pelo `gmPeerId` da sala contra o `peerId`
+   do socket, que vem da sessão validada no *upgrade* (T1.7). E o `clientID` do awareness passa a ter dono — o
+   socket que o usou primeiro. **E quem recebe a sessão prova o quê?** Nada muda: nenhuma credencial é emitida.
+4. **Jogador convidado hostil?** Não derruba mais a tela de ninguém pelo awareness, não publica cursor, não
+   escreve o estado de outro cliente e não enche a memória por repasse nem por streams. **Continua podendo:**
+   publicar a própria presença (`user.name` em texto) sem cursor — o app não a desenha —; e abrir sockets e
+   streams até o teto, 3 de cada por assento, em até 16 assentos — o teto global segue ADIAR (E.24).
+5. **Estado novo sem limite?** Dois mapas por socket (o `clientID` e o aviso de log, `WeakMap` e `WeakSet`) —
+   somem com o socket. O contrário de crescer: o buffer de todo envio e o número de streams ganharam teto.
+6. **Custo por requisição a serviço externo?** Nenhum. A banda do Render **cai**: o awareness recusado não é
+   repassado, e o stream a mais é fechado.
+
+**Sem dependência nova.** **O que este PR ensina antes de o conserto estar no ar?** Tudo o que descreve — e o
+texto vai **junto** com o código. O Render publica o `master` em minutos, e a produção não tinha mesa nem usuário
+no último backup (16/10: `rooms` 0, `auth.users` 0).
 
 ### Fase K — Profundidade de sistema
 
@@ -893,6 +970,8 @@ Atualizar conforme forem fechados. Detalhe completo no
 | SEC-14 | Grid malformado (REST ou Yjs) trava a sala e, pelo vigia de presença, **derruba o processo** — sem login | E | ✅ fechado 30/09 (E.02) — forma validada nas duas portas; reenvio e vigia isolados |
 | SEC-15 | O tamanho da mesa não tinha teto: salas, NPCs, ficha, chat e buffer de socket lento | E | ✅ fechado 30/09 (E.03) — teto global de sockets: ADIAR, na J.1e |
 | SEC-16 | O `peerId` de um convidado entrava cru no caminho do "Remover" do GM — o clique removia outro jogador ou disparava outra ação de GM | I | ✅ fechado 16/10 (I.03) — formato do `peerId` no servidor e caminho codificado no cliente |
+| SEC-17 | O awareness do Yjs (o cursor do GM) era repassado sem conferir quem escrevia nem a forma: um convidado publicava cursor como "Mestre" e, com um nome que não era texto, derrubava o app de quem estava no grid | J | ✅ fechado 17/10 (J.04) — forma, dono e cursor só do GM no servidor; nome em texto no cliente |
+| SEC-18 | A memória do servidor sem teto por dois caminhos: o repasse do awareness e do Yjs e as respostas do sync ignoravam o teto de 1 MiB, e o SSE não tinha teto de streams por jogador | J | ✅ fechado 17/10 (J.08) — um caminho de envio com o teto; 3 streams por jogador. Teto global de sockets: ADIAR (E.24) |
 
 ---
 
@@ -911,9 +990,11 @@ Registrado para não ser refeito, e para o portão não repetir pergunta já res
   limiter, contando o IP real atrás do proxy do Render (`trust proxy`, R.5). O **WebSocket** tem os
   mesmos tetos por jogador, mais teto de quadro e de sockets (R.4, `server/wsLimits.ts`).
 - **Tetos de tamanho** (E.03 — SEC-15): 30 salas abertas, 32 NPCs por sala, ficha de 64 KB, chat de 100
-  por um caminho só, 1 MiB de reenvios esperando por socket. E a **forma do grid** conferida nas duas
-  portas, REST e Yjs (E.02 — SEC-14). Números em `server/roomManager.ts`, `server/wsLimits.ts` e
-  `src/lib/gridDoc.ts`, com o porquê.
+  por um caminho só, 1 MiB esperando por socket — em todo envio desde a J (SEC-18), e 3 streams SSE por
+  jogador, como os sockets. E a **forma do grid** conferida nas duas portas, REST e Yjs (E.02 — SEC-14), e
+  a do **awareness** (J — SEC-17: um cliente por socket, cursor só do GM). Números em
+  `server/roomManager.ts`, `server/wsLimits.ts`, `server/awarenessGuard.ts` e `src/lib/gridDoc.ts`, com o
+  porquê.
 - **helmet + CSP** em produção, CORS por allowlist via `CORS_ORIGINS`.
 - **gitleaks** no CI, com SARIF na aba Security, e hook de pre-commit opcional.
 - **Rolagens server-authoritative** (T5.4) — o cliente pede, o servidor rola com `crypto.randomInt`.

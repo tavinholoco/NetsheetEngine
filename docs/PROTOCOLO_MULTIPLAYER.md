@@ -215,8 +215,8 @@ segue executando as ações (pelo socket e pelo REST) e só recusa *upgrade* nov
 | `roll` e `initiative` | 120, juntos | `roomLimiter` |
 | Update do grid Yjs (`messageSync`) | 120 | — (cada update aceito reenvia a sala) |
 | Awareness | 1.200, e até **4 KiB** por quadro | — (o cursor do GM sai no máximo a cada 60 ms) |
-| Sockets abertos | 3 por jogador (fecha os mais antigos com `4409`) | — (cada socket recebe cada reenvio) |
-| Reenvios esperando num socket que **não lê** *(E.03)* | 1 MiB (`maxBufferedBytes`): acima disso o socket é derrubado (`terminate`, sem código — o aperto de mão também ficaria preso) e o log registra `slow_consumer_closed`. O cliente reconecta sozinho | o stream SSE, com o mesmo teto |
+| Sockets abertos | 3 por jogador (fecha os mais antigos com `4409`) | o stream SSE, com o mesmo teto desde a J (SEC-18) |
+| Bytes esperando num socket que **não lê** *(E.03)* | 1 MiB (`maxBufferedBytes`): acima disso o socket é derrubado (`terminate`, sem código — o aperto de mão também ficaria preso) e o log registra `slow_consumer_closed`. O cliente reconecta sozinho. **Desde a J (SEC-18), em todo envio** (`sendToSocket`): o reenvio da sala, o repasse do Yjs e do awareness e as respostas do sync — antes, só o reenvio | o stream SSE, com o mesmo teto |
 
 Quadro acima do teto é **descartado**; no chat e nas ações, o autor recebe um
 `{ type: "error" }` **uma vez por janela**, e o servidor loga `ws_rate_limited`. A cota não zera ao
@@ -304,6 +304,8 @@ GET /api/rooms/:code/stream?token=<sessionToken>   (EventSource)
 - Cada conexão re-sincroniza o estado completo → reconexão do EventSource é segura.
 - **O stream é encerrado** quando o dono sai da mesa ou é removido pelo GM (R.3): o token só é
   conferido na abertura, então o servidor guarda de quem é cada stream (`ssePeer`) para fechá-lo.
+- **Até 3 streams por jogador** (J — SEC-18), o mesmo teto dos sockets (R.4): o quarto fecha o mais
+  antigo. Antes não havia conta, e um assento abria quantos o limitador global deixasse.
 - **Na entrega do bastão (H.3d):** o stream aberto acaba com `retry: 1500\n\n`, e o pedido de stream que
   chegar à instância que entregou recebe **200** com o mesmo `retry: 1500\n\n` e o fim — **nunca um 503**: o
   `EventSource` desiste para sempre de uma resposta que não é 200, mas reconecta sozinho de um stream que
@@ -332,9 +334,17 @@ seedado do JSON `tacticalGrid` e descartado quando o último socket fecha ou a s
 
 - Updates de um socket são **validados e espelhados** para o JSON (`mirrorDocToJson`), depois
   propagados aos **outros** sockets (nunca ecoa o autor).
-- Awareness é propagado aos outros sockets (cursores do GM — amarelo com nome).
+- Awareness é propagado aos outros sockets (cursores do GM — amarelo com nome). **Desde a J
+  (SEC-17), é conferido antes** (`server/awarenessGuard.ts`), e o quadro que falha é descartado inteiro
+  (log `awareness_rejected`, uma vez por socket):
+  - um cliente por quadro, e por socket: o primeiro `clientID` que o socket usar é o dele, e nenhum que
+    já seja de outro socket da sala;
+  - o estado é `null` ou `{ user?: { name?, peerId? }, cursor?: { x, y } | null }` — texto onde é texto
+    (até 120 e 64), o cursor entre 0 e 1, nenhum outro campo;
+  - **cursor, só do GM** — é o único que o app emite e desenha.
 - Refresh de awareness a cada **25s** (o estado expira no servidor após 30s).
-- `destroy()` publica `setLocalState(null)` antes de fechar → cursor some imediatamente.
+- `destroy()` publica `setLocalState(null)` antes de fechar → cursor some imediatamente. E quando o
+  socket fecha sem isso (queda, expulsão), **o servidor apaga o estado dele na hora** (J — SEC-17).
 
 ### 8.1 Espelho autoritativo doc ↔ JSON
 

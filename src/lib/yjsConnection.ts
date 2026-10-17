@@ -139,10 +139,13 @@ export class YjsGridConnection {
     const out: RemoteCursor[] = [];
     this.awareness.getStates().forEach((state, clientID) => {
       if (clientID === this.awareness.clientID) return;
+      // J.1d (SEC-17) — o awareness vem de outro cliente: o nome vai ao JSX, e um
+      // que não era texto derrubava o app inteiro (o ErrorBoundary é global). O
+      // servidor confere a forma desde a J; aqui é a segunda camada.
       const cursor = state?.cursor;
-      const user = state?.user;
-      if (cursor && typeof cursor.x === "number" && typeof cursor.y === "number") {
-        out.push({ clientID, name: user?.name || "?", x: cursor.x, y: cursor.y });
+      const name = typeof state?.user?.name === "string" && state.user.name ? state.user.name.slice(0, 30) : "?";
+      if (cursor && Number.isFinite(cursor.x) && Number.isFinite(cursor.y)) {
+        out.push({ clientID, name, x: Math.min(1, Math.max(0, cursor.x)), y: Math.min(1, Math.max(0, cursor.y)) });
       }
     });
     return out;

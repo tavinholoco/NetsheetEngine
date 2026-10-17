@@ -478,7 +478,7 @@ página "Billing".)*
 ## 📊 ÍNDICE DE ACHADOS
 
 33 achados da auditoria de 02/09, **12 da [revisão pós-D](./historico/AUDITORIAS_E_PENDENCIAS_R.md#-revisão-pós-d-29092026)** (29/09 — 11 na revisão, 1 no portão das R) e
-**2 da Fase E** (30/09) e **1 da Fase I** (16/10), no fim desta seção. IDs referenciados pelas fases.
+**2 da Fase E** (30/09), **1 da Fase I** (16/10) e **2 da Fase J** (17/10), no fim desta seção. IDs referenciados pelas fases.
 
 ### Segurança (6)
 
@@ -569,6 +569,17 @@ próprio antes do ledger, como na E — detalhe e portão em
 | ID | Sev. | Achado | Fase |
 |---|---|---|---|
 | SEC-16 | 🟡 Médio | O `peerId` é escolhido por quem entra e ia cru no caminho do "Remover" do GM: com `/`, `..` ou `?`, o clique removia **outro** jogador, disparava outra ação de GM ou não achava a rota — o hostil ficava impossível de remover *(reproduzido)* | ✅ I.03 |
+
+### Fase J (2) — 17/10/2026
+
+Achados da [varredura de segurança](./varreduras/J-seguranca.md), **reproduzidos** e consertados num PR
+próprio antes do ledger, como na E e na I — detalhe e portão em
+[`SEGURANCA.md`](./SEGURANCA.md#fase-j--varredura-segurança).
+
+| ID | Sev. | Achado | Fase |
+|---|---|---|---|
+| SEC-17 | 🟡 Médio | O awareness do Yjs (o cursor do GM) era repassado sem conferir quem escrevia nem a forma: um convidado publicava um cursor "Mestre" e, com um nome que não era texto, derrubava o app inteiro de quem estava no grid, a cada recarga *(reproduzido)* | ✅ J.04 |
+| SEC-18 | 🟠 Alto | A memória do servidor sem teto por dois caminhos que a E.03 não cobriu: o repasse do awareness e do Yjs e as respostas do sync ignoravam o teto de 1 MiB (33 MB num socket parado), e o SSE aceitava streams sem conta (150 de um assento) — qualquer visitante, sem login, chegava aos 512 MB da instância *(reproduzido)* | ✅ J.08 |
 
 ---
 
