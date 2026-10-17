@@ -1,9 +1,11 @@
 # ============================================================
 # NETSHEET ENGINE — gitleaks configuration
 # ============================================================
-# Scanner de segredos executado no CI (todo push/PR) para impedir
-# que chaves vazem para o GitHub — como aconteceu com a Firebase
-# Web API Key (commit ac6d4cac, resolvido em 08/08/2026).
+# Scanner de segredos executado no CI (todo PR para o master e
+# o push ao master) para impedir que chaves vazem para o GitHub —
+# como aconteceu com a Firebase Web API Key (commit ac6d4cac,
+# resolvido em 08/08/2026). Branch sem PR conta só com a proteção
+# de push do GitHub, que não lê estas regras (J.01).
 #
 # Referência: https://github.com/zricethezav/gitleaks
 # Testar localmente:  gitleaks detect --source . --redact
