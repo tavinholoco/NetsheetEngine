@@ -194,10 +194,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Versão fixa, a mesma do keepalive.yml: com `latest` a action pergunta a
+      # versão à API do GitHub, e em 17/10/2026 a pergunta levou rate limit e
+      # deixou o master vermelho (J.5). Fixa, ela baixa direto do release.
+      # Subir de versão é trocar nos dois workflows.
       - name: Instalar Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0
 
       - name: Aplicar migrations no banco linked
         env:

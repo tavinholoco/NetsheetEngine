@@ -862,7 +862,7 @@ I. O ledger público os tem em uma linha cada; o texto inteiro é este, e vai ao
 da J respondem ao portão quando entrarem (a J.4).
 *(17/10/2026, a J.4 — **a J.3 mudou configuração do CI, não código do produto**: o J.11, a allowlist do gitleaks, e
 os comentários do J.01. O merge do ledger (#59) manteve os vereditos — o J.07 e o J.10 seguem ADIAR. O portão da J.3
-está no fim desta seção.)*
+está no fim desta seção, e o da J.5 — a versão do CLI fixa, depois de um `master` vermelho — logo depois dele.)*
 
 **SEC-17 — o awareness do Yjs entrava cru na tela dos outros** 🟡. O awareness é o canal do cursor do GM no
 grid (T5.3). O servidor o repassava à mesa como vinha: a R.4 deu teto de tamanho (4 KiB) e de ritmo, e ninguém
@@ -972,6 +972,30 @@ não lê as regras do `.gitleaks.toml`.
 **Sem dependência nova** — o teste lê o TOML com uma expressão regular, sem parser. **O que este PR ensina antes de
 estar no ar?** Nada que o ledger público (#59) já não dissesse: o J.11 estava lá com o caminho, e não há segredo nos
 workflows.
+
+**17/10/2026 — a J.5: a versão do CLI do Supabase fixa.** O merge do #60 deixou o `master` vermelho: o
+`supabase/setup-cli@v1` com `version: latest` pergunta a versão à API do GitHub, sem token, e levou *rate limit* — o
+`db-sync` caiu antes de olhar o banco, e a reexecução passou. Era o gatilho do ADIAR da J.1f ("o CLI `latest` quebrar
+o `db-sync`"). A versão ficou fixa (2.121.0) no `ci.yml` e no `keepalive.yml`; com ela, a action baixa direto do
+release, sem perguntar (conferido no código da action, no SHA que o CI usa). Provado antes do merge com o keepalive
+disparado no branch. De quebra, um comentário no `server.ts` diz por que o aviso da troca de instância não passa pelo
+`sendToSocket`.
+
+**Portão — as seis perguntas sobre a J.5:**
+
+1. **Entrada nova?** Nenhuma.
+2. **Dado novo sai?** Nenhum. O log do keepalive disparado no branch é o de todo keepalive: a lista de migrations,
+   que está no repositório, e os secrets mascarados (o adendo da A.12, corrigido no J.01).
+3. **Autorização nova?** Nenhuma. Os secrets e as permissões dos dois jobs não mudaram. **Disparar o keepalive num
+   branch** usa os secrets do repositório — já era assim para qualquer branch do dono; um fork não dispara workflow
+   daqui.
+4. **Jogador convidado hostil?** Fora de alcance — não há caminho do jogador até o CI.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum. **E a cadeia fica menor:** o CI passa a instalar uma versão
+   conhecida do CLI, não a que sair — metade do ADIAR das actions. A outra metade (as actions por SHA) segue ADIAR, na
+   lista do bloco Q.
+
+**O preço:** a versão não sobe sozinha. Subir é trocar nos dois workflows — o `CLAUDE.md` diz isso.
 
 ### Fase K — Profundidade de sistema
 

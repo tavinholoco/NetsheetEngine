@@ -90,7 +90,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 868 testes ao fechar a I, 16/10 (ver "Linha de base atual" no plano)
+npx vitest run            # 881 testes ao fechar a J, 17/10 (ver "Linha de base atual" no plano; a sonda não rastreada da J.1d fica fora)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
@@ -113,7 +113,10 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   é o `sendError`. **Rota nova segue isso** — um teste trava status escrito à mão. A mesa tem tetos
   (30 salas, 32 NPCs, ficha de 64 KB, chat de 100, 1 MiB por socket lento) e o grid tem forma
   conferida nas duas portas, REST e Yjs (SEC-14, SEC-15). O ledger da varredura está em
-  `docs/varreduras/E-backend.md`, com o mapa de cortes que a L.3 vai usar.
+  `docs/varreduras/E-backend.md`, com o mapa de cortes que a L.3 vai usar. **Desde a J (17/10), todo envio
+  a um socket da mesa passa pelo `sendToSocket`**, com o teto de 1 MiB (SEC-18) — envio novo também; a
+  exceção, comentada, é o aviso da troca de instância —, o SSE tem 3 streams por jogador, e o awareness do
+  Yjs é conferido em `server/awarenessGuard.ts` (forma, dono, cursor só do GM — SEC-17).
 - **Ver o app rodando:** a configuração `netsheet-dev` do [`.claude/launch.json`](./.claude/launch.json)
   (`npm run dev`, porta 3000) abre o preview no painel. Em modo dev, **deep link volta para `/`**
   (G.02 do [ledger da G](./docs/varreduras/G-frontend.md): ADIAR, com a versão de uma linha pronta) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,
@@ -193,3 +196,7 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   até 22/10. Se vencer, o `db-sync` dá `Unauthorized` e o keepalive fica vermelho.
 - **Nunca dispare `db-sync` e keepalive juntos à mão.** Os dois usam o mesmo papel temporário do CLI
   e um derruba a senha do outro (`28P01`).
+- **O CLI do Supabase tem versão fixa nos dois workflows** (2.121.0, J.5 — 17/10/2026): com `latest`, a
+  action perguntava a versão à API do GitHub, e o rate limit deixou o `master` vermelho. Subir de versão é
+  trocar no `ci.yml` **e** no `keepalive.yml`. O keepalive aceita disparo manual num branch — é como provar
+  uma mudança nos dois antes do merge, já que o `db-sync` só roda no `master`.
