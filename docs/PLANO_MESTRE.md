@@ -750,13 +750,13 @@ desde a T1.7 porque todos perguntavam de onde vinha o autor, e ninguém, quem ga
 [roteiro de uma varredura](#o-roteiro-de-uma-varredura). **O que a J achar aberto vai ao ar junto com
 o conserto** (o repo é público).
 
-> ⏸️ ***17/10/2026, segunda sessão: a J.1 inteira feita, e dois achados de segurança consertados antes do
-> ledger.*** *A J.0 entrou no `master` no #57. As sete áreas acharam 13 itens, 4 FAZER — dois deles achados de
-> segurança reproduzidos, o **SEC-17** e o **SEC-18**, que o dono escolheu consertar já (como na E e na I): o PR
-> de segurança é o **#58** (`claude/j-seguranca`), e o do ledger, o **#59** (`claude/j-areas`), vai empilhado nele. **Mergear
-> o de segurança primeiro.** O próximo item é a **J.2**: conferir que os dois PRs entraram e o `master` ficou
-> verde. Durante a J, a linha de base é **879** testes em 68 arquivos (+11 do SEC-17/18); a tabela do fim do
-> plano muda na J.5. Uma pista da J.1d saiu da J na primeira parada — a nota está nela.*
+> ⏸️ ***17/10/2026, terceira sessão: a J.2, a J.3 e a J.4 feitas.*** *O #58 (SEC-17 e SEC-18) e o #59 (o ledger)
+> entraram, e o merge manteve os vereditos. A J.3 — a allowlist do gitleaks ancorada (J.11) e os dois comentários
+> do J.01 — vai num PR próprio (`claude/j3-gitleaks`), com o portão no `SEGURANCA.md`. O próximo item é a **J.5**:
+> conferir que esse PR entrou e o `master` ficou verde — o primeiro run do gitleaks com a allowlist nova —, e o
+> estado durável da fase (a linha de base, o E2E, a tabela do fim do plano, os ADIAR novos da J na lista do bloco
+> Q). Durante a J, a linha de base é **881** testes em 69 arquivos (+11 do SEC-17/18, +2 do J.11); a tabela do fim
+> do plano muda na J.5. Uma pista da J.1d saiu da J na primeira parada — a nota está nela.*
 
 - [x] **J.0** 🔍 **Premissas** — medidas em 29/09/2026:
       *(17/10/2026 — conferidas contra o `master` em `954ef0e`, no [ledger](./varreduras/J-seguranca.md#j0--as-pistas-medidas-em-17102026):
@@ -873,15 +873,37 @@ o conserto** (o repo é público).
           de uma luta. *(O segundo gatilho — público fora dos convidados — a R.11 fechou em 29/09. A
           versão maior da R.1, assento por conta, fecha esta porta.)*
         - A variante do SEC-07 pelo *handle* do GM (R.1).
-- [ ] **J.2** Calibragem e PR do ledger — passo X.2, com a exceção do repo público levada a sério: na
+- [x] **J.2** Calibragem e PR do ledger — passo X.2, com a exceção do repo público levada a sério: na
       J, quase todo FAZER é achado aberto.
       *(17/10/2026 — calibragem: **4 FAZER em 13, 31%**; nenhum veredito mudou na repassada. Destacados ao dono:
       o **J.07** e o **J.10** (ADIAR). Os dois achados de segurança (J.04 — **SEC-17**; J.08 — **SEC-18**): o dono
       escolheu consertar antes do ledger — o PR de segurança é o **#58** (`claude/j-seguranca`), e o do
       ledger, o **#59** (`claude/j-areas`), empilhado nele. **Falta:** o merge dos dois, o de segurança primeiro, e o `master` verde.
       Se o merge aprovar os veredictos como estão, a J.3 é o J.11 e os dois comentários do J.01.)*
-- [ ] **J.3** Executar só os FAZER — passo X.3.
-- [ ] **J.4** 🔒 Portão, se a J.3 mudou código — passo X.4.
+      *(17/10/2026 — o #58 e o #59 mergeados, nessa ordem (o run do #58 no `master` foi cancelado pela concorrência
+      do CI; o do #59 cobre o mesmo código); o `master` verde nos quatro jobs em `8d4de6c`, com o `db-sync` em dia (a
+      J não teve migration), e o keepalive verde. **O merge aprovou os veredictos como estavam:** o J.07 e o J.10
+      seguem ADIAR, com o gatilho do ledger.)*
+- [x] **J.3** Executar só os FAZER — passo X.3.
+      *(17/10/2026 — os dois que sobraram, um commit cada. **O J.11:** todo padrão de caminho da allowlist do
+      `.gitleaks.toml` ancorado (`^\.git/`, `^dist/`, `^node_modules/`, `^package-lock\.json$`…), e o
+      `gitleaks-allowlist.test` (2), escrito antes, confere contra o `git ls-files` que só fica de fora o que deve —
+      e que o que deve ficar de fora fica. **Provado revertendo:** com a allowlist antiga, o teste lista os 7
+      arquivos do ledger (os dois workflows, o `.gitleaks.toml`, o hook, o `.gitattributes` e os dois `.gitignore`)
+      e os 4 de exemplo; tirada uma âncora por vez, cada uma derruba o seu caso; âncora demais (`^\.git$`) e o
+      lockfile tirado derrubam o segundo teste. O histórico dos 7 (17 commits) não tem texto com cara de token além
+      da anon key liberada — esta máquina não tem o binário do gitleaks, e o primeiro run do CI com a allowlist nova
+      é a medida nele. **Os comentários do J.01:** o `ci.yml` e o cabeçalho do `.gitleaks.toml` dizem que o
+      gitleaks roda em todo PR para o `master` e no push ao `master`, e que branch sem PR conta só com a proteção
+      de push do GitHub (`enabled`, relida pela API no dia). O J.01 e o J.11 marcados no
+      [ledger](./varreduras/J-seguranca.md#j11--a-allowlist-do-gitleaks-pula-os-workflows-do-ci). Linha de base:
+      **881** testes em 69 arquivos (+2).)*
+- [x] **J.4** 🔒 Portão, se a J.3 mudou código — passo X.4.
+      *(17/10/2026 — os do SEC-17 e do SEC-18 estão no
+      [`SEGURANCA.md`](./SEGURANCA.md#fase-j--varredura-segurança), no #58. **A J.3 mudou configuração do CI, não
+      código do produto** — as seis perguntas sobre ela estão no fim da mesma seção: nenhuma entrada, dado ou
+      autorização nova; o scanner passa a ler sete arquivos a mais. O "O que já está no lugar" diz quando o gitleaks
+      roda e que a allowlist é ancorada.)*
 - [ ] **J.5** 🧠 Estado durável — passo X.5.
 - [ ] ✅ **Fase J concluída em:** ____/____/______
 
