@@ -25,6 +25,11 @@ const DE_FORA = [
   '.git/config',
   '.env.local',
   'supabase/.env',
+  // O `gitleaks dir` no Windows entrega o caminho com barra invertida (medido com o v8.23.3, 17/10/2026).
+  'node_modules\\yjs\\dist\\yjs.cjs',
+  'dist\\server.cjs',
+  '.git\\config',
+  'supabase\\.env',
 ];
 
 /** Não rastreados hoje, e varridos: cada um casava com um padrão sem âncora. */
@@ -33,6 +38,7 @@ const VARRIDOS_DE_EXEMPLO = [
   'docs/node_modules.md',
   '.env.local.example',
   'supabase/.env.example',
+  '.github\\workflows\\ci.yml',
 ];
 
 /** Os padrões de `paths` em `[allowlist]` — as strings literais (`'''…'''`) da lista, como o TOML as lê. */
