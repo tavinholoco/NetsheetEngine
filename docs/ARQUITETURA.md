@@ -82,7 +82,9 @@ flowchart TB
    binário Yjs. Toda seta que cruza para a zona confiável passa por `VAL` antes de chegar em `RULES`.
    *A caixa `VAL` existe desde a Fase B (B.2): `src/rules/sheetSchema.ts`, aplicada dentro do
    `roomManager` para cobrir todo caminho que escreve ficha, não só a rota HTTP.* **O binário Yjs
-   ainda não passa por ela** — continua com try/catch apenas, e é item da Fase J.
+   passa por ela em duas partes:** o grid, pela forma (`src/lib/gridDoc.ts` — E.02, SEC-14), e o
+   awareness, pela forma, pelo dono e pelo papel (`server/awarenessGuard.ts` — J, SEC-17). *(Uma pista
+   sobre o doc ficou com o dono na parada da J.1d — ver o plano.)*
 2. **O autor de toda ação é derivado do `sessionToken`**, nunca de um campo do corpo. *Revisão
    pós-D (29/09/2026): a **emissão** do token é a outra metade da regra — o `join` entregava sessão a
    quem apresentasse um `peerId` que o próprio estado da sala publica (SEC-07). Fechado na R.1:
