@@ -904,8 +904,9 @@ Registrado para não ser refeito, e para o portão não repetir pergunta já res
   no upgrade (HTTP 401 se inválido). Desde a R.1 a **emissão** também tem prova: reivindicar um
   assento ocupado exige o token vigente dele (antes, o `peerId` público bastava — SEC-07).
 - **Autorização de GM sem fallback permissivo** (T1.1) — `checkIsGm` não termina mais em `return true`.
-- **RLS no Supabase** — migrations 0001–0007, com suíte de 56 testes (`scripts/test-rls.mjs`). A
-  `rooms` tem RLS ligada e zero policies: só a service role.
+- **RLS no Supabase** — migrations 0001–0008, com suíte de 63 testes (`scripts/test-rls.mjs`). A
+  `rooms` e a `instance_lease` (`0008`) têm RLS ligada e zero policies: só a service role. *(Era "0001–0007"
+  e "56" até a J.0, 17/10/2026.)*
 - **Rate limit** — global (600/min), de sala (120/min) e de chat (30/min), com buckets separados por
   limiter, contando o IP real atrás do proxy do Render (`trust proxy`, R.5). O **WebSocket** tem os
   mesmos tetos por jogador, mais teto de quadro e de sockets (R.4, `server/wsLimits.ts`).
