@@ -1546,6 +1546,8 @@ let announcing = false;
 
 function announceRestart(): number {
   let announced = 0;
+  // Direto, não pelo `sendToSocket` (SEC-18): um quadro por socket, uma vez, com
+  // o processo de saída — o teto é para o envio que se repete.
   for (const sockets of Object.values(wsClients)) {
     for (const ws of sockets) {
       if (ws.readyState !== WebSocket.OPEN) continue;
