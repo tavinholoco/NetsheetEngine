@@ -375,8 +375,15 @@ chegava aos 512 MB da instância — e com ela, a todas as mesas.
   disparou. O GitHub mantém a **varredura de segredos** e a **proteção de push** ligadas (lido na API). Os
   workflows não usam `pull_request_target` nem `workflow_run` (J.0). As actions seguem por tag — o ADIAR do
   plano, sem gatilho —, e o aviso de Node 20 delas já está na tabela de avisos do CI.
-- **A conta de commits do gitleaks** (263 varridos × 264 na J.0): não fechou. O gitleaks não está instalado nesta
-  máquina, e a hipótese de um commit só com arquivos da allowlist caiu — não há nenhum. Não muda veredito.
+  *(17/10/2026, J.5 — o gatilho da outra metade disparou: o `supabase/setup-cli` com `latest` levou rate limit ao
+  perguntar a versão à API do GitHub e deixou o `master` vermelho no merge do #60. A versão do CLI ficou fixa nos
+  dois workflows; as actions por SHA seguem ADIAR.)*
+- **A conta de commits do gitleaks** (263 varridos × 264 na J.0): ~~não fechou. O gitleaks não está instalado nesta
+  máquina, e a hipótese de um commit só com arquivos da allowlist caiu — não há nenhum. Não muda veredito.~~
+  *(17/10/2026, J.5 — **fechou**, com o binário v8.23.3 instalado a pedido do dono: no `master` em `e1f02e6`, 278
+  commits sem merge e 277 varridos. O gitleaks roda `git log -p -U0 --full-history --all` e varre linha adicionada;
+  o commit que só apaga não tem nada a varrer e não entra na conta — reproduzido num repositório descartável. O
+  único assim é o `b1daf6e` (07/08, a camada Firebase removida). Não é buraco: apagar não põe segredo.)*
 
 ### J.09 — O CSP libera `https:` inteiro em `connect-src` e `img-src`
 

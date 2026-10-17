@@ -624,8 +624,9 @@ de cada fase.
 
 > **Ponto de corte:** com A–D fechadas o jogo roda certo; com a R, roda certo **em produção** (sem ela,
 > qualquer participante tomava o GM, apagava a mesa ou gastava a banda do workspace); com a F, tem a
-> identidade nova. O que resta — a varredura J, a K, a L e a M — é manutenção e profundidade. *(A I
-> fechou em 16/10/2026; o detalhe dela segue logo abaixo, até o próximo corte para o `historico/`.)*
+> identidade nova. O que resta — a K, a L, o bloco Q e a M — é profundidade, escala e a dívida dos
+> ADIAR. *(A I fechou em 16/10/2026 e a J em 17/10/2026; o detalhe das duas segue logo abaixo, até o próximo
+> corte para o `historico/`.)*
 
 ---
 
@@ -750,14 +751,6 @@ desde a T1.7 porque todos perguntavam de onde vinha o autor, e ninguém, quem ga
 [roteiro de uma varredura](#o-roteiro-de-uma-varredura). **O que a J achar aberto vai ao ar junto com
 o conserto** (o repo é público).
 
-> ⏸️ ***17/10/2026, terceira sessão: a J.2, a J.3 e a J.4 feitas.*** *O #58 (SEC-17 e SEC-18) e o #59 (o ledger)
-> entraram, e o merge manteve os vereditos. A J.3 — a allowlist do gitleaks ancorada (J.11) e os dois comentários
-> do J.01 — vai num PR próprio, o **#60** (`claude/j3-gitleaks`), com o portão no `SEGURANCA.md`. O próximo item é a **J.5**:
-> conferir que esse PR entrou e o `master` ficou verde — o primeiro run do gitleaks com a allowlist nova —, e o
-> estado durável da fase (a linha de base, o E2E, a tabela do fim do plano, os ADIAR novos da J na lista do bloco
-> Q). Durante a J, a linha de base é **881** testes em 69 arquivos (+11 do SEC-17/18, +2 do J.11); a tabela do fim
-> do plano muda na J.5. Uma pista da J.1d saiu da J na primeira parada — a nota está nela.*
-
 - [x] **J.0** 🔍 **Premissas** — medidas em 29/09/2026:
       *(17/10/2026 — conferidas contra o `master` em `954ef0e`, no [ledger](./varreduras/J-seguranca.md#j0--as-pistas-medidas-em-17102026):
       a linha de base bateu (868 em 65, RLS 63/63). **Caiu uma:** as 56 de RLS são 63 desde a `0008` e rodam,
@@ -863,6 +856,9 @@ o conserto** (o repo é público).
           `version: latest`. O [guia de hardening do GitHub](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions)
           recomenda SHA para action de terceiro. **ADIAR** — gatilho: uma action usada aqui aparecer
           num incidente de cadeia de suprimento, ou o CLI `latest` quebrar o `db-sync`.
+          *(17/10/2026, J.5 — **o gatilho do CLI disparou:** o merge do #60 ficou vermelho porque o `latest`
+          pergunta a versão à API do GitHub, e a pergunta levou rate limit. A versão foi fixada nos dois
+          workflows (2.121.0). As actions por SHA seguem ADIAR, na lista do bloco Q.)*
   - [x] **J.1g ADIAR herdados:**
         *(17/10/2026 — os dois seguem ADIAR, sem gatilho. A variante do *handle* ganhou uma segunda porta: com o
         `gmPeerId` vazio, um jogador **já sentado** que renomeia a ficha com o *handle* do GM vira GM pelo
@@ -908,8 +904,35 @@ o conserto** (o repo é público).
       código do produto** — as seis perguntas sobre ela estão no fim da mesma seção: nenhuma entrada, dado ou
       autorização nova; o scanner passa a ler sete arquivos a mais. O "O que já está no lugar" diz quando o gitleaks
       roda e que a allowlist é ancorada.)*
-- [ ] **J.5** 🧠 Estado durável — passo X.5.
-- [ ] ✅ **Fase J concluída em:** ____/____/______
+- [x] **J.5** 🧠 Estado durável — passo X.5.
+      *(17/10/2026 — o #60 mergeado, e **o `master` ficou vermelho**: o `db-sync` caiu antes de olhar o banco, no
+      `supabase/setup-cli` com `version: latest`, que pergunta a versão à API do GitHub e levou *rate limit*. A
+      reexecução do job passou — o `master` verde nos quatro jobs em `e1f02e6`, o gitleaks com **277 commits** e
+      nenhum vazamento, o número da medida local. **Era o gatilho do ADIAR da J.1f** ("o CLI `latest` quebrar o
+      `db-sync`"), e gatilho que dispara vira trabalho da fase: a versão do CLI **fixada** no `ci.yml` e no
+      `keepalive.yml` (2.121.0, a última, de 14/10; com versão fixa a action baixa direto do release — conferido no
+      código dela). Provado antes do merge com o keepalive disparado no branch: instalou a 2.121.0 e listou as
+      migrations de produção. As actions por SHA seguem ADIAR. **Rodado tudo:** `tsc` 0; **881** testes em 69
+      arquivos (+13 da J); build igual à linha de base; E2E 7/7; o smoke de WebSocket 5/5 contra o build de
+      produção; `audit:ci` limpo; cores e conflitos em 0. O RLS não rodou de novo: 63/63 na J.0, no mesmo dia, e a J
+      não mexeu em schema. **A conta do gitleaks da J.1f fechou** com o binário: a diferença de um é o `b1daf6e`,
+      o único commit que só apaga arquivo — o gitleaks varre linha adicionada e não o conta. **A revisão do que a J
+      produziu:** o código do SEC-17/18 está num módulo de regra puro e num caminho de envio só; sobrava um envio
+      direto, o aviso da troca de instância — de propósito (um quadro, uma vez) — e ganhou o comentário que diz
+      isso. Os helpers dos testes de tempo real repetidos em 8 arquivos (a J pôs dois): ADIAR, na lista do bloco Q.
+      **Documentos que a J tornou falsos:** a contagem de testes do `CLAUDE.md`, o ponto de corte das fases fechadas,
+      e o `CLAUDE.md` ganhou o caminho único de envio e a versão fixa do CLI. **Os ADIAR novos da J** — J.06, J.07,
+      J.09, J.10, J.12, J.13, a pista da sonda da J.1d e os helpers — **entraram na lista do bloco Q**, e os oito
+      que a J era dona e deixou estão marcados lá. A forma do sistema não mudou depois do #58 — o
+      [`ARQUITETURA.md`](./ARQUITETURA.md) já foi nele. **Falta:** o merge do PR do fechamento e o `master` verde
+      depois dele — o primeiro `db-sync` com a versão fixa.)*
+- [x] ✅ **Fase J concluída em:** 17/10/2026 *(o SEC-17 e o SEC-18 no #58; o ledger no #59; a J.3 no #60; o
+      fechamento, com a versão do CLI, no PR seguinte)*
+
+> ***Fase J fechada em 17/10/2026.*** *A próxima é a **Fase K** — profundidade de sistema, a primeira de construção
+> depois das varreduras —, começando pela K.0. A J deixa para o bloco Q seis ADIAR novos, a pista da sonda e os
+> helpers de teste, e os oito que ela era dona; e, para quem abrir a K, o gitleaks local (v8.23.3) e o CLI do
+> Supabase com versão fixa.*
 
 ---
 
@@ -1040,8 +1063,9 @@ público mudar.
 
 *(Criado em 16/10/2026 pela [decisão 12](#-decisões-tomadas-02092026): o dono quer cada ADIAR feito, não
 esquecido.)* Até aqui, um ADIAR esperava o sintoma, e sem sessão em produção quase nenhum gatilho dispara. Na Q
-todos são quitados: **78 itens**, 26 com fase dona (a J, a K, a L ou a M) e 52 que só a Q faz, mais três decisões
-do dono. **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+todos são quitados: **78 itens** em 16/10, 26 com fase dona (a J, a K, a L ou a M) e 52 que só a Q faz, mais três
+decisões do dono. *(17/10/2026, no fechamento da J: **86** — entraram os seis ADIAR novos da J, a pista da sonda da
+J.1d e os helpers de teste da revisão da J.5. Os oito de que a J era dona, ela conferiu e deixou: agora são da Q.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1057,7 +1081,8 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 - **Todo ADIAR novo da J, da K ou da L entra nesta lista** no fechamento da fase dele (passo 2 do ritual de
   encerramento). Um corte do plano para o `historico/` não tira item daqui. ⚠️ marca os seis itens que só
   existiam no `historico/`, onde o grep da M.3 não procurava.
-- **Fora da lista:** os cinco DESCARTAR dos ledgers (E.23, G.16, H.08, I.07, I.08), cada um com a razão escrita.
+- **Fora da lista:** os oito DESCARTAR dos ledgers (E.23, G.16, H.08, I.07, I.08; e da J, o J.02, o J.03 e o J.05),
+  cada um com a razão escrita.
   Dois fariam mal: o timeout do I.07 quebraria o primeiro pedido depois da hibernação, e a repetição do I.08
   repetiria dano. Também ficam fora os cinco ADIAR que o gatilho já levou a trabalho: o E.06, o H.10 e o H.11 (na
   H.3d), o E.14 (na H.3b) e o H.02 (na H.3c).
@@ -1089,6 +1114,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 - [ ] **Q.1** **Os que têm fase dona.** Quem faz é a dona; aqui só se confere, e o que ela deixar a Q faz. Os dois da
       M ficam para ela, e a Q só confere que estão lá. Fontes: os [ledgers](./varreduras/), a
       [conferência](./CONFERENCIA_CP2020.md) e as fases J, K, L e M acima.
+      *(17/10/2026 — **a J fechou e deixou os seus oito**, conferidos no [ledger](./varreduras/J-seguranca.md),
+      nenhum gatilho disparado — a não ser a metade do CLI no item das actions, feita na J.5. Os da J passam a ser da
+      Q.)*
   - [ ] **E.20**: a ficha de todo NPC vai a todos os jogadores. *Dona:* J.1b. *Gatilho:* um jogador espiar a ficha
         do NPC, ou a L.1 abrir.
   - [ ] **E.21**: "esta sala existe?" responde no ritmo do limitador global. *Dona:* J.1b. *Gatilho:* a mesa abrir
@@ -1100,8 +1128,12 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
   - [ ] **Sair e voltar "curado"** (D.9): o `leaveRoom` apaga o jogador, e a volta aceita o ferimento da ficha do
         cliente. *Dona:* J.1g. *Gatilho:* um jogador aparecer inteiro depois de sair no meio de uma luta.
   - [ ] **A variante do SEC-07 pelo *handle* do GM** (R.1): o caso de quando o GM sai e ninguém fica online. *Dona:* J.1g.
-  - [ ] **Actions fixadas por tag, não por SHA**, e o `supabase/setup-cli` em `latest`. *Dona:* J.1f. *Gatilho:*
-        uma action usada aqui num incidente de cadeia de suprimento, ou o CLI `latest` quebrar o `db-sync`.
+        *(A J.1g achou uma segunda porta para o mesmo vão: com o `gmPeerId` vazio, um jogador já sentado que renomeia
+        a ficha com o *handle* do GM vira GM pelo `checkIsGm`. O conserto cobre as duas.)*
+  - [ ] **Actions fixadas por tag, não por SHA**. *Dona:* J.1f. *Gatilho:* uma action usada aqui num incidente de
+        cadeia de suprimento. *(A outra metade, o `supabase/setup-cli` em `latest`, **feita na J.5** (17/10, o PR do
+        fechamento da J): o gatilho disparou — o `latest` levou rate limit e deixou o `master` vermelho —, e a versão
+        do CLI ficou fixa nos dois workflows.)*
   - [ ] **I.01**: o modificador do GM não tem tela (a rota `/settings` não tem chamador). *Dona:* a K, que mexe nas
         rolagens. *Gatilho:* a primeira sessão em que o GM quiser um modificador de cena.
   - [ ] **G.05**: o mesmo ferimento tem dois nomes, às vezes no mesmo cartão. *Dona:* K.3. *Gatilho:* alguém da mesa
@@ -1163,6 +1195,18 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         grupo de `concurrency` ou um retry no `scripts/supabase-ci.sh`; hoje existe só a regra "nunca disparar os
         dois à mão". *Gatilho:* um `28P01` num run que não foi disparado à mão. *Só estava no
         [histórico](./historico/FASES_A-D.md).*
+  - [ ] **J.06**: o token da mesa vai na query do WebSocket e do SSE (o navegador não deixa mandar cabeçalho). A
+        versão menor é um *ticket* de uso único pedido pelo REST antes do *upgrade*. *Gatilho:* o token aparecer num
+        log que outra pessoa lê, ou o serviço passar a um plano com *Request logs*. Fonte:
+        [`J-seguranca.md`](./varreduras/J-seguranca.md).
+  - [ ] **J.07**: o coletor apaga a sala abandonada e deixa os sockets e streams dela abertos; um socket velho
+        receberia o reenvio de uma sala nova com o mesmo código. A versão menor são poucas linhas — o mesmo
+        fechamento da saída. *Gatilho:* o cliente deixar de gerar o sufixo do código, ou um log mostrar mensagem de
+        socket numa sala que não existe. Fonte: [`J-seguranca.md`](./varreduras/J-seguranca.md).
+  - [ ] **A chave fora do grid no doc Yjs** (a pista da J.1d, tirada da J em 17/10): a análise foi barrada pelo
+        classificador de segurança do assistente, e a medida ficou com o dono. *Gatilho:* o dono rodar a sonda local
+        (`npx vitest run src/__tests__/zz-j-probe.integration.test.ts` — arquivo não rastreado, não commitar) e trazer
+        o número. Fonte: a nota na J.1d, acima.
 - [ ] **Q.3** **Tela.** Fonte: [`G-frontend.md`](./varreduras/G-frontend.md), a não ser onde o item diz outra.
   - [ ] **G.01**: a ficha é espelhada na store durante o render do `App` (a versão de uma linha está no ledger).
         *Gatilho:* o aviso esconder um erro numa depuração, ou lentidão ao digitar na ficha.
@@ -1245,6 +1289,24 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         handshake, a reconexão com last-write-wins e as camadas de token visual.
   - [ ] **A [ADR 0002](./adr/0002-yjs-websockets.md) (Yjs sob observação)**: rever com o que a L mediu. Se o
         gatilho, um bug de convergência do grid, não disparou, registrar "mantido" e fechar.
+  - [ ] **J.09**: o CSP libera `https:` inteiro em `connect-src` e `img-src`; a versão menor troca pela origem do
+        Supabase e a do unsplash. *Gatilho:* um XSS achado, ou o site sair do Render (I.09), que reescreve o CSP de
+        qualquer jeito. Fonte: [`J-seguranca.md`](./varreduras/J-seguranca.md).
+  - [ ] **J.10**: o bucket do avatar é listável por qualquer um (o UUID de cada usuário que subiu avatar), e o upload
+        não tem conta por pasta. A versão menor é uma **migration** — PR próprio (decisão 5). *Gatilho:* o primeiro
+        usuário de fora dos convidados, ou o Storage passar de metade da cota. Fonte:
+        [`J-seguranca.md`](./varreduras/J-seguranca.md).
+  - [ ] **J.12**: a conferência de segredo no bundle é à mão (`PRODUCTION_CHECKLIST.md`); a versão menor é um teste
+        que confere que `src/` só lê as três `VITE_`. *Gatilho:* uma quarta variável `VITE_` no cliente, ou um passo
+        de build que injete configuração. Fonte: [`J-seguranca.md`](./varreduras/J-seguranca.md).
+  - [ ] **J.13**: os alertas do Dependabot estão desligados; entre dois pushes, nada avisa de vulnerabilidade nova.
+        A versão menor é um clique do dono no painel do GitHub, ou o `npm audit` no keepalive. *Gatilho:* o projeto
+        ficar um mês sem push no `master` — o que a M vai fazer —, ou um alerta crítico só aparecer no run seguinte.
+        Fonte: [`J-seguranca.md`](./varreduras/J-seguranca.md).
+  - [ ] **Os helpers dos testes de tempo real repetidos em 8 arquivos** (`esperarPor`, `mesa`, `conectar` — a J pôs
+        dois): um módulo em `src/test/`, como o `roomTransport.ts`. Achado na revisão da J.5. *Gatilho:* um helper
+        mudar de comportamento e precisar ser corrigido em vários arquivos, ou um teste novo de tempo real copiar o
+        bloco de novo.
 - [ ] **Q.7** 🔒 **Portão de segurança**: as seis perguntas sobre o que a Q mudou, no
       [registro](./SEGURANCA.md#registro-por-fase). A pergunta 3 pesa no E.25, no assento por conta e no site em
       outra origem.
@@ -1307,24 +1369,25 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | G | 🔍 | Varredura: frontend — ledger com 25 itens, 7 FAZER (#39); os sete executados na G.3, com o portão (#41); a revisão do código da G.3 (G.3h, #42) com quatro consertos | ✅ | 13/10/2026 |
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
-| J | 🔍 | Varredura: segurança — J.0 no #57; a J.1 com 13 itens, 4 FAZER: o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger; a J.3 com a allowlist do gitleaks | 🔄 | — |
+| J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
-| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona | ⬜ | — |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a Fase I (16/10/2026) |
+| Verificação | Ao fechar a Fase J (17/10/2026) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **868** testes, 65 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4)* — `vitest` 4.1.11 |
+| `npx vitest run` | **881** testes, 69 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11))* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
-| `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), e de novo ao fechar a I (16/10). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
+| `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
+| gitleaks local (v8.23.3, a do CI) | **277** commits varridos no `master` em `e1f02e6`, nenhum vazamento — `gitleaks detect --source . --config .gitleaks.toml --redact`. O `master` tem um commit sem merge a mais: o `b1daf6e`, que só apaga arquivo, e o gitleaks não conta (J.5) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia) |
 | Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
