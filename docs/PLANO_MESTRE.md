@@ -927,7 +927,7 @@ o conserto** (o repo é público).
       [`ARQUITETURA.md`](./ARQUITETURA.md) já foi nele. **Falta:** o merge do PR do fechamento e o `master` verde
       depois dele — o primeiro `db-sync` com a versão fixa.)*
 - [x] ✅ **Fase J concluída em:** 17/10/2026 *(o SEC-17 e o SEC-18 no #58; o ledger no #59; a J.3 no #60; o
-      fechamento, com a versão do CLI, no PR seguinte)*
+      fechamento, com a versão do CLI, no #61)*
 
 > ***Fase J fechada em 17/10/2026.*** *A próxima é a **Fase K** — profundidade de sistema, a primeira de construção
 > depois das varreduras —, começando pela K.0. A J deixa para o bloco Q seis ADIAR novos, a pista da sonda e os
@@ -1131,7 +1131,7 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         *(A J.1g achou uma segunda porta para o mesmo vão: com o `gmPeerId` vazio, um jogador já sentado que renomeia
         a ficha com o *handle* do GM vira GM pelo `checkIsGm`. O conserto cobre as duas.)*
   - [ ] **Actions fixadas por tag, não por SHA**. *Dona:* J.1f. *Gatilho:* uma action usada aqui num incidente de
-        cadeia de suprimento. *(A outra metade, o `supabase/setup-cli` em `latest`, **feita na J.5** (17/10, o PR do
+        cadeia de suprimento. *(A outra metade, o `supabase/setup-cli` em `latest`, **feita na J.5** (17/10, no #61, o
         fechamento da J): o gatilho disparou — o `latest` levou rate limit e deixou o `master` vermelho —, e a versão
         do CLI ficou fixa nos dois workflows.)*
   - [ ] **I.01**: o modificador do GM não tem tela (a rota `/settings` não tem chamador). *Dona:* a K, que mexe nas
