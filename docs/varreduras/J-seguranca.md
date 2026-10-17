@@ -433,9 +433,11 @@ dos provedores; não barra as regras próprias do `.gitleaks.toml` nem a genéri
 **Reversível:** sim.
 
 **VEREDITO:** FAZER *(configuração, na J.3)* — com os dois comentários do J.01.
-*(17/10/2026 — ✅ **feito na J.3**: todo padrão de caminho ancorado, e o `gitleaks-allowlist.test` (2), escrito antes,
-confere contra o `git ls-files`. Com a allowlist antiga ele lista os 7 arquivos acima; tirada uma âncora por vez,
-cada uma derruba o seu caso.)*
+*(17/10/2026 — ✅ **feito na J.3**: todo padrão de caminho ancorado, com os dois separadores (`[/\\]` — o `gitleaks dir`
+do Windows entrega `\`), e o `gitleaks-allowlist.test` (2), escrito antes, confere contra o `git ls-files`. Com a
+allowlist antiga ele lista os 7 arquivos acima; tirada uma âncora por vez, cada uma derruba o seu caso. No binário
+v8.23.3, com um token falso em cada arquivo de um repositório descartável: a antiga só acha o `src/app.ts`, a nova
+acha os workflows, o hook e o `distance.ts` também.)*
 
 ### J.12 — A conferência de segredo no bundle é à mão
 

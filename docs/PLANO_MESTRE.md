@@ -886,14 +886,18 @@ o conserto** (o repo é público).
       seguem ADIAR, com o gatilho do ledger.)*
 - [x] **J.3** Executar só os FAZER — passo X.3.
       *(17/10/2026 — os dois que sobraram, um commit cada. **O J.11:** todo padrão de caminho da allowlist do
-      `.gitleaks.toml` ancorado (`^\.git/`, `^dist/`, `^node_modules/`, `^package-lock\.json$`…), e o
-      `gitleaks-allowlist.test` (2), escrito antes, confere contra o `git ls-files` que só fica de fora o que deve —
-      e que o que deve ficar de fora fica. **Provado revertendo:** com a allowlist antiga, o teste lista os 7
-      arquivos do ledger (os dois workflows, o `.gitleaks.toml`, o hook, o `.gitattributes` e os dois `.gitignore`)
-      e os 4 de exemplo; tirada uma âncora por vez, cada uma derruba o seu caso; âncora demais (`^\.git$`) e o
-      lockfile tirado derrubam o segundo teste. O histórico dos 7 (17 commits) não tem texto com cara de token além
-      da anon key liberada — esta máquina não tem o binário do gitleaks, e o primeiro run do CI com a allowlist nova
-      é a medida nele. **Os comentários do J.01:** o `ci.yml` e o cabeçalho do `.gitleaks.toml` dizem que o
+      `.gitleaks.toml` ancorado, com os dois separadores (`^\.git[/\\]`, `^dist[/\\]`, `^node_modules[/\\]`,
+      `^package-lock\.json$`…), e o `gitleaks-allowlist.test` (2), escrito antes, confere contra o `git ls-files`
+      que só fica de fora o que deve — e que o que deve ficar de fora fica. **Provado revertendo:** com a allowlist
+      antiga, o teste lista os 7 arquivos do ledger (os dois workflows, o `.gitleaks.toml`, o hook, o
+      `.gitattributes` e os dois `.gitignore`) e os 4 de exemplo; tirada uma âncora por vez, cada uma derruba o seu
+      caso; âncora demais (`^\.git$`), o lockfile tirado e a âncora só com `/` derrubam o segundo teste. **No
+      binário:** o dono pediu o gitleaks na máquina, e o v8.23.3 do CI foi instalado (checksum do release
+      conferido). Num repositório descartável
+      com um token falso em cada arquivo, a allowlist antiga só acha o `src/app.ts`; a nova acha os cinco que devia,
+      no modo git e no modo pasta. A primeira versão, só com `/`, deixava o `gitleaks dir` do Windows varrer o
+      `node_modules` — o binário mostrou, e o separador virou `[/\\]`. O histórico do repositório (275 commits, todos
+      os refs) e a mudança em stage: nenhum vazamento. **Os comentários do J.01:** o `ci.yml` e o cabeçalho do `.gitleaks.toml` dizem que o
       gitleaks roda em todo PR para o `master` e no push ao `master`, e que branch sem PR conta só com a proteção
       de push do GitHub (`enabled`, relida pela API no dia). O J.01 e o J.11 marcados no
       [ledger](./varreduras/J-seguranca.md#j11--a-allowlist-do-gitleaks-pula-os-workflows-do-ci). Linha de base:

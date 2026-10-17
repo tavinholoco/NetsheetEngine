@@ -942,11 +942,16 @@ no último backup (16/10: `rooms` 0, `auth.users` 0).
 procura cada padrão de `[allowlist].paths` em qualquer ponto do caminho, e o `\.git` casava com
 `.github/workflows/`: os dois workflows — onde moram as referências aos secrets do CI —, o `.gitleaks.toml`, o
 `.gitleaks/pre-commit.sh`, o `.gitattributes` e os dois `.gitignore` não eram varridos. Todo padrão de caminho agora é
-ancorado (`^\.git/`, `^dist/`, `^node_modules/`, `^package-lock\.json$`…), e o `gitleaks-allowlist.test` (2) confere
-contra o `git ls-files` que só fica de fora o que deve. **Provado revertendo:** com a allowlist antiga, o teste lista
-os 7 arquivos; tirada uma âncora por vez, cada uma derruba o seu caso. O histórico dos 7 (17 commits) não tem texto
-com cara de token além da anon key que a regex já libera — o primeiro run do CI com a allowlist nova é a medida no
-binário, que esta máquina não tem. Os comentários do `ci.yml` e do `.gitleaks.toml` passam a dizer quando o gitleaks
+ancorado, com os dois separadores (`^\.git[/\\]`, `^dist[/\\]`, `^node_modules[/\\]`, `^package-lock\.json$`…: o modo
+git usa `/`, e o `gitleaks dir` no Windows, `\`), e o `gitleaks-allowlist.test` (2) confere contra o `git ls-files` que
+só fica de fora o que deve. **Provado revertendo:** com a allowlist antiga, o teste lista os 7 arquivos; tirada uma
+âncora por vez, cada uma derruba o seu caso. **E no binário** (o v8.23.3 do CI, instalado na máquina do dono no mesmo
+dia, com o checksum do release conferido), num repositório descartável com um token falso em cada arquivo: com a
+allowlist antiga só o `src/app.ts` é achado — os workflows, o hook e o `distance.ts` passam calados —; com a nova, os
+cinco, no modo git e no modo pasta, e `dist/`, `node_modules/` e `package-lock.json` seguem de fora. A primeira versão,
+só com `/`, deixava o `gitleaks dir` do Windows varrer o `node_modules`: o binário mostrou, e o teste ganhou os caminhos
+com `\`. No histórico deste repositório (275 commits, todos os refs) e na mudança em stage: nenhum vazamento — o CI do
+PR não fica vermelho com os arquivos novos. Os comentários do `ci.yml` e do `.gitleaks.toml` passam a dizer quando o gitleaks
 roda: em todo PR para o `master` e no push ao `master`; branch sem PR conta só com a proteção de push do GitHub
 (`secret_scanning_push_protection: enabled`, conferido pela API no mesmo dia), que barra os padrões dos provedores e
 não lê as regras do `.gitleaks.toml`.
