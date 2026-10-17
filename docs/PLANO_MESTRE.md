@@ -739,6 +739,11 @@ desde a T1.7 porque todos perguntavam de onde vinha o autor, e ninguém, quem ga
 [roteiro de uma varredura](#o-roteiro-de-uma-varredura). **O que a J achar aberto vai ao ar junto com
 o conserto** (o repo é público).
 
+> ⏸️ ***Parada em 17/10/2026, depois da J.0 — o dono segue numa sessão nova.*** *A próxima sessão continua
+> do primeiro item desmarcado, a **J.1a**. A J.0 e o [ledger](./varreduras/J-seguranca.md) nasceram no branch
+> `claude/j-ledger` (commit `b583c98`): enquanto ele não estiver no `master`, a sessão nova parte desse branch,
+> e não refaz a J.0. Uma pista da J.1d saiu da J nesta parada — a nota está nela.*
+
 - [x] **J.0** 🔍 **Premissas** — medidas em 29/09/2026:
       *(17/10/2026 — conferidas contra o `master` em `954ef0e`, no [ledger](./varreduras/J-seguranca.md#j0--as-pistas-medidas-em-17102026):
       a linha de base bateu (868 em 65, RLS 63/63). **Caiu uma:** as 56 de RLS são 63 desde a `0008` e rodam,
@@ -788,6 +793,13 @@ o conserto** (o repo é público).
         - *Da E (30/09):* a **forma** do `gridState` e do update Yjs passou a ser conferida (SEC-14) — a J
           confere se há outra porta sem forma. E ids como `__proto__` acham o protótipo de `players`/`npcs`
           (E.22, ADIAR: hoje só o GM chega, e o `join` os recusa por acaso).
+        - *Tirada da J em 17/10/2026:* a medida da pista **chave fora do grid no doc Yjs** ficou para o dono. A
+          análise dela foi barrada duas vezes pelo classificador de segurança do assistente, e uma sessão não
+          deve tentar de novo, nem trocando de modelo. Sem sintoma medido, o veredito é o padrão, **ADIAR**: a
+          pista não trava a J.1d e entra na lista do bloco Q no fechamento da J (decisão 12; só o dono a tira
+          de lá, com DESCARTAR). **Gatilho:** o dono rodar a sonda local
+          (`npx vitest run src/__tests__/zz-j-probe.integration.test.ts` — arquivo não rastreado, não commitar)
+          e trazer o número para o ledger.
   - [ ] **J.1e WebSocket**, pela [folha da OWASP](https://cheatsheetseries.owasp.org/cheatsheets/WebSocket_Security_Cheat_Sheet.html):
         - o *upgrade* não confere `Origin`; o que protege de *cross-site WebSocket hijacking* é o token
           ir na query e não em cookie — registrar como decisão, não como acaso;
