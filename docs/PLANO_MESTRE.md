@@ -66,7 +66,8 @@ sessão e manda ler o plano antes de propor trabalho.
 - **4.** Ler o registro de [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase) das fases já
       fechadas, e as decisões do [`CLAUDE.md`](../CLAUDE.md) — para não reabrir questão resolvida.
 - **5.** Varrer os **ADIAR em aberto** nos ledgers de [`varreduras/`](./varreduras/) e nas ADRs:
-      algum gatilho disparou desde a última sessão? Um gatilho que disparou vira trabalho da fase
+      algum gatilho disparou desde a última sessão? *(A lista inteira, com o gatilho de cada um, está no
+      [bloco Q](#bloco-q--quitar-os-adiar--1015-dias-estimativa-grosseira-que-a-q0-refaz--depois-da-l-antes-da-m) — decisão 12.)* Um gatilho que disparou vira trabalho da fase
       corrente.
 - **6.** Rodar `npx tsc --noEmit` e `npx vitest run` **antes de mudar qualquer coisa**. É a linha
       de base: sem ela, você não sabe se quebrou algo ou se já estava quebrado. Os números esperados
@@ -81,7 +82,9 @@ itens da própria fase. Não são opcionais:
       [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase).
 - **2.** 🧠 **Atualizar o estado durável** — marcar os checkboxes da fase, preencher a data,
       atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema
-      mudou, e a tabela de progresso no fim deste arquivo.
+      mudou, e a tabela de progresso no fim deste arquivo. **Todo ADIAR novo da fase entra na lista do
+      [bloco Q](#bloco-q--quitar-os-adiar--1015-dias-estimativa-grosseira-que-a-q0-refaz--depois-da-l-antes-da-m)**,
+      com o gatilho e a fonte (decisão 12).
 - **3.** 🧠 **Atualizar a memória do Claude** — mas **só o que o repo não carrega**: uma decisão
       nova que valha para as próximas sessões, uma preferência de trabalho que você expressou, uma
       correção de rumo. **Não** copie o estado da fase para lá.
@@ -150,7 +153,7 @@ salto não servia).
 ## ⚖️ Decisões tomadas (02/09/2026)
 
 Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo. *(1 a 3 em
-02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09; 8 em 29/09; 9, 10 e 11 em 30/09/2026.)*
+02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09; 8 em 29/09; 9, 10 e 11 em 30/09; 12 em 16/10/2026.)*
 
 | # | Pergunta | Decisão | Consequência |
 |---|---|---|---|
@@ -165,6 +168,7 @@ Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem mo
 | 9 | Quanto de netrunning entra na K? (K.0b — a revisão de robustez mediu que a Net inteira não cabe na K) | **O netrunner na ficha** — deck, programas e MU como dado — entra na K.5. **A Net jogável na mesa** (mapa, turnos, fortalezas de dados) fica **fora da K: ADIAR**, como fase própria depois da L | A K volta a caber na estimativa. **Gatilho** da Net na mesa: alguém da mesa do dono jogar de netrunner. ~~As regras vêm do livro, que o dono tem (30/09)~~ **⚠️ Corrigido no mesmo dia (decisão 11):** o dono não tem o livro — as regras vêm das fontes secundárias, com duas concordando. O cuidado com o RED, que mudou quase tudo no netrunning, vale em dobro — e pesa mais sem o livro para desempatar |
 | 10 | As quatro perguntas que a medição da F abriu (F.0b): a voz do texto, o vermelho que não é dano, a cor por seção, o livro como referência visual | **(a)** **Rajdhani** nos rótulos, na navegação e no texto corrido; a **mono** só em número, dado e momento de terminal, **sem negrito**; piso de **10 px**. **(b)** **Vermelho só dano**; marca, menu e PRD vão para amarelo ou ciano, o GM para amarelo, e erro, ação destrutiva, *fumble* e NPC hostil para um papel novo, **`fault`** (magenta). **(c)** A **cor por seção fica**; o PRD sai do vermelho e DADOS sai do rosa. **(d)** ~~O livro do dono é~~ O interior do livro de 1990 é **preto e branco**: referência de **diagramação e tipografia**; a cor vem da linguagem da época. **⚠️ Corrigido no mesmo dia (decisão 11):** o dono não tem o livro — a diagramação vem do que as fontes públicas mostram do interior (F.3.0) | (a) segue a ADR 0006 — a premissa "Rajdhani já em uso" era falsa: 96% do texto da ficha é mono, e a Share Tech Mono só tem o peso 400 (negrito sintético em 99 elementos). (b) é o invariante do `CLAUDE.md` aplicado aos 244 usos medidos. (c) não tinha recomendação explícita na análise; foi registrada como **manter** — a leitura de menor mudança, que o merge do PR confirma ou corrige. *(01/10/2026: **confirmada** — o dono aprovou as capturas do PR 3b, com a cor de cada seção.)* (d) as três premissas da F.3 (barra preta, faixas, numeração) são de diagramação, que o P&B responde: F.3.0. Detalhe na [F.0a](./historico/FASE_F.md#-o-que-o-f0a-mediu-30092026) e na [ADR 0006](./adr/0006-sistema-tipografico.md) |
 | 11 | De onde vêm as regras e a diagramação, se o dono **não tem o livro**? *(Correção do dono, 30/09/2026 à noite: o registro "o dono tem o livro físico", do mesmo dia, estava errado — e as decisões 9 e 10d, a F.3.0 e as "Perguntas para o livro" se apoiavam nele)* | **Fontes secundárias**, pelo método da [conferência](./CONFERENCIA_CP2020.md#fontes-e-o-quanto-confiar-nelas): regra aceita com **duas fontes independentes** concordando; o que não fecha e bloqueia trabalho vai ao dono como decisão, com a pesquisa e uma opção recomendada — como a decisão 6. **Comprar o PDF oficial** (R. Talsorian, *Cyberpunk 2.0.2.0, Second Edition, Version 2.01*, no [DriveThruRPG](https://legacy.drivethrurpg.com/product/50354/Cyberpunk-2020-The-Second-Edition-Version-201), US$ 15 em 30/09): **ADIAR**. **Cópia do livro sem licença não é fonte** | Os gatilhos "o dono confirmar no livro" da conferência viram "uma segunda fonte independente" — sem isso nunca disparariam, o DESCARTAR disfarçado que a M.0 já previa. A F.3.0 passa a ser pesquisa em fonte pública. **Gatilho da compra:** uma pergunta para o livro bloquear o trabalho de uma fase e as secundárias não fecharem — a K.0 (criação, IP, netrunning) é a candidata mais provável. O contrato de custo zero é sobre a infraestrutura; a compra é decisão do dono. Se houver PDF, ele fica **fora do repositório**, como o backup |
+| 12 | ADIAR é esquecimento ou ordem? *(16/10/2026, nas palavras do dono: "não quero perder eles no futuro pois quero consertar tudo e fazer tudo do plano")* | **Ordem.** O filtro de necessidade continua decidindo **quando**: nas varreduras, ADIAR segue como veredito padrão, e o FAZER da fase corrente ainda exige sintoma. Mas **nenhum ADIAR sai do plano**: todos são quitados no **bloco Q**, depois da L e antes da M. Na Q, o veredito padrão se inverte, e todo item é FAZER, a não ser que o dono escreva DESCARTAR | A [Q](#bloco-q--quitar-os-adiar--1015-dias-estimativa-grosseira-que-a-q0-refaz--depois-da-l-antes-da-m) lista cada ADIAR em aberto (78 em 16/10) com o gatilho e a fonte, e o ADIAR novo de cada fase entra nela no fechamento (passo 2 do ritual de encerramento). A M.3 passa a conferir a Q, e o grep da M.0 inclui o `historico/`, onde seis itens só existiam lá. Um gatilho que dispara antes da Q continua virando trabalho da fase corrente. O que esbarra num invariante (o PITR pago, o PDF, a Net jogável, o login, o site fora do Render) vai ao dono na Q.0b, com uma opção recomendada |
 
 ---
 
@@ -191,7 +195,7 @@ em qualquer decisão de escopo nas demais.
 | Veredito | Quando | Exigência |
 |---|---|---|
 | **FAZER** | Só com sintoma observado na pergunta 1 | Entra na fase corrente **com teste que reproduz o sintoma antes da correção** |
-| **ADIAR** | Veredito padrão | **Exige gatilho escrito** ("quando a mesa passar de 6 jogadores", "quando alguém de fora entrar"). Sem gatilho plausível, é DESCARTAR disfarçado |
+| **ADIAR** | Veredito padrão | **Exige gatilho escrito** ("quando a mesa passar de 6 jogadores", "quando alguém de fora entrar"). Sem gatilho plausível, é DESCARTAR disfarçado. *ADIAR é ordem, não esquecimento: todo ADIAR em aberto é quitado no bloco Q, antes da M (decisão 12)* |
 | **DESCARTAR** | Não resolve sintoma real | Razão registrada em uma linha, para a ideia não voltar na varredura seguinte |
 
 ### As duas regras que fazem o filtro funcionar
@@ -571,7 +575,7 @@ próprio antes do ledger, como na E — detalhe e portão em
 ## 🗂️ AS 13 FASES
 
 **Esforço total: 30,5 a 38,5 dias de trabalho concentrado** *(mais 1,5–2,5 das pendências R, da
-revisão pós-D)* — quatro a sete meses de calendário para
+revisão pós-D, e 10–15 do bloco Q, que quita os ADIAR — decisão 12)* — quatro a sete meses de calendário para
 quem tem outra ocupação. Ponto de corte natural: **fechando A–D o jogo já roda certo**; F entrega a
 identidade visual nova; e as varreduras viram manutenção de fim de semana.
 *(Revisão de robustez, 29/09/2026: o que resta, de E a M, soma **18,5–23,5 dias** pelas estimativas
@@ -936,6 +940,225 @@ público mudar.
 
 ---
 
+### BLOCO Q — QUITAR OS ADIAR 🔨 *(10–15 dias, estimativa grosseira que a Q.0 refaz — depois da L, antes da M)*
+
+*(Criado em 16/10/2026 pela [decisão 12](#-decisões-tomadas-02092026): o dono quer cada ADIAR feito, não
+esquecido.)* Até aqui, um ADIAR esperava o sintoma, e sem sessão em produção quase nenhum gatilho dispara. Na Q
+todos são quitados: **78 itens**, 26 com fase dona (a J, a K, a L ou a M) e 52 que só a Q faz, mais três decisões
+do dono. **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
+M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
+
+**Como a Q funciona:**
+- **Uma caixa por item**, com o gatilho e a fonte. O detalhe (sintoma, versão menor, linhas do código) fica no
+  ledger ou no documento de origem. Ao marcar uma caixa, dizer onde o item foi feito (fase e PR).
+- **O veredito padrão se inverte:** aqui, todo item é FAZER. Um item só sai da lista com um **DESCARTAR escrito
+  pelo dono**, com o motivo, na própria caixa.
+- Bug segue o X.3: teste que reproduz **antes**, prova revertendo, um commit por item. Regra segue a Fase C: a
+  tabela e a [conferência](./CONFERENCIA_CP2020.md) com duas fontes (decisão 11).
+- **Gatilho que dispara antes da Q** continua virando trabalho da fase corrente (passo 5 do ritual de abertura), e
+  a caixa daqui é marcada com o lugar onde o item foi feito.
+- **Todo ADIAR novo da J, da K ou da L entra nesta lista** no fechamento da fase dele (passo 2 do ritual de
+  encerramento). Um corte do plano para o `historico/` não tira item daqui. ⚠️ marca os seis itens que só
+  existiam no `historico/`, onde o grep da M.3 não procurava.
+- **Fora da lista:** os cinco DESCARTAR dos ledgers (E.23, G.16, H.08, I.07, I.08), cada um com a razão escrita.
+  Dois fariam mal: o timeout do I.07 quebraria o primeiro pedido depois da hibernação, e a repetição do I.08
+  repetiria dano. Também ficam fora os cinco ADIAR que o gatilho já levou a trabalho: o E.06, o H.10 e o H.11 (na
+  H.3d), o E.14 (na H.3b) e o H.02 (na H.3c).
+
+- [ ] **Q.0** 🔍 **Premissas.**
+      - Conferir esta lista contra `grep -rn ADIAR docs/ CLAUDE.md` **com o `historico/`** (fora, só o
+        `docs/legacy/`) e contra os ADIAR que a J, a K e a L acrescentaram. O item que falta entra; o que sobra
+        sai, com o motivo.
+      - Marcar na Q.1 o que a fase dona já fez, com o PR.
+      - Medir cada item contra o código do dia (linha, reprodução) e refazer a estimativa da Q.
+- [ ] **Q.0b** 🧑‍⚖️ **Decisões do dono** — os itens que esbarram num invariante ou numa decisão já tomada:
+      - **PITR do Supabase** (decisão 4): exige o plano Pro, e o custo zero é requisito duro. *(1,
+        recomendada)* **DESCARTAR**: o dump manual da decisão 8 é o backup, e a restauração de teste (Q.1) prova
+        que ele serve. *(2)* Pagar o Pro, o que muda o contrato de custo zero.
+      - **O PDF oficial** (decisão 11; US$ 15 em 30/09). *(1, recomendada)* Comprar quando um item da Q.5 travar
+        sem duas fontes: é o gatilho que já existe, e a Q.5 é onde ele mais provavelmente dispara. *(2)* Comprar
+        já na Q.0, para fechar as Perguntas para o livro de uma vez. *(3)* DESCARTAR: o que as fontes não
+        fecharem vira decisão do dono, item por item.
+      - **A Net jogável na mesa** (decisão 9: mapa, turnos, fortalezas de dados, "meio jogo à parte"). *(1,
+        recomendada)* **Fase própria, entre a Q e a M**, estimada na Q.0 com a K.5 (o netrunner na ficha) pronta.
+        *(2)* Dentro da Q, que dobraria de tamanho. *(3)* Depois da M, fora do plano.
+      - **Exigir login para criar mesa no servidor** (o E.25; decisão do dono de 30/09). *(1, recomendada)*
+        Exigir: a tela já exige, e é o primeiro passo do **assento por conta** (Q.2), que fecha também o "sair e
+        voltar curado". *(2)* Manter sem login e DESCARTAR o E.25.
+      - **O site fora do Render** (a regra 4 do [custo zero](#-contrato-de-custo-zero) e o I.09). *(1,
+        recomendada)* Fazer: no Vercel Hobby o custo medido é desprezível, e a lista do que muda já está na nota
+        de 14/10. A origem nova não leva o `localStorage`, então é preciso avisar a mesa antes. *(2)* Manter no
+        Render e DESCARTAR a regra 4 e o I.09.
+- [ ] **Q.1** **Os que têm fase dona.** Quem faz é a dona; aqui só se confere, e o que ela deixar a Q faz. Os dois da
+      M ficam para ela, e a Q só confere que estão lá. Fontes: os [ledgers](./varreduras/), a
+      [conferência](./CONFERENCIA_CP2020.md) e as fases J, K, L e M acima.
+  - [ ] **E.20**: a ficha de todo NPC vai a todos os jogadores. *Dona:* J.1b. *Gatilho:* um jogador espiar a ficha
+        do NPC, ou a L.1 abrir.
+  - [ ] **E.21**: "esta sala existe?" responde no ritmo do limitador global. *Dona:* J.1b. *Gatilho:* a mesa abrir
+        para gente de fora, ou a J.1b achar outra leitura que responda existência.
+  - [ ] **E.22**: ids como `__proto__` dão 500. *Dona:* J.1d. *Gatilho:* uma rota nova indexar `players`/`npcs`
+        por id de quem não é o GM.
+  - [ ] **E.24**: não há teto global de sockets. *Dona:* J.1e. *Gatilho:* a memória do serviço passar de ~400 MB,
+        ou um reinício por falta de memória.
+  - [ ] **Sair e voltar "curado"** (D.9): o `leaveRoom` apaga o jogador, e a volta aceita o ferimento da ficha do
+        cliente. *Dona:* J.1g. *Gatilho:* um jogador aparecer inteiro depois de sair no meio de uma luta.
+  - [ ] **A variante do SEC-07 pelo *handle* do GM** (R.1): o caso de quando o GM sai e ninguém fica online. *Dona:* J.1g.
+  - [ ] **Actions fixadas por tag, não por SHA**, e o `supabase/setup-cli` em `latest`. *Dona:* J.1f. *Gatilho:*
+        uma action usada aqui num incidente de cadeia de suprimento, ou o CLI `latest` quebrar o `db-sync`.
+  - [ ] **I.01**: o modificador do GM não tem tela (a rota `/settings` não tem chamador). *Dona:* a K, que mexe nas
+        rolagens. *Gatilho:* a primeira sessão em que o GM quiser um modificador de cena.
+  - [ ] **G.05**: o mesmo ferimento tem dois nomes, às vezes no mesmo cartão. *Dona:* K.3. *Gatilho:* alguém da mesa
+        confundir os nomes.
+  - [ ] **I.06**: pelo REST, a rolagem e o chat perdem o erro que o WebSocket mostra, e a ficha que não sincroniza
+        não avisa. *Dona:* K.2, que engorda a ficha. *Gatilho:* um `sse_fallback` de jogador de verdade.
+  - [ ] **Cromo que soma atributo** (ex.: lace muscular): o `CyberwareItem` não tem campo de atributo. *Dona:* K.2.
+  - [ ] **EV da armadura → REF** (RUL-11), que precisa de um modelo de peça. *Dona:* K.2.
+  - [ ] **H.01**: na rede lenta, o jogador fica segundos atrás. *Dona:* L.1. *Gatilho:* atraso em rede móvel numa
+        sessão, a banda acima de 2,5 GB no mês, ou um `ws_rate_limited`.
+  - [ ] **G.19**: cada arrasto no grid regrava todos os tokens no Yjs. *Dona:* L.1.
+  - [ ] **I.02**: o contrato de cada rota é escrito à mão dos dois lados. *Dona:* L.1. *Gatilho:* uma rota mudar de
+        corpo e o cliente quebrar sem teste que pegue.
+  - [ ] **I.04**: duas portas do servidor sem chamador; a leitura de existência sai com o E.21, e a mensagem
+        `initiative`, com a L.1. *Donas:* J.1b e L.1.
+  - [ ] **Compressão do WebSocket** (`perMessageDeflate`, o risco 2 do custo zero), com medição de memória antes.
+        *Dona:* L.0 e L.1. *Gatilho:* a banda do workspace passar de 2,5 GB num mês.
+  - [ ] **E.18** e **G.21**: os cortes dos arquivos grandes, no backend e no frontend. *Dona:* L.3.
+  - [ ] **E.11**: `code.toUpperCase()` em 25 pontos, sem dono. *Dona:* L.3 (o `roomKey` vai para o módulo de
+        salas). *Gatilho:* uma sala "não encontrada" por maiúscula ou espaço.
+  - [ ] **E.16** (sete `any` no `server.ts`), **G.17** (doze `console.*` no cliente) e **G.18** (o "broadcast" das
+        rolagens da ficha, sem ouvinte). *Dona:* L.5.
+  - [ ] **E.05**: o `sseClients` guarda um `Set` vazio por sala, para sempre. *Dona:* L.6; o item some se o SSE sair.
+  - [ ] **G.25**: as notas de versão chamam de atual a v0.4.0, do "Cyberpunk 2077". *Dona:* M.4.
+  - [ ] **Restauração de teste do backup** (R.10), num projeto Supabase novo. *Dona:* M.0, que a exige antes do fim.
+        *Gatilho:* a primeira linha do registro com `character_sheets` acima de zero.
+- [ ] **Q.2** **Servidor e mesa.** Fontes: [`E-backend.md`](./varreduras/E-backend.md),
+      [`H-multiplayer.md`](./varreduras/H-multiplayer.md) e onde cada item diz.
+  - [ ] **E.04**: o servidor não detecta socket morto (sem ping/pong). *Gatilho:* a memória subir durante uma
+        sessão, ou um socket fantasma num cenário de rede.
+  - [ ] **E.08**: gravação em voo × sala encerrada: a sala pode voltar no boot. *Gatilho:* uma sala encerrada
+        reaparecer depois de um restart.
+  - [ ] **E.09**: o Render pode esperar o CI antes de publicar (é configuração no painel, que fica com o dono).
+        *Gatilho:* código no ar antes da migration, ou um `master` vermelho publicado.
+  - [ ] **A versão maior do E.10**: o chat manda o instante (ISO), e cada cliente formata no próprio fuso. Isso muda o
+        formato persistido das mensagens. *Gatilho:* um jogador de outro fuso na mesa.
+  - [ ] **E.12** e a [ADR 0005](./adr/0005-provedor-de-ia.md): o modelo de IA fixo no código, e o **Groq primário
+        com o Gemini de fallback**, decidido e nunca implementado (a versão menor é o `AI_MODEL`). *Gatilho:* um
+        `429`, a cota esgotada ou o modelo recusado no `gemini_api_error`.
+  - [ ] **E.15**: a persistência tenta de novo a cada 2 s, para sempre, sem espaçar. *Gatilho:*
+        `persistence_save_failed` em sequência no log.
+  - [ ] **E.19**: "Remover NPC" apaga o token de um jogador, se receber o id dele. *Gatilho:* um token de jogador
+        sumir do mapa sem ele sair.
+  - [ ] **E.25**: criar sala não exige login no servidor (a decisão está na Q.0b). *Gatilho:* `rooms_full` no log
+        sem o dono ter criado as salas, ou a mesa abrir para gente de fora.
+  - [ ] **Assento por conta** (a versão maior da R.1): o assento ligado à conta do Supabase (JWT). Fecha também o
+        "sair e voltar curado" e o H.05. *Gatilho:* a mesa exigir login (o E.25).
+  - [ ] **H.04**: dois F5 seguidos, com o `join` do primeiro em voo, duplicam o assento. *Gatilho:* um assento
+        duplicado ou um GM perdido depois de um F5 numa sessão.
+  - [ ] **H.05**: a aba antiga vira outro jogador, em silêncio. O mecanismo é o mesmo do H.04, e um conserto serve aos
+        dois. *Gatilho:* um assento duplicado por duas abas.
+  - [ ] **H.06**: o GM que fecha a aba deixa a mesa sem Mestre para sempre. Foi o item mais perto da linha na H, e a
+        versão menor é a credencial do GM no `localStorage`. *Gatilho:* um GM perder a mesa por fechar a aba.
+  - [ ] **H.07**: o cargo de GM pode ir para uma ficha gerada. *Gatilho:* acontecer numa sessão, ou alguém mexer
+        no T1.8.
+  - [ ] **H.14**: quem entra na mesa na janela de um deploy cai no SSE. *Gatilho:* um `sse_fallback` no mesmo minuto
+        de um `lease_released`.
+  - [ ] ⚠️ **O `db-sync` e o keepalive, rodando juntos, derrubam a senha um do outro** (`28P01`). O conserto é um
+        grupo de `concurrency` ou um retry no `scripts/supabase-ci.sh`; hoje existe só a regra "nunca disparar os
+        dois à mão". *Gatilho:* um `28P01` num run que não foi disparado à mão. *Só estava no
+        [histórico](./historico/FASES_A-D.md).*
+- [ ] **Q.3** **Tela.** Fonte: [`G-frontend.md`](./varreduras/G-frontend.md), a não ser onde o item diz outra.
+  - [ ] **G.01**: a ficha é espelhada na store durante o render do `App` (a versão de uma linha está no ledger).
+        *Gatilho:* o aviso esconder um erro numa depuração, ou lentidão ao digitar na ficha.
+  - [ ] **G.02**: no dev, o deep link volta para `/` (a versão de uma linha está pronta). *Gatilho:* precisar do HMR
+        para depurar um refresh ou um deep link, ou o mesmo sintoma no build de produção.
+  - [ ] **G.03**: trocar de ficha no meio da sessão leva o ferimento da mesa para a ficha nova. *Gatilho:* um
+        jogador trocar de ficha numa sessão.
+  - [ ] **G.08**: a tela diz "sincronizado" quando não está. *Gatilho:* a primeira ficha de jogador na nuvem
+        (`character_sheets` acima de 0 no backup).
+  - [ ] **G.09**: com uma fórmula de dano inválida, o botão não faz nada, e o parser da
+        [ADR 0004](./adr/0004-dice-roller.md) não lê divisão. *Gatilho:* uma arma do livro com `1D6/2` numa ficha
+        de verdade.
+  - [ ] **G.10**: a rede de amigos não mostra erro, e o chat dela trava. *Gatilho:* alguém da mesa usar a rede de
+        amigos e relatar.
+  - [ ] **G.11**: o menu busca o perfil de novo a cada troca de aba. *Gatilho:* o egress do Supabase perto da cota,
+        ou a rejeição sem tratamento aparecer no console.
+  - [ ] **G.20**: não se sabe quais telas quebram sem ninguém ver, porque faltam testes de componente (ARQ-08).
+        *Gatilho:* um defeito de tela chegar ao jogador sem teste que o pegasse.
+  - [ ] **H.12**: a mesa não rola perícia nem a habilidade especial, e a ficha gerada guarda o atributo do ternário
+        que a C.8 tirou. *Gatilho:* alguém pedir para rolar perícia na mesa. Fonte:
+        [`H-multiplayer.md`](./varreduras/H-multiplayer.md).
+  - [ ] ⚠️ **"Gerar NPC", "Gerar Jogador" e "Rolar iniciativa" sem a trava do `useInFlight`**: em dobro, sai um NPC
+        ou uma ficha a mais, ou a iniciativa é rolada duas vezes. *Gatilho:* acontecer numa sessão. *Só estava no
+        [histórico](./historico/FASE_G.md) (a revisão G.3h) e no `CLAUDE.md`.*
+  - [ ] ⚠️ **A perda de Humanidade digitada aceita até 999**, e o `sheetSchema` a grampeia em 100 quando a ficha
+        entra na mesa; a ficha local e a da mesa divergem. *Gatilho:* alguém digitar acima de 100. *Só no
+        histórico (G.3h).*
+  - [ ] ⚠️ **O cartão do token remonta ao trocar de token** (`key={token.id}`), e a trava de dano e ataque recomeça.
+        *Gatilho:* o GM trocar de token e voltar no meio de uma resposta lenta. *Só no histórico (G.3h).*
+  - [ ] **Faixas de perigo amarelo-e-preto** (`signal`) no turno do jogador e na sala em combate (a F.3.3, na
+        [ADR 0006](./adr/0006-sistema-tipografico.md)). *Gatilho:* alguém perder a vez por não perceber que era o
+        turno dele.
+  - [ ] ⚠️ **Textura de impressão ou xerox** e aberração cromática sutil (F.3.5). *Gatilho:* o dono pedir, depois de
+        ver a F no ar. *Só estava no [histórico](./historico/FASE_F.md).*
+  - [ ] **A aba esquecida** (o risco 1 do custo zero): o heartbeat de 20 s mantém o serviço acordado mesmo com a aba
+        em segundo plano. A versão menor é pausar com o `document.hidden` e fechar o socket depois de ~30 min com a
+        aba oculta. *Gatilho:* o total do workspace acima de 100 h num mês sem o monitor, ou uma aba esquecida
+        observada.
+- [ ] **Q.4** **Acessibilidade.** Fonte: [`G-frontend.md`](./varreduras/G-frontend.md).
+  - [ ] **G.13**: o perfil só abre com o mouse. *Gatilho:* alguém da mesa operar só pelo teclado.
+  - [ ] **G.14**: botões e campos sem nome para o leitor de tela. *Gatilho:* alguém usar leitor de tela.
+  - [ ] **G.15**: no grid, o token só anda com o mouse. *Gatilho:* o mesmo do G.13.
+- [ ] **Q.5** **Regras do CP2020.** Fonte: a [conferência](./CONFERENCIA_CP2020.md). Cada regra precisa de duas
+      fontes antes do código (decisão 11), e o teste deriva da tabela.
+  - [ ] **O texto das tabelas de fumble**: hoje o dado sai rolado, e o GM lê o efeito no livro. *Gatilho:* o GM
+        pedir o efeito impresso, ou uma sessão travar procurando a tabela.
+  - [ ] **Humanidade de implante desinstalado**: o modelo não distingue o nunca instalado do removido, e o EMP soma
+        todo implante da ficha. *Gatilho:* o EMP cair por um cromo que o jogador não tem.
+  - [ ] **Perda de Humanidade fracionária**: o NetSheet guarda a perda inteira, e a diferença chega a meio ponto por
+        implante. *Gatilho:* um implante de custo fracionário numa ficha de verdade.
+  - [ ] **Empate na iniciativa**: nenhuma fonte trata, e fica a ordem da rolagem. *Gatilho:* a mesa pedir um
+        desempate.
+  - [ ] **Queima-roupa dá dano máximo?** Só uma linhagem de fonte diz que sim. *Gatilho:* uma fonte fora da linhagem
+        S8/S9 confirmar.
+  - [ ] **Corpo a corpo resistido**: hoje o GM informa o total do defensor como dificuldade. *Gatilho:* a mesa usar
+        corpo a corpo com frequência.
+  - [ ] **Penetração escalonada** (decisão 7d): o acerto que fura a armadura tira 1 do SP. É regra do núcleo ou
+        opcional? *Gatilho:* a mesa pedir, ou a armadura que nunca gasta incomodar.
+  - [ ] **Cobertura entre atirador e alvo** (decisão 7c): o SP da cobertura contra o dano, combinado com a armadura
+        pela tabela proporcional. *Gatilho:* o GM precisar da cobertura no cálculo.
+  - [ ] **A rolagem de estabilização automática** (First Aid / Medical Tech): hoje o GM marca. *Gatilho:* o GM pedir.
+  - [ ] **O estado "atordoado" guardado**: o stun save rola sozinho, e o estado não fica registrado. *Gatilho:* a mesa
+        esquecer quem está atordoado.
+  - [ ] ⚠️ **Desfazer uma morte na mesa**: o ajuste manual do GM não mexe no `isDead`. *Gatilho:* o GM precisar
+        corrigir uma morte aplicada por engano. *Só estava no [histórico](./historico/FASES_A-D.md) (a D).*
+  - [ ] **As [Perguntas para o livro](./CONFERENCIA_CP2020.md#perguntas-para-o-livro) que ainda estiverem
+        abertas**: cada uma fechada com duas fontes, ou levada ao dono como decisão (Q.0b, o PDF).
+- [ ] **Q.6** **Infraestrutura e documentos.**
+  - [ ] **O site fora do Render** (a regra 4 e o [I.09](./varreduras/I-integracao.md)): o CORS liberando o
+        `X-Session-Token` e o `Authorization`, o CSP copiado para o `vercel.json`, e o `CORS_ORIGINS` e o Auth do
+        Supabase ajustados no painel. A decisão está na Q.0b. *Gatilho:* o total do workspace acima de 100 h num
+        mês sem o monitor, a espera do despertar virar problema numa sessão, ou a mesa abrir para gente de fora.
+  - [ ] **O backup por workflow, com o dump cifrado** (a opção 2 da R.10; a decisão 8 é o dump manual). *Gatilho:*
+        perder dado entre dois dumps, ou o volume de fichas tornar inaceitável perder um mês.
+  - [ ] **Os avisos de descontinuação do CI**: a CodeQL Action do v3 para o v4 (antes de dezembro de 2026), e as
+        actions em Node 20 (`actions/checkout@v4`, `supabase/setup-cli@v1`). *Gatilho:* a data, um run falhar, ou
+        sair versão nova. *(O Ubuntu 26 do `ubuntu-latest` se confere no primeiro run depois de 19/10/2026, no passo
+        3b do ritual.)*
+  - [ ] **Os três diagramas adiados** do [`ARQUITETURA.md`](./ARQUITETURA.md#diagramas-adiados): a sequência do
+        handshake, a reconexão com last-write-wins e as camadas de token visual.
+  - [ ] **A [ADR 0002](./adr/0002-yjs-websockets.md) (Yjs sob observação)**: rever com o que a L mediu. Se o
+        gatilho, um bug de convergência do grid, não disparou, registrar "mantido" e fechar.
+- [ ] **Q.7** 🔒 **Portão de segurança**: as seis perguntas sobre o que a Q mudou, no
+      [registro](./SEGURANCA.md#registro-por-fase). A pergunta 3 pesa no E.25, no assento por conta e no site em
+      outra origem.
+- [ ] **Q.8** 🧠 **Estado durável**: caixas, data, linha de base, E2E, PR e o `master` verde, como no
+      [ritual de encerramento](#ritual-de-encerramento--ao-fechar-uma-fase). E todo item desta lista feito, ou
+      com o DESCARTAR do dono por escrito.
+- [ ] ✅ **Bloco Q concluído em:** ____/____/______
+
+---
+
 ### FASE M — VALIDAÇÃO E ENCERRAMENTO 🔨 *(1 dia)*
 
 - [ ] **M.0** 🔍 **Verificação de premissas** — *(acrescentado na revisão pós-D, 29/09/2026)*. Já
@@ -944,7 +1167,9 @@ público mudar.
       como backup; e a M.3 revisa também os ADIAR das ADRs e da conferência, não só os dos ledgers.
       *Medido na revisão de robustez (29/09/2026):* "ADIAR" aparecia **43 vezes** nos documentos vivos
       (contado antes desta revisão), e só **20** linhas traziam o gatilho na mesma linha — a M.3 começa por `grep -rn ADIAR docs/` (fora
-      de `historico/` e `legacy/`) e classifica cada um. Dois têm gatilho **"o dono confirmar no livro"**
+      de `historico/` e `legacy/`) e classifica cada um. *(16/10/2026, decisão 12: **o `historico/` entra no
+      grep**, e o `CLAUDE.md` também; fica fora só o `legacy/`. Desde os cortes da R.13, seis ADIAR só existiam lá, e
+      o grep antigo os perdia. Estão na lista do [bloco Q](#bloco-q--quitar-os-adiar--1015-dias-estimativa-grosseira-que-a-q0-refaz--depois-da-l-antes-da-m).)* Dois têm gatilho **"o dono confirmar no livro"**
       ([conferência](./CONFERENCIA_CP2020.md#o-que-a-fase-d-conferiu)): se o dono não tem o livro, o
       gatilho nunca dispara — é DESCARTAR disfarçado, e a M.3 os resolve. *(30/09: ~~**o dono tem o
       livro.** Os dois gatilhos são executáveis e viraram
@@ -959,6 +1184,9 @@ público mudar.
       a sessão de **encerramento**, não a primeira. A primeira não precisa esperar a M — o
       [Registro de sessões](#registro-de-sessões) diz por quê.)*
 - [ ] **M.3** Revisar os cinco ledgers de varredura: todo ADIAR ainda tem gatilho plausível?
+      *(16/10/2026, decisão 12: a pergunta mudou. Agora é **"a Q quitou todo ADIAR?"**: cada item da lista dela foi
+      feito ou tem o DESCARTAR do dono por escrito. E o grep da M.0, com o `historico/`, acha o ADIAR que a lista
+      não tiver. O que sobrar volta para a Q, e o plano não fecha com ADIAR em aberto.)*
 - [ ] **M.4** Arquivar o roadmap concluído no `README.md`. *(é a T12.5)*
 - [ ] **M.5** Encerrar formalmente o `PLANO_DE_ACAO.md` (`git rm` + commit). *(é a T12.6, DOC-05)*
 - [ ] **M.6** `git tag v0.5.0`.
@@ -985,6 +1213,7 @@ público mudar.
 | J | 🔍 | Varredura: segurança | ⬜ | — |
 | K | 🔨 | Profundidade de sistema | ⬜ | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual

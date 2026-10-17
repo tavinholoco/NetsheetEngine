@@ -63,7 +63,8 @@ Copie o bloco abaixo ao abrir uma varredura.
 
 **VEREDITO:** FAZER | ADIAR | DESCARTAR
 - Se FAZER → teste que reproduz o sintoma: `<caminho do teste>`
-- Se ADIAR → **gatilho:** "quando <condição verificável>"
+- Se ADIAR → **gatilho:** "quando <condição verificável>" — e, no fechamento da fase, uma linha na lista do
+  bloco Q do plano (decisão 12: ADIAR é ordem, não esquecimento)
 - Se DESCARTAR → **razão:** "<uma linha, para a ideia não voltar na próxima varredura>"
 
 ---

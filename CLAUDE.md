@@ -13,7 +13,7 @@
    anterior.)*
 1. Abra **[`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)** — é o documento mestre. 13 fases (A–M),
    mais blocos de pendências fora das fases (P em 25/09; **R**, da revisão pós-D de 29/09) que
-   precedem a fase seguinte. O arquivo passa de uma leitura só: leia em partes, e não pule nenhuma.
+   precedem a fase seguinte — e o **Q** (decisão 12, 16/10), que quita todo ADIAR depois da L e antes da M. O arquivo passa de uma leitura só: leia em partes, e não pule nenhuma.
    O detalhe das fases fechadas (A–H, P e R) mora em [`docs/historico/`](./docs/historico/) desde a R.13
    — só abra quando precisar do porquê de algo já feito.
 2. Ache o **primeiro item `[ ]` não marcado**. É de onde o trabalho continua.
@@ -56,7 +56,9 @@ A memória complementa com decisões e preferências; ela é local desta máquin
   workspace em agosto e setembro; o dono o pausou em 05/10/2026. O `uptime` do `/api/health` mostra se
   o serviço está hibernando — uma requisição só.
 - **Filtro de necessidade: ADIAR é o veredito padrão.** Mudança sem sintoma observado não entra.
-  Se mais de 1/3 de uma varredura virar FAZER, o critério está frouxo.
+  Se mais de 1/3 de uma varredura virar FAZER, o critério está frouxo. **Mas ADIAR é ordem, não
+  esquecimento** (decisão 12): todo ADIAR em aberto está na lista do bloco Q do plano, e o ADIAR
+  novo entra nela no fechamento da fase. Corte para o `historico/` não tira item da lista.
 - **Portão de segurança:** nenhuma fase de construção fecha sem responder as 6 perguntas e registrar.
 - **Vermelho significa exclusivamente dano.** O `HealthTracker` ocupa a escala vermelha com wound
   level; nada mais no produto compete com esse significado.
@@ -81,6 +83,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Merge × sessão de jogo | **Pode mergear com mesa aberta — mas não no meio de um combate.** Desde a H.3d (passagem de bastão, ADR 0007) a troca de instância **não perde nada**: provado no ar em 15/10/2026 (H.3d.4, 30 de 30). Mas a mesa fica **~5–15 s "reconectando"** (as ações demoram e se repetem sozinhas), e quem abre a página nessa janela cai no SSE (H.14, ADIAR). Era "nunca mergear com mesa aberta" (E.06, H.13: o H.1j perdia ~20 s). Migration segue em PR próprio (decisão 5) |
 | Login para criar mesa | **O servidor não exige** (a tela exige). Os tetos da E.03 (30 salas, `MAX_ROOMS`) fecham o esgotamento; exigir login é ADIAR com gatilho — decisão do dono (30/09/2026), em `docs/SEGURANCA.md` |
 | Netrunning | **O netrunner na ficha** (deck, programas, MU) entra na K.5; **a Net jogável na mesa: ADIAR**, fase própria depois da L — gatilho: alguém da mesa jogar de netrunner. Decisão 9 (30/09/2026) |
+| ADIAR × fazer tudo | **Ordem, não esquecimento** — o dono quer tudo feito (decisão 12, 16/10/2026). Todo ADIAR é quitado no **bloco Q**, depois da L e antes da M, e só sai da lista com DESCARTAR escrito pelo dono. Nas varreduras, ADIAR continua sendo o padrão |
 | Fonte das regras | **O dono não tem o livro** (corrigido em 30/09/2026). Valem as **fontes secundárias**, aceitas com duas concordando; comprar o PDF oficial é **ADIAR** com gatilho. Cópia do livro sem licença não é fonte. Decisão 11 |
 
 ## Comandos que importam
@@ -152,7 +155,7 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
 - **Botão cuja ação repetida estraga a mesa passa pelo `useInFlight`** (`src/hooks/`, G.06): entrar, criar,
   aplicar dano, NPC ataca e próximo turno — dano em dobro e assento órfão foram reproduzidos. Os outros
   botões do GM ("Gerar NPC", "Gerar Jogador", "Rolar iniciativa") **ainda não passam**: em dobro, o
-  resultado fica à vista e se desfaz — ADIAR na revisão da G.3, com gatilho no plano. Os testes de tela da
+  resultado fica à vista e se desfaz — ADIAR na revisão da G.3, com gatilho na lista do bloco Q. Os testes de tela da
   mesa montam o `MultiplayerRoom` com o `stubRoomTransport` (`src/test/roomTransport.ts`).
 - O `PLANO_DE_ACAO.md` na raiz está **substituído, não concluído** — suas Fases 11 e 12 viraram as
   Fases K e M do plano novo, e ele só é removido na Fase M.
