@@ -24,6 +24,8 @@ import { bearerFromHeader, isAuthVerificationConfigured, verifySupabaseJwt } fro
 import { MAX_PROMPT_CHARS, NETRUNNER_SYSTEM_PROMPT } from "./server/aiPrompt.js";
 // Revisão pós-D (R.4 — SEC-10) — os tetos do WebSocket, que não tinha nenhum.
 import { WS_LIMITS, WsRateLimiter, allowInWindow, type WsBudget } from "./server/wsLimits.js";
+// Fase J (J.1d — SEC-17) — o awareness do Yjs é entrada de usuário.
+import { checkAwarenessUpdate } from "./server/awarenessGuard.js";
 import {
   createRoom,
   getRoom,
@@ -358,6 +360,31 @@ function closePeerSockets(code: string, peerId: string): void {
   }
 }
 
+/**
+ * J.1e (SEC-18) — todo envio a um socket da mesa passa por aqui. A E.03 derrubava
+ * o socket que não lê só no reenvio da SALA; o repasse do awareness e do Yjs e as
+ * respostas do sync iam direto ao `ws.send`, e o buffer de um socket parado
+ * chegou a 33 MB (o teto é 1 MiB). `terminate`, não `close`: o aperto de mão de
+ * fechamento também ficaria preso no buffer.
+ */
+function sendToSocket(code: string, ws: WebSocket, data: string | Uint8Array): boolean {
+  if (ws.readyState !== WebSocket.OPEN) return false;
+  const key = code.toUpperCase();
+  if (ws.bufferedAmount > WS_LIMITS.maxBufferedBytes) {
+    logger.warn("slow_consumer_closed", { room: key, peerId: wsPeer.get(ws), transport: "ws", bytes: ws.bufferedAmount });
+    wsClients[key]?.delete(ws);
+    ws.terminate();
+    return false;
+  }
+  try {
+    ws.send(data);
+    return true;
+  } catch {
+    wsClients[key]?.delete(ws);
+    return false;
+  }
+}
+
 function broadcastRoomUpdate(code: string) {
   const room = getRoom(code);
   if (!room) return;
@@ -401,27 +428,12 @@ function broadcastRoomUpdate(code: string) {
     });
   }
 
-  // Fase 5 (T5.2) — WebSocket (transporte base): mesmo payload, menor latência
+  // Fase 5 (T5.2) — WebSocket (transporte base): mesmo payload, menor latência.
+  // E.03 (SEC-15) — socket que não lê é fechado, em vez de o servidor guardar
+  // cada reenvio da sala para ele; desde a J (SEC-18), no `sendToSocket`.
   const sockets = wsClients[code.toUpperCase()];
   if (sockets && sockets.size > 0) {
-    for (const ws of sockets) {
-      if (ws.readyState === WebSocket.OPEN) {
-        // E.03 (SEC-15) — socket que não lê é fechado, em vez de o servidor
-        // guardar cada reenvio da sala para ele. `terminate`, não `close`: o
-        // aperto de mão de fechamento também ficaria preso no buffer.
-        if (ws.bufferedAmount > WS_LIMITS.maxBufferedBytes) {
-          logger.warn("slow_consumer_closed", { room: code.toUpperCase(), peerId: wsPeer.get(ws), transport: "ws", bytes: ws.bufferedAmount });
-          sockets.delete(ws);
-          ws.terminate();
-          continue;
-        }
-        try {
-          ws.send(payload);
-        } catch (e) {
-          sockets.delete(ws);
-        }
-      }
-    }
+    for (const ws of sockets) sendToSocket(code, ws, payload);
   }
 }
 
@@ -907,6 +919,19 @@ app.get("/api/rooms/:code/stream", (req, res) => {
   if (!sseClients[code]) {
     sseClients[code] = new Set();
   }
+  // J.1e (SEC-18) — o teto de conexões por jogador da R.4, que o SSE não tinha:
+  // um assento abria quantos streams o limitador global deixasse (150 aceitos na
+  // medição), e cada um recebe a sala inteira a cada mudança. Fecha os mais
+  // antigos, como o WebSocket.
+  const doPeer = [...sseClients[code]].filter((r) => ssePeer.get(r) === peerId);
+  for (const velho of doPeer.slice(0, Math.max(0, doPeer.length + 1 - WS_LIMITS.maxSocketsPerPeer))) {
+    sseClients[code].delete(velho);
+    try {
+      velho.end();
+    } catch {
+      /* já fechado */
+    }
+  }
   sseClients[code].add(res);
   ssePeer.set(res, peerId);
 
@@ -959,9 +984,7 @@ function wsAllow(ws: WebSocket, code: string, peerId: string, budget: WsBudget, 
   if (wsLimiter.allow(code, peerId, budget)) return true;
   if (wsLimiter.justExceeded(code, peerId, budget)) {
     logger.warn("ws_rate_limited", { room: code, peerId, budget });
-    if (aviso && ws.readyState === WebSocket.OPEN) {
-      try { ws.send(JSON.stringify({ type: "error", error: aviso, code: "rate_limited" })); } catch { /* ignore */ }
-    }
+    if (aviso) sendToSocket(code, ws, JSON.stringify({ type: "error", error: aviso, code: "rate_limited" }));
   }
   return false;
 }
@@ -1038,14 +1061,7 @@ function watchYjsUpdates(entry: RoomYjsEntry, code: string): void {
     encoding.writeVarUint8Array(encoder, awarenessProtocol.encodeAwarenessUpdate(entry.awareness, changed));
     const payload = encoding.toUint8Array(encoder);
     for (const ws of sockets) {
-      if (ws === origin) continue;
-      if (ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.send(payload);
-        } catch {
-          sockets.delete(ws);
-        }
-      }
+      if (ws !== origin) sendToSocket(code, ws, payload);
     }
   });
 }
@@ -1074,14 +1090,7 @@ function broadcastYjsUpdate(code: string, update: Uint8Array, origin: unknown): 
   syncProtocol.writeUpdate(encoder, update);
   const payload = encoding.toUint8Array(encoder);
   for (const ws of sockets) {
-    if (ws === origin) continue;
-    if (ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(payload);
-      } catch {
-        sockets.delete(ws);
-      }
-    }
+    if (ws !== origin) sendToSocket(code, ws, payload);
   }
 }
 
@@ -1186,16 +1195,29 @@ function handleYjsBinary(code: string, ws: WebSocket, raw: Buffer): void {
     } catch {
       /* update Yjs inválido — socket mantido; estado durável é o JSON */
     }
+    // J.1e (SEC-18) — o doc inteiro volta a quem pede: um socket que pede e
+    // não lê enchia o próprio buffer sem passar pelo teto.
     const reply = encoding.toUint8Array(encoder);
-    if (reply.byteLength > 1 && ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(reply);
-      } catch {
-        /* ignore */
-      }
-    }
+    if (reply.byteLength > 1) sendToSocket(code, ws, reply);
   } else if (messageType === messageAwareness) {
     const update = decoding.readVarUint8Array(decoder);
+    // J.1d (SEC-17) — quem escreve e o que vem dentro, antes de aplicar e repassar.
+    const key = code.toUpperCase();
+    const peerId = wsPeer.get(ws);
+    const verdict = checkAwarenessUpdate(update, {
+      own: wsAwarenessId.get(ws),
+      takenByOther: (id) => [...(wsClients[key] ?? [])].some((s) => s !== ws && wsAwarenessId.get(s) === id),
+      isGm: !!peerId && getRoom(key)?.gmPeerId === peerId
+    });
+    if ("problem" in verdict) {
+      // Uma linha por socket: o recusado volta a cada quadro, no ritmo do orçamento.
+      if (!awarenessRejectLogged.has(ws)) {
+        awarenessRejectLogged.add(ws);
+        logger.warn("awareness_rejected", { room: key, peerId, reason: verdict.problem });
+      }
+      return;
+    }
+    wsAwarenessId.set(ws, verdict.clientID);
     awarenessProtocol.applyAwarenessUpdate(entry.awareness, update, ws);
   } else if (messageType === messageQueryAwareness) {
     const encoder = encoding.createEncoder();
@@ -1204,14 +1226,24 @@ function handleYjsBinary(code: string, ws: WebSocket, raw: Buffer): void {
       encoder,
       awarenessProtocol.encodeAwarenessUpdate(entry.awareness, Array.from(entry.awareness.getStates().keys()))
     );
-    if (ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(encoding.toUint8Array(encoder));
-      } catch {
-        /* ignore */
-      }
-    }
+    sendToSocket(code, ws, encoding.toUint8Array(encoder));
   }
+}
+
+/**
+ * J.1d (SEC-17) — o `clientID` de awareness de cada socket: o primeiro que ele
+ * usar. Um socket não escreve o estado de outro, e o dele sai da mesa quando o
+ * socket fecha (antes, ficava até o awareness vencer, 30 s depois).
+ */
+const wsAwarenessId = new WeakMap<WebSocket, number>();
+const awarenessRejectLogged = new WeakSet<WebSocket>();
+
+/** Tira da mesa o estado de awareness de um socket que fechou. */
+function dropSocketAwareness(code: string, ws: WebSocket): void {
+  const id = wsAwarenessId.get(ws);
+  const entry = roomYjs.get(code.toUpperCase());
+  if (id === undefined || !entry || !entry.awareness.getStates().has(id)) return;
+  awarenessProtocol.removeAwarenessStates(entry.awareness, [id], "server");
 }
 
 interface WsConnMeta {
@@ -1236,9 +1268,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
 
   // Estado inicial imediato (mesmo comportamento do SSE)
   const room = getRoom(code);
-  if (room && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(room));
-  }
+  if (room) sendToSocket(code, ws, JSON.stringify(room));
 
   ws.on("message", (raw: any, isBinary: boolean) => {
     // H.3d — o que chega entre a entrega do bastão e o fechamento do socket
@@ -1269,12 +1299,8 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           if (!wsAllow(ws, code, peerId, "chat", "Muitas mensagens. Aguarde um instante.")) break;
           const result = postChatMessage(code, peerId, msg.text);
           if (result.room) broadcastRoomUpdate(code);
-          else if (result.error) {
-            // Erro de volta para o autor (ex.: mensagem vazia)
-            if (ws.readyState === WebSocket.OPEN) {
-              try { ws.send(JSON.stringify({ type: "error", error: result.error, code: result.code })); } catch { /* ignore */ }
-            }
-          }
+          // Erro de volta para o autor (ex.: mensagem vazia)
+          else if (result.error) sendToSocket(code, ws, JSON.stringify({ type: "error", error: result.error, code: result.code }));
           break;
         }
         case "roll": {
@@ -1283,9 +1309,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           if (!wsAllow(ws, code, peerId, "action", "Muitas ações. Aguarde um instante.")) break;
           const result = rollDiceForPlayer(code, peerId, { kind: msg.kind, skillName: msg.skillName });
           if (result.room) broadcastRoomUpdate(code);
-          else if (ws.readyState === WebSocket.OPEN) {
-            try { ws.send(JSON.stringify({ type: "roll-error", error: result.error, code: result.code })); } catch { /* ignore */ }
-          }
+          else sendToSocket(code, ws, JSON.stringify({ type: "roll-error", error: result.error, code: result.code }));
           break;
         }
         case "heartbeat": {
@@ -1342,6 +1366,8 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
   });
 
   ws.on("close", () => {
+    // J.1d (SEC-17) — antes de sair do mapa: a remoção vai aos outros sockets.
+    dropSocketAwareness(code, ws);
     wsClients[code]?.delete(ws);
     if (wsClients[code] && wsClients[code].size === 0) {
       delete wsClients[code];
