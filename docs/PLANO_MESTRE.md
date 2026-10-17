@@ -753,7 +753,7 @@ o conserto** (o repo é público).
 > ⏸️ ***17/10/2026, segunda sessão: a J.1 inteira feita, e dois achados de segurança consertados antes do
 > ledger.*** *A J.0 entrou no `master` no #57. As sete áreas acharam 13 itens, 4 FAZER — dois deles achados de
 > segurança reproduzidos, o **SEC-17** e o **SEC-18**, que o dono escolheu consertar já (como na E e na I): o PR
-> de segurança vem do branch `claude/j-seguranca`, e o do ledger (`claude/j-areas`) vai empilhado nele. **Mergear
+> de segurança é o **#58** (`claude/j-seguranca`), e o do ledger, o **#59** (`claude/j-areas`), vai empilhado nele. **Mergear
 > o de segurança primeiro.** O próximo item é a **J.2**: conferir que os dois PRs entraram e o `master` ficou
 > verde. Durante a J, a linha de base é **879** testes em 68 arquivos (+11 do SEC-17/18); a tabela do fim do
 > plano muda na J.5. Uma pista da J.1d saiu da J na primeira parada — a nota está nela.*
@@ -877,8 +877,8 @@ o conserto** (o repo é público).
       J, quase todo FAZER é achado aberto.
       *(17/10/2026 — calibragem: **4 FAZER em 13, 31%**; nenhum veredito mudou na repassada. Destacados ao dono:
       o **J.07** e o **J.10** (ADIAR). Os dois achados de segurança (J.04 — **SEC-17**; J.08 — **SEC-18**): o dono
-      escolheu consertar antes do ledger — o PR de segurança vem do `claude/j-seguranca`, e o do ledger, do
-      `claude/j-areas`, empilhado nele. **Falta:** o merge dos dois, o de segurança primeiro, e o `master` verde.
+      escolheu consertar antes do ledger — o PR de segurança é o **#58** (`claude/j-seguranca`), e o do
+      ledger, o **#59** (`claude/j-areas`), empilhado nele. **Falta:** o merge dos dois, o de segurança primeiro, e o `master` verde.
       Se o merge aprovar os veredictos como estão, a J.3 é o J.11 e os dois comentários do J.01.)*
 - [ ] **J.3** Executar só os FAZER — passo X.3.
 - [ ] **J.4** 🔒 Portão, se a J.3 mudou código — passo X.4.

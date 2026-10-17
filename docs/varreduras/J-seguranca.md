@@ -282,8 +282,8 @@ na J.1d do plano): ADIAR, gatilho o dono rodar a sonda.
 [`SEGURANCA.md`](../SEGURANCA.md#fase-j--varredura-segurança), com o portão. Um convidado com um script publicava
 um cursor como "Mestre" e, com um nome que não era texto, derrubava o app inteiro de quem estava no grid.
 
-**VEREDITO:** FAZER — ✅ **feito antes deste ledger**, no PR de segurança (o branch `claude/j-seguranca`), a
-pedido do dono, como na E e na I.
+**VEREDITO:** FAZER — ✅ **feito antes deste ledger**, no PR de segurança, o
+[#58](https://github.com/tavinholoco/NetsheetEngine/pull/58), a pedido do dono, como na E e na I.
 
 ### J.05 — O quadro de texto do WebSocket vai ao `JSON.parse` com até 1 MiB
 
@@ -496,6 +496,6 @@ gatilho que se lê; os três DESCARTAR, um leitor que não existe. Nenhum veredi
   ainda não existe. A versão menor é uma migration — em PR próprio, pela decisão 5.
 
 **Os achados de segurança.** Dois, reproduzidos (J.04 — SEC-17; J.08 — SEC-18). O dono escolheu o conserto antes
-do ledger, como na E e na I: o PR de segurança vem do branch `claude/j-seguranca`, e este foi empilhado nele, já
+do ledger, como na E e na I: o PR de segurança é o [#58](https://github.com/tavinholoco/NetsheetEngine/pull/58), e este foi empilhado nele, já
 com o texto. **Mergear o de segurança primeiro.** A J.3 fica com o J.11 (e os comentários do J.01) — o que o merge
 deste ledger aprovar.
