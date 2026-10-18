@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { ArmorLocation, ArmorPiece, CharacterSheet } from '../../../types/cyberpunk';
-import { armorLocationsOf, armorSpAt } from '../../../rules/damage';
+import { armorEvTotal, armorLocationsOf, armorSpAt } from '../../../rules/damage';
 
 /**
  * K.2b — A ARMADURA POR PEÇA
@@ -42,6 +42,7 @@ interface ArmorPanelProps {
 
 export const ArmorPanel: React.FC<ArmorPanelProps> = ({ sheet, onChange }) => {
   const armor = sheet.armor ?? [];
+  const ev = armorEvTotal(armor);
 
   const update = (id: string, patch: Partial<ArmorPiece>) =>
     onChange({ armor: armor.map((a) => (a.id === id ? { ...current(a), ...patch } : a)) });
@@ -88,6 +89,11 @@ export const ArmorPanel: React.FC<ArmorPanelProps> = ({ sheet, onChange }) => {
         </div>
         <p className="text-micro text-subtle">
           Duas peças no mesmo local não somam: vale o maior SP, mais um bônus pela diferença entre elas (p. 99).
+        </p>
+        {/* K.2c — o EV das peças vestidas sai do REF de toda rolagem. */}
+        <p className="text-xs text-fg-soft" data-testid="armor-ev">
+          EV das peças vestidas: <span className="font-mono text-signal-400">{ev}</span>
+          {ev > 0 ? ` — o REF rola com −${ev}` : ' — o REF não perde nada'}
         </p>
       </div>
 

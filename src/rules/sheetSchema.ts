@@ -318,6 +318,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
   const wound = sanitizeWound(input, changed);
   const woundLevel = wound.woundLevel;
   const cyberware = sanitizeCyberware(input.cyberware, changed);
+  const armor = sanitizeArmor(input.armor, changed);
 
   const sheet: CharacterSheet = {
     id: safeString(input.id, MAX_NAME_CHARS, 'id', changed),
@@ -335,7 +336,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     // servidor o recalcula, descartando o que o cliente mandou. Não entra em
     // `changed`: o cliente não tem obrigação de mandá-lo certo, e marcar
     // divergência aqui encheria o log a cada sync.
-    currentStats: deriveCurrentStats({ stats, woundLevel, cyberware }),
+    currentStats: deriveCurrentStats({ stats, woundLevel, cyberware, armor }),
     woundLevel,
     damagePoints: wound.damagePoints,
     isDead: wound.isDead,
@@ -343,7 +344,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     skills: sanitizeSkills(input.skills, changed),
     cyberware,
     weapons: sanitizeWeapons(input.weapons, changed),
-    armor: sanitizeArmor(input.armor, changed),
+    armor,
     lifepath: sanitizeLifepath(input.lifepath, changed),
     gearNotes: safeString(input.gearNotes, MAX_NOTES_CHARS, 'gearNotes', changed),
     createdAt: safeString(input.createdAt, 64, 'createdAt', changed),

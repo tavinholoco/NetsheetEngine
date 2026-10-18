@@ -74,6 +74,14 @@ export function armorSpAt(armor: readonly ArmorPiece[] | undefined, location: Ar
     .reduce((sp, a) => combineArmorSp(sp, Math.max(0, Number(a.sp) || 0)), 0);
 }
 
+/**
+ * K.2c — o EV da armadura: soma o de cada peça VESTIDA (S6, S8), e sai do REF
+ * em `deriveCurrentStats`. Uma peça que cobre vários locais conta uma vez.
+ */
+export function armorEvTotal(armor: readonly Pick<ArmorPiece, 'ev' | 'equipped'>[] | undefined): number {
+  return (armor ?? []).reduce((ev, a) => ev + (a.equipped ? Math.max(0, Number(a.ev) || 0) : 0), 0);
+}
+
 // ------------------------------------------------------------
 // O acerto: bruto → armadura → BTM → multiplicador do local
 // ------------------------------------------------------------

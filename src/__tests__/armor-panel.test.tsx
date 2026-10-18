@@ -65,6 +65,13 @@ describe('K.2b — a armadura por peça na ficha', () => {
     expect(f.sp('Torso')).toBe('SP 0');
   });
 
+  it('K.2c — o EV das peças vestidas aparece, e sai quando a peça sai', async () => {
+    const f = montar([{ ...jaqueta, ev: 1 }, { ...jaqueta, id: 'p', name: 'Calça flak', locations: ['Right Leg', 'Left Leg'], ev: 1 }]);
+    expect(screen.getByTestId('armor-ev')).toHaveTextContent('REF rola com −2');
+    await f.user.click(screen.getByRole('checkbox', { name: /calça flak vestida/i }));
+    expect(screen.getByTestId('armor-ev')).toHaveTextContent('REF rola com −1');
+  });
+
   it('a peça da ficha antiga é convertida na primeira edição', async () => {
     const antiga = { id: 'c', name: 'Colete', location: 'Torso', sp: 18, ev: 0, equipped: true } as unknown as ArmorPiece;
     const f = montar([antiga]);

@@ -167,8 +167,8 @@ A trilha tem 10 caixas de 4 pontos: Leve, Sério, Crítico, Mortal 0–6. No Net
 
 ## Atributos correntes
 
-`currentStats` = atributo base → **−1 EMP a cada 10 de Humanidade perdida** (S7) → efeito do
-ferimento. É o que **toda** rolagem lê. **C.6.**
+`currentStats` = atributo base → **REF menos o EV da armadura vestida** (K.2c) → **−1 EMP a cada 10 de
+Humanidade perdida** (S7) → efeito do ferimento. É o que **toda** rolagem lê. **C.6.**
 
 | Fonte de modificação | Status |
 |---|---|
@@ -177,7 +177,7 @@ ferimento. É o que **toda** rolagem lê. **C.6.**
 | Perda de Humanidade **fracionária** *(revisão da G.3, 11/10/2026)* | A S8 guarda a perda como veio: `0.5` vale meio ponto, e `1d6/2` avalia **sem arredondar** (um 5 dá 2,5). O NetSheet guarda a perda **inteira** — o `actualHL` é validado como inteiro no `sheetSchema` —, e o campo pede ao jogador que arredonde. A diferença é de no máximo meio ponto por implante, e o EMP só cai a cada 10. **ADIAR** — gatilho: um implante de custo fracionário numa ficha de verdade, ou a soma das frações mudar o EMP de alguém. Aí o `actualHL` passa a aceitar meio ponto: é **formato persistido**, e exige a certeza toda (a regra de arredondamento do livro é pergunta em aberto — nenhuma das duas fontes a dá) |
 | Ferimento → REF/INT/COOL | **C.6** |
 | Cromo que soma atributo (ex.: lace muscular) | **ADIAR** — `CyberwareItem` não tem campo de atributo. **Gatilho:** Fase K modelar o efeito de implante (K.2) |
-| EV da armadura → REF | **ADIAR para a K** (RUL-11). A armadura padrão é modelada **uma peça por localização**; somar o EV por peça contaria a mesma jaqueta várias vezes. Precisa de modelo de peça antes |
+| EV da armadura → REF | ~~**ADIAR para a K** (RUL-11). A armadura padrão é modelada **uma peça por localização**; somar o EV por peça contaria a mesma jaqueta várias vezes. Precisa de modelo de peça antes~~ **K.2c (18/10/2026):** a peça cobre locais desde a K.2b, e o EV de cada peça vestida sai do REF, uma vez por peça (S6, S8), **antes** do ferimento (só o S8 — escolha do projeto, pergunta aberta). A iniciativa, que lê o REF corrente, sente o EV também |
 
 ## Habilidades especiais
 

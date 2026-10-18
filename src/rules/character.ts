@@ -20,6 +20,7 @@ import {
   type WoundLevelRow
 } from './tables';
 import { parseDamageFormula, rollDamageFormula, type Rng } from './dice';
+import { armorEvTotal } from './damage';
 
 export const STAT_NAMES: readonly StatName[] = ['INT', 'REF', 'TECH', 'COOL', 'ATTR', 'LUCK', 'MA', 'BODY', 'EMP'];
 
@@ -124,17 +125,19 @@ function statOf(stats: Partial<CharacterStats> | undefined, s: StatName): number
 }
 
 /**
- * Os atributos com que o personagem ROLA agora: base → EMP menos o cromo →
- * efeito do ferimento. Toda rolagem, do cliente ou da mesa, lê daqui.
+ * Os atributos com que o personagem ROLA agora: base → REF menos o EV da
+ * armadura (K.2c) → EMP menos o cromo → efeito do ferimento. Toda rolagem, do
+ * cliente ou da mesa, lê daqui.
  *
- * Fica de fora, com gatilho na conferência: cromo que soma atributo (o tipo
- * não tem esse campo) e o EV da armadura (a armadura é modelada por peça de
- * localização, e somar o EV contaria a mesma jaqueta várias vezes).
+ * O EV sai ANTES do ferimento: só o S8 dá a ordem, e é a escolha do projeto
+ * (o EV muda o atributo corrente; o ferimento age sobre o corrente) — pergunta
+ * aberta na conferência.
  */
 export function deriveCurrentStats(
-  sheet: Pick<CharacterSheet, 'stats' | 'woundLevel' | 'cyberware'> | Partial<CharacterSheet>
+  sheet: Pick<CharacterSheet, 'stats' | 'woundLevel' | 'cyberware' | 'armor'> | Partial<CharacterSheet>
 ): CharacterStats {
   const base = Object.fromEntries(STAT_NAMES.map((s) => [s, statOf(sheet.stats, s)])) as unknown as CharacterStats;
+  base.REF = Math.max(0, base.REF - armorEvTotal(sheet.armor));
   base.EMP = empAfterHumanityLoss(base.EMP, humanityLossTotal(sheet.cyberware));
   return applyWoundEffect(base, Number(sheet.woundLevel) || 0);
 }
