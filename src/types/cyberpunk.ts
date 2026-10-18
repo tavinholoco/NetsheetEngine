@@ -47,6 +47,12 @@ export interface CyberwareItem {
   actualHL: number;
   installed: boolean;
   notes?: string;
+  /**
+   * K.2e — o implante que soma num atributo (o Muscle and Bone Lace: BODY +2).
+   * Só conta instalado; entra no `deriveCurrentStats`, e com ele o BTM, o Carry e
+   * os saves. Opcional: a maioria do cromo não mexe em atributo.
+   */
+  statBonus?: { stat: StatName; amount: number };
 }
 
 /** Arma da ficha / arsenal. */

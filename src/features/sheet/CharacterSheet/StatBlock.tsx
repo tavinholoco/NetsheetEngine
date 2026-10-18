@@ -74,15 +74,16 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
     onChange({ stats: { ...stats, [stat]: next } });
   };
 
-  // BTM (Body Type Modifier): só BODY, de 0 a −5 (src/rules/character.ts — Fase C, C.2)
-  const bodyType = bodyTypeFor(stats.BODY);
-  const btm = bodyType.btm;
-
-  // C.6 — o valor com que o personagem ROLA agora (humanidade e ferimento).
+  // C.6 — o valor com que o personagem ROLA agora (cromo, EV, humanidade e ferimento).
   const current = deriveCurrentStats(sheet);
 
+  // BTM (Body Type Modifier): só BODY, de 0 a −5 (src/rules/character.ts — Fase C, C.2).
+  // K.2e — do BODY corrente: o cromo que soma BODY melhora o BTM (S6), como no dano.
+  const bodyType = bodyTypeFor(current.BODY);
+  const btm = bodyType.btm;
+
   const humanity = humanityFromEmp(stats.EMP);
-  const runMove = runFromMa(stats.MA);
+  const runMove = runFromMa(current.MA);
 
   return (
     <div className="bg-raised/70 border-l-4 border-l-accent-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-accent-500/10 space-y-4 relative overflow-hidden">

@@ -69,6 +69,12 @@ export const MAX_WEAPONS = 100;
 export const MAX_ARMOR = 50;
 export const MAX_LIFE_EVENTS = 100;
 export const MAX_GEAR = 200;
+/**
+ * Teto do bônus de atributo de UM implante (K.2e). Não é regra do livro — o
+ * Lace dá +2, e os suplementos chegam a +3 —; é o grampo do absurdo, como o
+ * STAT_MAX.
+ */
+export const CYBER_STAT_BONUS_MAX = 5;
 /** Peso de uma unidade de item, em kg (K.2d). */
 export const GEAR_WEIGHT_MAX_KG = 1000;
 export const GEAR_QTY_MAX = 999;
@@ -185,6 +191,17 @@ function sanitizeSkills(value: unknown, changed: string[]): SkillItem[] {
   return out;
 }
 
+/** K.2e — o bônus de atributo do implante: atributo que existe, valor grampeado. */
+function sanitizeStatBonus(value: unknown, path: string, changed: string[]): CyberwareItem['statBonus'] {
+  if (value === undefined) return undefined;
+  if (!isPlainObject(value) || !STAT_NAMES.includes(value.stat as StatName)) {
+    changed.push(path);
+    return undefined;
+  }
+  const amount = clampInt(value.amount, -CYBER_STAT_BONUS_MAX, CYBER_STAT_BONUS_MAX, 0, `${path}.amount`, changed);
+  return { stat: value.stat as StatName, amount };
+}
+
 function sanitizeCyberware(value: unknown, changed: string[]): CyberwareItem[] {
   const raw = safeArray(value, MAX_CYBERWARE, 'cyberware', changed);
   const out: CyberwareItem[] = [];
@@ -203,6 +220,8 @@ function sanitizeCyberware(value: unknown, changed: string[]): CyberwareItem[] {
       installed: safeBool(item.installed),
       ...(item.notes !== undefined ? { notes: safeString(item.notes, MAX_NOTES_CHARS, `cyberware[${i}].notes`, changed) } : {})
     });
+    const statBonus = sanitizeStatBonus(item.statBonus, `cyberware[${i}].statBonus`, changed);
+    if (statBonus) out[out.length - 1].statBonus = statBonus;
   });
   return out;
 }

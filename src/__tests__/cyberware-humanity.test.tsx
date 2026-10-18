@@ -86,7 +86,7 @@ describe('G.23 — instalar um implante na ficha', () => {
 
   async function instalar(f: ReturnType<typeof ficha>, nome: string, custo: string, digitado?: string) {
     await f.user.click(screen.getByRole('button', { name: /adicionar ciberimplante/i }));
-    await f.user.type(screen.getByPlaceholderText(/Kerenzikov/), nome);
+    await f.user.type(screen.getByRole('textbox', { name: /nome do implante/i }), nome);
     const campo = screen.getByLabelText('Perda HL:');
     await f.user.clear(campo);
     await f.user.type(campo, custo);
@@ -112,7 +112,7 @@ describe('G.23 — instalar um implante na ficha', () => {
   it('"1d6/2" pede a perda ao jogador, e o botão espera o número', async () => {
     const f = ficha();
     await f.user.click(screen.getByRole('button', { name: /adicionar ciberimplante/i }));
-    await f.user.type(screen.getByPlaceholderText(/Kerenzikov/), 'Interface');
+    await f.user.type(screen.getByRole('textbox', { name: /nome do implante/i }), 'Interface');
     const campo = screen.getByLabelText('Perda HL:');
     await f.user.clear(campo);
     await f.user.type(campo, '1d6/2');
@@ -128,7 +128,7 @@ describe('G.23 — instalar um implante na ficha', () => {
   it('o campo diz que a perda é inteira, e "2.5" não instala', async () => {
     const f = ficha();
     await f.user.click(screen.getByRole('button', { name: /adicionar ciberimplante/i }));
-    await f.user.type(screen.getByPlaceholderText(/Kerenzikov/), 'Interface');
+    await f.user.type(screen.getByRole('textbox', { name: /nome do implante/i }), 'Interface');
     const campo = screen.getByLabelText('Perda HL:');
     await f.user.clear(campo);
     await f.user.type(campo, '1d6/2');

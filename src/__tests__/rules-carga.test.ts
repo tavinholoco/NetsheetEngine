@@ -10,13 +10,17 @@
  * K.2d — a carga: Carry = BODY × 10 kg e Lift = BODY × 40 kg (S1, S6, S8), com o
  * BODY corrente. O peso do inventário aparece contra o Carry, sem pena nenhuma —
  * nenhuma fonte penaliza o peso carregado (decisão 13).
+ *
+ * K.2e — o cromo que soma atributo: o Muscle and Bone Lace dá BODY +2, e o BTM
+ * melhora com ele (S6 leva BODY 10 a 12 e o BTM a −5; S8). Só o implante
+ * instalado soma, e o cromo entra antes do EV — é o corpo, a armadura vem por cima.
  */
 import { describe, it, expect } from 'vitest';
-import { applyWoundEffect, carryKg, deriveCurrentStats, gearWeightKg, liftKg } from '../rules/character';
+import { applyWoundEffect, btmFromBody, carryKg, deriveCurrentStats, gearWeightKg, liftKg } from '../rules/character';
 import { CARRY_KG_PER_BODY, LIFT_KG_PER_BODY } from '../rules/tables';
 import { armorEvTotal } from '../rules/damage';
 import { sanitizeCharacterSheet } from '../rules/sheetSchema';
-import type { ArmorPiece, CharacterStats } from '../types/cyberpunk';
+import type { ArmorPiece, CharacterStats, CyberwareItem } from '../types/cyberpunk';
 
 const STATS: CharacterStats = { INT: 7, REF: 9, TECH: 5, COOL: 8, ATTR: 6, LUCK: 5, MA: 7, BODY: 8, EMP: 6 };
 
@@ -94,5 +98,59 @@ describe('K.2d — a carga pelo BODY', () => {
       { id: 'g2', name: 'Bigorna', weightKg: 1000, qty: 999 }
     ]);
     expect(r.changed).toEqual(expect.arrayContaining(['gear[1].weightKg', 'gear[1].qty', 'gear[2]']));
+  });
+});
+
+describe('K.2e — o cromo que soma atributo', () => {
+  const lace: CyberwareItem = {
+    id: 'lace', name: 'Muscle and Bone Lace', category: 'Bioware', costEb: 1500, humanityLoss: '1d6/2',
+    actualHL: 2, installed: true, statBonus: { stat: 'BODY', amount: 2 }
+  };
+  const corrente = (stats: CharacterStats, cyberware: CyberwareItem[], armor: ArmorPiece[] = []) =>
+    deriveCurrentStats({ stats, woundLevel: 0, cyberware, armor });
+
+  it('instalado, soma no atributo com que se rola', () => {
+    expect(corrente(STATS, [lace]).BODY).toBe(STATS.BODY + 2);
+  });
+
+  it('o BTM melhora com ele — o exemplo do S6: BODY 10 com o Lace vira 12', () => {
+    const body = corrente({ ...STATS, BODY: 10 }, [lace]).BODY;
+    expect(body).toBe(12);
+    expect(btmFromBody(body)).toBe(btmFromBody(12));
+    expect(btmFromBody(body)).toBeLessThan(btmFromBody(10));
+  });
+
+  it('desinstalado, não soma', () => {
+    expect(corrente(STATS, [{ ...lace, installed: false }]).BODY).toBe(STATS.BODY);
+  });
+
+  it('dois implantes somam, e o bônus negativo não deixa o atributo abaixo de zero', () => {
+    const outro: CyberwareItem = { ...lace, id: 'o', statBonus: { stat: 'BODY', amount: 1 } };
+    expect(corrente(STATS, [lace, outro]).BODY).toBe(STATS.BODY + 3);
+    const pesado: CyberwareItem = { ...lace, id: 'p', statBonus: { stat: 'REF', amount: -5 } };
+    expect(corrente({ ...STATS, REF: 3 }, [pesado]).REF).toBe(0);
+  });
+
+  it('o cromo entra antes do EV: o corpo primeiro, a armadura por cima', () => {
+    const reflexo: CyberwareItem = { ...lace, statBonus: { stat: 'REF', amount: 2 } };
+    expect(corrente({ ...STATS, REF: 2 }, [reflexo], [peca(3)]).REF).toBe(2 + 2 - 3);
+  });
+
+  it('o validador guarda o bônus com teto, e descarta o que não é atributo', () => {
+    const r = sanitizeCharacterSheet({
+      id: 's', handle: 'Vex', stats: STATS, skills: [], weapons: [], armor: [],
+      cyberware: [
+        lace,
+        { ...lace, id: 'x', statBonus: { stat: 'ALMA', amount: 2 } },
+        { ...lace, id: 'y', statBonus: { stat: 'REF', amount: 9 } }
+      ]
+    })!;
+    expect(r.sheet.cyberware[0].statBonus).toEqual({ stat: 'BODY', amount: 2 });
+    expect(r.sheet.cyberware[1].statBonus).toBeUndefined();
+    expect(r.sheet.cyberware[2].statBonus).toEqual({ stat: 'REF', amount: 5 });
+    expect(r.changed).toEqual(expect.arrayContaining(['cyberware[1].statBonus', 'cyberware[2].statBonus.amount']));
+    // Só o Lace soma no BODY: o bônus descartado não conta, e o terceiro soma no REF.
+    expect(r.sheet.currentStats.BODY).toBe(STATS.BODY + 2);
+    expect(r.sheet.currentStats.REF).toBe(STATS.REF + 5);
   });
 });

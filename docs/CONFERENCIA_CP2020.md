@@ -167,8 +167,9 @@ A trilha tem 10 caixas de 4 pontos: Leve, Sério, Crítico, Mortal 0–6. No Net
 
 ## Atributos correntes
 
-`currentStats` = atributo base → **REF menos o EV da armadura vestida** (K.2c) → **−1 EMP a cada 10 de
-Humanidade perdida** (S7) → efeito do ferimento. É o que **toda** rolagem lê. **C.6.**
+`currentStats` = atributo base → **mais o cromo instalado que soma atributo** (K.2e) → **REF menos o EV da
+armadura vestida** (K.2c) → **−1 EMP a cada 10 de Humanidade perdida** (S7) → efeito do ferimento. É o que
+**toda** rolagem lê — e o BTM do dano, o Carry, o Lift e os saves leem o BODY daqui. **C.6.**
 
 | Fonte de modificação | Status |
 |---|---|
@@ -176,7 +177,7 @@ Humanidade perdida** (S7) → efeito do ferimento. É o que **toda** rolagem lê
 | **Perda de Humanidade de cada implante** *(G.23, 11/10/2026)* | O implante tem um **custo de humanidade** — um número ou uma fórmula de dados (`2d6`, `1d6/2`, `0.5`, `3d6`…) —, **rolado uma vez** ao instalar; o resultado é a perda **daquele** implante, e a ficha soma a de cada um. **S8:** o `humanityCost` do item, e um botão que rola a fórmula (ou usa o número) e guarda em `humanityLoss` (`module/item/item-sheet.js`, conferido de novo em 11/10). **S1:** a perda é uma coluna por implante (HL), somada. Nenhuma das duas sorteia um valor que ignore o item. **Código antes:** `2 + round(random × 6)` — de 2 a 8, qualquer que fosse a fórmula digitada. **G.3g** — `rollHumanityLoss` (`src/rules/character.ts`), com o RNG injetado: número inteiro vale o número; `NdM±X` rola pelo parser do dano; o que ele não lê (`1d6/2`, `0.5`) **o jogador digita**, como na S1. A divisão no parser segue o gatilho da [ADR 0004](./adr/0004-dice-roller.md). *Cuidado:* a busca aberta devolve o **RED** (custo fixo, teto de humanidade) — nada daqui vem dele |
 | Perda de Humanidade **fracionária** *(revisão da G.3, 11/10/2026)* | A S8 guarda a perda como veio: `0.5` vale meio ponto, e `1d6/2` avalia **sem arredondar** (um 5 dá 2,5). O NetSheet guarda a perda **inteira** — o `actualHL` é validado como inteiro no `sheetSchema` —, e o campo pede ao jogador que arredonde. A diferença é de no máximo meio ponto por implante, e o EMP só cai a cada 10. **ADIAR** — gatilho: um implante de custo fracionário numa ficha de verdade, ou a soma das frações mudar o EMP de alguém. Aí o `actualHL` passa a aceitar meio ponto: é **formato persistido**, e exige a certeza toda (a regra de arredondamento do livro é pergunta em aberto — nenhuma das duas fontes a dá) |
 | Ferimento → REF/INT/COOL | **C.6** |
-| Cromo que soma atributo (ex.: lace muscular) | **ADIAR** — `CyberwareItem` não tem campo de atributo. **Gatilho:** Fase K modelar o efeito de implante (K.2) |
+| Cromo que soma atributo (ex.: lace muscular) | ~~**ADIAR** — `CyberwareItem` não tem campo de atributo. **Gatilho:** Fase K modelar o efeito de implante (K.2)~~ **K.2e (18/10/2026):** o implante guarda `statBonus` (atributo e quanto soma); instalado, soma antes do EV, e o BTM melhora com o BODY (o Lace: BODY +2 — S6, S8). As variantes dos Chromebooks ("não no BTM", "só para Lift") ficam de fora: são suplemento |
 | EV da armadura → REF | ~~**ADIAR para a K** (RUL-11). A armadura padrão é modelada **uma peça por localização**; somar o EV por peça contaria a mesma jaqueta várias vezes. Precisa de modelo de peça antes~~ **K.2c (18/10/2026):** a peça cobre locais desde a K.2b, e o EV de cada peça vestida sai do REF, uma vez por peça (S6, S8), **antes** do ferimento (só o S8 — escolha do projeto, pergunta aberta). A iniciativa, que lê o REF corrente, sente o EV também |
 
 ## Habilidades especiais

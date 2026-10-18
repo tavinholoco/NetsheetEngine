@@ -53,6 +53,19 @@ function mesa(patch: Partial<CharacterSheet> = {}): string {
 const vex = (code: string) => getRoom(code)!.players.p1;
 const lastChat = (code: string) => getRoom(code)!.chatMessages.slice(-3).map((m) => m.text).join('\n');
 
+describe('K.2e — o BTM do dano vem do BODY com o cromo', () => {
+  it('com o Lace (BODY +2), o BODY 8 vira 10 e o BTM −3 vira −4: 20 − SP 10 = 10 → 6 pontos', () => {
+    const lace = {
+      id: 'lace', name: 'Muscle and Bone Lace', category: 'Bioware', costEb: 1500, humanityLoss: '1d6/2',
+      actualHL: 2, installed: true, statBonus: { stat: 'BODY' as const, amount: 2 }
+    };
+    const code = mesa({ cyberware: [lace] });
+    applyDamage(code, 'gm_1', { targetId: 'p1', raw: 20, location: 'Torso' }, scriptedRng([5]));
+    expect(vex(code).sheet.damagePoints).toBe(6);
+    expect(lastChat(code)).toContain('BTM −4 = 6');
+  });
+});
+
 describe('D.1 — o GM aplica, o servidor faz a conta do livro', () => {
   it('tronco: 20 − SP 10 = 10 → BTM −3 = 7 pontos (Sério), com a conta no chat', () => {
     const code = mesa();

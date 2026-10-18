@@ -127,9 +127,28 @@ function statOf(stats: Partial<CharacterStats> | undefined, s: StatName): number
 }
 
 /**
- * Os atributos com que o personagem ROLA agora: base → REF menos o EV da
- * armadura (K.2c) → EMP menos o cromo → efeito do ferimento. Toda rolagem, do
- * cliente ou da mesa, lê daqui.
+ * K.2e — o que o cromo INSTALADO soma em cada atributo (o Lace: BODY +2 — S6,
+ * S8). Desinstalado não soma. Atributo sem implante fica de fora.
+ */
+export function cyberwareStatBonus(
+  cyberware: readonly Pick<CyberwareItem, 'installed' | 'statBonus'>[] | undefined
+): Partial<Record<StatName, number>> {
+  const out: Partial<Record<StatName, number>> = {};
+  for (const cw of cyberware ?? []) {
+    if (!cw.installed || !cw.statBonus || !STAT_NAMES.includes(cw.statBonus.stat)) continue;
+    const amount = Number(cw.statBonus.amount) || 0;
+    out[cw.statBonus.stat] = (out[cw.statBonus.stat] ?? 0) + amount;
+  }
+  return out;
+}
+
+/**
+ * Os atributos com que o personagem ROLA agora: base → mais o cromo que soma
+ * atributo (K.2e) → REF menos o EV da armadura (K.2c) → EMP menos a humanidade
+ * perdida → efeito do ferimento. Toda rolagem, do cliente ou da mesa, lê daqui —
+ * e o BTM do dano, o Carry e os saves leem o BODY daqui também.
+ *
+ * O cromo vem antes do EV: é o corpo, e a armadura vai por cima.
  *
  * O EV sai ANTES do ferimento: só o S8 dá a ordem, e é a escolha do projeto
  * (o EV muda o atributo corrente; o ferimento age sobre o corrente) — pergunta
@@ -138,7 +157,10 @@ function statOf(stats: Partial<CharacterStats> | undefined, s: StatName): number
 export function deriveCurrentStats(
   sheet: Pick<CharacterSheet, 'stats' | 'woundLevel' | 'cyberware' | 'armor'> | Partial<CharacterSheet>
 ): CharacterStats {
-  const base = Object.fromEntries(STAT_NAMES.map((s) => [s, statOf(sheet.stats, s)])) as unknown as CharacterStats;
+  const bonus = cyberwareStatBonus(sheet.cyberware);
+  const base = Object.fromEntries(
+    STAT_NAMES.map((s) => [s, Math.max(0, statOf(sheet.stats, s) + (bonus[s] ?? 0))])
+  ) as unknown as CharacterStats;
   base.REF = Math.max(0, base.REF - armorEvTotal(sheet.armor));
   base.EMP = empAfterHumanityLoss(base.EMP, humanityLossTotal(sheet.cyberware));
   return applyWoundEffect(base, Number(sheet.woundLevel) || 0);
