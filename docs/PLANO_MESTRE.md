@@ -153,7 +153,8 @@ salto não servia).
 ## ⚖️ Decisões tomadas (02/09/2026)
 
 Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem motivo novo. *(1 a 3 em
-02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09; 8 em 29/09; 9, 10 e 11 em 30/09; 12 em 16/10/2026.)*
+02/09; 4 em 03/09; 5 em 25/09; 6 em 26/09; 7 em 28/09; 8 em 29/09; 9, 10 e 11 em 30/09; 12 em 16/10; 13 em
+18/10/2026.)*
 
 | # | Pergunta | Decisão | Consequência |
 |---|---|---|---|
@@ -169,6 +170,7 @@ Estas respostas fecham ambiguidades que mudariam o trabalho. Não reabrir sem mo
 | 10 | As quatro perguntas que a medição da F abriu (F.0b): a voz do texto, o vermelho que não é dano, a cor por seção, o livro como referência visual | **(a)** **Rajdhani** nos rótulos, na navegação e no texto corrido; a **mono** só em número, dado e momento de terminal, **sem negrito**; piso de **10 px**. **(b)** **Vermelho só dano**; marca, menu e PRD vão para amarelo ou ciano, o GM para amarelo, e erro, ação destrutiva, *fumble* e NPC hostil para um papel novo, **`fault`** (magenta). **(c)** A **cor por seção fica**; o PRD sai do vermelho e DADOS sai do rosa. **(d)** ~~O livro do dono é~~ O interior do livro de 1990 é **preto e branco**: referência de **diagramação e tipografia**; a cor vem da linguagem da época. **⚠️ Corrigido no mesmo dia (decisão 11):** o dono não tem o livro — a diagramação vem do que as fontes públicas mostram do interior (F.3.0) | (a) segue a ADR 0006 — a premissa "Rajdhani já em uso" era falsa: 96% do texto da ficha é mono, e a Share Tech Mono só tem o peso 400 (negrito sintético em 99 elementos). (b) é o invariante do `CLAUDE.md` aplicado aos 244 usos medidos. (c) não tinha recomendação explícita na análise; foi registrada como **manter** — a leitura de menor mudança, que o merge do PR confirma ou corrige. *(01/10/2026: **confirmada** — o dono aprovou as capturas do PR 3b, com a cor de cada seção.)* (d) as três premissas da F.3 (barra preta, faixas, numeração) são de diagramação, que o P&B responde: F.3.0. Detalhe na [F.0a](./historico/FASE_F.md#-o-que-o-f0a-mediu-30092026) e na [ADR 0006](./adr/0006-sistema-tipografico.md) |
 | 11 | De onde vêm as regras e a diagramação, se o dono **não tem o livro**? *(Correção do dono, 30/09/2026 à noite: o registro "o dono tem o livro físico", do mesmo dia, estava errado — e as decisões 9 e 10d, a F.3.0 e as "Perguntas para o livro" se apoiavam nele)* | **Fontes secundárias**, pelo método da [conferência](./CONFERENCIA_CP2020.md#fontes-e-o-quanto-confiar-nelas): regra aceita com **duas fontes independentes** concordando; o que não fecha e bloqueia trabalho vai ao dono como decisão, com a pesquisa e uma opção recomendada — como a decisão 6. **Comprar o PDF oficial** (R. Talsorian, *Cyberpunk 2.0.2.0, Second Edition, Version 2.01*, no [DriveThruRPG](https://legacy.drivethrurpg.com/product/50354/Cyberpunk-2020-The-Second-Edition-Version-201), US$ 15 em 30/09): **ADIAR**. **Cópia do livro sem licença não é fonte** | Os gatilhos "o dono confirmar no livro" da conferência viram "uma segunda fonte independente" — sem isso nunca disparariam, o DESCARTAR disfarçado que a M.0 já previa. A F.3.0 passa a ser pesquisa em fonte pública. **Gatilho da compra:** uma pergunta para o livro bloquear o trabalho de uma fase e as secundárias não fecharem — a K.0 (criação, IP, netrunning) é a candidata mais provável. O contrato de custo zero é sobre a infraestrutura; a compra é decisão do dono. Se houver PDF, ele fica **fora do repositório**, como o backup |
 | 12 | ADIAR é esquecimento ou ordem? *(16/10/2026, nas palavras do dono: "não quero perder eles no futuro pois quero consertar tudo e fazer tudo do plano")* | **Ordem.** O filtro de necessidade continua decidindo **quando**: nas varreduras, ADIAR segue como veredito padrão, e o FAZER da fase corrente ainda exige sintoma. Mas **nenhum ADIAR sai do plano**: todos são quitados no **bloco Q**, depois da L e antes da M. Na Q, o veredito padrão se inverte, e todo item é FAZER, a não ser que o dono escreva DESCARTAR | A [Q](#bloco-q--quitar-os-adiar--1015-dias-estimativa-grosseira-que-a-q0-refaz--depois-da-l-antes-da-m) lista cada ADIAR em aberto (78 em 16/10) com o gatilho e a fonte, e o ADIAR novo de cada fase entra nela no fechamento (passo 2 do ritual de encerramento). A M.3 passa a conferir a Q, e o grep da M.0 inclui o `historico/`, onde seis itens só existiam lá. Um gatilho que dispara antes da Q continua virando trabalho da fase corrente. O que esbarra num invariante (o PITR pago, o PDF, a Net jogável, o login, o site fora do Render) vai ao dono na Q.0b, com uma opção recomendada |
+| 13 | As quatro escolhas que a K.0 abriu: os métodos de atributo da criação, a evolução por IP, os "drops" de NPC e até onde vai a carga | **(a)** A criação oferece **o 9D10 num bolo e o bolo que o Mestre define** (o "cinemático"), cada atributo de 2 a 10 — os dois que duas fontes confirmam. **(b)** A evolução por IP fica **para a Q**. **(c)** A K.4 **sai da K** e vai para a Q, com a versão pequena escrita. **(d)** A K.2 vai até o **EV da armadura, sem pena por peso**: a armadura vira peça que cobre locais, e o EV sai do REF | (a) O método rápido (1d10 por atributo) fica nas [Perguntas para o livro](./CONFERENCIA_CP2020.md#perguntas-para-o-livro) e na lista da Q: o S5 rerrola o 1, e o S6 descarta o 1 e o 2. (b) O custo (nível × 10 × multiplicador) tem uma fonte só, o S6, e o multiplicador de cada perícia não tem nenhuma; ninguém tem IP sem sessão jogada. **Gatilho:** uma segunda fonte, o PDF, ou a primeira sessão que der IP. (c) "Drops" é vocabulário de videogame, e o NPC gerado já traz o equipamento. **Gatilho:** a mesa querer pegar o equipamento de um NPC. (d) Nenhuma fonte penaliza o peso carregado — seria regra de casa (decisão 2). Muda o formato da armadura, que o `sheetSchema` converte ao ler. Todas as quatro foram a recomendação |
 
 ---
 
@@ -936,21 +938,63 @@ o conserto** (o repo é público).
 
 ---
 
-### FASE K — PROFUNDIDADE DE SISTEMA 🔨 *(4–5 dias)*
+### FASE K — PROFUNDIDADE DE SISTEMA 🔨 *(5–6 dias, refeita na K.0 — era 4–5)*
 
 A Fase 11 do plano antigo, reordenada por retorno: export/import primeiro (dá confiança para usar de
 verdade), netrunning por último (é meio jogo à parte).
 
-- [ ] **K.0** 🔍 **Verificação de premissas** — *(acrescentado na revisão pós-D, 29/09/2026: o
-      `CLAUDE.md` manda toda fase de construção abrir com um `.0`, e a K não tinha)*. Já sabido:
+- [x] **K.0** 🔍 **Verificação de premissas** — *(acrescentado na revisão pós-D, 29/09/2026: o
+      `CLAUDE.md` manda toda fase de construção abrir com um `.0`, e a K não tinha)*.
+      *(17–18/10/2026 — medidas contra o `master` em `6e809a8`, com a linha de base batendo: `tsc` 0, **881**
+      testes em 69 arquivos. **Caíram três premissas:** a K.6 não fecha o "trapaceiro plausível" no servidor, a
+      K.2 pedia uma pena por peso que nenhuma fonte tem, e a K.1 já estava pela metade. A pesquisa das regras
+      está na [conferência](./CONFERENCIA_CP2020.md#o-que-fica-para-a-fase-k), com as fontes novas. O que
+      cada item mediu:)*
+      - **K.1 — pela metade, nunca ligada ao validador.** O "Exportar Atual" já baixa a ficha em JSON
+        (`PresetsManager.tsx:63–71`). O "Importar" põe o arquivo nos presets conferindo só `id` e `stats`
+        (`:73–89`), sem o `sanitizeCharacterSheet`, e abrir o preset como ficha exige login (`clonePreset`,
+        `:51–57`). Folha de impressão não existe. É o padrão "construído e nunca ligado" do `CLAUDE.md`.
+      - **K.2 — a pena por peso não tem fonte.** Carry (BODY × 10 kg) e Lift (BODY × 40 kg) batem no S1 e no
+        S8. **Nenhuma fonte penaliza o peso carregado:** o S1 só mostra o Carry, e o S8 soma o peso do que está
+        equipado sem penalizar. O EV é da **armadura**: o S8 a modela como **peça que cobre vários locais** e
+        tira do REF o EV de cada peça equipada, **antes** do efeito do ferimento (`actor.js`). No NetSheet, a
+        armadura é uma peça por local, e o `ev` (0–20, `sheetSchema.ts:240`) não tem leitor. Mudar isso é
+        mudar o formato da ficha. A produção segue com **0** fichas (backup de 16/10).
+      - **K.3 — entregue inteira.** A T11.3 era "aplicar a penalidade de REF por ferimento", e a C.5/C.6 a
+        fizeram: o `applyWoundEffect` entra no `deriveCurrentStats`, que toda rolagem lê, na ficha e na mesa.
+        Sobram dois itens que a [Q.1](#bloco-q--quitar-os-adiar--1015-dias-estimativa-grosseira-que-a-q0-refaz--depois-da-l-antes-da-m)
+        dava à K: o **G.05** (dois nomes para o mesmo ferimento — o `WOUND_LEVEL_NAMES` de
+        `utils/injuryRules.ts:29` contra o `WOUND_TRACK`) e o **I.01** (o modificador do GM sem tela).
+      - **K.4 — não existe regra.** "Drops" não é do 2020, e o NPC gerado já traz arma, armadura e cromo
+        (`npcGenerator.ts`). Saiu da K pela decisão 13 (abaixo).
+      - **K.5 — as fontes não fecham.** A ficha não tem campo nenhum de netrunner. O S8 não modela a Net, só
+        vende o equipamento, e as fontes de fã divergem até no deck padrão (MU, Speed e Data Wall com números
+        diferentes); a conversão para o Mythus que aparece na busca é outro sistema. A K.5 abre com uma
+        pesquisa, e **é a candidata mais forte ao gatilho do PDF** (decisão 11).
+      - **K.6 — a premissa do "trapaceiro plausível" caiu.** O orçamento só vale **na criação**: depois, o IP
+        e o cromo sobem os números legitimamente (o `STAT_MAX` 15 existe por causa do cromo). O servidor não
+        tem como recusar uma ficha acima do orçamento sem o histórico da criação. A versão possível é deixar o
+        orçamento **à vista do GM**: o trapaceiro fica visível, não barrado. As regras que fecharam em duas
+        fontes estão na conferência: os 40 pontos de carreira nos 10 pacotes, o REF + INT de *pickup*, a verba
+        inicial e os dois métodos de atributo da decisão 13.
+      - **K.7 — confirmada em três fontes** (S2, S3, S8), com uma perícia a mais para sair: **"Psychology"
+        (INT) não existe em nenhuma delas.** "Social" é só de EMP, e as oito que faltam são as oito. E a tela
+        sugere só as **8 primeiras** perícias de cada atributo (`SkillsSection.tsx:23` e `:33`): cinco das de
+        INT nunca apareceriam, mesmo na tabela. Leap = Run ÷ 4 (S1, e o S8 arredonda para baixo); o Walk não
+        existe em nenhuma fonte.
+      - **A estimativa refeita:** K.1 ½ dia, K.2 1½, K.3 ½, K.5 1 (mais a pesquisa, que pode travar), K.6 1½,
+        K.7 ½ — **5–6 dias**, sem a K.4 e sem a evolução por IP.
+
+      *O que a revisão pós-D e a de robustez deixaram aqui (29–30/09):*
       - **A K.3 foi em boa parte entregue** pela C (efeito do ferimento em toda rolagem) e pela D
         (pontos, stun e death save automáticos, estabilização, perda de membro como aviso). Medir o que
         sobra antes de estimar — pode não sobrar item.
       - **K.7 continua valendo:** `Social` segue em INT **e** em EMP (`cyberpunkData.ts`), e o `Walk`
         segue no `StatBlock`.
       - **A K.1 também é backup** — o que o jogador controla, fora do banco (R.10).
-      - **K.6 é a regra que fecha o "trapaceiro plausível"** do portão da B (BODY 15, perícias em 10):
-        sem orçamento de criação, a ficha grampeada ainda é válida.
+      - ~~**K.6 é a regra que fecha o "trapaceiro plausível"** do portão da B (BODY 15, perícias em 10):
+        sem orçamento de criação, a ficha grampeada ainda é válida.~~ *Caiu na K.0 (18/10): o orçamento
+        não vale depois da criação — ver acima.*
       - Toda regra nova começa na tabela e na [conferência](./CONFERENCIA_CP2020.md#o-que-fica-para-a-fase-k),
         com duas fontes — o cuidado com Cyberpunk RED vale em dobro para netrunning (K.5), onde o RED
         mudou quase tudo.
@@ -979,7 +1023,9 @@ verdade), netrunning por último (é meio jogo à parte).
         recomendação — e é aqui que o gatilho da compra do PDF oficial tem mais chance de disparar. As
         perguntas estão em [Perguntas para o livro](./CONFERENCIA_CP2020.md#perguntas-para-o-livro), na
         conferência.
-- [ ] **K.0b** 🧑‍⚖️ **Decisão do dono — o tamanho da K.5 e o método da K.6.**
+- [x] **K.0b** 🧑‍⚖️ **Decisão do dono — o tamanho da K.5 e o método da K.6.**
+      *(18/10/2026 — fechada: a K.5 em 30/09 (decisão 9), e o resto hoje, com as quatro recomendações. Virou a
+      [decisão 13](#-decisões-tomadas-02092026).)*
       - **K.5**, em ordem de tamanho: *(1, recomendada)* **o netrunner na ficha** — deck, programas e MU
         como dado, sem a Net jogável; *(2)* **a Net na mesa**, com mapa e turnos — fase própria, depois da
         L; *(3)* **ADIAR** até alguém da mesa do dono jogar de netrunner. A 1 agora e a 2 com o gatilho da
@@ -987,25 +1033,81 @@ verdade), netrunning por último (é meio jogo à parte).
         *(30/09/2026 — **o dono escolheu a recomendação:** a 1 na K.5, e a 2 como ADIAR com o gatilho
         da 3. Virou a [decisão 9](#-decisões-tomadas-02092026).)*
       - **K.6:** quais métodos de atributo a criação oferece (rolagem, bolo de 9d10, pontos), e se a
-        evolução por IP entra junto ou depois. **Ainda aberta** — decidir na K.0, com as fontes
-        secundárias (decisão 11): os métodos que duas delas confirmam são o cardápio.
-- [ ] **K.1** *(era T11.5)* Export/import de ficha (JSON + impressão em PDF) — reaproveita o validador
-      de `src/rules/sheetSchema.ts`. *Versão 10× menor do PDF:* folha de estilo de impressão
-      (`@media print` e o "Salvar como PDF" do navegador), sem biblioteca de PDF no bundle nem no CSP.
-- [ ] **K.2** *(era T11.1)* Inventário, peso e EV: Carry (BODY×10 kg), Lift (BODY×40 kg), encumbrance
-      automático, penalidade de REF por armadura. *(RUL-11)*
-- [ ] **K.3** *(era T11.3)* Pós-ferimento automático — em boa parte já entregue pela Fase C.
-- [ ] **K.4** *(era T11.4)* Inventário e drops de NPC — *reescrever na K.0 com o que a mesa precisa
-      (ver acima).*
+        evolução por IP entra junto ou depois. ~~**Ainda aberta** — decidir na K.0, com as fontes
+        secundárias (decisão 11): os métodos que duas delas confirmam são o cardápio.~~
+        *(18/10/2026 — **o 9D10 e o bolo do Mestre**, os dois que duas fontes confirmam; o método rápido e a
+        evolução por IP vão para a lista da Q, cada um com o gatilho.)*
+      - *Abertas pela K.0 (18/10/2026), e decididas no mesmo dia:* **a K.4** sai da K e vai para a Q, com a
+        versão pequena escrita; **a K.2** vai até o EV da armadura, **sem** pena por peso.
+
+**Como a K anda a partir daqui** *(K.0, 18/10/2026)*: toda regra começa na tabela (`src/rules/tables.ts`) e
+na [conferência](./CONFERENCIA_CP2020.md#o-que-fica-para-a-fase-k), e o teste deriva da tabela (a disciplina
+da C). Mudança de formato da ficha passa pelo `sheetSchema`, que **converte a ficha antiga ao ler** — a
+produção tem 0 fichas, mas o `localStorage` de quem já usou o site tem. Cada item vira um commit, e os PRs
+seguem os grupos abaixo.
+
+- [ ] **K.1** *(era T11.5)* **Export, import e impressão** — reaproveita o validador de
+      `src/rules/sheetSchema.ts`, que nasceu prevendo isto. *(~½ dia)*
+  - [ ] **K.1a** O import passa pelo `sanitizeCharacterSheet`, e a tela diz o que ele corrigiu. Teste antes:
+        um arquivo com campo fora da faixa ou com coleção malformada, que hoje entra cru nos presets.
+  - [ ] **K.1b** A ficha importada abre sem conta, como a ficha local: hoje virar ficha exige login
+        (`clonePreset`), e a K.1 também é o backup de quem não tem conta (R.10). Confirmar antes que o login
+        não protege nada ali.
+  - [ ] **K.1c** Folha de impressão: `@media print` e o "Salvar como PDF" do navegador, sem biblioteca de PDF
+        no bundle nem no CSP. Captura da impressão no `scripts/visual/`.
+- [ ] **K.2** *(era T11.1)* **Carga, armadura e cromo** — *(RUL-11; decisão 13: o EV da armadura, sem pena
+      por peso)*. *(~1½ dia)*
+  - [ ] **K.2a** Tabela e conferência: Carry (BODY × 10 kg) e Lift (BODY × 40 kg) — S1, S8; o EV de cada peça
+        sai do REF — S8, **uma fonte**: buscar a segunda, e a ordem contra o efeito do ferimento (o S8 tira o
+        EV antes). Camadas de armadura no mesmo local (a tabela proporcional, p. 99 pelo S9): duas fontes, ou
+        uma peça por local, como hoje.
+  - [ ] **K.2b** A armadura como **peça que cobre locais** (SP por local, EV por peça), com a ficha antiga
+        convertida na leitura — as seis peças de hoje viram o que eram. O SP de cada local continua saindo
+        para o dano da D sem mudar de número.
+  - [ ] **K.2c** O EV entra no `deriveCurrentStats` — o REF de toda rolagem, na ficha e na mesa.
+  - [ ] **K.2d** Inventário com peso, e Carry e Lift na ficha. Sem pena por peso (decisão 13).
+  - [ ] **K.2e** **Cromo que soma atributo** (da [Q.1](#bloco-q--quitar-os-adiar--1015-dias-estimativa-grosseira-que-a-q0-refaz--depois-da-l-antes-da-m)):
+        um campo no `CyberwareItem`, com o exemplo do livro em duas fontes, e a soma no `deriveCurrentStats`
+        até o teto de 15 que já existe.
+  - [ ] **K.2f** O **I.06** (da Q.1, dono a K.2): medir a ficha cheia com o formato novo contra os 64 KB do
+        `sheet_too_large`. Se ficar longe, o I.06 segue na Q com o número; se chegar perto, a tela passa a
+        avisar quando a sincronia da ficha falha.
+- [ ] **K.3** *(era T11.3)* **O que sobrou da rolagem e do ferimento** — a penalidade foi entregue pela
+      C.5/C.6 (K.0). *(~½ dia)*
+  - [ ] **K.3a** O **G.05**: um nome por nível, o da trilha do livro (`WOUND_TRACK`); o `WOUND_LEVEL_NAMES`
+        sai, e a ficha e o cartão do token dizem a mesma coisa. A cor fica no token `wound-N`.
+  - [ ] **K.3b** O **I.01**: a tela do GM escreve o modificador de cena (−10 a +10, com o motivo) pela rota
+        `/settings`, que existe desde a C.4 sem chamador. O detalhe da rolagem já o mostra.
+- [x] **K.4** *(era T11.4)* Inventário e drops de NPC — *reescrever na K.0 com o que a mesa precisa
+      (ver acima).* *(18/10/2026 — **saiu da K** (decisão 13): o 2020 não tem a regra, e o NPC gerado já traz o
+      equipamento. Está na lista da Q (Q.3), com a versão pequena: o GM copia uma arma ou armadura do NPC para a
+      ficha de um jogador.)*
 - [ ] **K.5** *(era T11.2)* **O netrunner na ficha** (decisão 9): o deck, os programas e a MU como
-      dado da ficha, com as regras do livro — sem a Net jogável.
+      dado da ficha, com as regras do livro — sem a Net jogável. *(~1 dia, mais a pesquisa)*
       - **A Net na mesa** (mapa, turnos, data walls, ações por turno): **ADIAR**, fase própria depois
         da L. **Gatilho:** alguém da mesa do dono jogar de netrunner.
-- [ ] **K.6** Criação de personagem com orçamento (pontos de atributo, perícia por INT+REF, carreira)
-      e evolução por IP. *(RUL-10)*
-- [ ] **K.7** Completar `SKILL_TABLES` (remover "Social" de INT; adicionar Accounting, Anthropology,
-      Gamble, Shadow/Track, Wilderness Survival, Interrogation, Cyberdeck Design, Pharmaceuticals) e
-      adicionar Leap (Run÷4). Remover "Walk", que não existe no livro. *(RUL-12, RUL-11)*
+  - [ ] **K.5a** 🔍 Pesquisa: o que a ficha guarda — o deck (MU, Speed, Data Wall, custo), os programas
+        (classe, força, MU, custo) e o que o livro amarra ao personagem (Interface, o *link* cibernético). As
+        fontes de fã divergem já no deck padrão (K.0): duas fontes por número. **Se não fecharem, vai ao dono
+        como decisão — é o gatilho da compra do PDF** (decisão 11). Cuidado redobrado com o RED.
+  - [ ] **K.5b** O modelo e a tabela, com a ficha antiga convertida na leitura (sem netrunner, campo vazio).
+  - [ ] **K.5c** A tela: o deck e os programas na ficha, com a MU usada contra a do deck.
+- [ ] **K.6** **Criação de personagem com orçamento** *(RUL-10; decisão 13)*. *(~1½ dia)*
+  - [ ] **K.6a** Tabela e conferência: os dois métodos (o 9D10 num bolo e o bolo que o Mestre define), cada
+        atributo de 2 a 10; os 40 pontos de carreira nos 10 pacotes, cada perícia até 10; o *pickup* de REF +
+        INT, fora das perícias de carreira e da habilidade especial; a verba inicial pela habilidade especial
+        × 1D6/3. Fontes na conferência.
+  - [ ] **K.6b** O assistente de criação na ficha: rola ou recebe o bolo, distribui, confere cada orçamento,
+        e grava o que foi gasto.
+  - [ ] **K.6c** O orçamento **à vista do GM** na mesa — o "trapaceiro plausível" do portão da B fica
+        visível, não barrado (K.0: o servidor não tem como recusar uma ficha que evoluiu).
+- [ ] **K.7** **Perícias e movimento** *(RUL-12, RUL-11)*. *(~½ dia)*
+  - [ ] **K.7a** `SKILL_TABLES` pelas três fontes (S2, S3, S8): sai "Social" de INT e **"Psychology"**; entram
+        Accounting, Anthropology, Gamble, Shadow/Track, Wilderness Survival (INT), Interrogation (COOL),
+        Cyberdeck Design e Pharmaceuticals (TECH). Teste derivado da tabela.
+  - [ ] **K.7b** A tela sugere **todas** as perícias do atributo, não só as 8 primeiras.
+  - [ ] **K.7c** Leap (Run ÷ 4 — S1 e S8; o S8 arredonda para baixo) na ficha; o Walk sai, com o
+        `walkFromMa` e o teste dele.
 - [ ] **K.8** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] **K.9** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase K concluída em:** ____/____/______
@@ -1065,7 +1167,8 @@ público mudar.
 esquecido.)* Até aqui, um ADIAR esperava o sintoma, e sem sessão em produção quase nenhum gatilho dispara. Na Q
 todos são quitados: **78 itens** em 16/10, 26 com fase dona (a J, a K, a L ou a M) e 52 que só a Q faz, mais três
 decisões do dono. *(17/10/2026, no fechamento da J: **86** — entraram os seis ADIAR novos da J, a pista da sonda da
-J.1d e os helpers de teste da revisão da J.5. Os oito de que a J era dona, ela conferiu e deixou: agora são da Q.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+J.1d e os helpers de teste da revisão da J.5. Os oito de que a J era dona, ela conferiu e deixou: agora são da Q.)*
+*(18/10/2026, na K.0: **89** — entraram o método rápido de atributos, a evolução por IP e a K.4, pela decisão 13.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1135,13 +1238,13 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         fechamento da J): o gatilho disparou — o `latest` levou rate limit e deixou o `master` vermelho —, e a versão
         do CLI ficou fixa nos dois workflows.)*
   - [ ] **I.01**: o modificador do GM não tem tela (a rota `/settings` não tem chamador). *Dona:* a K, que mexe nas
-        rolagens. *Gatilho:* a primeira sessão em que o GM quiser um modificador de cena.
-  - [ ] **G.05**: o mesmo ferimento tem dois nomes, às vezes no mesmo cartão. *Dona:* K.3. *Gatilho:* alguém da mesa
+        rolagens — a **K.3b** desde a K.0. *Gatilho:* a primeira sessão em que o GM quiser um modificador de cena.
+  - [ ] **G.05**: o mesmo ferimento tem dois nomes, às vezes no mesmo cartão. *Dona:* K.3 — a **K.3a**. *Gatilho:* alguém da mesa
         confundir os nomes.
   - [ ] **I.06**: pelo REST, a rolagem e o chat perdem o erro que o WebSocket mostra, e a ficha que não sincroniza
-        não avisa. *Dona:* K.2, que engorda a ficha. *Gatilho:* um `sse_fallback` de jogador de verdade.
-  - [ ] **Cromo que soma atributo** (ex.: lace muscular): o `CyberwareItem` não tem campo de atributo. *Dona:* K.2.
-  - [ ] **EV da armadura → REF** (RUL-11), que precisa de um modelo de peça. *Dona:* K.2.
+        não avisa. *Dona:* K.2, que engorda a ficha — a **K.2f** mede. *Gatilho:* um `sse_fallback` de jogador de verdade.
+  - [ ] **Cromo que soma atributo** (ex.: lace muscular): o `CyberwareItem` não tem campo de atributo. *Dona:* K.2 — a **K.2e**.
+  - [ ] **EV da armadura → REF** (RUL-11), que precisa de um modelo de peça. *Dona:* K.2 — a **K.2b** e a **K.2c**.
   - [ ] **H.01**: na rede lenta, o jogador fica segundos atrás. *Dona:* L.1. *Gatilho:* atraso em rede móvel numa
         sessão, a banda acima de 2,5 GB no mês, ou um `ws_rate_limited`.
   - [ ] **G.19**: cada arrasto no grid regrava todos os tokens no Yjs. *Dona:* L.1.
@@ -1241,6 +1344,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         turno dele.
   - [ ] ⚠️ **Textura de impressão ou xerox** e aberração cromática sutil (F.3.5). *Gatilho:* o dono pedir, depois de
         ver a F no ar. *Só estava no [histórico](./historico/FASE_F.md).*
+  - [ ] **O equipamento do NPC para a ficha de um jogador** (a K.4, que saiu da K pela decisão 13): o GM copia uma
+        arma ou armadura do NPC para a ficha de um jogador — "drops" não é regra do 2020, e esta é a versão pequena.
+        *Gatilho:* a mesa querer pegar o equipamento de um NPC. Fonte: a K.0, acima.
   - [ ] **A aba esquecida** (o risco 1 do custo zero): o heartbeat de 20 s mantém o serviço acordado mesmo com a aba
         em segundo plano. A versão menor é pausar com o `document.hidden` e fechar o socket depois de ~30 min com a
         aba oculta. *Gatilho:* o total do workspace acima de 100 h num mês sem o monitor, ou uma aba esquecida
@@ -1253,6 +1359,11 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
       fontes antes do código (decisão 11), e o teste deriva da tabela.
   - [ ] **O texto das tabelas de fumble**: hoje o dado sai rolado, e o GM lê o efeito no livro. *Gatilho:* o GM
         pedir o efeito impresso, ou uma sessão travar procurando a tabela.
+  - [ ] **O método rápido de atributos** (1d10 por atributo, decisão 13): o S5 rerrola o 1, e o S6 descarta o 1 e
+        o 2. *Gatilho:* uma segunda fonte fechar o que se rerrola, ou alguém da mesa pedir o método.
+  - [ ] **A evolução por IP** (decisão 13): o custo de subir uma perícia (nível × 10 × multiplicador) só está no S6,
+        e o multiplicador de cada perícia em nenhuma fonte. *Gatilho:* uma segunda fonte, o PDF (Q.0b), ou a
+        primeira sessão que der IP a alguém.
   - [ ] **Humanidade de implante desinstalado**: o modelo não distingue o nunca instalado do removido, e o EMP soma
         todo implante da ficha. *Gatilho:* o EMP cair por um cromo que o jogador não tem.
   - [ ] **Perda de Humanidade fracionária**: o NetSheet guarda a perda inteira, e a diferença chega a meio ponto por
@@ -1370,9 +1481,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
-| K | 🔨 | Profundidade de sistema | ⬜ | — |
+| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10) | 🔄 | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
-| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10) | ⬜ | — |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 (18/10) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual
