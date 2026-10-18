@@ -1048,7 +1048,7 @@ seguem os grupos abaixo.
 
 - [x] **K.1** *(era T11.5)* **Export, import e impressão** — reaproveita o validador de
       `src/rules/sheetSchema.ts`, que nasceu prevendo isto. *(~½ dia)*
-      *(18/10/2026 — os três num PR, um commit cada, com o teste antes e a prova revertendo. Linha de base:
+      *(18/10/2026 — os três no **#63**, um commit cada, com o teste antes e a prova revertendo. Linha de base:
       **891** testes em 71 arquivos (+10); E2E 7/7; tipografia limpa nas 12 telas; `audit:ci`, cores e
       conflitos em 0. O portão deste PR está no [`SEGURANCA.md`](./SEGURANCA.md#fase-k--profundidade-de-sistema).)*
   - [x] **K.1a** O import passa pelo `sanitizeCharacterSheet`, e a tela diz o que ele corrigiu. Teste antes:
@@ -1500,7 +1500,7 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
-| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62) | 🔄 | — |
+| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63) | 🔄 | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
 | Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 (18/10) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
