@@ -56,6 +56,8 @@ describe('K.1c — o que a folha de impressão precisa achar', () => {
   it('a folha esconde só os botões da ficha, e poupa os marcados', () => {
     expect(print).toMatch(/\[data-print="sheet"\] button:not\(\[data-print="keep"\]\)/);
     expect(print).toMatch(/\[data-print-fill="true"\][^}]*print-color-adjust: exact/);
+    // K.2 — bloco alto que se parte (a lista de peças), com cada filho inteiro.
+    expect(print).toMatch(/\[data-print-flow\] > \*\s*\{\s*break-inside: avoid/);
     // Sem escopo, a regra esconderia os botões de qualquer página impressa.
     expect(print).not.toMatch(/(^|[\s,])button\s*[,{]/);
   });

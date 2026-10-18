@@ -66,7 +66,7 @@ export const ArmorPanel: React.FC<ArmorPanelProps> = ({ sheet, onChange }) => {
   const removePiece = (id: string) => onChange({ armor: armor.filter((a) => a.id !== id) });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-print-flow>
       <div className="bg-surface/80 p-4 rounded-lg border border-line space-y-3">
         <span className="text-xs font-bold text-accent-400 uppercase tracking-caps block">
           Pontos de Parada (Stopping Power - SP) por Localização Corporal
@@ -93,14 +93,14 @@ export const ArmorPanel: React.FC<ArmorPanelProps> = ({ sheet, onChange }) => {
         </p>
       </div>
 
-      <div className="bg-surface/80 p-4 rounded-lg border border-line space-y-3">
+      <div className="bg-surface/80 p-4 rounded-lg border border-line space-y-3" data-print-flow>
         <span className="text-xs font-bold text-accent-400 uppercase tracking-caps block">
           Peças de armadura — de dentro para fora
         </span>
 
         {armor.length === 0 && <p className="text-micro text-subtle">Nenhuma peça. Sem armadura, todo local tem SP 0.</p>}
 
-        <div className="space-y-2">
+        <div className="space-y-2" data-print-flow>
           {armor.map((piece) => {
             const covered = armorLocationsOf(piece);
             const label = piece.name || 'peça sem nome';

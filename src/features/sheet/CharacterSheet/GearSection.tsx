@@ -73,7 +73,7 @@ export const GearSection: React.FC<GearSectionProps> = ({ sheet, onChange }) => 
 
       {gear.length === 0 && <p className="text-micro text-subtle">Nenhum item no inventário.</p>}
 
-      <div className="space-y-2">
+      <div className="space-y-2" data-print-flow>
         {gear.map((item) => {
           const label = item.name || 'item sem nome';
           return (
