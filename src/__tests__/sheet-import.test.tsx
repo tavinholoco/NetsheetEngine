@@ -154,3 +154,17 @@ describe('K.1a — o import passa pelo validador', () => {
     expect(presetsGravados()).toHaveLength(1);
   });
 });
+
+describe('K.1b — a ficha importada abre sem conta', () => {
+  it('sem login, "Clonar" abre o preset como ficha, sem pedir conta', async () => {
+    const m = montar();
+    await m.user.upload(m.entrada(), arquivo(fichaExportada()));
+    await waitFor(() => expect(presetsGravados()).toHaveLength(1));
+
+    await m.user.click(screen.getByRole('button', { name: /clonar/i }));
+
+    expect(m.props.onOpenAuthModal).not.toHaveBeenCalled();
+    expect(m.props.onLoadPresetAsNewSheet).toHaveBeenCalledTimes(1);
+    expect(m.props.onLoadPresetAsNewSheet.mock.calls[0][0].handle).toBe('Vex');
+  });
+});

@@ -343,7 +343,6 @@ export default function App() {
                       onLoadPresetAsNewSheet={loadPresetAsNewSheet}
                       onCreateNew={createNewCharacter}
                       onDeleteSheet={deleteCharacter}
-                      onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
                     />
                   }
                 />

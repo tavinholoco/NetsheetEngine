@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CharacterSheet } from '../types/cyberpunk';
 import { sanitizeCharacterSheet } from '../rules/sheetSchema';
 import { generateRandomNpc } from '../utils/npcGenerator';
-import { Swords, Copy, Trash2, Upload, Download, Plus, User, Lock } from 'lucide-react';
+import { Swords, Copy, Trash2, Upload, Download, Plus, User } from 'lucide-react';
 import { useSheetStore } from '../stores/useSheetStore';
 
 interface PresetsManagerProps {
@@ -10,7 +10,6 @@ interface PresetsManagerProps {
   onLoadPresetAsNewSheet: (preset: CharacterSheet) => void;
   onCreateNew: () => void;
   onDeleteSheet: (id: string) => void;
-  onOpenAuthModal: () => void;
 }
 
 /** Quantos campos corrigidos o aviso do import nomeia antes de resumir. */
@@ -36,8 +35,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
   onLoadSheet,
   onLoadPresetAsNewSheet,
   onCreateNew,
-  onDeleteSheet,
-  onOpenAuthModal
+  onDeleteSheet
 }) => {
   // Fase 4 (T4.2) — ficha/roster/user via stores (sem prop drilling)
   const currentSheet = useSheetStore((s) => s.sheet);
@@ -69,11 +67,10 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
     persistPresets([npc, ...presets]);
   };
 
+  // K.1b — sem conta, a ficha vive no localStorage (modo visitante, T2.13), e
+  // vai para a nuvem no primeiro login. A trava de login daqui veio da Fase 0,
+  // de antes do modo visitante: não protegia nada, e travava o backup (K.1).
   const clonePreset = (preset: CharacterSheet) => {
-    if (!user) {
-      onOpenAuthModal();
-      return;
-    }
     onLoadPresetAsNewSheet(preset);
   };
 
@@ -213,10 +210,10 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
             <div className="flex items-center justify-between pt-1">
               <button
                 onClick={() => clonePreset(preset)}
-                title={user ? 'Clonar como nova ficha' : 'Requer login'}
+                title="Clonar como nova ficha"
                 className="px-2.5 py-1.5 bg-ok-500 hover:bg-ok-400 text-black rounded font-bold text-micro uppercase flex items-center space-x-1 transition-all cursor-pointer"
               >
-                {user ? <Copy className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                <Copy className="w-3 h-3" />
                 <span>Clonar</span>
               </button>
               <button
