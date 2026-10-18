@@ -84,6 +84,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Login para criar mesa | **O servidor não exige** (a tela exige). Os tetos da E.03 (30 salas, `MAX_ROOMS`) fecham o esgotamento; exigir login é ADIAR com gatilho — decisão do dono (30/09/2026), em `docs/SEGURANCA.md` |
 | Netrunning | **O netrunner na ficha** (deck, programas, MU) entra na K.5; **a Net jogável na mesa: ADIAR**, fase própria depois da L — gatilho: alguém da mesa jogar de netrunner. Decisão 9 (30/09/2026) |
 | ADIAR × fazer tudo | **Ordem, não esquecimento** — o dono quer tudo feito (decisão 12, 16/10/2026). Todo ADIAR é quitado no **bloco Q**, depois da L e antes da M, e só sai da lista com DESCARTAR escrito pelo dono. Nas varreduras, ADIAR continua sendo o padrão |
+| Criação e carga (K) | **O 9D10 num bolo e o bolo que o Mestre define**, cada atributo de 2 a 10; a evolução por IP, o método rápido e a K.4 ("drops") vão **para a Q**; a K.2 vai até o **EV da armadura, sem pena por peso** (nenhuma fonte a tem) — decisão 13 (18/10/2026). O orçamento de criação **não barra** o trapaceiro no servidor (IP e cromo sobem os números depois): fica à vista do GM |
 | Fonte das regras | **O dono não tem o livro** (corrigido em 30/09/2026). Valem as **fontes secundárias**, aceitas com duas concordando; comprar o PDF oficial é **ADIAR** com gatilho. Cópia do livro sem licença não é fonte. Decisão 11 |
 
 ## Comandos que importam

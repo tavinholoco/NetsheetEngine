@@ -188,6 +188,9 @@ projeto até aqui, então o portão vale mais que de costume.
    **O que ele ainda consegue:** mandar uma ficha *plausível porém trapaceira* dentro dos limites
    (BODY 15, todas as perícias em 10). Isso é regra de jogo, não autorização — cabe às Fases C/K
    (orçamento de criação), e está registrado como tal, não como buraco de segurança.
+   *(K.0, 18/10/2026: o orçamento **não fecha** isso no servidor. Ele só vale no dia da criação — depois, o
+   IP e o cromo sobem os números legitimamente, e o servidor não tem o histórico para distinguir. A K.6c
+   deixa o orçamento à vista do GM: o trapaceiro fica visível, não barrado.)*
 5. **Estado novo sem limite?** O SEC-04 fechou os três que existiam. O estado **novo** que esta fase
    criou — a coluna `sessions` — cresce junto com a sala e é recolhido junto com ela pelo coletor,
    então nasce limitado por construção.
