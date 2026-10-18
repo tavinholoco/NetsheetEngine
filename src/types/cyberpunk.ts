@@ -87,6 +87,18 @@ export interface ArmorPiece {
   equipped: boolean;
 }
 
+/**
+ * Item do inventário (K.2d): o peso entra na conta contra o Carry, sem pena —
+ * nenhuma fonte penaliza o peso carregado (decisão 13).
+ */
+export interface GearItem {
+  id: string;
+  name: string;
+  /** Peso de UMA unidade, em kg (aceita fração: 0,5 kg). */
+  weightKg: number;
+  qty: number;
+}
+
 /** Lifepath narrativo gerado / editado pelo jogador. */
 export interface Lifepath {
   familyBackground: string;
@@ -140,6 +152,8 @@ export interface CharacterSheet {
   weapons: WeaponItem[];
   armor: ArmorPiece[];
   lifepath: Lifepath;
+  /** Inventário com peso (K.2d). Opcional: ficha de antes da K.2 não tem. */
+  gear?: GearItem[];
   gearNotes: string;
   createdAt: string;
   updatedAt: string;

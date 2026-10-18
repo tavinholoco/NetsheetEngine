@@ -10,9 +10,11 @@
 // no `currentStats` que o cliente manda: ele é recalculado a partir da ficha.
 // ============================================================
 
-import type { CharacterSheet, CharacterStats, CyberwareItem, StatName } from '../types/cyberpunk';
+import type { CharacterSheet, CharacterStats, CyberwareItem, GearItem, StatName } from '../types/cyberpunk';
 import {
   BODY_TYPE_TABLE,
+  CARRY_KG_PER_BODY,
+  LIFT_KG_PER_BODY,
   HUMANITY_LOSS_PER_EMP_POINT,
   HUMANITY_PER_EMP,
   WOUND_TRACK,
@@ -140,6 +142,29 @@ export function deriveCurrentStats(
   base.REF = Math.max(0, base.REF - armorEvTotal(sheet.armor));
   base.EMP = empAfterHumanityLoss(base.EMP, humanityLossTotal(sheet.cyberware));
   return applyWoundEffect(base, Number(sheet.woundLevel) || 0);
+}
+
+// ------------------------------------------------------------
+// Carga (K.2d)
+// ------------------------------------------------------------
+
+/** Carry: o que o personagem carrega, em kg — BODY corrente × 10 (S1, S6, S8). */
+export function carryKg(body: number): number {
+  return Math.max(0, body) * CARRY_KG_PER_BODY;
+}
+
+/** Lift: o peso morto que levanta, em kg — BODY corrente × 40 (S1, S6, S8). */
+export function liftKg(body: number): number {
+  return Math.max(0, body) * LIFT_KG_PER_BODY;
+}
+
+/** Peso do inventário: cada item × a quantidade, em kg, com duas casas. */
+export function gearWeightKg(gear: readonly Pick<GearItem, 'weightKg' | 'qty'>[] | undefined): number {
+  const total = (gear ?? []).reduce(
+    (kg, g) => kg + Math.max(0, Number(g.weightKg) || 0) * Math.max(0, Math.floor(Number(g.qty) || 0)),
+    0
+  );
+  return Math.round(total * 100) / 100;
 }
 
 // ------------------------------------------------------------

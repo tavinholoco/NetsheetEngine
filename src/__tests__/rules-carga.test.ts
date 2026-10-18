@@ -6,9 +6,14 @@
  * escolha do projeto registrada na conferência. É o `deriveCurrentStats`, que
  * toda rolagem lê, na ficha e na mesa: o servidor recalcula o corrente a cada
  * sync, então o EV chega à mesa sem caminho novo.
+ *
+ * K.2d — a carga: Carry = BODY × 10 kg e Lift = BODY × 40 kg (S1, S6, S8), com o
+ * BODY corrente. O peso do inventário aparece contra o Carry, sem pena nenhuma —
+ * nenhuma fonte penaliza o peso carregado (decisão 13).
  */
 import { describe, it, expect } from 'vitest';
-import { applyWoundEffect, deriveCurrentStats } from '../rules/character';
+import { applyWoundEffect, carryKg, deriveCurrentStats, gearWeightKg, liftKg } from '../rules/character';
+import { CARRY_KG_PER_BODY, LIFT_KG_PER_BODY } from '../rules/tables';
 import { armorEvTotal } from '../rules/damage';
 import { sanitizeCharacterSheet } from '../rules/sheetSchema';
 import type { ArmorPiece, CharacterStats } from '../types/cyberpunk';
@@ -54,5 +59,40 @@ describe('K.2c — o EV da armadura sai do REF', () => {
       armor: [{ id: 'm', name: 'MetalGear', locations: ['Torso', 'Head'], sp: 25, ev: 2, equipped: true }]
     })!;
     expect(r.sheet.currentStats.REF).toBe(STATS.REF - 2);
+  });
+});
+
+describe('K.2d — a carga pelo BODY', () => {
+  it('Carry e Lift pela tabela', () => {
+    for (const body of [2, 8, 10, 12]) {
+      expect(carryKg(body)).toBe(body * CARRY_KG_PER_BODY);
+      expect(liftKg(body)).toBe(body * LIFT_KG_PER_BODY);
+    }
+  });
+
+  it('o peso do inventário é o peso de cada item vezes a quantidade', () => {
+    expect(gearWeightKg([{ weightKg: 2.5, qty: 2 }, { weightKg: 0.5, qty: 3 }])).toBe(6.5);
+    expect(gearWeightKg(undefined)).toBe(0);
+  });
+
+  it('o validador guarda o inventário com tetos, e a ficha antiga ganha um inventário vazio', () => {
+    const base = { id: 's', handle: 'Vex', stats: STATS, skills: [], cyberware: [], weapons: [], armor: [] };
+    const antiga = sanitizeCharacterSheet(base)!;
+    expect(antiga.sheet.gear).toEqual([]);
+    expect(antiga.changed).toEqual([]);
+
+    const r = sanitizeCharacterSheet({
+      ...base,
+      gear: [
+        { id: 'g1', name: 'Kit médico', weightKg: 1.5, qty: 1 },
+        { id: 'g2', name: 'Bigorna', weightKg: 99999, qty: 5000 },
+        'lixo'
+      ]
+    })!;
+    expect(r.sheet.gear).toEqual([
+      { id: 'g1', name: 'Kit médico', weightKg: 1.5, qty: 1 },
+      { id: 'g2', name: 'Bigorna', weightKg: 1000, qty: 999 }
+    ]);
+    expect(r.changed).toEqual(expect.arrayContaining(['gear[1].weightKg', 'gear[1].qty', 'gear[2]']));
   });
 });

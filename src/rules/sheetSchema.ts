@@ -39,6 +39,7 @@ import type {
   CharacterSheet,
   CharacterStats,
   CyberwareItem,
+  GearItem,
   Lifepath,
   SkillItem,
   StatName,
@@ -67,6 +68,10 @@ export const MAX_CYBERWARE = 100;
 export const MAX_WEAPONS = 100;
 export const MAX_ARMOR = 50;
 export const MAX_LIFE_EVENTS = 100;
+export const MAX_GEAR = 200;
+/** Peso de uma unidade de item, em kg (K.2d). */
+export const GEAR_WEIGHT_MAX_KG = 1000;
+export const GEAR_QTY_MAX = 999;
 
 // Tetos de texto. Um `handle` de 10 MB seria transmitido para todos a cada
 // broadcast. O texto longo legítimo é o `gearNotes`.
@@ -97,6 +102,19 @@ function clampInt(value: unknown, min: number, max: number, fallback: number, pa
     return fallback;
   }
   const rounded = Math.round(n);
+  const clamped = Math.min(max, Math.max(min, rounded));
+  if (clamped !== n) changed.push(path);
+  return clamped;
+}
+
+/** Número com até duas casas, grampeado — o peso aceita fração (0,5 kg). */
+function clampDecimal(value: unknown, min: number, max: number, fallback: number, path: string, changed: string[]): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) {
+    if (value !== undefined) changed.push(path);
+    return fallback;
+  }
+  const rounded = Math.round(n * 100) / 100;
   const clamped = Math.min(max, Math.max(min, rounded));
   if (clamped !== n) changed.push(path);
   return clamped;
@@ -262,6 +280,25 @@ function sanitizeArmor(value: unknown, changed: string[]): ArmorPiece[] {
   return out;
 }
 
+/** K.2d — o inventário. Ficha de antes da K.2 não tem: vira lista vazia, sem correção. */
+function sanitizeGear(value: unknown, changed: string[]): GearItem[] {
+  const raw = safeArray(value, MAX_GEAR, 'gear', changed);
+  const out: GearItem[] = [];
+  raw.forEach((item, i) => {
+    if (!isPlainObject(item)) {
+      changed.push(`gear[${i}]`);
+      return;
+    }
+    out.push({
+      id: safeString(item.id, MAX_NAME_CHARS, `gear[${i}].id`, changed),
+      name: safeString(item.name, MAX_NAME_CHARS, `gear[${i}].name`, changed),
+      weightKg: clampDecimal(item.weightKg, 0, GEAR_WEIGHT_MAX_KG, 0, `gear[${i}].weightKg`, changed),
+      qty: clampInt(item.qty, 1, GEAR_QTY_MAX, 1, `gear[${i}].qty`, changed)
+    });
+  });
+  return out;
+}
+
 function sanitizeLifepath(value: unknown, changed: string[]): Lifepath {
   const src = isPlainObject(value) ? value : {};
   if (!isPlainObject(value) && value !== undefined) changed.push('lifepath');
@@ -346,6 +383,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     weapons: sanitizeWeapons(input.weapons, changed),
     armor,
     lifepath: sanitizeLifepath(input.lifepath, changed),
+    gear: sanitizeGear(input.gear, changed),
     gearNotes: safeString(input.gearNotes, MAX_NOTES_CHARS, 'gearNotes', changed),
     createdAt: safeString(input.createdAt, 64, 'createdAt', changed),
     updatedAt: safeString(input.updatedAt, 64, 'updatedAt', changed)

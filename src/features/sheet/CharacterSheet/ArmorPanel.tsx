@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { ArmorLocation, ArmorPiece, CharacterSheet } from '../../../types/cyberpunk';
 import { armorEvTotal, armorLocationsOf, armorSpAt } from '../../../rules/damage';
+import { NumberField } from './NumberField';
 
 /**
  * K.2b — A ARMADURA POR PEÇA
@@ -23,11 +24,6 @@ const LOCATIONS: { loc: ArmorLocation; label: string; short: string; icon: strin
 /** Os tetos do validador (sheetSchema): a tela não oferece o que ele grampearia. */
 const SP_MAX = 100;
 const EV_MAX = 20;
-
-function wholeNumber(value: string, max: number): number {
-  const n = Math.floor(Number(value));
-  return Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : 0;
-}
 
 /** A peça no formato da K.2: `locations`, sem o `location` da ficha antiga. */
 function current(piece: ArmorPiece): ArmorPiece {
@@ -120,25 +116,23 @@ export const ArmorPanel: React.FC<ArmorPanelProps> = ({ sheet, onChange }) => {
                   />
                   <label className="flex items-center gap-1 text-micro text-muted uppercase">
                     SP
-                    <input
-                      type="number"
+                    <NumberField
+                      value={piece.sp}
                       min={0}
                       max={SP_MAX}
-                      value={piece.sp}
-                      onChange={(e) => update(piece.id, { sp: wholeNumber(e.target.value, SP_MAX) })}
-                      aria-label={`SP de ${label}`}
+                      onCommit={(sp) => update(piece.id, { sp })}
+                      label={`SP de ${label}`}
                       className="w-14 bg-surface border border-field font-mono text-xs text-fg-strong px-1.5 py-1 rounded focus:border-accent-400 focus:outline-none"
                     />
                   </label>
                   <label className="flex items-center gap-1 text-micro text-muted uppercase">
                     EV
-                    <input
-                      type="number"
+                    <NumberField
+                      value={piece.ev}
                       min={0}
                       max={EV_MAX}
-                      value={piece.ev}
-                      onChange={(e) => update(piece.id, { ev: wholeNumber(e.target.value, EV_MAX) })}
-                      aria-label={`EV de ${label}`}
+                      onCommit={(ev) => update(piece.id, { ev })}
+                      label={`EV de ${label}`}
                       className="w-12 bg-surface border border-field font-mono text-xs text-fg-strong px-1.5 py-1 rounded focus:border-accent-400 focus:outline-none"
                     />
                   </label>
