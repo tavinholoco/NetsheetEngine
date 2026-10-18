@@ -71,12 +71,13 @@ uma regra só foi aceita quando **duas ou mais concordam**. Onde só há inferê
 | S8 | [Sistema Cyberpunk 2020 do Foundry VTT](https://github.com/2020-Fission/cyberpunk2020) — `lookups.js` e `role-skills.db` | Arma → perícia (escopeta → Rifle); atributo de 7 habilidades especiais; Jury Rig, Medical Tech e Combat Sense **sem** atributo; o custo de humanidade do implante, rolado uma vez (`item-sheet.js`, G.23); na K.0: a lista de perícias (`default-skills.db`, o campo `diffMod` todo em 1), Run/Leap/Carry/Lift (`actor.js`, o Leap para baixo), e a **armadura como peça** que cobre locais, com o EV de cada peça tirado do REF antes do ferimento. Não modela a Net |
 | S9 | [Módulo cp2020-augmented do Foundry](https://github.com/ryno4ever16/cp2020-augmented) — `DamageApplicator.js` | Sequência de dano com página do livro: SP e BTM mínimo 1 (p. 98–99); cabeça dobra (p. 103) "sem dizer quando" |
 | S10 | [FNFFAutoFire](https://github.com/krze/FNFFAutoFire) — calculadora de rajada | Aplica SP → BTM → ×2 na cabeça |
+| S11 | [karridian.net — FNFF](https://www.karridian.net/cyb_fnff.html), **só a tabela proporcional** (K.2a) | Os degraus do bônus de camada (0–4 → +5 … 27+ → 0) e as camadas em pares de dentro para fora — que a página atribui à errata do livro, entrada na 2.01, e que batem número a número com o S9. **O resto da página é regra de casa** e segue descartado (abaixo) |
 
 **Fontes descartadas, e por quê** — é daqui que vinham duas premissas erradas do plano:
 
 | Fonte | Por que não serve |
 |---|---|
-| [karridian.net — FNFF](https://www.karridian.net/cyb_fnff.html) | Se declara **regra de casa** que substitui o dano do livro. É a origem provável do "−2/−4/−6 em todas as ações" |
+| [karridian.net — FNFF](https://www.karridian.net/cyb_fnff.html) | Se declara **regra de casa** que substitui o dano do livro. É a origem provável do "−2/−4/−6 em todas as ações". *Exceção (K.2a, 18/10/2026): a tabela proporcional de armadura, que ela cita como do livro e o S9 confirma — é a S11* |
 | [clon01 — combat revised](https://cyberpunk.clon01.net/htm/combat_revised.htm) | **Regra de casa** declarada ("distilled and interpreted"); inclusive tira o ×2 da cabeça |
 | [datafortress2020 — combat rules](https://datafortress2020.com/combatrules.html) | **Regra de casa** declarada |
 | Qualquer material do **Cyberpunk RED** | Sistema diferente. O fumble que subtrai 1d10, a explosão única e o death save que piora a cada sucesso são **do RED** e estavam no código ou no plano |
@@ -277,16 +278,16 @@ palavras.)*
 | Regra | O que as fontes dizem | Fontes | Código hoje | Vai para |
 |---|---|---|---|---|
 | Movimento | Run = MA × 3 m; Leap = Run ÷ 4 (o S8 arredonda para baixo). Walk não existe | S1, S8 | Run ✅; **Walk inventado**; Leap ausente | K.7c (RUL-11) |
-| Carga | Carry = BODY × 10 kg; Lift = BODY × 40 kg. **Nenhuma fonte penaliza o peso carregado** — o S8 soma o peso equipado e não penaliza | S1, S8 | Ausentes | K.2d (decisão 13: sem pena por peso) |
-| EV da armadura | Cada peça equipada tira o EV dela do REF; o S8 aplica **antes** do efeito do ferimento | **S8 só** | `ev` sem leitor; uma peça por local | K.2a busca a segunda fonte e a ordem; K.2b–c |
-| Camadas de armadura | Duas peças no mesmo local: a tabela proporcional (p. 99, pelo S9); o S8 só soma | S9; o S8 diverge | Uma peça por local | K.2a — duas fontes, ou uma peça por local, como hoje |
+| Carga | Carry = BODY × 10 kg; Lift = BODY × 40 kg, com o BODY do cromo (o S6 faz a conta com o Lace). **Nenhuma fonte penaliza o peso carregado** — o S8 soma o peso equipado e não penaliza, e o S6 diz que o livro em geral não conta peso | S1, S6, S8 | Ausentes | K.2d (decisão 13: sem pena por peso) — `CARRY_KG_PER_BODY`, `LIFT_KG_PER_BODY` |
+| EV da armadura | Cada peça vestida tira o EV dela do REF, e o EV **soma** peça por peça (no livro: jaqueta leve 0, média 1, pesada 2, colete flak 1, MetalGear 2 — S8). **A ordem contra o ferimento só o S8 dá:** o EV sai **antes** do efeito do ferimento. É a escolha do projeto (como o Jury Rig): o EV muda o atributo corrente, como o cromo, e o ferimento age sobre o corrente | S6, S8 (a ordem: S8 só) | `ev` sem leitor; uma peça por local | K.2b–c |
+| Camadas de armadura | Duas peças no mesmo local não somam: vale o maior SP mais um bônus pela diferença (0–4 → +5, 5–8 → +4, 9–14 → +3, 15–20 → +2, 21–26 → +1, 27+ → 0); três ou mais, em pares de dentro para fora. O S8 só soma (diverge). **O S9 escolhe a melhor ordem** entre as camadas; o S11, de dentro para fora — no NetSheet, a ordem da lista é de dentro para fora. No máximo **três camadas, uma rígida** (S6, S9): **ADIAR**, na Q. **O EV extra por camada** diverge — o S6 soma 1 por camada (três → 3), o S9 cobra 0, 1 e 2 —: pergunta aberta, na Q | S9 (p. 99), S11; o S6 confirma o mecanismo e o teto de +5 | Uma peça por local | K.2b — `ARMOR_LAYER_BONUS` |
 | Perícias | INT ganha Accounting, Anthropology, Gamble, Shadow/Track e Wilderness Survival; COOL, Interrogation; TECH, Cyberdeck Design e Pharmaceuticals. "Social" é só de EMP. **"Psychology" não existe** | S2, S3, S8 | "Social" e "Psychology" em INT; as oito faltam | K.7a (RUL-12) |
 | Atributos na criação | De 2 a 10. Três métodos: o **9D10 num bolo** (S5, S6); o **bolo que o Mestre define**, o cinemático (S5; o S3 dá 65 fixos; o S6 lê os pontos como coisa de NPC); e **1d10 por atributo** — o S5 rerrola o 1, o S6 descarta o 1 e o 2 | S3, S5, S6 | Sem orçamento | K.6a: os dois primeiros (decisão 13); o rápido, na Q |
 | Perícias na criação | 40 pontos nas 10 perícias de carreira do role, a habilidade especial entre elas, até 10 cada; *pickup* = REF + INT, fora das de carreira e da habilidade | S3, S6; o S5 confirma os 40 e o REF + INT | Sem orçamento | K.6a (RUL-10) |
 | Pacotes de carreira | As 10 listas, e o Techie escolhe três perícias de TECH | S3, S6 — iguais nos dez | Não existem | K.6a |
 | Verba inicial | Salário mensal por role e nível da habilidade especial (do 1 ao 5 numa coluna, do 6 ao 10 uma a uma), multiplicado por 1D6/3 | S3, S6 (as linhas do Solo e do Nomad batem). "5 ou 6 no dado: desempregado" — **só o S6** | `eurodollars` livre | K.6a |
 | Evolução por IP | Perícia nova custa 10 IP; subir custa o nível atual × 10 × o multiplicador da perícia (×1 a ×4) | **S6 só**; o S8 tem o campo do multiplicador, todo em 1 | Não existe | Q (decisão 13) |
-| Cromo que soma atributo | — | A K.2e busca | `CyberwareItem` sem campo | K.2e |
+| Cromo que soma atributo | O implante soma ao atributo: o Muscle and Bone Lace dá **BODY +2**, e com ele o BTM melhora (o S6 leva um BODY 10 a 12 e o BTM a −5). As variantes dos Chromebooks ("+1 BODY, mas não no BTM", "só para Lift") ficam de fora: são suplemento | S6, S8 (o S8 guarda o efeito só como texto) | `CyberwareItem` sem campo | K.2e |
 | Netrunner na ficha | Deck (MU, Speed, Data Wall), programas (classe, força, MU, custo) | Fontes de fã divergem no deck padrão; o S8 não modela a Net | Nada | K.5a — o gatilho do PDF (decisão 11) |
 
 **A premissa que caiu na K.0:** o orçamento de criação **não fecha o "trapaceiro plausível"** do portão da B
@@ -330,9 +331,14 @@ e é o gatilho de comprar o PDF oficial (decisão 11).
       fixos para o bolo do Mestre (só o S3 dá um, 65); e o "5 ou 6, desempregado" da verba (só o S6).
 - [ ] **Evolução por IP (K.6):** o custo de subir um nível de perícia, com o multiplicador.
       *Uma fonte só (S6), e o multiplicador de cada perícia em nenhuma — ADIAR na Q (decisão 13).*
-- [ ] **Carga e movimento (K.2, K.7):** Carry, Lift e Leap; a penalidade de EV da armadura no REF.
+- [x] **Carga e movimento (K.2, K.7):** Carry, Lift e Leap; a penalidade de EV da armadura no REF.
       *Carry, Lift e Leap fechados (S1, S8). O EV no REF só no S8, e a ordem contra o ferimento também — a
-      K.2a busca a segunda.*
+      K.2a busca a segunda.* *(18/10/2026, K.2a — o EV no REF fechou com o S6. A ordem contra o ferimento
+      segue só no S8: escolha do projeto, aberta abaixo.)*
+- [ ] **O EV antes ou depois do efeito do ferimento?** Só o S8 dá a ordem (antes). Hoje é antes — escolha
+      do projeto. Com REF 9, EV 2 e Crítico (÷2): antes, 4; depois, 3.
+- [ ] **O EV extra por camada de armadura:** o S6 soma 1 por camada; o S9 cobra 0 na primeira, 1 na segunda e
+      2 na terceira. Hoje não há EV extra (ADIAR, na Q).
 - [x] **Perícias (K.7):** conferir a lista por atributo, com as oito que faltam.
       *Fechada em 18/10 (S2, S3, S8): as oito confirmadas, e a "Psychology" de INT não existe.*
 - [ ] **O netrunner na ficha (K.5, decisão 9):** o que a ficha precisa guardar — deck, programas, MU e

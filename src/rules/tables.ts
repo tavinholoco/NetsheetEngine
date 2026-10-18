@@ -122,6 +122,47 @@ export const HUMANITY_PER_EMP = 10;
 export const HUMANITY_LOSS_PER_EMP_POINT = 10;
 
 // ------------------------------------------------------------
+// Carga (K.2) — o que o corpo leva e levanta
+// ------------------------------------------------------------
+
+/** Carry: quanto o personagem carrega, em kg, por ponto de BODY (S1, S6, S8). */
+export const CARRY_KG_PER_BODY = 10;
+
+/**
+ * Lift: o peso morto que levanta, em kg, por ponto de BODY (S1, S6, S8). Nenhuma
+ * fonte penaliza o peso carregado — o S6 diz que o livro em geral não o conta
+ * (decisão 13: sem pena por peso).
+ */
+export const LIFT_KG_PER_BODY = 40;
+
+// ------------------------------------------------------------
+// Camadas de armadura (K.2) — a tabela proporcional
+// ------------------------------------------------------------
+
+export interface ArmorLayerRow {
+  /** Diferença entre os dois SP, a partir da qual a linha vale. */
+  minDiff: number;
+  /** Bônus somado ao MAIOR dos dois SP. */
+  bonus: number;
+}
+
+/**
+ * Duas camadas no mesmo local não somam: vale o maior SP, mais um bônus pela
+ * diferença entre eles — camadas parecidas protegem mais. Da maior diferença
+ * para a menor. Três ou mais camadas combinam em pares, de dentro para fora.
+ * p. 99 pelo S9; o karridian dá os mesmos degraus (errata do livro, entrada na
+ * 2.01); o S6 confirma o mecanismo e o teto de +5.
+ */
+export const ARMOR_LAYER_BONUS: readonly ArmorLayerRow[] = [
+  { minDiff: 27, bonus: 0 },
+  { minDiff: 21, bonus: 1 },
+  { minDiff: 15, bonus: 2 },
+  { minDiff: 9, bonus: 3 },
+  { minDiff: 5, bonus: 4 },
+  { minDiff: 0, bonus: 5 }
+];
+
+// ------------------------------------------------------------
 // Local de impacto (1d10)
 // ------------------------------------------------------------
 
