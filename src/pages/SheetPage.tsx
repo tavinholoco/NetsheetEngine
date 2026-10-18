@@ -8,7 +8,7 @@ import { CyberwareManager } from '../features/sheet/CharacterSheet/CyberwareMana
 import { WeaponsArmor } from '../features/sheet/CharacterSheet/WeaponsArmor';
 import { SkillsSection } from '../features/sheet/CharacterSheet/SkillsSection';
 import { LifepathGenerator } from '../features/sheet/CharacterSheet/LifepathGenerator';
-import { Save, CheckCircle2, Plus, Lock } from 'lucide-react';
+import { Save, CheckCircle2, Plus, Lock, Printer } from 'lucide-react';
 
 /**
  * Fase 7 (T7.1) — PÁGINA DE FICHA (/sheet)
@@ -46,7 +46,8 @@ export const SheetPage: React.FC<SheetPageProps> = ({
   onSaveAndReset
 }) => {
   return (
-    <div className="space-y-6">
+    // K.1c — `data-print="sheet"` é o escopo da folha de impressão (index.css).
+    <div className="space-y-6" data-print="sheet">
       {/* Header / Identity */}
       <CharacterHeader sheet={sheet} onChange={onChange} />
 
@@ -74,7 +75,7 @@ export const SheetPage: React.FC<SheetPageProps> = ({
       <LifepathGenerator sheet={sheet} onChange={onChange} />
 
       {/* BOTTOM ACTION BAR: SAVE SHEET & OPTIONS */}
-      <div className="bg-surface border-2 border-accent-500/60 rounded-xl p-6 shadow-glow-25 shadow-accent-500/20 flex flex-col lg:flex-row items-center justify-between gap-6">
+      <div className="print:hidden bg-surface border-2 border-accent-500/60 rounded-xl p-6 shadow-glow-25 shadow-accent-500/20 flex flex-col lg:flex-row items-center justify-between gap-6">
         <div className="space-y-1.5 text-center lg:text-left">
           <div className="flex items-center justify-center lg:justify-start space-x-2">
             <Save className="w-5 h-5 text-accent-400" />
@@ -92,6 +93,14 @@ export const SheetPage: React.FC<SheetPageProps> = ({
           <div className="text-micro text-subtle font-mono">
             ID: <span className="text-accent-500">{sheet.id}</span> • Status: <span className="text-ok-400">{user ? 'Auto-Sincronização Ativa' : 'Modo Visitante'}</span>
           </div>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="mt-1 px-3 py-1.5 bg-raised hover:bg-raised-strong border border-line-strong text-fg-soft rounded font-bold text-micro uppercase inline-flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Imprimir ou salvar PDF</span>
+          </button>
         </div>
 
         {user ? (

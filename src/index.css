@@ -396,3 +396,73 @@
   background-size: 100% 4px, 3px 100%;
 }
 
+/* ============================================================
+   IMPRESSÃO — a ficha no papel (K.1c)
+   ============================================================
+   O "Salvar como PDF" do navegador é o PDF da ficha: nenhuma biblioteca no
+   bundle, nada novo no CSP. O diálogo de impressão descarta o fundo por
+   padrão, e o texto claro do tema escuro saía quase branco no papel (medido
+   na K.1c — `scripts/visual/impressao.mjs`). No papel, a ficha vira tinta:
+   texto e borda nos tons `night`, sem fundo, brilho nem marca d'água, como o
+   interior do livro de 1990, que é preto e branco (decisão 10d).
+
+   Na página da ficha (`data-print="sheet"`) o que é só controle sai — todo
+   botão, o deslizante, o campo de arquivo —, e o que carrega dado e é botão
+   fica marcado com `data-print="keep"`: as caixas da trilha de ferimento e os
+   alvos dos saves. O resto do app (menu, cabeçalho, rodapé, avisos) sai pela
+   variante `print:hidden` no próprio elemento. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm 10mm;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  *,
+  *::before,
+  *::after {
+    color: var(--color-night-950) !important;
+    background: transparent !important;
+    border-color: var(--color-night-400) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  [data-print="sheet"] button:not([data-print="keep"]),
+  [data-print="sheet"] input[type="range"],
+  [data-print="sheet"] input[type="file"] {
+    display: none !important;
+  }
+
+  [data-print="keep"] {
+    opacity: 1 !important;
+  }
+
+  /* A caixa marcada é tinta cheia, como a caneta na folha de papel: o fundo
+     dela é dado, e imprime mesmo com os gráficos de fundo desligados. */
+  [data-print-fill="true"] {
+    background: var(--color-night-950) !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* A seção e as listas dela podem seguir na página seguinte; o que não se
+     parte é cada cartão e cada linha, e o título fica com o primeiro bloco.
+     Com a seção inteira presa, cada uma abria uma página e deixava a anterior
+     pela metade (seis páginas); com o bloco preso, a lista de perícias pulava
+     inteira. */
+  [data-print="sheet"] > * > * > * {
+    break-inside: avoid;
+  }
+
+  [data-print="sheet"] > * > :has(h2) {
+    break-after: avoid;
+  }
+}

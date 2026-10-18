@@ -44,7 +44,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
 
   return (
     <div className="bg-raised/70 border-l-4 border-l-danger-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-danger-500/10 space-y-4 relative overflow-hidden">
-      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-danger-500 select-none">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none print:hidden font-display text-[50px] font-black text-danger-500 select-none">
         BIOMON
       </div>
 
@@ -80,6 +80,8 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
                       type="button"
                       onClick={() => clickBox(point)}
                       disabled={atTable}
+                      data-print="keep"
+                      data-print-fill={filled ? 'true' : undefined}
                       aria-label={`Ponto ${point} (${row.name})`}
                       title={`${point} ponto(s) — ${row.name}`}
                       className={`aspect-square rounded-sm border transition-colors disabled:cursor-not-allowed ${
@@ -153,6 +155,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
             <button
               onClick={onRollStunSave}
               disabled={isDead}
+              data-print="keep"
               title="A cada dano sofrido: falhou, está fora de ação"
               className="px-3 py-1.5 bg-caution-500 hover:bg-caution-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-mini uppercase rounded transition-all cursor-pointer"
             >
@@ -161,6 +164,7 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
             <button
               onClick={onRollDeathSave}
               disabled={mortal === null || isDead}
+              data-print="keep"
               title={mortal === null ? 'O death save só é exigido em ferimento Mortal' : `Mortal ${mortal}: a cada turno, até ser estabilizado`}
               className="px-3 py-1.5 bg-signal-500 hover:bg-signal-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-mini uppercase rounded transition-all shadow-glow-12 shadow-signal-400/40 cursor-pointer"
             >
