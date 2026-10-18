@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CharacterSheet } from '../types/cyberpunk';
+import { sanitizeCharacterSheet } from '../rules/sheetSchema';
 import { generateRandomNpc } from '../utils/npcGenerator';
 import { Swords, Copy, Trash2, Upload, Download, Plus, User, Lock } from 'lucide-react';
 import { useSheetStore } from '../stores/useSheetStore';
@@ -10,6 +11,25 @@ interface PresetsManagerProps {
   onCreateNew: () => void;
   onDeleteSheet: (id: string) => void;
   onOpenAuthModal: () => void;
+}
+
+/** Quantos campos corrigidos o aviso do import nomeia antes de resumir. */
+const IMPORT_NOTICE_FIELDS = 5;
+
+type ImportNotice = { kind: 'ok' | 'error'; text: string };
+
+/** Aviso do import: o que entrou e o que o validador corrigiu (K.1a). */
+function importNoticeText(handle: string, changed: string[]): string {
+  const head = handle ? `Ficha importada: ${handle}.` : 'Ficha importada.';
+  if (changed.length === 0) return head;
+  const shown = changed.slice(0, IMPORT_NOTICE_FIELDS).join(', ');
+  const rest = changed.length - IMPORT_NOTICE_FIELDS;
+  const plural = changed.length === 1 ? 'campo' : 'campos';
+  return `${head} O validador corrigiu ${changed.length} ${plural}: ${shown}${rest > 0 ? ` e mais ${rest}` : ''}.`;
+}
+
+function newPresetId(): string {
+  return 'preset_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
 }
 
 export const PresetsManager: React.FC<PresetsManagerProps> = ({
@@ -33,6 +53,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
   });
 
   const [showGenerator, setShowGenerator] = useState(false);
+  const [importNotice, setImportNotice] = useState<ImportNotice | null>(null);
 
   const persistPresets = (next: CharacterSheet[]) => {
     setPresets(next);
@@ -70,19 +91,32 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  // K.1a — um arquivo de disco é tão pouco confiável quanto um corpo de
+  // requisição: passa pelo mesmo validador do servidor (sheetSchema), que
+  // grampeia o que está fora da faixa e esvazia a coleção malformada. O id
+  // vazio ou já usado ganha um novo — senão apagar um preset apagava os dois.
   const importSheet = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
+      let parsed: unknown;
       try {
-        const parsed = JSON.parse(String(reader.result)) as CharacterSheet;
-        if (parsed && parsed.id && parsed.stats) {
-          persistPresets([parsed, ...presets]);
-        }
+        parsed = JSON.parse(String(reader.result));
       } catch {
-        alert('Arquivo de ficha inválido.');
+        setImportNotice({ kind: 'error', text: 'O arquivo não é JSON. Exporte a ficha de novo pelo NetSheet.' });
+        return;
       }
+      const result = sanitizeCharacterSheet(parsed);
+      if (!result) {
+        setImportNotice({ kind: 'error', text: 'O arquivo não é uma ficha do NetSheet.' });
+        return;
+      }
+      const { sheet, changed } = result;
+      const idTaken = !sheet.id || presets.some((p) => p.id === sheet.id);
+      const preset = idTaken ? { ...sheet, id: newPresetId() } : sheet;
+      persistPresets([preset, ...presets]);
+      setImportNotice({ kind: 'ok', text: importNoticeText(preset.handle, changed) });
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -126,6 +160,17 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
           </button>
         </div>
       </div>
+
+      {importNotice && (
+        <p
+          role="status"
+          className={`text-xs px-3 py-2 rounded border ${
+            importNotice.kind === 'error' ? 'text-fault-400 border-fault-500/50' : 'text-ok-400 border-ok-500/40'
+          }`}
+        >
+          {importNotice.text}
+        </p>
+      )}
 
       {/* Gerador */}
       {showGenerator && (
@@ -176,6 +221,7 @@ export const PresetsManager: React.FC<PresetsManagerProps> = ({
               </button>
               <button
                 onClick={() => removePreset(preset.id)}
+                aria-label={`Apagar preset ${preset.handle || 'sem nome'}`}
                 className="p-1.5 rounded bg-raised hover:bg-fault-950 border border-line hover:border-fault-500 text-subtle hover:text-fault-400 transition-all cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
