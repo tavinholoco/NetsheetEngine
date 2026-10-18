@@ -194,7 +194,7 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
 
   return (
     <aside
-      className={`shrink-0 relative z-40 transition-all duration-300 lg:my-4 lg:ml-4 lg:sticky lg:top-4 lg:self-start ${
+      className={`print:hidden shrink-0 relative z-40 transition-all duration-300 lg:my-4 lg:ml-4 lg:sticky lg:top-4 lg:self-start ${
         isMinimized ? 'w-full lg:w-20' : 'w-full lg:w-80'
       }`}
     >

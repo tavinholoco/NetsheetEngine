@@ -1002,7 +1002,27 @@ disparado no branch. De quebra, um comentário no `server.ts` diz por que o avis
 
 ### Fase K — Profundidade de sistema
 
-*(a preencher)*
+**18/10/2026 — K.1 (o PR do export, import e impressão).** A K vai ao ar em vários PRs, e cada um publica
+sozinho — por isso uma entrada por PR, como na F. A K.8 fecha a fase inteira.
+
+1. **Entrada nova?** Sim, e era a única porta de ficha sem validador: **o arquivo importado**. Passa agora
+   pelo `sanitizeCharacterSheet`, o mesmo do servidor — grampeia o que está fora da faixa, esvazia a coleção
+   malformada, descarta o campo desconhecido e recusa o que não é objeto. O import fica no navegador (os
+   presets, no `localStorage`); levada à mesa, a ficha passa de novo pelo validador do servidor, como sempre.
+2. **Dado novo sai?** Nenhum. A impressão e o PDF são do navegador de quem já vê a ficha.
+3. **Autorização nova?** **Uma trava saiu.** "Clonar" um preset pedia login, mas a trava era só de tela:
+   clonar troca a ficha ativa, que sem conta vive no `localStorage` (T2.13), e nada no servidor dependia
+   dela. A nuvem continua exigindo conta — o autosave só roda com sessão, e o RLS das `character_sheets` não
+   mudou. Ninguém novo recebe sessão.
+4. **Jogador convidado hostil?** Pode importar uma ficha forjada, como já podia digitá-la: ela entra
+   grampeada, e na mesa o servidor grampeia de novo. O "trapaceiro plausível" segue com a K.6c.
+5. **Estado novo sem limite?** Nenhum no servidor. Os presets importados vão para o `localStorage` do próprio
+   navegador, como antes — e agora cada ficha entra com os tetos de coleção do validador.
+6. **Custo por requisição a serviço externo?** Nenhum. O PDF é do navegador: nenhuma biblioteca no bundle,
+   nenhuma requisição, nada novo no CSP.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto: o import sem validador
+só alcançava o navegador de quem importava, e a mesa sempre validou.
 
 ### Fase L — Performance e escala
 

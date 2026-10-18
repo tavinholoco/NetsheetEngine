@@ -1046,15 +1046,34 @@ da C). Mudança de formato da ficha passa pelo `sheetSchema`, que **converte a f
 produção tem 0 fichas, mas o `localStorage` de quem já usou o site tem. Cada item vira um commit, e os PRs
 seguem os grupos abaixo.
 
-- [ ] **K.1** *(era T11.5)* **Export, import e impressão** — reaproveita o validador de
+- [x] **K.1** *(era T11.5)* **Export, import e impressão** — reaproveita o validador de
       `src/rules/sheetSchema.ts`, que nasceu prevendo isto. *(~½ dia)*
-  - [ ] **K.1a** O import passa pelo `sanitizeCharacterSheet`, e a tela diz o que ele corrigiu. Teste antes:
+      *(18/10/2026 — os três no **#63**, um commit cada, com o teste antes e a prova revertendo. Linha de base:
+      **891** testes em 71 arquivos (+10); E2E 7/7; tipografia limpa nas 12 telas; `audit:ci`, cores e
+      conflitos em 0. O portão deste PR está no [`SEGURANCA.md`](./SEGURANCA.md#fase-k--profundidade-de-sistema).)*
+  - [x] **K.1a** O import passa pelo `sanitizeCharacterSheet`, e a tela diz o que ele corrigiu. Teste antes:
         um arquivo com campo fora da faixa ou com coleção malformada, que hoje entra cru nos presets.
-  - [ ] **K.1b** A ficha importada abre sem conta, como a ficha local: hoje virar ficha exige login
+        *(18/10 — o `sheet-import.test` (6), escrito antes: BODY 99 e perícia 50 entravam crus, a coleção `'x'`
+        também, e não havia aviso. Agora o aviso diz o que entrou e quais campos o validador corrigiu, e o que não
+        é JSON ou não é ficha é recusado na tela, no lugar do `alert`. **Achado no caminho:** importar o mesmo
+        arquivo duas vezes fazia dois presets com o mesmo id, e apagar um apagava os dois — o id repetido ganha um
+        novo. Provado revertendo: os 6 falham.)*
+  - [x] **K.1b** A ficha importada abre sem conta, como a ficha local: hoje virar ficha exige login
         (`clonePreset`), e a K.1 também é o backup de quem não tem conta (R.10). Confirmar antes que o login
         não protege nada ali.
-  - [ ] **K.1c** Folha de impressão: `@media print` e o "Salvar como PDF" do navegador, sem biblioteca de PDF
+        *(18/10 — **confirmado:** a trava veio da restauração da Fase 0, de antes do modo visitante (T2.13);
+        clonar só troca a ficha ativa, que sem conta vive no `localStorage`, e a nuvem segue exigindo conta. A
+        trava saiu, e o `onOpenAuthModal` do `PresetsManager` com ela. O teste (1) falha revertendo.)*
+  - [x] **K.1c** Folha de impressão: `@media print` e o "Salvar como PDF" do navegador, sem biblioteca de PDF
         no bundle nem no CSP. Captura da impressão no `scripts/visual/`.
+        *(18/10 — **medido antes** com o `scripts/visual/impressao.mjs` (novo: o PDF como o navegador imprime,
+        sem fundo): o menu e o cabeçalho do app, campos e botões, marcas d'água, cartões cortados, o texto claro
+        quase branco no papel — e **sem a armadura**, que só existia no DOM com a aba aberta. A folha faz da ficha
+        tinta `night` sobre o papel; esconde botão e controle só na ficha (`data-print="sheet"`) e poupa o que
+        carrega dado (as caixas da trilha, que imprimem cheias, e os alvos dos saves); as duas abas de armas
+        ficam no DOM. Cartão e linha não se partem: do primeiro desenho, seis páginas pela metade, a **quatro
+        cheias**. Um botão "Imprimir ou salvar PDF" na barra da ficha. A trava `sheet-print.test` (3) falha
+        revertendo.)*
 - [ ] **K.2** *(era T11.1)* **Carga, armadura e cromo** — *(RUL-11; decisão 13: o EV da armadura, sem pena
       por peso)*. *(~1½ dia)*
   - [ ] **K.2a** Tabela e conferência: Carry (BODY × 10 kg) e Lift (BODY × 40 kg) — S1, S8; o EV de cada peça
@@ -1481,7 +1500,7 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
-| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62) | 🔄 | — |
+| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63) | 🔄 | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
 | Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 (18/10) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
@@ -1494,7 +1513,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **881** testes, 69 arquivos *(522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11))* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
+| `npx vitest run` | **891** testes, 71 arquivos *(+10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
@@ -1504,6 +1523,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
 | `node scripts/multiplayer/h1a.mjs` | A mesa de base da H.1a (14/10/2026): três contextos, do zero ao combate, **0** erro de console; um chat custa **6,7 KB** por aba, o ataque mais o dano **~52–72 KB** (depende de o ataque do NPC ferir), 45 s parada **0,5 KB**; a sala no fim, **~17 KB**. Rodada de novo ao fechar a H.3: os mesmos números. `npm run build` antes; sobe o próprio servidor |
 | `node scripts/multiplayer/h1j.mjs` | **No ar, só combinado com o dono** (14/10/2026): o deploy com a mesa aberta deixou as duas instâncias vivas **~20 s**; o despertar da hibernação, **~22 s**. **O ensaio local** (`H1J_LOCAL=1`, com o Supabase local; `H1J_SWITCH_DELAY_S=5` imita o Render da H.3d.0) com o bastão da H.3d, 15/10: **0** mensagem perdida e **6,1 s** de "reconectando" (o código de antes perdia 1) |
+| `node scripts/visual/impressao.mjs` | A ficha impressa em PDF como o navegador imprime (sem fundo), contra o `netsheet-prod`: **4 páginas A4**, tinta sobre o papel, sem controle nenhum, com a armadura por local (K.1c, 18/10/2026). Abrir o PDF e olhar — não compara pixel |
 | `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
 | `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 107 `black`/`white`, à parte. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
 | `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4), e **o CI exige** (F.2.10) |

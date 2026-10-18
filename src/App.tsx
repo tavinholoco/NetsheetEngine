@@ -202,7 +202,7 @@ export default function App() {
 
       {/* Floating Roll Notification Banner */}
       {lastRollBanner && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-sm bg-raised/90 border-2 border-accent-400 p-4 rounded-lg shadow-glow-25 shadow-accent-500/50 animate-bounce text-xs font-mono backdrop-blur-sm">
+        <div className="print:hidden fixed bottom-4 right-4 z-50 max-w-sm bg-raised/90 border-2 border-accent-400 p-4 rounded-lg shadow-glow-25 shadow-accent-500/50 animate-bounce text-xs font-mono backdrop-blur-sm">
           <div className="flex items-center justify-between border-b border-line pb-1 mb-2">
             <span className="text-signal-400 flex items-center space-x-1">
               <Dice5 className="w-4 h-4 text-accent-400" />
@@ -221,7 +221,7 @@ export default function App() {
 
       {/* Floating Save Sheet Toast Notification */}
       {saveToast && (
-        <div className="fixed bottom-4 left-4 z-50 max-w-md bg-surface border-2 border-ok-400 p-4 rounded-lg shadow-glow-25 shadow-ok-500/50 text-xs backdrop-blur-sm space-y-1">
+        <div className="print:hidden fixed bottom-4 left-4 z-50 max-w-md bg-surface border-2 border-ok-400 p-4 rounded-lg shadow-glow-25 shadow-ok-500/50 text-xs backdrop-blur-sm space-y-1">
           <div className="flex items-center space-x-2 text-ok-400 font-bold uppercase">
             <CheckCircle2 className="w-4 h-4" />
             <span>Sincronização Concluída</span>
@@ -256,7 +256,7 @@ export default function App() {
             const currentPage = pageInfoMap[activeTab] || pageInfoMap['home'];
 
             return (
-              <div className="bg-surface/90 border-2 border-accent-600/40 rounded-xl p-4 md:p-5 backdrop-blur-md shadow-glow-20 shadow-accent-500/15 relative overflow-hidden">
+              <div className="print:hidden bg-surface/90 border-2 border-accent-600/40 rounded-xl p-4 md:p-5 backdrop-blur-md shadow-glow-20 shadow-accent-500/15 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-signal-500 to-accent-500"></div>
                 <div className="pl-3 space-y-1">
                   <div className="flex items-center space-x-2">
@@ -343,7 +343,6 @@ export default function App() {
                       onLoadPresetAsNewSheet={loadPresetAsNewSheet}
                       onCreateNew={createNewCharacter}
                       onDeleteSheet={deleteCharacter}
-                      onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
                     />
                   }
                 />
@@ -367,7 +366,7 @@ export default function App() {
           </main>
 
           {/* Immersive Footer Bar */}
-          <footer className="border-t border-line/80 bg-surface/80 backdrop-blur-md py-4 text-xs font-mono text-subtle rounded-lg p-4">
+          <footer className="print:hidden border-t border-line/80 bg-surface/80 backdrop-blur-md py-4 text-xs font-mono text-subtle rounded-lg p-4">
             <div className="flex flex-col md:flex-row items-center justify-between gap-2">
               <div className="flex items-center space-x-6 uppercase tracking-caps text-micro">
                 <span className="text-accent-400">CYBERPUNK 2020 ENGINE</span>

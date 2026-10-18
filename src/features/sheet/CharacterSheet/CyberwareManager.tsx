@@ -65,7 +65,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
 
   return (
     <div className="bg-raised/70 border-l-4 border-l-cyber-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-cyber-500/10 space-y-4 relative overflow-hidden">
-      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-cyber-500 select-none">
+      <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none print:hidden font-display text-[50px] font-black text-cyber-500 select-none">
         CHROME
       </div>
 
@@ -150,7 +150,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
 
       {/* Form de adição */}
       {showAdd ? (
-        <div className="bg-surface/90 border border-cyber-500/40 rounded-lg p-3 space-y-2.5 relative z-10 animate-fadeIn">
+        <div className="print:hidden bg-surface/90 border border-cyber-500/40 rounded-lg p-3 space-y-2.5 relative z-10 animate-fadeIn">
           <div className="flex items-center justify-between">
             <span className="text-micro font-black text-cyber-400 uppercase tracking-caps">
               Novo Ciberimplante
