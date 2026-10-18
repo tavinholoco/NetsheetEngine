@@ -1024,6 +1024,27 @@ sozinho — por isso uma entrada por PR, como na F. A K.8 fecha a fase inteira.
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto: o import sem validador
 só alcançava o navegador de quem importava, e a mesa sempre validou.
 
+**18/10/2026 — K.2 (o PR da carga, da armadura e do cromo).**
+
+1. **Entrada nova?** Três campos na ficha, que o servidor recebe na sincronia: a cobertura da peça de armadura
+   (`locations` — só os seis locais, sem repetir; peça sem local some, porque quebraria o dano), o inventário
+   (`gear` — 200 itens, 1000 kg por unidade, quantidade 1–999, peso com duas casas) e o bônus de atributo do
+   implante (`statBonus` — atributo que existe, ±5). Tudo no `sanitizeCharacterSheet`, com teste; a ficha
+   antiga é convertida, não recusada.
+2. **Dado novo sai?** O inventário vai junto com a ficha, para quem já a via (na mesa, o reenvio da sala —
+   como o resto da ficha; o E.20 segue na Q). Nada de fora da ficha.
+3. **Autorização nova?** Nenhuma. Na mesa, o ferimento segue do servidor e do GM (decisão 7a); a armadura e o
+   cromo mudam o número com que o servidor calcula, não quem escreve.
+4. **Jogador convidado hostil?** Pode declarar mais armadura ou um cromo que soma atributo, como já podia
+   declarar um BODY 15: é o "trapaceiro plausível" de sempre, com mais dois botões — e cada um tem teto no
+   validador (SP 100 e EV 20 por peça, 50 peças; ±5 por implante, 100 implantes). O atributo corrente com
+   cromo não tem teto: o 15 é do atributo base. A K.6c deixa o orçamento à vista do GM.
+5. **Estado novo sem limite?** Nenhum: o inventário entra com teto de itens, e a ficha inteira segue sob os
+   64 KB da sincronia — a de um veterano mede 16,8 KB (K.2f).
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
+
 ### Fase L — Performance e escala
 
 *(a preencher)*

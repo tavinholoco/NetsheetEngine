@@ -219,6 +219,10 @@ flowchart TB
 O que a conferência fixou, e o que ficou para o dono:
 
 - **SP antes de tudo** — a cabeça dobra o dano **que passou** da armadura. Confirmado.
+- **De onde vêm o SP e o BTM** *(K.2, 18/10/2026)*: o SP do local são as peças **vestidas** que o cobrem,
+  combinadas pela tabela proporcional, de dentro para fora (`armorSpAt` — uma peça cobre vários locais desde
+  a K.2b); o BTM sai do BODY **corrente**, com o cromo que soma atributo (o Lace dá BODY +2 — K.2e). O
+  desenho não muda: muda o que entra nos dois nós.
 - **O teste "passou da armadura?" vem antes do BTM**, porque é ele que decide se o BTM (com mínimo
   de 1) se aplica: armadura que segurou tudo não gera ferimento. *(O desenho anterior fazia a
   pergunta depois do BTM.)*
