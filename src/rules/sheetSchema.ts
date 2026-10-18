@@ -219,6 +219,23 @@ function sanitizeWeapons(value: unknown, changed: string[]): WeaponItem[] {
   return out;
 }
 
+/**
+ * K.2b — os locais que a peça cobre, sem repetir e sem local que não existe.
+ * A ficha de antes da K.2 trazia um `location` por peça: vira `locations`,
+ * sem marcar `changed` — é conversão, não correção (como o `woundLevel` da D).
+ */
+function sanitizeArmorLocations(item: Record<string, unknown>, path: string, changed: string[]): ArmorLocation[] {
+  if (item.locations === undefined && typeof item.location === 'string') {
+    if (ARMOR_LOCATIONS.includes(item.location as ArmorLocation)) return [item.location as ArmorLocation];
+    changed.push(`${path}.location`);
+    return [];
+  }
+  const raw = Array.isArray(item.locations) ? item.locations : [];
+  const out = ARMOR_LOCATIONS.filter((loc) => raw.includes(loc));
+  if (!Array.isArray(item.locations) || out.length !== raw.length) changed.push(`${path}.locations`);
+  return out;
+}
+
 function sanitizeArmor(value: unknown, changed: string[]): ArmorPiece[] {
   const raw = safeArray(value, MAX_ARMOR, 'armor', changed);
   const out: ArmorPiece[] = [];
@@ -227,15 +244,16 @@ function sanitizeArmor(value: unknown, changed: string[]): ArmorPiece[] {
       changed.push(`armor[${i}]`);
       return;
     }
-    // Localização inválida quebraria o pipeline de dano da Fase D — some.
-    if (!ARMOR_LOCATIONS.includes(item.location as ArmorLocation)) {
-      changed.push(`armor[${i}].location`);
+    // Peça sem local válido quebraria o pipeline de dano da Fase D — some.
+    const locations = sanitizeArmorLocations(item, `armor[${i}]`, changed);
+    if (locations.length === 0) {
+      if (!changed.some((c) => c.startsWith(`armor[${i}].location`))) changed.push(`armor[${i}].locations`);
       return;
     }
     out.push({
       id: safeString(item.id, MAX_NAME_CHARS, `armor[${i}].id`, changed),
       name: safeString(item.name, MAX_NAME_CHARS, `armor[${i}].name`, changed),
-      location: item.location as ArmorLocation,
+      locations,
       sp: clampInt(item.sp, 0, 100, 0, `armor[${i}].sp`, changed),
       ev: clampInt(item.ev, 0, 20, 0, `armor[${i}].ev`, changed),
       equipped: safeBool(item.equipped)

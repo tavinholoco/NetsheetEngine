@@ -219,12 +219,12 @@ export const DEFAULT_WEAPONS: WeaponItem[] = [
 
 /** Conjunto padrão de armadura leve (SP 14) cobrindo as 6 localizações. */
 export const DEFAULT_ARMOR: ArmorPiece[] = [
-  { id: 'arm_light_head', name: 'Armadura Leve — Cabeça', location: 'Head', sp: 14, ev: 0, equipped: true },
-  { id: 'arm_light_torso', name: 'Armadura Leve — Tronco', location: 'Torso', sp: 14, ev: 0, equipped: true },
-  { id: 'arm_light_rarm', name: 'Armadura Leve — Braço Direito', location: 'Right Arm', sp: 14, ev: 0, equipped: true },
-  { id: 'arm_light_larm', name: 'Armadura Leve — Braço Esquerdo', location: 'Left Arm', sp: 14, ev: 0, equipped: true },
-  { id: 'arm_light_rleg', name: 'Armadura Leve — Perna Direita', location: 'Right Leg', sp: 14, ev: 0, equipped: true },
-  { id: 'arm_light_lleg', name: 'Armadura Leve — Perna Esquerda', location: 'Left Leg', sp: 14, ev: 0, equipped: true }
+  { id: 'arm_light_head', name: 'Armadura Leve — Cabeça', locations: ['Head'], sp: 14, ev: 0, equipped: true },
+  { id: 'arm_light_torso', name: 'Armadura Leve — Tronco', locations: ['Torso'], sp: 14, ev: 0, equipped: true },
+  { id: 'arm_light_rarm', name: 'Armadura Leve — Braço Direito', locations: ['Right Arm'], sp: 14, ev: 0, equipped: true },
+  { id: 'arm_light_larm', name: 'Armadura Leve — Braço Esquerdo', locations: ['Left Arm'], sp: 14, ev: 0, equipped: true },
+  { id: 'arm_light_rleg', name: 'Armadura Leve — Perna Direita', locations: ['Right Leg'], sp: 14, ev: 0, equipped: true },
+  { id: 'arm_light_lleg', name: 'Armadura Leve — Perna Esquerda', locations: ['Left Leg'], sp: 14, ev: 0, equipped: true }
 ];
 
 /** Perícias de atributo do CP2020 agrupadas por atributo primário. */

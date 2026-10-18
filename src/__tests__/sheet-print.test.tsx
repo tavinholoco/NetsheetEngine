@@ -35,10 +35,11 @@ describe('K.1c — o que a folha de impressão precisa achar', () => {
         onRollDamageOnly={vi.fn()}
       />
     );
+    // A aba fechada fica no DOM, escondida na tela e à vista na impressão.
     const armas = screen.getByText(/adicionar armas padrão/i).closest('.space-y-4');
-    const armadura = screen.getByText(/pontos de parada/i).closest('.space-y-4');
+    const armadura = screen.getByText(/pontos de parada/i).closest('.hidden');
     expect(armas).not.toHaveClass('hidden');
-    expect(armadura).toHaveClass('hidden', 'print:block');
+    expect(armadura).toHaveClass('print:block');
   });
 
   it('as 40 caixas da trilha ficam na impressão, e as marcadas imprimem cheias', () => {

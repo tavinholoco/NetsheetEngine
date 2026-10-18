@@ -243,12 +243,12 @@ export function generateRandomNpc(archetypeId?: string): CharacterSheet {
   // pernas cobrem os dois lados (G.22: o esquerdo ficava sem armadura).
   const armorSp = archetype.threatLevel === 'Chefe de Gangue' ? 18 : archetype.threatLevel === 'Veterano' ? 14 : 10;
   const armor: ArmorPiece[] = [
-    { id: 'arm_head_' + Date.now(), name: 'Capacete Tático', location: 'Head', sp: armorSp, ev: 0, equipped: true },
-    { id: 'arm_torso_' + Date.now(), name: 'Colete Kevlar Reforçado', location: 'Torso', sp: armorSp, ev: 0, equipped: true },
-    { id: 'arm_rarm_' + Date.now(), name: 'Proteção de Braços', location: 'Right Arm', sp: armorSp - 2, ev: 0, equipped: true },
-    { id: 'arm_larm_' + Date.now(), name: 'Proteção de Braços', location: 'Left Arm', sp: armorSp - 2, ev: 0, equipped: true },
-    { id: 'arm_rleg_' + Date.now(), name: 'Calças Balísticas', location: 'Right Leg', sp: armorSp - 2, ev: 0, equipped: true },
-    { id: 'arm_lleg_' + Date.now(), name: 'Calças Balísticas', location: 'Left Leg', sp: armorSp - 2, ev: 0, equipped: true }
+    { id: 'arm_head_' + Date.now(), name: 'Capacete Tático', locations: ['Head'], sp: armorSp, ev: 0, equipped: true },
+    { id: 'arm_torso_' + Date.now(), name: 'Colete Kevlar Reforçado', locations: ['Torso'], sp: armorSp, ev: 0, equipped: true },
+    { id: 'arm_rarm_' + Date.now(), name: 'Proteção de Braços', locations: ['Right Arm'], sp: armorSp - 2, ev: 0, equipped: true },
+    { id: 'arm_larm_' + Date.now(), name: 'Proteção de Braços', locations: ['Left Arm'], sp: armorSp - 2, ev: 0, equipped: true },
+    { id: 'arm_rleg_' + Date.now(), name: 'Calças Balísticas', locations: ['Right Leg'], sp: armorSp - 2, ev: 0, equipped: true },
+    { id: 'arm_lleg_' + Date.now(), name: 'Calças Balísticas', locations: ['Left Leg'], sp: armorSp - 2, ev: 0, equipped: true }
   ];
 
   return {

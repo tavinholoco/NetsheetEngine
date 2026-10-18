@@ -17,14 +17,14 @@ import {
   walkFromMa,
   armorSpAt
 } from '../utils/derivedStats';
-import type { ArmorPiece, CyberwareItem } from '../types/cyberpunk';
+import type { ArmorLocation, ArmorPiece, CyberwareItem } from '../types/cyberpunk';
 
 const cw = (actualHL: number): Pick<CyberwareItem, 'actualHL'> => ({ actualHL });
 
-const armorPiece = (location: ArmorPiece['location'], sp: number, equipped = true): ArmorPiece => ({
+const armorPiece = (location: ArmorLocation, sp: number, equipped = true): ArmorPiece => ({
   id: `arm_${location}_${sp}`,
   name: `Armadura ${location}`,
-  location,
+  locations: [location],
   sp,
   ev: 0,
   equipped

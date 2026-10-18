@@ -66,11 +66,22 @@ export interface WeaponItem {
   equipped: boolean;
 }
 
-/** Peça de armadura com SP (Stopping Power) por localização. */
+/**
+ * Peça de armadura: o SP (Stopping Power) que dá em cada local que cobre, e o
+ * EV, que sai do REF. Desde a K.2 uma peça cobre vários locais — uma jaqueta é
+ * uma peça, não quatro —, e duas peças no mesmo local combinam pela tabela
+ * proporcional (`armorSpAt`, src/rules/damage.ts).
+ */
 export interface ArmorPiece {
   id: string;
   name: string;
-  location: ArmorLocation;
+  /** Os locais que a peça cobre. A ordem da lista de peças é de dentro para fora. */
+  locations: ArmorLocation[];
+  /**
+   * Ficha de antes da K.2: uma peça por local. Não escreva — leia com
+   * `armorLocationsOf`, que entende os dois formatos; o validador grava o novo.
+   */
+  location?: ArmorLocation;
   sp: number;
   ev: number;
   equipped: boolean;
