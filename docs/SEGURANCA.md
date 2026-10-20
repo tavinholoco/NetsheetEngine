@@ -1108,6 +1108,18 @@ mostra (o nome do nível vem da trilha do livro): nenhuma entrada, saída ou aut
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
 
+**20/10/2026 — K.7 (o PR das perícias e do movimento).** Dado de regra e tela, sem rota nem campo novo.
+
+1. **Entrada nova?** Nenhuma. A lista de perícias é sugestão do cliente; a perícia segue entrando na ficha com nome e
+   atributo, e o `sanitizeCharacterSheet` a confere como sempre (atributo que existe, nível 0–10, 200 perícias).
+2. **Dado novo sai?** Nenhum. O Leap é uma conta na tela, a partir do MA que a ficha já tinha.
+3. **Autorização nova?** Nenhuma.
+4. **Jogador convidado hostil?** Nada novo: sugerir mais perícias não muda o que a ficha aceita.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
+
 ### Fase L — Performance e escala
 
 *(a preencher)*
