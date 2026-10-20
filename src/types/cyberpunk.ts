@@ -8,6 +8,7 @@
  * types/multiplayer.ts.
  * ============================================================
  */
+import type { DeckChassisId, ProgramClassId } from '../rules/tables';
 
 /** Atributos primários do sistema CP2020. */
 export type StatName = 'INT' | 'REF' | 'TECH' | 'COOL' | 'ATTR' | 'LUCK' | 'MA' | 'BODY' | 'EMP';
@@ -105,6 +106,33 @@ export interface GearItem {
   qty: number;
 }
 
+/**
+ * O cyberdeck do netrunner (K.5b, decisão 9). A MU e o preço saem da tabela
+ * (`deckTotalMu`, `deckCostEb` em src/rules/netrun.ts); aqui fica o que o
+ * jogador escolhe: o tipo, as melhorias e o nome do modelo.
+ */
+export interface Cyberdeck {
+  model: string;
+  chassis: DeckChassisId;
+  /** Speed do deck: soma na iniciativa na Net (1d10 + REF + Speed). */
+  speed: number;
+  dataWall: number;
+  codeGate: number;
+  /** O segundo módulo de memória (+10 MU). */
+  extraMemory: boolean;
+}
+
+/** Um programa (K.5b). Carregado, ocupa a MU do deck; fora dele, fica em chip. */
+export interface NetProgram {
+  id: string;
+  name: string;
+  programClass: ProgramClassId;
+  strength: number;
+  mu: number;
+  costEb: number;
+  loaded: boolean;
+}
+
 /** Lifepath narrativo gerado / editado pelo jogador. */
 export interface Lifepath {
   familyBackground: string;
@@ -161,6 +189,10 @@ export interface CharacterSheet {
   /** Inventário com peso (K.2d). Opcional: ficha de antes da K.2 não tem. */
   gear?: GearItem[];
   gearNotes: string;
+  /** O deck do netrunner (K.5b). Opcional: sem deck, o campo não vem. */
+  deck?: Cyberdeck;
+  /** Os programas (K.5b). Opcional: ficha de antes da K.5 não tem. */
+  programs?: NetProgram[];
   createdAt: string;
   updatedAt: string;
 }
