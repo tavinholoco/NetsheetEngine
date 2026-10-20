@@ -91,7 +91,8 @@ O produto cobre **sete módulos funcionais interligados**:
 - Identidade: apelido (handle), nome real, idade, gênero, classe oficial
   (Role) e habilidade especial.
 - Atributos primários (INT, REF, TECH, COOL, ATTR, LUCK, MA, BODY, EMP) com
-  autocalculo dos derivados: **BTM**, Humanidade (EMP × 10), RUN/WALK.
+  autocalculo dos derivados: **BTM**, Humanidade (EMP × 10), RUN e LEAP (K.7c — o Walk, que
+  não existe no livro, saiu).
 - Árvore de perícias com rolagem integrada (atributo + nível + 1d10!).
 - Assistente de criação pelo orçamento do livro (9D10 ou bolo do Mestre, 40 pontos de carreira,
   *pickup* de REF + INT, verba pelo salário × 1D6/3), que grava o que foi gasto para o GM ver.
@@ -191,7 +192,7 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
   vê na mesa contra a ficha de hoje — **à vista, não barrado**: o IP e o cromo sobem os números
   depois da criação.
 - Derivados: **BTM** pelo tipo corporal, **só BODY**: 2 → 0, 3–4 → −1, 5–7 → −2,
-  8–9 → −3, 10 → −4, 11+ → −5. **Humanidade = EMP × 10**; RUN = MA × 3.
+  8–9 → −3, 10 → −4, 11+ → −5. **Humanidade = EMP × 10**; RUN = MA × 3; LEAP = RUN ÷ 4, para baixo.
   *(Fase C, C.2 — antes era BODY + REF com sinal invertido.)*
 - **Atributos correntes** (`deriveCurrentStats`, Fase C, C.6): base → **−1 EMP a
   cada 10 de Humanidade perdida** → efeito do ferimento. **Toda rolagem**, da

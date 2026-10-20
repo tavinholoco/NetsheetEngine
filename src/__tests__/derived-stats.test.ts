@@ -4,7 +4,8 @@
  * =====================================================
  * Regras puras extraídas do StatBlock, CyberwareManager e WeaponsArmor:
  * Humanidade (EMP × 10), perda de humanidade (Σ actualHL),
- * Run/Walk (MA × 3) e SP de armadura por localização.
+ * Run (MA × 3) e SP de armadura por localização. O Leap e a saída do Walk
+ * estão no movement.test (K.7c).
  */
 import { describe, it, expect } from 'vitest';
 import { BODY_TYPE_TABLE } from '../rules/tables';
@@ -14,7 +15,6 @@ import {
   humanityLossTotal,
   humanityRemaining,
   runFromMa,
-  walkFromMa,
   armorSpAt
 } from '../utils/derivedStats';
 import type { ArmorLocation, ArmorPiece, CyberwareItem } from '../types/cyberpunk';
@@ -96,19 +96,13 @@ describe('humanityRemaining — EMP × 10 − Σ actualHL (nunca negativo)', () 
   });
 });
 
-describe('movimento — Run/Walk derivados de MA', () => {
-  it('MA 8 → Run 24 m, Walk 12 m', () => {
+describe('movimento — Run derivado de MA', () => {
+  it('MA 8 → Run 24 m', () => {
     expect(runFromMa(8)).toBe(24);
-    expect(walkFromMa(8)).toBe(12);
   });
 
-  it('MA 10 → Run 30 m, Walk 15 m', () => {
+  it('MA 10 → Run 30 m', () => {
     expect(runFromMa(10)).toBe(30);
-    expect(walkFromMa(10)).toBe(15);
-  });
-
-  it('Walk arredonda para baixo (MA 3 → Run 9 → Walk 4)', () => {
-    expect(walkFromMa(3)).toBe(4);
   });
 });
 
