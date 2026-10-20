@@ -126,3 +126,33 @@ describe('K.6b — o assistente de criação', () => {
     expect(screen.getByTestId('creation-funds')).toHaveTextContent(eb(3000));
   });
 });
+
+// Revisão da K — o pickup gravava "Language (escolha)" como nome da perícia, e a
+// lista de perícias não renomeia: a ficha ficava com o marcador para sempre.
+describe('Revisão da K — a perícia "(escolha)" pede o complemento', () => {
+  it('Language: sem o complemento não entra; com ele, entra pelo nome, e cabe uma segunda', async () => {
+    const f = montar();
+    await f.user.click(screen.getByRole('button', { name: /montar pelo livro/i }));
+    await f.user.selectOptions(screen.getByRole('combobox', { name: /perícia de pickup/i }), 'Language (escolha)');
+    const adicionar = screen.getByRole('button', { name: /adicionar ao pickup/i });
+    expect(adicionar).toBeDisabled();
+
+    await f.user.type(screen.getByRole('textbox', { name: /complemento da perícia/i }), 'Japonês');
+    await f.user.click(adicionar);
+    expect(screen.getByRole('textbox', { name: /^language: japonês \(pickup\)/i })).toBeInTheDocument();
+
+    await f.user.selectOptions(screen.getByRole('combobox', { name: /perícia de pickup/i }), 'Language (escolha)');
+    await f.user.type(screen.getByRole('textbox', { name: /complemento da perícia/i }), 'Inglês');
+    await f.user.click(screen.getByRole('button', { name: /adicionar ao pickup/i }));
+    expect(screen.getByRole('textbox', { name: /^language: inglês \(pickup\)/i })).toBeInTheDocument();
+    expect(screen.queryByText(/\(escolha\)/, { selector: 'span' })).toBeNull();
+  });
+
+  it('a perícia sem "(escolha)" não pede complemento', async () => {
+    const f = montar();
+    await f.user.click(screen.getByRole('button', { name: /montar pelo livro/i }));
+    await f.user.selectOptions(screen.getByRole('combobox', { name: /perícia de pickup/i }), 'Dance');
+    expect(screen.queryByRole('textbox', { name: /complemento da perícia/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /adicionar ao pickup/i })).toBeEnabled();
+  });
+});

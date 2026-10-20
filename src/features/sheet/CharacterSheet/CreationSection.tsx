@@ -54,7 +54,11 @@ const stepTitle = 'text-micro text-accent-400 uppercase tracking-caps';
 const ALL_SKILLS: { name: string; stat: StatName }[] = (Object.keys(SKILL_TABLES) as StatName[]).flatMap((stat) =>
   SKILL_TABLES[stat].map((name) => ({ name, stat }))
 );
-const baseName = (name: string) => normalizeName(name.replace('(escolha)', ''));
+const CHOICE_MARK = '(escolha)';
+const baseName = (name: string) => normalizeName(name.replace(CHOICE_MARK, ''));
+/** "Language (escolha)" + "Japonês" → "Language: Japonês" — a lista de perícias não renomeia. */
+const withDetail = (name: string, detail: string) =>
+  `${name.replace(CHOICE_MARK, '').trim().replace(/:$/, '')}: ${detail.trim()}`;
 
 const BudgetLine: React.FC<{ label: string; budget: Budget; testId: string }> = ({ label, budget, testId }) => {
   const over = budget.spent > budget.budget;
@@ -73,6 +77,8 @@ const BudgetLine: React.FC<{ label: string; budget: Budget; testId: string }> = 
 export const CreationSection: React.FC<CreationSectionProps> = ({ sheet, onChange, rng = clientRng }) => {
   const [draft, setDraft] = useState<CreationDraft | null>(null);
   const [pickupChoice, setPickupChoice] = useState('');
+  // A perícia "(escolha)" (Language, Expert, Martial Art) pede o complemento.
+  const [pickupDetail, setPickupDetail] = useState('');
   const creation = sheet.creation;
 
   const set = (patch: Partial<CreationDraft>) => setDraft((d) => (d ? { ...d, ...patch } : d));
@@ -142,11 +148,19 @@ export const CreationSection: React.FC<CreationSectionProps> = ({ sheet, onChang
   const togglePick = (name: string) =>
     set({ picks: draft.picks.includes(name) ? draft.picks.filter((p) => p !== name) : [...draft.picks, name] });
 
+  const pickupSkill = ALL_SKILLS.find((s) => s.name === (pickupChoice || pickupOptions[0]?.name));
+  const needsDetail = !!pickupSkill?.name.includes(CHOICE_MARK);
+  const pickupName = pickupSkill && (needsDetail ? withDetail(pickupSkill.name, pickupDetail) : pickupSkill.name);
+  const canAddPickup =
+    !!pickupName &&
+    (!needsDetail || pickupDetail.trim() !== '') &&
+    !draft.pickup.some((p) => normalizeName(p.name) === normalizeName(pickupName));
+
   const addPickup = () => {
-    const skill = ALL_SKILLS.find((s) => s.name === (pickupChoice || pickupOptions[0]?.name));
-    if (!skill) return;
-    set({ pickup: [...draft.pickup, { name: skill.name, stat: skill.stat, level: 0 }] });
+    if (!pickupSkill || !pickupName || !canAddPickup) return;
+    set({ pickup: [...draft.pickup, { name: pickupName, stat: pickupSkill.stat, level: 0 }] });
     setPickupChoice('');
+    setPickupDetail('');
   };
 
   const apply = () => {
@@ -297,7 +311,10 @@ export const CreationSection: React.FC<CreationSectionProps> = ({ sheet, onChang
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={pickupChoice}
-            onChange={(e) => setPickupChoice(e.target.value)}
+            onChange={(e) => {
+              setPickupChoice(e.target.value);
+              setPickupDetail('');
+            }}
             aria-label="Perícia de pickup"
             className={`${field} flex-1 min-w-[10rem]`}
           >
@@ -307,10 +324,22 @@ export const CreationSection: React.FC<CreationSectionProps> = ({ sheet, onChang
               </option>
             ))}
           </select>
+          {needsDetail && (
+            <input
+              type="text"
+              value={pickupDetail}
+              maxLength={40}
+              placeholder="Japonês, Química, Karate…"
+              onChange={(e) => setPickupDetail(e.target.value)}
+              aria-label="Complemento da perícia"
+              className={`${field} w-40 placeholder:text-faint`}
+            />
+          )}
           <button
             type="button"
             onClick={addPickup}
-            className="px-2.5 py-1.5 bg-surface hover:bg-accent-950/60 border border-accent-700/60 text-accent-400 font-bold text-micro uppercase rounded cursor-pointer flex items-center gap-1"
+            disabled={!canAddPickup}
+            className="px-2.5 py-1.5 bg-surface hover:bg-accent-950/60 border border-accent-700/60 text-accent-400 font-bold text-micro uppercase rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
           >
             <Plus className="w-3 h-3" />
             Adicionar ao pickup
