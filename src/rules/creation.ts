@@ -205,9 +205,14 @@ export function createDraft(sheet: CharacterSheet): CreationDraft {
   const byName = new Map((sheet.skills ?? []).map((s) => [normalizeName(s.name), s] as const));
   const levelOf = (name: string) => clamp(byName.get(normalizeName(name))?.level ?? 0, 0, CREATION_SKILL_MAX);
 
-  const picks = (pkg?.choices ?? []).flatMap((choice) =>
-    choice.options.filter((o) => byName.has(normalizeName(o.name))).slice(0, choice.count).map((o) => o.name)
-  );
+  // A escolha do pacote vem do registro, se houver: a opção que o jogador deixou
+  // de fora pode estar no pickup, e a primeira que a ficha tem não é a escolhida.
+  const recorded = new Set((sheet.creation?.careerSkills ?? []).map(normalizeName));
+  const picks = (pkg?.choices ?? []).flatMap((choice) => {
+    const present = choice.options.filter((o) => byName.has(normalizeName(o.name)));
+    const chosen = present.filter((o) => recorded.has(normalizeName(o.name)));
+    return [...chosen, ...present.filter((o) => !chosen.includes(o))].slice(0, choice.count).map((o) => o.name);
+  });
   const allCareer = pkg ? packageSkills(pkg) : [];
   const careerNames = new Set((pkg ? careerSkillsOf(pkg, picks) : []).map((s) => normalizeName(s.name)));
   const sa = normalizeName(sheet.specialAbilityName);
