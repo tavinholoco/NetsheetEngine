@@ -1236,6 +1236,27 @@ seguem os grupos abaixo.
   - [ ] **K.7b** A tela sugere **todas** as perícias do atributo, não só as 8 primeiras.
   - [ ] **K.7c** Leap (Run ÷ 4 — S1 e S8; o S8 arredonda para baixo) na ficha; o Walk sai, com o
         `walkFromMa` e o teste dele.
+      *Medido antes, em 20/10/2026 (no fim da K.6, contra o branch do #67) — a premissa se sustenta, com uma perícia a
+      mais:*
+      - **As oito e as duas, de novo em duas fontes:** a lista de pickup do S3 (p. 4) e o `default-skills.db` do S8 dão
+        as mesmas oito que faltam e nenhuma "Psychology"; "Social" só em EMP. **Novo:** o S3 e o S8 dão **quatro**
+        perícias de piloto — Gyro, Fixed Wing, Dirigible e Vectored Thrust —, e o `SKILL_TABLES` tem um "Pilot
+        (escolha)". Trocar pelas quatro cabe na K.7a, com as duas fontes. As **artes marciais** o S8 dá por estilo
+        (onze) e o S3 como uma só: o estilo carrega bônus de combate, que é outra regra — fica "(escolha)", e o
+        bônus por estilo vai à lista da Q no fechamento. "Expert" e "Language" o S3 tem e o S8 não: ficam.
+      - **A K.6 depende da K.7a:** o `rules-creation.test` lista as quatro perícias dos pacotes que faltam no
+        `SKILL_TABLES` (Wilderness Survival, Cyberdeck Design, Pharmaceuticals, Interrogation) — passa a esperar
+        nenhuma. E o `ALL_SKILLS` do `CreationSection` desempata o "Social" duplicado ("vale o último") — o desempate
+        sai.
+      - **A ficha não precisa de conversão:** a perícia mora na ficha com nome e atributo, e o servidor a acha pelo
+        nome (`skillLevelOf`). Quem já tem "Social" em INT fica como digitou; o assistente da K.6 a lê pelo nome e a
+        grava em EMP.
+      - **K.7b:** o `slice(0, 8)` está em dois lugares do `SkillsSection` (o estado inicial e a troca de atributo); a
+        lista vira o `datalist` e os botões de sugestão. Com a K.7a, INT passa a 25.
+      - **K.7c:** o Run já lê o MA **corrente** (`StatBlock.tsx:86`) e o Walk lia o **base** (`:183`) — a diferença
+        some com o Walk. O Leap lê o Run corrente, para baixo (S8). O PRD diz "RUN/WALK" (seção 4.1); o E2E não cita
+        nenhum dos dois.
+      - **Sem migration e sem mudança no servidor.** A estimativa de ½ dia se mantém, em três commits.
 - [ ] **K.8** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] **K.9** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase K concluída em:** ____/____/______
