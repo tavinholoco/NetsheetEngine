@@ -1124,6 +1124,9 @@ seguem os grupos abaixo.
       contra o `netsheet-prod`: o GM pôs "Beco atrás do Afterlife", −2 e "escuridão"; o cabeçalho passou a dizer
       os dois, e o ataque saiu `1d10: 2 + REF (5) + Brawling (0) + Mod. do Mestre: escuridão (−2) = 5`; o token de
       um jogador em Sério diz "Sério" no cartão, na cor `wound-2`, e "Sério · 5/40" no painel logo abaixo.)*
+      *(20/10, depois do merge — **o `master` ficou vermelho** no E2E: o `apt` do runner levou 403 do
+      `packages.microsoft.com` ao instalar o Chromium, antes de rodar teste nenhum. A reexecução do job passou, e o
+      `master` ficou verde nos quatro jobs. Falha do GitHub, não do código.)*
   - [x] **K.3a** O **G.05**: um nome por nível, o da trilha do livro (`WOUND_TRACK`); o `WOUND_LEVEL_NAMES`
         sai, e a ficha e o cartão do token dizem a mesma coisa. A cor fica no token `wound-N`.
         *(20/10 — o `wound-names.test` (22), escrito antes, confere a pílula e o cartão "Estado" da ficha e o
@@ -1149,16 +1152,44 @@ seguem os grupos abaixo.
       (ver acima).* *(18/10/2026 — **saiu da K** (decisão 13): o 2020 não tem a regra, e o NPC gerado já traz o
       equipamento. Está na lista da Q (Q.3), com a versão pequena: o GM copia uma arma ou armadura do NPC para a
       ficha de um jogador.)*
-- [ ] **K.5** *(era T11.2)* **O netrunner na ficha** (decisão 9): o deck, os programas e a MU como
+- [x] **K.5** *(era T11.2)* **O netrunner na ficha** (decisão 9): o deck, os programas e a MU como
       dado da ficha, com as regras do livro — sem a Net jogável. *(~1 dia, mais a pesquisa)*
       - **A Net na mesa** (mapa, turnos, data walls, ações por turno): **ADIAR**, fase própria depois
         da L. **Gatilho:** alguém da mesa do dono jogar de netrunner.
-  - [ ] **K.5a** 🔍 Pesquisa: o que a ficha guarda — o deck (MU, Speed, Data Wall, custo), os programas
+      *(20/10/2026 — os três no **#66**, um commit cada, com o teste antes e a prova revertendo. **O gatilho do PDF
+      não disparou:** a pesquisa fechou o que a ficha guarda. Linha de base: **1005** testes em 81 arquivos (+29);
+      E2E 7/7; tipografia limpa; `audit:ci`, cores e conflitos em 0. Visto no navegador, contra o `netsheet-prod`:
+      o deck padrão dá 0/10 MU, 1.000 eb e iniciativa 1d10 + 5; celular com Speed 2 e o segundo módulo, 13.000 eb,
+      20 MU e 1d10 + 7; dois programas de 15 e 6 MU, 21/20 e o aviso. Na impressão, a seção sai sem os botões, e a
+      ficha passa a **6 páginas** A4.)*
+  - [x] **K.5a** 🔍 Pesquisa: o que a ficha guarda — o deck (MU, Speed, Data Wall, custo), os programas
         (classe, força, MU, custo) e o que o livro amarra ao personagem (Interface, o *link* cibernético). As
         fontes de fã divergem já no deck padrão (K.0): duas fontes por número. **Se não fecharem, vai ao dono
         como decisão — é o gatilho da compra do PDF** (decisão 11). Cuidado redobrado com o RED.
-  - [ ] **K.5b** O modelo e a tabela, com a ficha antiga convertida na leitura (sem netrunner, campo vazio).
-  - [ ] **K.5c** A tela: o deck e os programas na ficha, com a MU usada contra a do deck.
+        *(20/10 — **a divergência da K.0 era a conversão para o Mythus** (Speed 10, Data Wall 8), outro sistema. Com
+        ela fora, fecharam: o deck padrão, 10 MU, Speed 0, Data Wall 2 (S6, a wiki — S12 —, o Datafort — S13); os
+        tipos de deck e os preços (o S8, que cita o livro básico, p. 133–134, e o S13); o preço das melhorias (S12,
+        S13); os campos do programa (S1, S13, S14) e as onze classes (S6, S14); a iniciativa na Net, 1d10 + REF +
+        Speed (S1, S6). **Ficaram abertos, na Q:** o teto das melhorias (o S12 dá Speed 5 e Data Wall 10; o S6,
+        nenhum), o catálogo de programas com os números (o S14 e o S13 batem, mas os do S13 são do *Brainware
+        Blowout*, um suplemento, e o S14 pode ter vindo dele) e o custo de entrar na Net sem cromo. **Descartados:**
+        a CyberMyth e um jogo de Godot com regra própria; o Reddit não abre daqui, e ficou só de pista. O RED só
+        apareceu nos "slots" da wiki, deixados de fora. Na [conferência](./CONFERENCIA_CP2020.md#o-que-fica-para-a-fase-k).)*
+  - [x] **K.5b** O modelo e a tabela, com a ficha antiga convertida na leitura (sem netrunner, campo vazio).
+        *(20/10 — o `Cyberdeck` e o `NetProgram` na ficha, a tabela no `tables.ts` (`DECK_BASE`, `DECK_CHASSIS`,
+        `DECK_UPGRADE_EB`, `PROGRAM_CLASSES`) e as contas em `src/rules/netrun.ts`: a MU (10, ou 20 com o segundo
+        módulo), o preço pela tabela, a MU dos carregados e a iniciativa. O validador grampeia o deck (Speed 10, Data
+        Wall e Code Gate 40 — grampos do absurdo, não regra) e os programas (100); tipo que não existe vira o
+        padrão, classe que não existe vira "Outra". A ficha de antes abre sem deck, sem correção. O `rules-netrun.test`
+        (20): **revertido só o validador, 6 falham** — ele descartava o deck como campo desconhecido, e o deck não
+        chegaria à mesa nem ao import. O deck e 40 programas somam **5,6 KB** (o `sheet-size` trava abaixo da metade
+        dos 64 KB).)*
+  - [x] **K.5c** A tela: o deck e os programas na ficha, com a MU usada contra a do deck.
+        *(20/10 — a seção "Netrunner // Deck & Programas", entre o inventário e as perícias: "Montar cyberdeck" põe o
+        padrão; o tipo com o preço, as melhorias, o preço pela tabela e a iniciativa na Net; os programas digitados,
+        como a arma, com "no deck"; acima da MU, só um aviso, como o Carry. O `netrunner-section.test` (8): sem o
+        componente o arquivo não carrega, e tirado só o aviso, o teste dele falha. A ficha do
+        `scripts/visual/impressao.mjs` ganhou um deck e três programas.)*
 - [ ] **K.6** **Criação de personagem com orçamento** *(RUL-10; decisão 13)*. *(~1½ dia)*
   - [ ] **K.6a** Tabela e conferência: os dois métodos (o 9D10 num bolo e o bolo que o Mestre define), cada
         atributo de 2 a 10; os 40 pontos de carreira nos 10 pacotes, cada perícia até 10; o *pickup* de REF +
@@ -1237,7 +1268,9 @@ decisões do dono. *(17/10/2026, no fechamento da J: **86** — entraram os seis
 J.1d e os helpers de teste da revisão da J.5. Os oito de que a J era dona, ela conferiu e deixou: agora são da Q.)*
 *(18/10/2026, na K.0: **89** — entraram o método rápido de atributos, a evolução por IP e a K.4, pela decisão 13.
 Na K.2: **91** — entraram o teto de três camadas e o EV extra por camada; e dois da Q.1, o cromo e o EV, foram feitos.
-Na K.3 (20/10): mais dois da Q.1 feitos, o G.05 e o I.01, e nenhum ADIAR novo — seguem **91**, quatro marcados.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+Na K.3 (20/10): mais dois da Q.1 feitos, o G.05 e o I.01, e nenhum ADIAR novo — seguem **91**, quatro marcados.
+Na K.5 (20/10): **94** — entraram o teto das melhorias do deck, o catálogo de programas e o custo de entrar na Net sem
+cromo, na Q.5.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1439,6 +1472,14 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         rígidas, no mesmo local. Fonte: a K.2a, na [conferência](./CONFERENCIA_CP2020.md#o-que-fica-para-a-fase-k).
   - [ ] **O EV extra por camada**: o S6 soma 1 por camada, o S9 cobra 0, 1 e 2. Hoje não há EV extra. *Gatilho:* uma
         segunda fonte que desempate, o PDF (Q.0b), ou a mesa usar três camadas. Fonte: a K.2a.
+  - [ ] **O teto das melhorias do deck** (K.5a): Speed até 5 e Data Wall até 10 (S12), ou sem teto (S6)? Hoje, só o
+        grampo do absurdo (Speed 10, Data Wall e Code Gate 40). *Gatilho:* uma segunda fonte que desempate, o PDF (Q.0b),
+        ou um deck acima de Speed 5 numa ficha de verdade. Fonte: a [conferência](./CONFERENCIA_CP2020.md#perguntas-para-o-livro).
+  - [ ] **O catálogo de programas do livro básico** (K.5a): força, MU e custo de cada um, para escolher em vez de
+        digitar. O S14 e o S13 batem, mas o S13 é do *Brainware Blowout* e o S14 pode ter vindo dele. *Gatilho:* uma
+        fonte independente das duas, o PDF (Q.0b), ou alguém da mesa jogar de netrunner (o gatilho da Net jogável).
+  - [ ] **Entrar na Net sem cromo** (K.5a): −2 de REF (S6) ou −2 na Interface (S8)? A ficha não modela. *Gatilho:* a
+        Net jogável abrir, ou uma segunda fonte.
   - [ ] **A evolução por IP** (decisão 13): o custo de subir uma perícia (nível × 10 × multiplicador) só está no S6,
         e o multiplicador de cada perícia em nenhuma fonte. *Gatilho:* uma segunda fonte, o PDF (Q.0b), ou a
         primeira sessão que der IP a alguém.
@@ -1559,9 +1600,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
-| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65) | 🔄 | — |
+| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66) | 🔄 | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
-| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10) | ⬜ | — |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5 | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual
@@ -1572,7 +1613,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **976** testes, 79 arquivos *(+32 da K.3: `wound-names` 22, `scene-settings` 7, `table-rolls.integration` +3 — 20/10/2026; +53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
+| `npx vitest run` | **1005** testes, 81 arquivos *(+29 da K.5: `rules-netrun` 20, `netrunner-section` 8, `sheet-size` +1 — 20/10/2026; +32 da K.3: `wound-names` 22, `scene-settings` 7, `table-rolls.integration` +3 — 20/10/2026; +53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
@@ -1582,7 +1623,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
 | `node scripts/multiplayer/h1a.mjs` | A mesa de base da H.1a (14/10/2026): três contextos, do zero ao combate, **0** erro de console; um chat custa **6,7 KB** por aba, o ataque mais o dano **~52–72 KB** (depende de o ataque do NPC ferir), 45 s parada **0,5 KB**; a sala no fim, **~17 KB**. Rodada de novo ao fechar a H.3: os mesmos números. `npm run build` antes; sobe o próprio servidor |
 | `node scripts/multiplayer/h1j.mjs` | **No ar, só combinado com o dono** (14/10/2026): o deploy com a mesa aberta deixou as duas instâncias vivas **~20 s**; o despertar da hibernação, **~22 s**. **O ensaio local** (`H1J_LOCAL=1`, com o Supabase local; `H1J_SWITCH_DELAY_S=5` imita o Render da H.3d.0) com o bastão da H.3d, 15/10: **0** mensagem perdida e **6,1 s** de "reconectando" (o código de antes perdia 1) |
-| `node scripts/visual/impressao.mjs` | A ficha impressa em PDF como o navegador imprime (sem fundo), contra o `netsheet-prod`: **4 páginas A4**, tinta sobre o papel, sem controle nenhum, com a armadura por local (K.1c, 18/10/2026). Abrir o PDF e olhar — não compara pixel |
+| `node scripts/visual/impressao.mjs` | A ficha impressa em PDF como o navegador imprime (sem fundo), contra o `netsheet-prod`: **6 páginas A4** desde a K.5 (eram 4 na K.1c, 18/10/2026; o deck e os programas entraram na ficha do roteiro), tinta sobre o papel, sem controle nenhum, com a armadura por peça. Abrir o PDF e olhar — não compara pixel |
 | `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
 | `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 108 `black`/`white`, à parte *(107 até a K.3, que pôs o `text-black` do botão das condições da cena, como os outros botões do GM)*. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
 | `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4), e **o CI exige** (F.2.10) |

@@ -82,7 +82,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 | Migration × deploy | **Migration em PR próprio**, mergeado e conferido em produção antes do PR do código que a usa. O Render publica sem esperar o `db-sync` |
 | Merge × sessão de jogo | **Pode mergear com mesa aberta — mas não no meio de um combate.** Desde a H.3d (passagem de bastão, ADR 0007) a troca de instância **não perde nada**: provado no ar em 15/10/2026 (H.3d.4, 30 de 30). Mas a mesa fica **~5–15 s "reconectando"** (as ações demoram e se repetem sozinhas), e quem abre a página nessa janela cai no SSE (H.14, ADIAR). Era "nunca mergear com mesa aberta" (E.06, H.13: o H.1j perdia ~20 s). Migration segue em PR próprio (decisão 5) |
 | Login para criar mesa | **O servidor não exige** (a tela exige). Os tetos da E.03 (30 salas, `MAX_ROOMS`) fecham o esgotamento; exigir login é ADIAR com gatilho — decisão do dono (30/09/2026), em `docs/SEGURANCA.md` |
-| Netrunning | **O netrunner na ficha** (deck, programas, MU) entra na K.5; **a Net jogável na mesa: ADIAR**, fase própria depois da L — gatilho: alguém da mesa jogar de netrunner. Decisão 9 (30/09/2026) |
+| Netrunning | **O netrunner na ficha** (deck, programas, MU) **entrou na K.5** (20/10, sem o PDF: as fontes fecharam — o programa é digitado); **a Net jogável na mesa: ADIAR**, fase própria depois da L — gatilho: alguém da mesa jogar de netrunner. Decisão 9 (30/09/2026) |
 | ADIAR × fazer tudo | **Ordem, não esquecimento** — o dono quer tudo feito (decisão 12, 16/10/2026). Todo ADIAR é quitado no **bloco Q**, depois da L e antes da M, e só sai da lista com DESCARTAR escrito pelo dono. Nas varreduras, ADIAR continua sendo o padrão |
 | Criação e carga (K) | **O 9D10 num bolo e o bolo que o Mestre define**, cada atributo de 2 a 10; a evolução por IP, o método rápido e a K.4 ("drops") vão **para a Q**; a K.2 vai até o **EV da armadura, sem pena por peso** (nenhuma fonte a tem) — decisão 13 (18/10/2026). O orçamento de criação **não barra** o trapaceiro no servidor (IP e cromo sobem os números depois): fica à vista do GM |
 | Fonte das regras | **O dono não tem o livro** (corrigido em 30/09/2026). Valem as **fontes secundárias**, aceitas com duas concordando; comprar o PDF oficial é **ADIAR** com gatilho. Cópia do livro sem licença não é fonte. Decisão 11 |
@@ -91,7 +91,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 976 testes depois da K.3, 20/10 (ver "Linha de base atual" no plano; a sonda não rastreada da J.1d fica fora)
+npx vitest run            # 1005 testes depois da K.5, 20/10 (ver "Linha de base atual" no plano; a sonda não rastreada da J.1d fica fora)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada

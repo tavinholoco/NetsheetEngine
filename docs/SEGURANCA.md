@@ -1066,6 +1066,25 @@ mostra (o nome do nível vem da trilha do livro): nenhuma entrada, saída ou aut
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
 
+**20/10/2026 — K.5 (o PR do netrunner na ficha).**
+
+1. **Entrada nova?** Dois campos na ficha, que o servidor recebe na sincronia e o import lê do arquivo: o `deck`
+   (o tipo, só os da tabela; Speed até 10, Data Wall e Code Gate até 40; o nome do modelo, 120 caracteres) e os
+   `programs` (100, cada um com a classe da tabela, força até 20, MU até 20, custo até 10 milhões). Tudo no
+   `sanitizeCharacterSheet`, com teste; o que não é objeto some, e a ficha antiga abre sem os dois.
+2. **Dado novo sai?** O deck e os programas vão junto com a ficha, para quem já a via — na mesa, no reenvio da
+   sala, como o resto da ficha (o E.20 segue na Q). Nada de fora da ficha.
+3. **Autorização nova?** Nenhuma. A ficha é do jogador, como sempre; o deck não entra em nenhuma conta do
+   servidor (a Net jogável é ADIAR, decisão 9).
+4. **Jogador convidado hostil?** Pode declarar um deck melhor do que comprou, como já podia declarar um BODY 15:
+   é o "trapaceiro plausível", e cada número tem grampo. O preço pela tabela fica à vista na ficha — a K.6c leva o
+   orçamento ao GM.
+5. **Estado novo sem limite?** Nenhum: o deck é um objeto de seis campos, e os programas têm teto de 100. Um
+   veterano com o deck e 40 programas fica abaixo da metade dos 64 KB da sincronia (o `sheet-size` trava).
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
+
 ### Fase L — Performance e escala
 
 *(a preencher)*
