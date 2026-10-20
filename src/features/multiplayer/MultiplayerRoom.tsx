@@ -12,6 +12,7 @@ import { TacticalGrid } from './TacticalGrid';
 import { CombatPanel } from './CombatPanel';
 import { SceneConditions, signedModifier } from './SceneConditions';
 import { CreationBudget, CreationBudgetMark } from './CreationBudget';
+import { formatEb } from '../../lib/format';
 import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
 import { trailingThrottle } from '../../lib/throttle';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -1179,7 +1180,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 {/* Revisão da K — o nome da trilha do livro, como o cartão do token (K.3a):
                     o "2/10" era o índice do nível. */}
                 <p>💥 Ferimento: <span className={woundLevelColor(inspectedPlayer.sheet.woundLevel)}>{woundRow(inspectedPlayer.sheet.woundLevel).name}</span></p>
-                <p>💰 €$ {inspectedPlayer.sheet.eurodollars.toLocaleString()}</p>
+                <p>💰 {formatEb(inspectedPlayer.sheet.eurodollars)}</p>
                 <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
                 <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>
               </div>

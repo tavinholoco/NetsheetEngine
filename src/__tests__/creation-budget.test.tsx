@@ -14,6 +14,7 @@ import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { useRoomStore } from '../stores/useRoomStore';
 import { stubRoomTransport } from '../test/roomTransport';
 import { creationReport } from '../rules/creation';
+import { formatEb } from '../lib/format';
 import { CAREER_SKILL_POINTS, WOUND_TRACK } from '../rules/tables';
 import type { CharacterCreation, CharacterSheet, CharacterStats } from '../types/cyberpunk';
 import type { GameRoom, RoomPlayer } from '../types/multiplayer';
@@ -200,5 +201,12 @@ describe('Revisão da K — o "Inspecionar ficha" fala como a ficha', () => {
     const modal = screen.getByRole('dialog');
     expect(within(modal).getByText(WOUND_TRACK[2].name)).toBeInTheDocument();
     expect(within(modal).queryByText(/\d+\/10/)).toBeNull();
+  });
+
+  it('a verba sai em eb, como o orçamento logo abaixo', async () => {
+    await abrir();
+    const modal = screen.getByRole('dialog');
+    expect(within(modal).queryByText(/€\$/)).toBeNull();
+    expect(within(modal).getByText(`💰 ${formatEb(ferido.sheet.eurodollars)}`)).toBeInTheDocument();
   });
 });

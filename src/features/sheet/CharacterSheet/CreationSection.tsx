@@ -46,8 +46,6 @@ interface CreationSectionProps {
   rng?: Rng;
 }
 
-const eb = formatEb;
-
 const field = 'bg-surface border border-field text-xs text-fg-strong px-2 py-1.5 rounded focus:border-accent-400 focus:outline-none';
 const numberField = `${field} font-mono w-12`;
 const stepTitle = 'text-micro text-accent-400 uppercase tracking-caps';
@@ -104,7 +102,7 @@ export const CreationSection: React.FC<CreationSectionProps> = ({ sheet, onChang
               )}
               {' · '}carreira <span className="font-mono text-fg-strong">{creation.careerPoints}/40</span>
               {' · '}pickup <span className="font-mono text-fg-strong">{creation.pickupPoints}</span>
-              {' · '}verba <span className="font-mono text-fg-strong">{eb(creation.funds)}</span>
+              {' · '}verba <span className="font-mono text-fg-strong">{formatEb(creation.funds)}</span>
             </p>
           ) : (
             <p className="text-micro text-subtle">Sem registro de criação — a ficha não diz de que orçamento saiu.</p>
@@ -354,13 +352,13 @@ export const CreationSection: React.FC<CreationSectionProps> = ({ sheet, onChang
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className={stepTitle}>4 · Verba inicial</span>
           <span className="text-micro text-muted uppercase">
-            Verba <span data-testid="creation-funds" className="font-mono text-fg-strong">{eb(funds)}</span>
+            Verba <span data-testid="creation-funds" className="font-mono text-fg-strong">{formatEb(funds)}</span>
           </span>
         </div>
         {salary !== null ? (
           <div className="flex flex-wrap items-center gap-3 text-micro text-muted">
             <span>
-              Salário de <span className="font-mono text-fg-strong">{eb(salary)}</span> por mês ({draft.role}, nível {draft.saRank}) ×
+              Salário de <span className="font-mono text-fg-strong">{formatEb(salary)}</span> por mês ({draft.role}, nível {draft.saRank}) ×
               1D{STARTING_FUNDS_DIE.sides}/{STARTING_FUNDS_DIE.divisor}
               {draft.fundsDie !== null && (
                 <> — rolou <span className="font-mono text-roll-300">{draft.fundsDie}</span></>
