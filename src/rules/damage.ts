@@ -13,6 +13,7 @@
 
 import type { ArmorLocation, ArmorPiece, CharacterSheet } from '../types/cyberpunk';
 import {
+  ARMOR_LAYER_BONUS,
   DAMAGE_POINTS_PER_WOUND_LEVEL,
   HIT_LOCATIONS,
   MIN_DAMAGE_AFTER_BTM,
@@ -34,12 +35,51 @@ export function isArmorLocation(value: unknown): value is ArmorLocation {
   return HIT_LOCATIONS.some((row) => row.location === value);
 }
 
+// ------------------------------------------------------------
+// Armadura (K.2b): a peça cobre locais, e as camadas combinam
+// ------------------------------------------------------------
+
 /**
- * SP da peça EQUIPADA que cobre a localização; 0 sem proteção. A armadura é
- * modelada uma peça por localização (o empilhamento é da Fase K).
+ * Os locais que a peça cobre. A ficha de antes da K.2 guardava um `location`
+ * por peça; os dois formatos valem, para a ficha antiga dar o mesmo SP.
+ */
+export function armorLocationsOf(piece: Pick<ArmorPiece, 'locations' | 'location'>): ArmorLocation[] {
+  if (Array.isArray(piece.locations)) return piece.locations;
+  return piece.location ? [piece.location] : [];
+}
+
+/** O bônus da tabela proporcional para a diferença entre dois SP. */
+export function armorLayerBonus(diff: number): number {
+  const d = Math.abs(diff);
+  return ARMOR_LAYER_BONUS.find((row) => d >= row.minDiff)?.bonus ?? 0;
+}
+
+/**
+ * Duas camadas no mesmo local (p. 99): vale o maior SP, mais o bônus pela
+ * diferença. Uma camada sem SP não soma nada.
+ */
+export function combineArmorSp(inner: number, outer: number): number {
+  if (inner <= 0) return Math.max(0, outer);
+  if (outer <= 0) return inner;
+  return Math.max(inner, outer) + armorLayerBonus(inner - outer);
+}
+
+/**
+ * SP no local: as peças VESTIDAS que o cobrem, combinadas em pares de dentro
+ * para fora — a ordem da lista. Com uma peça só, o SP dela; sem nenhuma, 0.
  */
 export function armorSpAt(armor: readonly ArmorPiece[] | undefined, location: ArmorLocation): number {
-  return (armor ?? []).find((a) => a.location === location && a.equipped)?.sp ?? 0;
+  return (armor ?? [])
+    .filter((a) => a.equipped && armorLocationsOf(a).includes(location))
+    .reduce((sp, a) => combineArmorSp(sp, Math.max(0, Number(a.sp) || 0)), 0);
+}
+
+/**
+ * K.2c — o EV da armadura: soma o de cada peça VESTIDA (S6, S8), e sai do REF
+ * em `deriveCurrentStats`. Uma peça que cobre vários locais conta uma vez.
+ */
+export function armorEvTotal(armor: readonly Pick<ArmorPiece, 'ev' | 'equipped'>[] | undefined): number {
+  return (armor ?? []).reduce((ev, a) => ev + (a.equipped ? Math.max(0, Number(a.ev) || 0) : 0), 0);
 }
 
 // ------------------------------------------------------------

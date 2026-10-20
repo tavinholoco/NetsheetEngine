@@ -392,13 +392,13 @@ export const PRD_DOCUMENT: PrdDocument = {
       title: 'Regras CP2020 Avançadas',
       objective: 'Profundidade de sistema (P3 baixa).',
       priority: 'P3',
-      status: 'pendente',
+      status: 'em andamento',
       tasks: [
-        { code: 'T11.1', title: 'Inventário e peso (ENC/EV)', status: 'pendente' },
+        { code: 'T11.1', title: 'Inventário e peso (ENC/EV)', status: 'concluído' },
         { code: 'T11.2', title: 'Netrunning completo (MU, programas, data walls)', status: 'pendente' },
-        { code: 'T11.3', title: 'Penalidades automáticas por ferimento', status: 'pendente' },
+        { code: 'T11.3', title: 'Penalidades automáticas por ferimento', status: 'concluído' },
         { code: 'T11.4', title: 'Loot/NPCs: inventário e drops', status: 'pendente' },
-        { code: 'T11.5', title: 'Export/Import (JSON + PDF print)', status: 'pendente' }
+        { code: 'T11.5', title: 'Export/Import (JSON + PDF print)', status: 'concluído' }
       ]
     },
     {

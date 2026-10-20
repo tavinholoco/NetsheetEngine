@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { CharacterSheet, CyberwareItem } from '../../../types/cyberpunk';
+import { CharacterSheet, CyberwareItem, StatName } from '../../../types/cyberpunk';
 import { humanityFromEmp, humanityRemaining } from '../../../utils/derivedStats';
-import { humanityCostIsReadable, rollHumanityLoss } from '../../../rules/character';
+import { STAT_NAMES, humanityCostIsReadable, rollHumanityLoss } from '../../../rules/character';
+import { CYBER_STAT_BONUS_MAX } from '../../../rules/sheetSchema';
+import { NumberField } from './NumberField';
 import { clientRng } from '../../../utils/diceEngine';
 import { Cpu, Plus, Trash2, Power, AlertTriangle } from 'lucide-react';
 
@@ -22,6 +24,9 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
   // — inteira, como a ficha a guarda (`actualHL`); a fração ele arredonda.
   const [typedLoss, setTypedLoss] = useState('');
   const [installed, setInstalled] = useState(true);
+  // K.2e — o implante que soma em atributo (o Lace: BODY +2). Vazio = não soma.
+  const [bonusStat, setBonusStat] = useState<StatName | ''>('');
+  const [bonusAmount, setBonusAmount] = useState(2);
 
   const cyberware = sheet.cyberware || [];
 
@@ -45,11 +50,13 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
       humanityLoss,
       actualHL,
       installed,
-      notes: ''
+      notes: '',
+      ...(bonusStat && bonusAmount !== 0 ? { statBonus: { stat: bonusStat, amount: bonusAmount } } : {})
     };
     onChange({ cyberware: [...cyberware, item] });
     setName('');
     setTypedLoss('');
+    setBonusStat('');
     setShowAdd(false);
   };
 
@@ -111,6 +118,12 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
                   <span>🩸 {cw.humanityLoss} HL</span>
                   <span>€$ {cw.costEb.toLocaleString()}</span>
                   <span className="text-signal-400">Perda real: {cw.actualHL} HL</span>
+                  {cw.statBonus && (
+                    <span className="text-accent-300">
+                      {cw.statBonus.amount > 0 ? '+' : ''}
+                      {cw.statBonus.amount} {cw.statBonus.stat}
+                    </span>
+                  )}
                   {cw.notes && <span>{cw.notes}</span>}
                 </div>
               </div>
@@ -164,7 +177,8 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Kerenzikov Speedware (+2 REF)"
+              placeholder="Ex: Muscle and Bone Lace"
+              aria-label="Nome do implante"
               className="w-full bg-raised border border-field text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
             />
             <select
@@ -195,6 +209,32 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
                 title="Número ou dados (1d6, 2d6+1): rolado uma vez ao instalar"
                 className="w-full bg-raised border border-field text-xs font-mono text-signal-400 px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
               />
+            </div>
+            <div className="flex items-center space-x-2 sm:col-span-2">
+              <label htmlFor="cw-bonus-stat" className="text-micro text-muted shrink-0">
+                Soma em atributo:
+              </label>
+              <select
+                id="cw-bonus-stat"
+                value={bonusStat}
+                onChange={(e) => setBonusStat(e.target.value as StatName | '')}
+                className="bg-raised border border-field text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+              >
+                <option value="">— nenhum —</option>
+                {STAT_NAMES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              {bonusStat && (
+                <NumberField
+                  value={bonusAmount}
+                  min={-CYBER_STAT_BONUS_MAX}
+                  max={CYBER_STAT_BONUS_MAX}
+                  onCommit={setBonusAmount}
+                  label="Quanto soma no atributo"
+                  className="w-16 bg-raised border border-field text-xs font-mono text-fg-strong px-2.5 py-1.5 rounded focus:border-cyber-400 focus:outline-none"
+                />
+              )}
             </div>
             {!costReadable && (
               <div className="flex items-center space-x-2 sm:col-span-2">

@@ -76,6 +76,7 @@ export function createBlankCharacterSheet(): CharacterSheet {
       valuedPossession: '',
       lifeEvents: []
     },
+    gear: [],
     gearNotes: '',
     createdAt: now,
     updatedAt: now

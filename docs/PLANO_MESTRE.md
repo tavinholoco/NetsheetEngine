@@ -1074,23 +1074,48 @@ seguem os grupos abaixo.
         ficam no DOM. Cartão e linha não se partem: do primeiro desenho, seis páginas pela metade, a **quatro
         cheias**. Um botão "Imprimir ou salvar PDF" na barra da ficha. A trava `sheet-print.test` (3) falha
         revertendo.)*
-- [ ] **K.2** *(era T11.1)* **Carga, armadura e cromo** — *(RUL-11; decisão 13: o EV da armadura, sem pena
+- [x] **K.2** *(era T11.1)* **Carga, armadura e cromo** — *(RUL-11; decisão 13: o EV da armadura, sem pena
       por peso)*. *(~1½ dia)*
-  - [ ] **K.2a** Tabela e conferência: Carry (BODY × 10 kg) e Lift (BODY × 40 kg) — S1, S8; o EV de cada peça
+      *(18/10/2026 — no **#64**, um commit por subitem, com o teste antes e a prova revertendo. Linha de base:
+      **944** testes em 77 arquivos (+53); E2E 7/7; tipografia limpa; `audit:ci`, cores e conflitos em 0. Visto no
+      navegador: o tronco com a camiseta Kevlar (SP 10) e a jaqueta média (SP 18) dá 22; o EV 1 faz o REF 9 rolar
+      com 8; o BODY 10 com o Lace dá BTM −5, Carry 120 kg e Lift 480 kg — o número do S6. Na impressão, a lista de
+      peças passou a seguir de página (uma marca nova, `data-print-flow`): presa inteira, deixava uma página em
+      branco.)*
+  - [x] **K.2a** Tabela e conferência: Carry (BODY × 10 kg) e Lift (BODY × 40 kg) — S1, S8; o EV de cada peça
         sai do REF — S8, **uma fonte**: buscar a segunda, e a ordem contra o efeito do ferimento (o S8 tira o
         EV antes). Camadas de armadura no mesmo local (a tabela proporcional, p. 99 pelo S9): duas fontes, ou
         uma peça por local, como hoje.
-  - [ ] **K.2b** A armadura como **peça que cobre locais** (SP por local, EV por peça), com a ficha antiga
+        *(18/10 — fecharam: Carry e Lift (S1, S6, S8); o EV no REF, somando peça por peça (S6, S8); a tabela
+        proporcional (S9 e o karridian, que entra como **S11** só para ela — o resto da página segue descartado);
+        o Lace, BODY +2 com o BTM melhorando (S6, S8). **Ficaram abertos:** a ordem do EV contra o ferimento (só
+        o S8: o EV sai antes — escolha do projeto); o EV extra por camada (S6 e S9 divergem) e o teto de três
+        camadas, uma rígida (S6, S9) — os dois na lista da Q.)*
+  - [x] **K.2b** A armadura como **peça que cobre locais** (SP por local, EV por peça), com a ficha antiga
         convertida na leitura — as seis peças de hoje viram o que eram. O SP de cada local continua saindo
         para o dano da D sem mudar de número.
-  - [ ] **K.2c** O EV entra no `deriveCurrentStats` — o REF de toda rolagem, na ficha e na mesa.
-  - [ ] **K.2d** Inventário com peso, e Carry e Lift na ficha. Sem pena por peso (decisão 13).
-  - [ ] **K.2e** **Cromo que soma atributo** (da [Q.1](#bloco-q--quitar-os-adiar--1015-dias-estimativa-grosseira-que-a-q0-refaz--depois-da-l-antes-da-m)):
+        *(18/10 — `locations` na peça, o `armorLocationsOf` lê os dois formatos e o validador grava o novo; as
+        camadas combinam pela tabela, de dentro para fora. Os testes de dano da D, com fichas no formato antigo,
+        passaram pelo servidor com os mesmos SP. Na ficha, a aba de armadura lista as peças (`ArmorPanel`), e o
+        +/− por local saiu.)*
+  - [x] **K.2c** O EV entra no `deriveCurrentStats` — o REF de toda rolagem, na ficha e na mesa.
+        *(18/10 — antes do ferimento, nunca abaixo de 0; a iniciativa, que lê o REF corrente, sente o EV.)*
+  - [x] **K.2d** Inventário com peso, e Carry e Lift na ficha. Sem pena por peso (decisão 13).
+        *(18/10 — a seção "Inventário & Carga"; passar do Carry só avisa. **Achados no caminho:** o `gearNotes`
+        existia desde a Fase 0 sem tela nenhuma — ganhou o campo —, e os campos numéricos novos usam um
+        `NumberField` com rascunho, a lição da G.12: grampeado a cada tecla, "2." perdia a fração.)*
+  - [x] **K.2e** **Cromo que soma atributo** (da [Q.1](#bloco-q--quitar-os-adiar--1015-dias-estimativa-grosseira-que-a-q0-refaz--depois-da-l-antes-da-m)):
         um campo no `CyberwareItem`, com o exemplo do livro em duas fontes, e a soma no `deriveCurrentStats`
         até o teto de 15 que já existe.
-  - [ ] **K.2f** O **I.06** (da Q.1, dono a K.2): medir a ficha cheia com o formato novo contra os 64 KB do
+        *(18/10 — `statBonus` no implante, grampeado em ±5 por implante; instalado, soma antes do EV. **Sem o teto
+        de 15 no corrente:** o 15 é o grampo do atributo base no validador, não regra do livro. **Achados no
+        caminho:** o BTM da ficha lia o BODY base e o dano da mesa o corrente — com o Lace dariam BTM diferentes;
+        e o exemplo do campo dizia "Kerenzikov (+2 REF)", mas no 2020 o Kerenzikov mexe na iniciativa (S6).)*
+  - [x] **K.2f** O **I.06** (da Q.1, dono a K.2): medir a ficha cheia com o formato novo contra os 64 KB do
         `sheet_too_large`. Se ficar longe, o I.06 segue na Q com o número; se chegar perto, a tela passa a
         avisar quando a sincronia da ficha falha.
+        *(18/10 — **longe:** um Solo veterano com tudo preenchido dá **16,8 KB (26%)**, o dobro de tudo **35,8 KB
+        (56%)**. O I.06 segue na Q com o número, e o `sheet-size.test` trava a folga.)*
 - [ ] **K.3** *(era T11.3)* **O que sobrou da rolagem e do ferimento** — a penalidade foi entregue pela
       C.5/C.6 (K.0). *(~½ dia)*
   - [ ] **K.3a** O **G.05**: um nome por nível, o da trilha do livro (`WOUND_TRACK`); o `WOUND_LEVEL_NAMES`
@@ -1187,7 +1212,8 @@ esquecido.)* Até aqui, um ADIAR esperava o sintoma, e sem sessão em produção
 todos são quitados: **78 itens** em 16/10, 26 com fase dona (a J, a K, a L ou a M) e 52 que só a Q faz, mais três
 decisões do dono. *(17/10/2026, no fechamento da J: **86** — entraram os seis ADIAR novos da J, a pista da sonda da
 J.1d e os helpers de teste da revisão da J.5. Os oito de que a J era dona, ela conferiu e deixou: agora são da Q.)*
-*(18/10/2026, na K.0: **89** — entraram o método rápido de atributos, a evolução por IP e a K.4, pela decisão 13.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+*(18/10/2026, na K.0: **89** — entraram o método rápido de atributos, a evolução por IP e a K.4, pela decisão 13.
+Na K.2: **91** — entraram o teto de três camadas e o EV extra por camada; e dois da Q.1, o cromo e o EV, foram feitos.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1262,8 +1288,11 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         confundir os nomes.
   - [ ] **I.06**: pelo REST, a rolagem e o chat perdem o erro que o WebSocket mostra, e a ficha que não sincroniza
         não avisa. *Dona:* K.2, que engorda a ficha — a **K.2f** mede. *Gatilho:* um `sse_fallback` de jogador de verdade.
-  - [ ] **Cromo que soma atributo** (ex.: lace muscular): o `CyberwareItem` não tem campo de atributo. *Dona:* K.2 — a **K.2e**.
-  - [ ] **EV da armadura → REF** (RUL-11), que precisa de um modelo de peça. *Dona:* K.2 — a **K.2b** e a **K.2c**.
+        *(18/10/2026, K.2f: a ficha de um veterano com o formato novo dá 16,8 KB, 26% dos 64 KB — segue aqui.)*
+  - [x] **Cromo que soma atributo** (ex.: lace muscular): o `CyberwareItem` não tem campo de atributo. *Dona:* K.2 — a **K.2e**.
+        *(Feito na K.2e, 18/10/2026, no #64.)*
+  - [x] **EV da armadura → REF** (RUL-11), que precisa de um modelo de peça. *Dona:* K.2 — a **K.2b** e a **K.2c**.
+        *(Feito na K.2b–c, 18/10/2026, no #64.)*
   - [ ] **H.01**: na rede lenta, o jogador fica segundos atrás. *Dona:* L.1. *Gatilho:* atraso em rede móvel numa
         sessão, a banda acima de 2,5 GB no mês, ou um `ws_rate_limited`.
   - [ ] **G.19**: cada arrasto no grid regrava todos os tokens no Yjs. *Dona:* L.1.
@@ -1380,6 +1409,11 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         pedir o efeito impresso, ou uma sessão travar procurando a tabela.
   - [ ] **O método rápido de atributos** (1d10 por atributo, decisão 13): o S5 rerrola o 1, e o S6 descarta o 1 e
         o 2. *Gatilho:* uma segunda fonte fechar o que se rerrola, ou alguém da mesa pedir o método.
+  - [ ] **O teto de três camadas de armadura, uma rígida** (S6, S9): hoje o NetSheet combina quantas camadas houver.
+        A versão menor é marcar a peça como rígida e avisar. *Gatilho:* alguém vestir quatro camadas, ou duas
+        rígidas, no mesmo local. Fonte: a K.2a, na [conferência](./CONFERENCIA_CP2020.md#o-que-fica-para-a-fase-k).
+  - [ ] **O EV extra por camada**: o S6 soma 1 por camada, o S9 cobra 0, 1 e 2. Hoje não há EV extra. *Gatilho:* uma
+        segunda fonte que desempate, o PDF (Q.0b), ou a mesa usar três camadas. Fonte: a K.2a.
   - [ ] **A evolução por IP** (decisão 13): o custo de subir uma perícia (nível × 10 × multiplicador) só está no S6,
         e o multiplicador de cada perícia em nenhuma fonte. *Gatilho:* uma segunda fonte, o PDF (Q.0b), ou a
         primeira sessão que der IP a alguém.
@@ -1500,9 +1534,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
-| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63) | 🔄 | — |
+| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64) | 🔄 | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
-| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 (18/10) | ⬜ | — |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10), dois deles já feitos na K.2 | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual
@@ -1513,7 +1547,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **891** testes, 71 arquivos *(+10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
+| `npx vitest run` | **944** testes, 77 arquivos *(+53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |

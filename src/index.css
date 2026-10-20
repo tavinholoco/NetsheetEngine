@@ -465,4 +465,15 @@
   [data-print="sheet"] > * > :has(h2) {
     break-after: avoid;
   }
+
+  /* Bloco alto que pode se partir (a lista de peças da armadura, o inventário):
+     ele segue na página seguinte, e cada filho dele, não. Preso inteiro, o painel
+     da armadura pulava de página e deixava a anterior em branco (K.2). */
+  [data-print="sheet"] [data-print-flow] > * {
+    break-inside: avoid;
+  }
+
+  [data-print="sheet"] [data-print-flow] {
+    break-inside: auto;
+  }
 }

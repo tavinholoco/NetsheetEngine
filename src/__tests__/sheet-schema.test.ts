@@ -124,7 +124,7 @@ describe("sanitizeCharacterSheet — função pura", () => {
       ]
     })!;
     expect(r.sheet.armor).toHaveLength(1);
-    expect(r.sheet.armor[0].location).toBe("Torso");
+    expect(r.sheet.armor[0].locations).toEqual(["Torso"]);
   });
 
   it("descarta campos desconhecidos em vez de propagá-los", () => {

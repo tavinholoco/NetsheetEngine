@@ -10,9 +10,11 @@
 // no `currentStats` que o cliente manda: ele é recalculado a partir da ficha.
 // ============================================================
 
-import type { CharacterSheet, CharacterStats, CyberwareItem, StatName } from '../types/cyberpunk';
+import type { CharacterSheet, CharacterStats, CyberwareItem, GearItem, StatName } from '../types/cyberpunk';
 import {
   BODY_TYPE_TABLE,
+  CARRY_KG_PER_BODY,
+  LIFT_KG_PER_BODY,
   HUMANITY_LOSS_PER_EMP_POINT,
   HUMANITY_PER_EMP,
   WOUND_TRACK,
@@ -20,6 +22,7 @@ import {
   type WoundLevelRow
 } from './tables';
 import { parseDamageFormula, rollDamageFormula, type Rng } from './dice';
+import { armorEvTotal } from './damage';
 
 export const STAT_NAMES: readonly StatName[] = ['INT', 'REF', 'TECH', 'COOL', 'ATTR', 'LUCK', 'MA', 'BODY', 'EMP'];
 
@@ -124,19 +127,66 @@ function statOf(stats: Partial<CharacterStats> | undefined, s: StatName): number
 }
 
 /**
- * Os atributos com que o personagem ROLA agora: base → EMP menos o cromo →
- * efeito do ferimento. Toda rolagem, do cliente ou da mesa, lê daqui.
+ * K.2e — o que o cromo INSTALADO soma em cada atributo (o Lace: BODY +2 — S6,
+ * S8). Desinstalado não soma. Atributo sem implante fica de fora.
+ */
+export function cyberwareStatBonus(
+  cyberware: readonly Pick<CyberwareItem, 'installed' | 'statBonus'>[] | undefined
+): Partial<Record<StatName, number>> {
+  const out: Partial<Record<StatName, number>> = {};
+  for (const cw of cyberware ?? []) {
+    if (!cw.installed || !cw.statBonus || !STAT_NAMES.includes(cw.statBonus.stat)) continue;
+    const amount = Number(cw.statBonus.amount) || 0;
+    out[cw.statBonus.stat] = (out[cw.statBonus.stat] ?? 0) + amount;
+  }
+  return out;
+}
+
+/**
+ * Os atributos com que o personagem ROLA agora: base → mais o cromo que soma
+ * atributo (K.2e) → REF menos o EV da armadura (K.2c) → EMP menos a humanidade
+ * perdida → efeito do ferimento. Toda rolagem, do cliente ou da mesa, lê daqui —
+ * e o BTM do dano, o Carry e os saves leem o BODY daqui também.
  *
- * Fica de fora, com gatilho na conferência: cromo que soma atributo (o tipo
- * não tem esse campo) e o EV da armadura (a armadura é modelada por peça de
- * localização, e somar o EV contaria a mesma jaqueta várias vezes).
+ * O cromo vem antes do EV: é o corpo, e a armadura vai por cima.
+ *
+ * O EV sai ANTES do ferimento: só o S8 dá a ordem, e é a escolha do projeto
+ * (o EV muda o atributo corrente; o ferimento age sobre o corrente) — pergunta
+ * aberta na conferência.
  */
 export function deriveCurrentStats(
-  sheet: Pick<CharacterSheet, 'stats' | 'woundLevel' | 'cyberware'> | Partial<CharacterSheet>
+  sheet: Pick<CharacterSheet, 'stats' | 'woundLevel' | 'cyberware' | 'armor'> | Partial<CharacterSheet>
 ): CharacterStats {
-  const base = Object.fromEntries(STAT_NAMES.map((s) => [s, statOf(sheet.stats, s)])) as unknown as CharacterStats;
+  const bonus = cyberwareStatBonus(sheet.cyberware);
+  const base = Object.fromEntries(
+    STAT_NAMES.map((s) => [s, Math.max(0, statOf(sheet.stats, s) + (bonus[s] ?? 0))])
+  ) as unknown as CharacterStats;
+  base.REF = Math.max(0, base.REF - armorEvTotal(sheet.armor));
   base.EMP = empAfterHumanityLoss(base.EMP, humanityLossTotal(sheet.cyberware));
   return applyWoundEffect(base, Number(sheet.woundLevel) || 0);
+}
+
+// ------------------------------------------------------------
+// Carga (K.2d)
+// ------------------------------------------------------------
+
+/** Carry: o que o personagem carrega, em kg — BODY corrente × 10 (S1, S6, S8). */
+export function carryKg(body: number): number {
+  return Math.max(0, body) * CARRY_KG_PER_BODY;
+}
+
+/** Lift: o peso morto que levanta, em kg — BODY corrente × 40 (S1, S6, S8). */
+export function liftKg(body: number): number {
+  return Math.max(0, body) * LIFT_KG_PER_BODY;
+}
+
+/** Peso do inventário: cada item × a quantidade, em kg, com duas casas. */
+export function gearWeightKg(gear: readonly Pick<GearItem, 'weightKg' | 'qty'>[] | undefined): number {
+  const total = (gear ?? []).reduce(
+    (kg, g) => kg + Math.max(0, Number(g.weightKg) || 0) * Math.max(0, Math.floor(Number(g.qty) || 0)),
+    0
+  );
+  return Math.round(total * 100) / 100;
 }
 
 // ------------------------------------------------------------

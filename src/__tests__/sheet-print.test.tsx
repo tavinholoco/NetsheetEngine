@@ -35,10 +35,11 @@ describe('K.1c — o que a folha de impressão precisa achar', () => {
         onRollDamageOnly={vi.fn()}
       />
     );
+    // A aba fechada fica no DOM, escondida na tela e à vista na impressão.
     const armas = screen.getByText(/adicionar armas padrão/i).closest('.space-y-4');
-    const armadura = screen.getByText(/pontos de parada/i).closest('.space-y-4');
+    const armadura = screen.getByText(/pontos de parada/i).closest('.hidden');
     expect(armas).not.toHaveClass('hidden');
-    expect(armadura).toHaveClass('hidden', 'print:block');
+    expect(armadura).toHaveClass('print:block');
   });
 
   it('as 40 caixas da trilha ficam na impressão, e as marcadas imprimem cheias', () => {
@@ -55,6 +56,8 @@ describe('K.1c — o que a folha de impressão precisa achar', () => {
   it('a folha esconde só os botões da ficha, e poupa os marcados', () => {
     expect(print).toMatch(/\[data-print="sheet"\] button:not\(\[data-print="keep"\]\)/);
     expect(print).toMatch(/\[data-print-fill="true"\][^}]*print-color-adjust: exact/);
+    // K.2 — bloco alto que se parte (a lista de peças), com cada filho inteiro.
+    expect(print).toMatch(/\[data-print-flow\] > \*\s*\{\s*break-inside: avoid/);
     // Sem escopo, a regra esconderia os botões de qualquer página impressa.
     expect(print).not.toMatch(/(^|[\s,])button\s*[,{]/);
   });

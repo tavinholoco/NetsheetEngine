@@ -38,7 +38,7 @@ describe('generateRandomNpc — invariantes para todos os arquétipos', () => {
       expect(npc.woundLevel).toBe(0);
 
       // Armadura equipada com SP >= 8 (os seis locais: npc-armor)
-      const locations = npc.armor.map((a) => a.location);
+      const locations = npc.armor.flatMap((a) => a.locations);
       expect(locations).toEqual(expect.arrayContaining(['Head', 'Torso', 'Right Arm', 'Right Leg']));
       expect(npc.armor.every((a) => a.equipped)).toBe(true);
       expect(npc.armor.every((a) => a.sp >= 8)).toBe(true);

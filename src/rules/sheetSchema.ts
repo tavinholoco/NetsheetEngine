@@ -39,6 +39,7 @@ import type {
   CharacterSheet,
   CharacterStats,
   CyberwareItem,
+  GearItem,
   Lifepath,
   SkillItem,
   StatName,
@@ -67,6 +68,16 @@ export const MAX_CYBERWARE = 100;
 export const MAX_WEAPONS = 100;
 export const MAX_ARMOR = 50;
 export const MAX_LIFE_EVENTS = 100;
+export const MAX_GEAR = 200;
+/**
+ * Teto do bônus de atributo de UM implante (K.2e). Não é regra do livro — o
+ * Lace dá +2, e os suplementos chegam a +3 —; é o grampo do absurdo, como o
+ * STAT_MAX.
+ */
+export const CYBER_STAT_BONUS_MAX = 5;
+/** Peso de uma unidade de item, em kg (K.2d). */
+export const GEAR_WEIGHT_MAX_KG = 1000;
+export const GEAR_QTY_MAX = 999;
 
 // Tetos de texto. Um `handle` de 10 MB seria transmitido para todos a cada
 // broadcast. O texto longo legítimo é o `gearNotes`.
@@ -97,6 +108,19 @@ function clampInt(value: unknown, min: number, max: number, fallback: number, pa
     return fallback;
   }
   const rounded = Math.round(n);
+  const clamped = Math.min(max, Math.max(min, rounded));
+  if (clamped !== n) changed.push(path);
+  return clamped;
+}
+
+/** Número com até duas casas, grampeado — o peso aceita fração (0,5 kg). */
+function clampDecimal(value: unknown, min: number, max: number, fallback: number, path: string, changed: string[]): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) {
+    if (value !== undefined) changed.push(path);
+    return fallback;
+  }
+  const rounded = Math.round(n * 100) / 100;
   const clamped = Math.min(max, Math.max(min, rounded));
   if (clamped !== n) changed.push(path);
   return clamped;
@@ -167,6 +191,17 @@ function sanitizeSkills(value: unknown, changed: string[]): SkillItem[] {
   return out;
 }
 
+/** K.2e — o bônus de atributo do implante: atributo que existe, valor grampeado. */
+function sanitizeStatBonus(value: unknown, path: string, changed: string[]): CyberwareItem['statBonus'] {
+  if (value === undefined) return undefined;
+  if (!isPlainObject(value) || !STAT_NAMES.includes(value.stat as StatName)) {
+    changed.push(path);
+    return undefined;
+  }
+  const amount = clampInt(value.amount, -CYBER_STAT_BONUS_MAX, CYBER_STAT_BONUS_MAX, 0, `${path}.amount`, changed);
+  return { stat: value.stat as StatName, amount };
+}
+
 function sanitizeCyberware(value: unknown, changed: string[]): CyberwareItem[] {
   const raw = safeArray(value, MAX_CYBERWARE, 'cyberware', changed);
   const out: CyberwareItem[] = [];
@@ -185,6 +220,8 @@ function sanitizeCyberware(value: unknown, changed: string[]): CyberwareItem[] {
       installed: safeBool(item.installed),
       ...(item.notes !== undefined ? { notes: safeString(item.notes, MAX_NOTES_CHARS, `cyberware[${i}].notes`, changed) } : {})
     });
+    const statBonus = sanitizeStatBonus(item.statBonus, `cyberware[${i}].statBonus`, changed);
+    if (statBonus) out[out.length - 1].statBonus = statBonus;
   });
   return out;
 }
@@ -219,6 +256,23 @@ function sanitizeWeapons(value: unknown, changed: string[]): WeaponItem[] {
   return out;
 }
 
+/**
+ * K.2b — os locais que a peça cobre, sem repetir e sem local que não existe.
+ * A ficha de antes da K.2 trazia um `location` por peça: vira `locations`,
+ * sem marcar `changed` — é conversão, não correção (como o `woundLevel` da D).
+ */
+function sanitizeArmorLocations(item: Record<string, unknown>, path: string, changed: string[]): ArmorLocation[] {
+  if (item.locations === undefined && typeof item.location === 'string') {
+    if (ARMOR_LOCATIONS.includes(item.location as ArmorLocation)) return [item.location as ArmorLocation];
+    changed.push(`${path}.location`);
+    return [];
+  }
+  const raw = Array.isArray(item.locations) ? item.locations : [];
+  const out = ARMOR_LOCATIONS.filter((loc) => raw.includes(loc));
+  if (!Array.isArray(item.locations) || out.length !== raw.length) changed.push(`${path}.locations`);
+  return out;
+}
+
 function sanitizeArmor(value: unknown, changed: string[]): ArmorPiece[] {
   const raw = safeArray(value, MAX_ARMOR, 'armor', changed);
   const out: ArmorPiece[] = [];
@@ -227,18 +281,38 @@ function sanitizeArmor(value: unknown, changed: string[]): ArmorPiece[] {
       changed.push(`armor[${i}]`);
       return;
     }
-    // Localização inválida quebraria o pipeline de dano da Fase D — some.
-    if (!ARMOR_LOCATIONS.includes(item.location as ArmorLocation)) {
-      changed.push(`armor[${i}].location`);
+    // Peça sem local válido quebraria o pipeline de dano da Fase D — some.
+    const locations = sanitizeArmorLocations(item, `armor[${i}]`, changed);
+    if (locations.length === 0) {
+      if (!changed.some((c) => c.startsWith(`armor[${i}].location`))) changed.push(`armor[${i}].locations`);
       return;
     }
     out.push({
       id: safeString(item.id, MAX_NAME_CHARS, `armor[${i}].id`, changed),
       name: safeString(item.name, MAX_NAME_CHARS, `armor[${i}].name`, changed),
-      location: item.location as ArmorLocation,
+      locations,
       sp: clampInt(item.sp, 0, 100, 0, `armor[${i}].sp`, changed),
       ev: clampInt(item.ev, 0, 20, 0, `armor[${i}].ev`, changed),
       equipped: safeBool(item.equipped)
+    });
+  });
+  return out;
+}
+
+/** K.2d — o inventário. Ficha de antes da K.2 não tem: vira lista vazia, sem correção. */
+function sanitizeGear(value: unknown, changed: string[]): GearItem[] {
+  const raw = safeArray(value, MAX_GEAR, 'gear', changed);
+  const out: GearItem[] = [];
+  raw.forEach((item, i) => {
+    if (!isPlainObject(item)) {
+      changed.push(`gear[${i}]`);
+      return;
+    }
+    out.push({
+      id: safeString(item.id, MAX_NAME_CHARS, `gear[${i}].id`, changed),
+      name: safeString(item.name, MAX_NAME_CHARS, `gear[${i}].name`, changed),
+      weightKg: clampDecimal(item.weightKg, 0, GEAR_WEIGHT_MAX_KG, 0, `gear[${i}].weightKg`, changed),
+      qty: clampInt(item.qty, 1, GEAR_QTY_MAX, 1, `gear[${i}].qty`, changed)
     });
   });
   return out;
@@ -300,6 +374,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
   const wound = sanitizeWound(input, changed);
   const woundLevel = wound.woundLevel;
   const cyberware = sanitizeCyberware(input.cyberware, changed);
+  const armor = sanitizeArmor(input.armor, changed);
 
   const sheet: CharacterSheet = {
     id: safeString(input.id, MAX_NAME_CHARS, 'id', changed),
@@ -317,7 +392,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     // servidor o recalcula, descartando o que o cliente mandou. Não entra em
     // `changed`: o cliente não tem obrigação de mandá-lo certo, e marcar
     // divergência aqui encheria o log a cada sync.
-    currentStats: deriveCurrentStats({ stats, woundLevel, cyberware }),
+    currentStats: deriveCurrentStats({ stats, woundLevel, cyberware, armor }),
     woundLevel,
     damagePoints: wound.damagePoints,
     isDead: wound.isDead,
@@ -325,8 +400,9 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     skills: sanitizeSkills(input.skills, changed),
     cyberware,
     weapons: sanitizeWeapons(input.weapons, changed),
-    armor: sanitizeArmor(input.armor, changed),
+    armor,
     lifepath: sanitizeLifepath(input.lifepath, changed),
+    gear: sanitizeGear(input.gear, changed),
     gearNotes: safeString(input.gearNotes, MAX_NOTES_CHARS, 'gearNotes', changed),
     createdAt: safeString(input.createdAt, 64, 'createdAt', changed),
     updatedAt: safeString(input.updatedAt, 64, 'updatedAt', changed)

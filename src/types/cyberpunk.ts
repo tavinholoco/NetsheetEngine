@@ -47,6 +47,12 @@ export interface CyberwareItem {
   actualHL: number;
   installed: boolean;
   notes?: string;
+  /**
+   * K.2e — o implante que soma num atributo (o Muscle and Bone Lace: BODY +2).
+   * Só conta instalado; entra no `deriveCurrentStats`, e com ele o BTM, o Carry e
+   * os saves. Opcional: a maioria do cromo não mexe em atributo.
+   */
+  statBonus?: { stat: StatName; amount: number };
 }
 
 /** Arma da ficha / arsenal. */
@@ -66,14 +72,37 @@ export interface WeaponItem {
   equipped: boolean;
 }
 
-/** Peça de armadura com SP (Stopping Power) por localização. */
+/**
+ * Peça de armadura: o SP (Stopping Power) que dá em cada local que cobre, e o
+ * EV, que sai do REF. Desde a K.2 uma peça cobre vários locais — uma jaqueta é
+ * uma peça, não quatro —, e duas peças no mesmo local combinam pela tabela
+ * proporcional (`armorSpAt`, src/rules/damage.ts).
+ */
 export interface ArmorPiece {
   id: string;
   name: string;
-  location: ArmorLocation;
+  /** Os locais que a peça cobre. A ordem da lista de peças é de dentro para fora. */
+  locations: ArmorLocation[];
+  /**
+   * Ficha de antes da K.2: uma peça por local. Não escreva — leia com
+   * `armorLocationsOf`, que entende os dois formatos; o validador grava o novo.
+   */
+  location?: ArmorLocation;
   sp: number;
   ev: number;
   equipped: boolean;
+}
+
+/**
+ * Item do inventário (K.2d): o peso entra na conta contra o Carry, sem pena —
+ * nenhuma fonte penaliza o peso carregado (decisão 13).
+ */
+export interface GearItem {
+  id: string;
+  name: string;
+  /** Peso de UMA unidade, em kg (aceita fração: 0,5 kg). */
+  weightKg: number;
+  qty: number;
 }
 
 /** Lifepath narrativo gerado / editado pelo jogador. */
@@ -129,6 +158,8 @@ export interface CharacterSheet {
   weapons: WeaponItem[];
   armor: ArmorPiece[];
   lifepath: Lifepath;
+  /** Inventário com peso (K.2d). Opcional: ficha de antes da K.2 não tem. */
+  gear?: GearItem[];
   gearNotes: string;
   createdAt: string;
   updatedAt: string;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ArmorPiece, CharacterSheet, WeaponItem } from '../../../types/cyberpunk';
-import { armorSpAt } from '../../../utils/derivedStats';
+import { CharacterSheet, WeaponItem } from '../../../types/cyberpunk';
+import { ArmorPanel } from './ArmorPanel';
 import { DEFAULT_ARMOR, DEFAULT_WEAPONS } from '../../../data/cyberpunkData';
 import { Shield, Target, Plus, Trash2, Dice5, Crosshair } from 'lucide-react';
 
@@ -53,18 +53,6 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
     onChange({ weapons: [...sheet.weapons, newWp] });
   };
 
-  // Armor SP handlers
-  const handleUpdateArmorSp = (location: ArmorPiece['location'], newSp: number) => {
-    const updated = sheet.armor.map((a) => {
-      if (a.location === location) {
-        return { ...a, sp: Math.max(0, newSp) };
-      }
-      return a;
-    });
-    onChange({ armor: updated });
-  };
-
-  // SP por localização vem da regra pura em src/utils/derivedStats.ts
 
   return (
     <div className="bg-raised/70 border-l-4 border-l-signal-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-signal-500/10 space-y-4 relative overflow-hidden">
@@ -205,50 +193,9 @@ export const WeaponsArmor: React.FC<WeaponsArmorProps> = ({
         </div>
       </div>
 
-      {/* ARMOR TAB */}
-      <div className={`space-y-4 relative z-10 ${activeTab === 'armor' ? '' : 'hidden print:block'}`}>
-        <div className="bg-surface/80 p-4 rounded-lg border border-line space-y-3">
-          <span className="text-xs font-bold text-accent-400 uppercase tracking-caps block">
-            Pontos de Parada (Stopping Power - SP) por Localização Corporal
-          </span>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            {[
-              { loc: 'Head' as const, label: 'Cabeça (1)', icon: '🧠' },
-              { loc: 'Torso' as const, label: 'Tronco (2-4)', icon: '🎽' },
-              { loc: 'Right Arm' as const, label: 'Braço Dir (5)', icon: '🦾' },
-              { loc: 'Left Arm' as const, label: 'Braço Esq (6)', icon: '🦾' },
-              { loc: 'Right Leg' as const, label: 'Perna Dir (7-8)', icon: '🦿' },
-              { loc: 'Left Leg' as const, label: 'Perna Esq (9-0)', icon: '🦿' }
-            ].map(({ loc, label, icon }) => {
-              const spVal = armorSpAt(sheet.armor, loc);
-
-              return (
-                <div key={loc} className="bg-raised/90 p-3 rounded border border-line text-center space-y-2 hover:border-accent-500/50 transition-all">
-                  <span className="text-xl block">{icon}</span>
-                  <span className="text-micro text-muted block uppercase">{label}</span>
-                  <div className="text-lg font-mono text-signal-400">
-                    SP {spVal}
-                  </div>
-                  <div className="flex items-center justify-center space-x-1">
-                    <button
-                      onClick={() => handleUpdateArmorSp(loc, spVal - 1)}
-                      className="w-5 h-5 rounded bg-surface border border-line-strong text-xs font-bold text-fg-soft hover:bg-raised-strong"
-                    >
-                      -
-                    </button>
-                    <button
-                      onClick={() => handleUpdateArmorSp(loc, spVal + 1)}
-                      className="w-5 h-5 rounded bg-surface border border-line-strong text-xs font-bold text-fg-soft hover:bg-raised-strong"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* ARMOR TAB — a armadura por peça (K.2b) */}
+      <div className={`relative z-10 ${activeTab === 'armor' ? '' : 'hidden print:block'}`}>
+        <ArmorPanel sheet={sheet} onChange={onChange} />
       </div>
     </div>
   );
