@@ -10,6 +10,7 @@ import {
 } from '../../types/multiplayer';
 import { TacticalGrid } from './TacticalGrid';
 import { CombatPanel } from './CombatPanel';
+import { SceneConditions, signedModifier } from './SceneConditions';
 import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
 import { trailingThrottle } from '../../lib/throttle';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -742,6 +743,13 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
               )}
             </div>
             <p className="text-micro text-subtle">{room?.locationName || 'Night City'}</p>
+            {/* K.3b — o modificador da cena entra em toda rolagem de ataque e
+                perícia: a mesa inteira o vê enquanto ele vale. */}
+            {!!room?.combatModifier && (
+              <p className="text-micro font-mono text-signal-300">
+                {`Mod. do Mestre ${signedModifier(room.combatModifier)}${room.modifierReason ? ` · ${room.modifierReason}` : ''}`}
+              </p>
+            )}
             {isGm && inviteState === 'manual' && (
               <p className="text-micro text-accent-300 font-mono select-all break-all">{inviteLink}</p>
             )}
@@ -989,6 +997,15 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                   )}
                 </div>
               </div>
+            )}
+
+            {isGm && room && (
+              <SceneConditions
+                locationName={room.locationName}
+                combatModifier={room.combatModifier}
+                modifierReason={room.modifierReason}
+                onApply={(settings) => roomAction(roomsApi.updateSettings(roomCode, settings))}
+              />
             )}
           </div>
         </div>

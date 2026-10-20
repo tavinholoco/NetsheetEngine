@@ -308,6 +308,18 @@ export function deletePlayer(code: string, targetPeerId: string): Promise<GameRo
   return authedFetch(`/api/rooms/${seg(code)}/players/${seg(targetPeerId)}/delete`, {});
 }
 
+/**
+ * POST /api/rooms/:code/settings — GM: as condições da cena (K.3b, o I.01). O
+ * servidor grampeia o modificador em −10..+10 e o soma a ataque e perícia
+ * (C.4); o motivo vai no detalhe da rolagem, e vazio apaga o anterior.
+ */
+export function updateSettings(
+  code: string,
+  settings: { locationName: string; combatModifier: number; modifierReason: string }
+): Promise<GameRoom> {
+  return authedFetch(`/api/rooms/${seg(code)}/settings`, settings);
+}
+
 /** POST /api/rooms/:code/initiative — GM define a lista de iniciativa. */
 export function setInitiativeList(code: string, list: InitiativeEntry[]): Promise<GameRoom> {
   return authedFetch(`/api/rooms/${seg(code)}/initiative`, { initiativeList: list });

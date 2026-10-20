@@ -389,7 +389,9 @@ export function createRoom(code: string, roomName: string, gmHandle: string, gmP
     gmPeerId: gmUserPeerId,
     locationName: "Night City - Afterlife Club",
     combatModifier: 0,
-    modifierReason: "Condições Normais de Combate",
+    // K.3b — sem motivo até o GM escrever um: o "Condições Normais de Combate"
+    // de antes ia parar no detalhe de um −2 que o GM pôs sem motivo.
+    modifierReason: "",
     players: {
       [gmUserPeerId]: {
         peerId: gmUserPeerId,
@@ -1443,7 +1445,9 @@ export function updateRoomSettings(
     const v = Number(combatModifier);
     room.combatModifier = Number.isFinite(v) ? Math.max(-10, Math.min(10, Math.round(v))) : 0;
   }
-  if (modifierReason !== undefined) room.modifierReason = sanitizeText(modifierReason, 120) || room.modifierReason;
+  // K.3b — o motivo é o que veio, até vazio: a tela do GM o manda sempre, e
+  // apagá-lo tem de apagar. O local vazio, não: a mesa sempre tem um.
+  if (modifierReason !== undefined) room.modifierReason = sanitizeText(modifierReason, 120);
 
   return { room };
 }

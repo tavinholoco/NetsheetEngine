@@ -133,7 +133,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `POST` | `/api/rooms/:code/players/:targetPeerId/delete` | **GM** | `{}` | `GameRoom` — revoga a sessão do removido e fecha o WS **e** o SSE dele; o `join` pelo mesmo `peerId` passa a responder **403** `removed_by_gm` (R.3). O GM não remove a si mesmo (403) |
 | `POST` | `/api/rooms/:code/npcs/:npcId/delete` | **GM** | `{}` | `GameRoom` |
 | `POST` | `/api/rooms/:code/npcs/:npcId/health` | **GM** | `{ woundLevel }` | `GameRoom` |
-| `POST` | `/api/rooms/:code/settings` | **GM** | `{ locationName?, combatModifier?, modifierReason? }` | `GameRoom` |
+| `POST` | `/api/rooms/:code/settings` | **GM** | `{ locationName?, combatModifier?, modifierReason? }` | `GameRoom` — o modificador grampeado em −10..+10 (C.4); o motivo vazio **apaga** o anterior, o local vazio mantém o que havia. Chamada pelas "Condições da cena" do GM desde a K.3b (o I.01) |
 | `POST` | `/api/rooms/:code/initiative` | **GM** | `{ action: "next" }`, `{ action: "roll" }` (D.4 — servidor rola para todos) **ou** `{ initiativeList }` (campos montados um a um) | `GameRoom` |
 
 **Anti-forjamento (T5.4):** o campo `rollResult` enviado no `message` é **ignorado** — vira texto
@@ -418,7 +418,7 @@ O heartbeat **não** faz broadcast (status já é `true`; só a virada para OFFL
   "gmPeerId": "peer_xxx",
   "locationName": "Night City - Afterlife Club",
   "combatModifier": 0,
-  "modifierReason": "Condições Normais de Combate",
+  "modifierReason": "", // K.3b — a sala nasce sem motivo; o GM o escreve nas "Condições da cena"
   "players": {
     "peer_xxx": {
       "peerId": "peer_xxx",
