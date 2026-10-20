@@ -9,26 +9,32 @@
 import { describe, it, expect } from 'vitest';
 import {
   WOUND_MAX,
-  WOUND_LEVEL_NAMES,
-  isLastWoundBox
+  WOUND_LEVEL_COLORS,
+  isLastWoundBox,
+  woundLevelColor
 } from '../utils/injuryRules';
+import { WOUND_TRACK } from '../rules/tables';
 
-describe('WOUND_LEVEL_NAMES — 11 níveis (0..10)', () => {
-  it('tem exatamente 11 níveis', () => {
-    expect(WOUND_LEVEL_NAMES).toHaveLength(11);
-  });
-
-  it('começa em Saudável e termina em Morte Iminente', () => {
-    expect(WOUND_LEVEL_NAMES[0].name).toBe('Saudável (OK)');
-    expect(WOUND_LEVEL_NAMES[WOUND_MAX].name).toBe('Mortal 6 (Morte Iminente)');
+// K.3a — o nome de cada nível é o da trilha (WOUND_TRACK), e a ficha e o grid o
+// leem pelo woundRow: o wound-names.test confere as duas telas. Aqui fica a cor.
+describe('WOUND_LEVEL_COLORS — um tom por nível da trilha (0..10)', () => {
+  it('tem um tom para cada nível da trilha do livro', () => {
+    expect(WOUND_LEVEL_COLORS).toHaveLength(WOUND_TRACK.length);
+    expect(WOUND_TRACK.length - 1).toBe(WOUND_MAX);
   });
 
   // A cor saiu daqui na F.2.7: cada nível pinta com o token wound-N, e o tom e
   // o contraste da escala são conferidos no theme-contrast.test.
   it('cada nível usa o seu token da escala de dano (wound-N)', () => {
     for (let i = 0; i <= WOUND_MAX; i++) {
-      expect(WOUND_LEVEL_NAMES[i].color).toBe(`text-wound-${i}`);
+      expect(woundLevelColor(i)).toBe(`text-wound-${i}`);
     }
+  });
+
+  it('nível fora da trilha fica na ponta, como o nome', () => {
+    expect(woundLevelColor(-3)).toBe('text-wound-0');
+    expect(woundLevelColor(14)).toBe('text-wound-10');
+    expect(woundLevelColor(Number.NaN)).toBe('text-wound-0');
   });
 });
 

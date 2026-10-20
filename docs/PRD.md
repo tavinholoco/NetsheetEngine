@@ -227,7 +227,9 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
   morte; num membro, o membro é perdido (aviso no chat).
 - **Morto** *(D.1, D.5)*: dano além de 40 pontos, mais de 8 na cabeça, ou death save
   falho. Mortal 6 ainda está vivo.
-- Bio-monitor com **11 níveis** (0 Saudável → 10 Mortal 6). Efeito do livro
+- Bio-monitor com **11 níveis** (0 Ileso → 10 Mortal 6), com o nome da trilha do
+  livro na ficha, no cartão do token e no chat *(K.3a — antes eram duas listas,
+  "Sério" e "Ferimento Sério (Serious)")*. Efeito do livro
   nos atributos, **sem acumular** entre níveis *(Fase C, C.5)*:
   **Sério** REF −2; **Crítico** REF, INT e COOL pela metade; **Mortal** REF, INT
   e COOL a um terço (arredondando para cima). Ferimento **não** afeta MA.

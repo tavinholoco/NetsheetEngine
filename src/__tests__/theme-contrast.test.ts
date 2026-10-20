@@ -15,7 +15,8 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { WOUND_LEVEL_NAMES, WOUND_MAX } from '../utils/injuryRules';
+import { WOUND_MAX } from '../utils/injuryRules';
+import { WOUND_TRACK } from '../rules/tables';
 
 const css = fs.readFileSync(path.resolve(__dirname, '../index.css'), 'utf8');
 const theme = css.match(/@theme\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
@@ -86,13 +87,13 @@ describe('borda de campo de formulário (F.4.2) — 3:1 sobre surface e raised',
 describe('escala de dano, wound-* (F.2.7)', () => {
   for (let i = 0; i <= WOUND_MAX; i++) {
     for (const fundo of FUNDOS) {
-      it(`wound-${i} (${WOUND_LEVEL_NAMES[i].name}) sobre ${fundo}: 4,5:1`, () => {
+      it(`wound-${i} (${WOUND_TRACK[i].name}) sobre ${fundo}: 4,5:1`, () => {
         expect(contraste(`wound-${i}`, fundo)).toBeGreaterThanOrEqual(AA);
       });
     }
   }
 
-  it('do Crítico à Morte Iminente a gravidade clareia — nunca escurece', () => {
+  it('do Crítico ao Mortal 6 a gravidade clareia — nunca escurece', () => {
     for (let i = 4; i <= WOUND_MAX; i++) {
       expect(luminancia(`wound-${i}`)).toBeGreaterThanOrEqual(luminancia(`wound-${i - 1}`));
     }

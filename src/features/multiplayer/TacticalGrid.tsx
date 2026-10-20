@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { TacticalGridState, TacticalToken, RoomPlayer } from '../../types/multiplayer';
 import { RemoteCursor } from '../../lib/yjsConnection';
-import { WOUND_LEVEL_NAMES } from '../../utils/injuryRules';
+import { woundLevelColor } from '../../utils/injuryRules';
+import { woundRow } from '../../rules/character';
 import { 
   Plus, 
   Trash2, 
@@ -691,8 +692,11 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
                 {selectedToken.hp !== undefined && (selectedToken.type === 'player' || selectedToken.type === 'npc') && (
                   <div className="flex justify-between items-center py-0.5 border-b border-line/60">
                     <span className="text-muted">Bio-Monitor:</span>
-                    <span className={`font-mono ${WOUND_LEVEL_NAMES[selectedToken.hp]?.color || 'text-ok-400'}`}>
-                      {WOUND_LEVEL_NAMES[selectedToken.hp]?.name || 'Normal'} ({selectedToken.hp}/10)
+                    {/* K.3a — o nome da trilha do livro, como na ficha. O "(2/10)"
+                        saiu: era o índice do nível, e o painel de combate logo
+                        abaixo conta os pontos do livro (8/40). */}
+                    <span className={`font-mono ${woundLevelColor(selectedToken.hp)}`}>
+                      {woundRow(selectedToken.hp).name}
                     </span>
                   </div>
                 )}

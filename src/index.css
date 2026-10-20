@@ -169,12 +169,12 @@
   --color-danger-950: oklch(25.8% 0.092 26.042);
 
   /* A escala de dano (F.2.7): um tom por nível de ferimento, o índice 0..10 do
-     WOUND_LEVEL_NAMES (src/utils/injuryRules.ts). No fundo escuro a gravidade
-     CLAREIA: do Crítico à Morte Iminente o tom sobe pelos claros do danger.
+     WOUND_LEVEL_COLORS (src/utils/injuryRules.ts). No fundo escuro a gravidade
+     CLAREIA: do Crítico ao Mortal 6 o tom sobe pelos claros do danger.
      Antes descia (red-500 → rose-700), e Mortal 2–6 ficava em 2,9–4,5:1 —
      quanto mais perto da morte, menos legível. Todo tom com ≥ 4,5:1 sobre
      surface e raised: o theme-contrast.test confere. */
-  --color-wound-0: var(--color-ok-400);           /* Saudável */
+  --color-wound-0: var(--color-ok-400);           /* Ileso */
   --color-wound-1: var(--color-signal-400);       /* Leve */
   --color-wound-2: oklch(75% 0.183 55.934);       /* Sério — o orange-400 */
   --color-wound-3: var(--color-danger-500);       /* Crítico */
@@ -184,7 +184,7 @@
   --color-wound-7: var(--color-danger-300);       /* Mortal 3 */
   --color-wound-8: var(--color-danger-200);       /* Mortal 4 */
   --color-wound-9: var(--color-danger-200);       /* Mortal 5 */
-  --color-wound-10: var(--color-danger-100);      /* Mortal 6 — morte iminente */
+  --color-wound-10: var(--color-danger-100);      /* Mortal 6 */
 
   /* Neutros com nome — pelo tipo de uso × tom (color-map.json, "neutros"). */
   --color-surface: var(--color-night-950);       /* fundo da página e dos painéis */
