@@ -1147,6 +1147,24 @@ perguntas acima; aqui, o que a fase mudou junta, e o que nenhum PR sozinho mostr
 [`ARQUITETURA.md`](./ARQUITETURA.md) já diz da armadura por peça desde a K.2. **O que a fase ensina antes de o conserto
 estar no ar?** Nada de segurança aberto.
 
+**20/10/2026 — a revisão do código da K** (#70, depois do fechamento). Seis consertos de tela e de regra no
+cliente: o "Refazer pelo livro" que lê a escolha do pacote do registro, o ferimento pelo nome no "Inspecionar ficha",
+o eurodólar num formato só, o complemento da perícia "(escolha)" no pickup, a mono só no número do "Mod. do Mestre",
+e um comentário.
+
+1. **Entrada nova?** Uma, e já validada: o complemento da perícia vira parte do **nome** dela ("Language: Japonês"),
+   que entra na ficha como qualquer perícia — o `sanitizeCharacterSheet` corta o nome no teto de texto e confere o
+   atributo e o nível. O campo tem `maxLength` 40, mas quem vale é o validador.
+2. **Dado novo sai?** Nenhum. O modal do GM troca o índice do ferimento pelo nome da trilha, o mesmo dado.
+3. **Autorização nova?** Nenhuma. O "Refazer" lê o registro da criação que a própria ficha já trazia.
+4. **Jogador convidado hostil?** Nada novo. O registro (`creation`) é do cliente desde a K.6 — forjá-lo continua à
+   vista do GM, e agora também decide qual opção do pacote o assistente marca ao refazer. Marcar a opção errada só
+   muda o rascunho dele, que o orçamento confere de novo antes de aplicar.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
+
 ### Fase L — Performance e escala
 
 *(a preencher)*

@@ -8,7 +8,7 @@
  * motivo e o local; a mesa inteira vê o modificador ativo.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { useRoomStore } from '../stores/useRoomStore';
@@ -153,7 +153,18 @@ describe('K.3b — a mesa vê a condição ativa', () => {
     rede = net(room);
     abrir('player', room);
     expect(screen.getByText('Beco atrás do Afterlife')).toBeInTheDocument();
-    expect(screen.getByText('Mod. do Mestre −2 · escuridão')).toBeInTheDocument();
+    expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Mod. do Mestre −2 · escuridão')).toBeInTheDocument();
+  });
+
+  // Revisão da K — a linha inteira saía na Share Tech Mono, o motivo também; a
+  // decisão 10 (F.1) dá a mono só ao número.
+  it('só o número vai na mono; o rótulo e o motivo, na Rajdhani', () => {
+    const room = mesa({ combatModifier: -2, modifierReason: 'escuridão' });
+    rede = net(room);
+    abrir('player', room);
+    const linha = screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Mod. do Mestre −2 · escuridão');
+    expect(linha).not.toHaveClass('font-mono');
+    expect(within(linha).getByText('−2')).toHaveClass('font-mono');
   });
 
   it('com 0, nada no cabeçalho', () => {

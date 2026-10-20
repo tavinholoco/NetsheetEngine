@@ -14,6 +14,7 @@ import { CyberwareManager } from '../features/sheet/CharacterSheet/CyberwareMana
 import { StatBlock } from '../features/sheet/CharacterSheet/StatBlock';
 import { createBlankCharacterSheet } from '../hooks/useCharacterSheet';
 import { btmFromBody } from '../rules/character';
+import { formatEb } from '../lib/format';
 import type { CharacterSheet, CyberwareItem } from '../types/cyberpunk';
 
 afterEach(cleanup);
@@ -59,5 +60,15 @@ describe('K.2e — o cromo que soma atributo na ficha', () => {
     const sheet = { ...blank, stats: { ...blank.stats, BODY: 10 }, cyberware: [lace] };
     render(<StatBlock sheet={sheet} onChange={() => {}} />);
     expect(screen.getByText(new RegExp(`BTM: ${btmFromBody(12)} `))).toBeInTheDocument();
+  });
+});
+
+// Revisão da K — o custo do implante saía sem locale (no navegador em inglês,
+// "1,500"), e a ficha e a mesa escrevem eurodólar pelo `formatEb`: "1.500 eb".
+describe('Revisão da K — o custo do cromo em eb', () => {
+  it('a lista mostra o custo pelo formatEb', () => {
+    render(<CyberwareManager sheet={{ ...createBlankCharacterSheet(), cyberware: [lace] }} onChange={() => {}} />);
+    expect(screen.getByText(formatEb(lace.costEb))).toBeInTheDocument();
+    expect(screen.queryByText(/€\$/)).toBeNull();
   });
 });

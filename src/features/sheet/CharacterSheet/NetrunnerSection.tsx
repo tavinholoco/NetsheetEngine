@@ -28,8 +28,6 @@ interface NetrunnerSectionProps {
   onChange: (updated: Partial<CharacterSheet>) => void;
 }
 
-const eb = formatEb;
-
 const field = 'bg-surface border border-field text-xs text-fg-strong px-2 py-1.5 rounded focus:border-cyber-400 focus:outline-none';
 const numberField = `${field} font-mono w-14`;
 const label = 'flex flex-col gap-1 text-micro text-muted uppercase';
@@ -112,7 +110,7 @@ export const NetrunnerSection: React.FC<NetrunnerSectionProps> = ({ sheet, onCha
               >
                 {DECK_CHASSIS.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} — {eb(c.costEb)}
+                    {c.name} — {formatEb(c.costEb)}
                   </option>
                 ))}
               </select>
@@ -138,12 +136,12 @@ export const NetrunnerSection: React.FC<NetrunnerSectionProps> = ({ sheet, onCha
               onChange={(e) => setDeck({ extraMemory: e.target.checked })}
               className="accent-cyber-500"
             />
-            Segundo módulo de memória (+{DECK_EXTRA_MEMORY_MU} MU, {eb(DECK_UPGRADE_EB.extraMemory)})
+            Segundo módulo de memória (+{DECK_EXTRA_MEMORY_MU} MU, {formatEb(DECK_UPGRADE_EB.extraMemory)})
           </label>
 
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-fg-soft">
             <span>
-              Preço pela tabela: <span className="font-mono text-fg-strong" data-testid="deck-cost">{eb(deckCostEb(deck))}</span>
+              Preço pela tabela: <span className="font-mono text-fg-strong" data-testid="deck-cost">{formatEb(deckCostEb(deck))}</span>
             </span>
             <span title="1d10 + REF + Speed do deck (S1, S6)">
               Iniciativa na Net: <span className="font-mono text-fg-strong" data-testid="net-initiative">1d10 + {netInitiativeBonus(ref, deck)}</span>

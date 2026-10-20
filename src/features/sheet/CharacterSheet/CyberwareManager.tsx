@@ -4,6 +4,7 @@ import { humanityFromEmp, humanityRemaining } from '../../../utils/derivedStats'
 import { STAT_NAMES, humanityCostIsReadable, rollHumanityLoss } from '../../../rules/character';
 import { CYBER_STAT_BONUS_MAX } from '../../../rules/sheetSchema';
 import { NumberField } from './NumberField';
+import { formatEb } from '../../../lib/format';
 import { clientRng } from '../../../utils/diceEngine';
 import { Cpu, Plus, Trash2, Power, AlertTriangle } from 'lucide-react';
 
@@ -116,7 +117,7 @@ export const CyberwareManager: React.FC<CyberwareManagerProps> = ({ sheet, onCha
                 </div>
                 <div className="text-micro font-mono text-muted mt-0.5 space-x-3">
                   <span>🩸 {cw.humanityLoss} HL</span>
-                  <span>€$ {cw.costEb.toLocaleString()}</span>
+                  <span>{formatEb(cw.costEb)}</span>
                   <span className="text-signal-400">Perda real: {cw.actualHL} HL</span>
                   {cw.statBonus && (
                     <span className="text-accent-300">

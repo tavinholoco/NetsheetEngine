@@ -229,6 +229,38 @@ describe('K.6b — o rascunho sai da ficha e volta para ela', () => {
       funds: draft.funds
     });
   });
+
+  // Revisão da K: o "Refazer" escolhia as primeiras opções do pacote que a ficha
+  // tinha, e a opção que o jogador deixou de fora — legal no pickup — virava a
+  // escolhida. O Solo de 40/40 abria travado em "42 de 40".
+  it('refazer lê a escolha do registro, não a primeira opção que a ficha tem', () => {
+    const pronto = soloPronto();
+    const pkg = CAREER_PACKAGES.find((p) => p.role === 'Solo')!;
+    const draft: CreationDraft = {
+      ...pronto,
+      picks: ['Martial Art'],
+      career: Object.fromEntries([...pkg.skills.map((s) => s.name), 'Martial Art'].map((n) => [n, 4])),
+      // o Brawling, que o Solo não escolheu, no pickup: REF + INT = 12
+      pickup: [{ name: 'Brawling', stat: 'REF', level: 2 }, { name: 'Dance', stat: 'REF', level: 10 }]
+    };
+    expect(blockersOf(draft)).toEqual([]);
+    const sheet = solo();
+    const applied: CharacterSheet = { ...sheet, ...applyCreation(sheet, draft) };
+
+    const again = createDraft(applied);
+    expect(again.picks).toEqual(['Martial Art']);
+    expect(creationBudgets(again)).toEqual(creationBudgets(draft));
+    expect(blockersOf(again)).toEqual([]);
+  });
+
+  it('o Tech que escolheu três de quatro refaz com as mesmas três', () => {
+    const tech = { ...createBlankCharacterSheet(), role: 'Tech', specialAbilityName: 'Jury Rig' };
+    const draft = createDraft(tech);
+    draft.picks = ['Aero Tech', 'Weaponsmith', 'Electronic Security'];
+    draft.pickup = [{ name: 'Gyro Tech', stat: 'TECH', level: 1 }];
+    const applied: CharacterSheet = { ...tech, ...applyCreation(tech, draft) };
+    expect(createDraft(applied).picks).toEqual(['Aero Tech', 'Weaponsmith', 'Electronic Security']);
+  });
 });
 
 describe('K.6b — o registro da criação passa pelo validador', () => {

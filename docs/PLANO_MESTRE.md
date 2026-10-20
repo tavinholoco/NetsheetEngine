@@ -1294,12 +1294,44 @@ seguem os grupos abaixo.
       ganhou só o que o repo não carrega: duas armadilhas do ambiente (o roteiro de tipografia que cai na primeira
       rodada com o servidor recém-subido, e o da impressão que pede a pasta). **Falta:** o merge do PR do fechamento e o
       `master` verde depois dele.)*
+- [x] **K.10** **Revisão do código da K** *(pedido do dono depois do merge do #69, 20/10/2026; o PR #70)*: o código
+      dos #62 a #69 lido de novo atrás de duplicação, código morto, regra em dois lugares, validação sem par, cor, a11y e
+      documento que diverge, e cada achado pelo filtro. **16 achados: seis consertos, cada um com o teste antes e a
+      prova revertendo; sete ADIAR; três DESCARTAR.** Seis em 16 passa de um terço — os dois menores (a mono e o
+      comentário) são de uma linha, e o dono aprovou os seis.
+    - [x] **O "Refazer pelo livro" trocava a escolha do pacote** (defeito da K.6b, reproduzido). O `createDraft`
+          marcava as primeiras opções do pacote que a ficha tinha, e a opção deixada de fora — legal no pickup — virava
+          a escolhida: o Solo de 40/40 com Martial Art na carreira e Brawling no pickup abria travado em "carreira 42 de
+          40". O Tech, que escolhe três de quatro, também. Agora o registro (`creation`) decide. `rules-creation` +2.
+    - [x] **O "Inspecionar ficha" dava o ferimento pelo índice** ("2/10"), o que a K.3a tirou do cartão do token; o
+          modal ficou de fora, e a K.6c pôs o orçamento logo abaixo. Agora o nome da trilha e a cor wound-N.
+          `creation-budget` +1, e o `room-modals` (G.04) lê o nome.
+    - [x] **Eurodólar em dois formatos**: a verba em "€$" no modal, com o orçamento em "eb" abaixo; o custo do cromo
+          sem locale ("1,500" no navegador em inglês). Os dois pelo `formatEb`, e saem os `const eb = formatEb` que o
+          #69 deixou. `creation-budget` +1, `cyberware-stat` +1.
+    - [x] **O pickup gravava "Language (escolha)" como nome** — e a lista de perícias não renomeia. A escolha abre o
+          campo do complemento ("Language: Japonês"), e cabe uma segunda língua. `creation-wizard` +2; conferido no
+          navegador, no build de produção.
+    - [x] **O "Mod. do Mestre" saía inteiro na mono**, o motivo também; só o número vai nela (decisão 10).
+          `scene-settings` +1.
+    - [x] **Documento:** o cabeçalho do `derivedStats.ts` dizia que o Run e o Leap não tinham passado pela
+          conferência — a K.7c os conferiu.
+    - **ADIAR**, cada um com gatilho, na lista da Q (seis na Q.3, um na Q.5): os tetos de SP e EV copiados no
+      `ArmorPanel`; o ±10 da cena no cliente e no servidor; o gerador de id em cinco lugares; as contas da criação
+      repetidas; o bônus do cromo só no cadastro; o teto da verba que diverge (10 × 100 milhões); e a ordem das
+      camadas, que a tela não deixa mudar — com três camadas, muda o SP.
+    - **DESCARTAR**, de antes da K: o `DEFAULT_ARMOR` importado sem uso no `WeaponsArmor` (o ESLint da L.5 pega); o
+      botão de apagar arma sem nome acessível (é da G — fica para a Q.4, se o dono quiser); e o reexport de
+      `armorSpAt` no `derivedStats` (da D, só um teste o usa).
+    - **Conferido e limpo:** todo campo novo da ficha tem par no `sheetSchema`; todo número novo usa o `NumberField`;
+      o botão da cena passa pelo `useInFlight`; nenhuma cor fora dos tokens, e o vermelho só no dano; todo botão e
+      campo novo tem nome; o PRD, o `prdData` e a conferência batem com o código.
 - [x] ✅ **Fase K concluída em:** 20/10/2026 *(a K.0 no #62; a K.1 no #63; a K.2 no #64; a K.3 no #65; a K.5 no #66;
-      a K.6 no #67; a K.7 no #68; o fechamento no #69)*
+      a K.6 no #67; a K.7 no #68; o fechamento no #69; a revisão do código, K.10, no #70)*
 
 > ***Fase K fechada em 20/10/2026.*** *A próxima é a **Fase L** — aguentar uma mesa de verdade —, começando pela L.0. A K
 > deixa para o bloco Q treze ADIAR novos (o método rápido, a evolução por IP e os "drops" da K.0; as camadas de armadura;
-> o deck; a criação; as artes marciais) e o I.06, que
+> o deck; a criação; as artes marciais), mais sete da revisão (K.10), e o I.06, que
 > segue com o número da K.2f; e, para a L, a ficha mais gorda — o veterano com tudo fica abaixo da metade dos 64 KB, o
 > que a L.1 (o reenvio por diferença) deve levar em conta.*
 
@@ -1365,7 +1397,8 @@ Na K.3 (20/10): mais dois da Q.1 feitos, o G.05 e o I.01, e nenhum ADIAR novo �
 Na K.5 (20/10): **94** — entraram o teto das melhorias do deck, o catálogo de programas e o custo de entrar na Net sem
 cromo, na Q.5. Na K.6 (20/10): **98** — entraram o salário do Fixer, o desempregado e o bolo fixo de 65, e o
 arredondamento do 1D6/3 com o nível 0 (na Q.5), e o 9D10 rolado no servidor (na Q.2). Na K.7 (20/10): **99** — entrou o
-bônus das artes marciais por estilo (na Q.5).)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+bônus das artes marciais por estilo (na Q.5). Na revisão da K (20/10, #70): **106** — sete da revisão do código da
+fase, seis na Q.3 e um na Q.5.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1559,6 +1592,22 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         em segundo plano. A versão menor é pausar com o `document.hidden` e fechar o socket depois de ~30 min com a
         aba oculta. *Gatilho:* o total do workspace acima de 100 h num mês sem o monitor, ou uma aba esquecida
         observada.
+  - [ ] **Os tetos de SP e EV copiados à mão** (revisão da K): o `ArmorPanel` tem 100 e 20 numa constante dele, e o
+        `sanitizeArmor` os mesmos números como literais — o resto da K exporta o teto do `sheetSchema` (`GEAR_*`,
+        `DECK_*`). *Gatilho:* mudar um dos dois tetos. A versão menor: exportar `ARMOR_SP_MAX`/`ARMOR_EV_MAX`.
+  - [ ] **O ±10 do modificador da cena em dois lugares** (revisão da K): o `SceneConditions` e o
+        `updateRoomSettings` do servidor. *Gatilho:* mudar o intervalo. A versão menor: a constante em `src/rules/`.
+  - [ ] **O gerador de id repetido** (revisão da K): `'arm_'`, `'gear_'`, `'prog_'` e `'sk_'` com `Date.now()` e um
+        sufixo aleatório, no `ArmorPanel`, no `GearSection`, no `NetrunnerSection`, no `creation.ts` e no
+        `SkillsSection`. *Gatilho:* uma colisão de id, ou o ESLint da L.5 pedir.
+  - [ ] **As contas da criação repetidas** (revisão da K): o orçamento de atributos (`Math.max(pool, STAT_POOL_MIN)`)
+        e o filtro do pickup aparecem duas vezes no `creation.ts`; o "/40" está à mão no `CreationSection`, que
+        também reescreve a busca da habilidade especial. *Gatilho:* mudar a regra do pickup ou do bolo.
+  - [ ] **O bônus de atributo do cromo só no cadastro** (revisão da K): errou, apaga e lança de novo — como os outros
+        campos do implante. *Gatilho:* alguém errar o bônus numa ficha de verdade.
+  - [ ] **O teto da verba diverge** (revisão da K): o assistente e o custo do programa param em 10 milhões; o
+        validador aceita 100 milhões em `creation.funds` e `eurodollars`. Os dois são grampo do absurdo, e a tela é a
+        mais estrita. *Gatilho:* alguém precisar de mais de 10 milhões.
 - [ ] **Q.4** **Acessibilidade.** Fonte: [`G-frontend.md`](./varreduras/G-frontend.md).
   - [ ] **G.13**: o perfil só abre com o mouse. *Gatilho:* alguém da mesa operar só pelo teclado.
   - [ ] **G.14**: botões e campos sem nome para o leitor de tela. *Gatilho:* alguém usar leitor de tela.
@@ -1572,6 +1621,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
   - [ ] **O teto de três camadas de armadura, uma rígida** (S6, S9): hoje o NetSheet combina quantas camadas houver.
         A versão menor é marcar a peça como rígida e avisar. *Gatilho:* alguém vestir quatro camadas, ou duas
         rígidas, no mesmo local. Fonte: a K.2a, na [conferência](./CONFERENCIA_CP2020.md#o-que-fica-para-a-fase-k).
+  - [ ] **A ordem das camadas sem como mudar** (revisão da K): o SP combina de dentro para fora pela ordem da lista, e
+        a tela só acrescenta peça no fim. Com duas camadas a ordem não importa (a diferença é simétrica); com três,
+        importa — 10, 20 e 14 dão SP 26; 20, 14 e 10, SP 27. *Gatilho:* a mesa usar três camadas, junto do teto acima.
   - [ ] **O EV extra por camada**: o S6 soma 1 por camada, o S9 cobra 0, 1 e 2. Hoje não há EV extra. *Gatilho:* uma
         segunda fonte que desempate, o PDF (Q.0b), ou a mesa usar três camadas. Fonte: a K.2a.
   - [ ] **O teto das melhorias do deck** (K.5a): Speed até 5 e Data Wall até 10 (S12), ou sem teto (S6)? Hoje, só o
@@ -1715,7 +1767,7 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
-| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66); a K.6 — a criação com orçamento: os pacotes e o salário conferidos, o assistente na ficha e o orçamento à vista do GM na mesa (#67); a K.7 — as perícias pelas fontes (com os quatro pilotos), a tela que sugere todas, e o Leap no lugar do Walk (#68); o fechamento, com o portão da fase e a revisão do que ela produziu (#69) | ✅ | 20/10/2026 |
+| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66); a K.6 — a criação com orçamento: os pacotes e o salário conferidos, o assistente na ficha e o orçamento à vista do GM na mesa (#67); a K.7 — as perícias pelas fontes (com os quatro pilotos), a tela que sugere todas, e o Leap no lugar do Walk (#68); o fechamento, com o portão da fase e a revisão do que ela produziu (#69); a revisão do código da fase, K.10, com seis consertos — o "Refazer" que trocava a escolha do pacote entre eles (#70) | ✅ | 20/10/2026 |
 | L | 🔨 | Performance e escala | ⬜ | — |
 | Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7 | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
@@ -1724,11 +1776,11 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a Fase K (20/10/2026) |
+| Verificação | Ao fechar a Fase K (20/10/2026; a revisão K.10 no mesmo dia) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **1064** testes, 87 arquivos *(+26 da K.7: `skill-tables` 12, `skill-suggestions` 4, `movement` 11, `derived-stats` −1 (o Walk) — 20/10/2026; +33 da K.6: `rules-creation` 19, `creation-wizard` 5, `creation-budget` 8, `sheet-size` +1 — 20/10/2026; +29 da K.5: `rules-netrun` 20, `netrunner-section` 8, `sheet-size` +1 — 20/10/2026; +32 da K.3: `wound-names` 22, `scene-settings` 7, `table-rolls.integration` +3 — 20/10/2026; +53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
+| `npx vitest run` | **1072** testes, 87 arquivos *(+8 da K.10, a revisão: `rules-creation` 2, `creation-budget` 2, `creation-wizard` 2, `cyberware-stat` 1, `scene-settings` 1 — 20/10/2026; +26 da K.7: `skill-tables` 12, `skill-suggestions` 4, `movement` 11, `derived-stats` −1 (o Walk) — 20/10/2026; +33 da K.6: `rules-creation` 19, `creation-wizard` 5, `creation-budget` 8, `sheet-size` +1 — 20/10/2026; +29 da K.5: `rules-netrun` 20, `netrunner-section` 8, `sheet-size` +1 — 20/10/2026; +32 da K.3: `wound-names` 22, `scene-settings` 7, `table-rolls.integration` +3 — 20/10/2026; +53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) — de novo ao fechar a K (`BASE_URL=http://127.0.0.1:3100`, com o `netsheet-prod`) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
