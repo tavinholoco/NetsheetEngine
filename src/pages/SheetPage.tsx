@@ -7,6 +7,7 @@ import { StatBlock } from '../features/sheet/CharacterSheet/StatBlock';
 import { CyberwareManager } from '../features/sheet/CharacterSheet/CyberwareManager';
 import { WeaponsArmor } from '../features/sheet/CharacterSheet/WeaponsArmor';
 import { GearSection } from '../features/sheet/CharacterSheet/GearSection';
+import { NetrunnerSection } from '../features/sheet/CharacterSheet/NetrunnerSection';
 import { SkillsSection } from '../features/sheet/CharacterSheet/SkillsSection';
 import { LifepathGenerator } from '../features/sheet/CharacterSheet/LifepathGenerator';
 import { Save, CheckCircle2, Plus, Lock, Printer } from 'lucide-react';
@@ -71,6 +72,9 @@ export const SheetPage: React.FC<SheetPageProps> = ({
 
       {/* Inventory, Carry & Lift (K.2d) */}
       <GearSection sheet={sheet} onChange={onChange} />
+
+      {/* Netrunner: deck & programs (K.5c) */}
+      <NetrunnerSection sheet={sheet} onChange={onChange} />
 
       {/* Skills Tree */}
       <SkillsSection sheet={sheet} onChange={onChange} onRollSkill={onRollSkill} onRollCheck={onRollCheck} />
