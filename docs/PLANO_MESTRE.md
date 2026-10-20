@@ -1292,13 +1292,15 @@ seguem os grupos abaixo.
       armadura como "SP por localização"; a seção da ficha ganhou o que a K trouxe. **Os ADIAR novos da K** entraram na
       lista da Q em cada PR (de 86 para 99, com quatro feitos); os que a K era dona estão marcados lá. **A memória**
       ganhou só o que o repo não carrega: duas armadilhas do ambiente (o roteiro de tipografia que cai na primeira
-      rodada com o servidor recém-subido, e o da impressão que pede a pasta). **Falta:** o merge do PR do fechamento e o
-      `master` verde depois dele.)*
+      rodada com o servidor recém-subido, e o da impressão que pede a pasta). **Passo 6 conferido:** o #69 mergeado em
+      20/10, e o `master` verde depois dele.)*
 - [x] **K.10** **Revisão do código da K** *(pedido do dono depois do merge do #69, 20/10/2026; o PR #70)*: o código
       dos #62 a #69 lido de novo atrás de duplicação, código morto, regra em dois lugares, validação sem par, cor, a11y e
       documento que diverge, e cada achado pelo filtro. **16 achados: seis consertos, cada um com o teste antes e a
       prova revertendo; sete ADIAR; três DESCARTAR.** Seis em 16 passa de um terço — os dois menores (a mono e o
-      comentário) são de uma linha, e o dono aprovou os seis.
+      comentário) são de uma linha, e o dono aprovou os seis. **Mergeado em 20/10** — e o `master` ficou **vermelho**
+      depois dele, não pelo código: no portão de audit, o alerta alto do `launch-editor` (GHSA-587h-7wmj-h5pm, pelo
+      `vite` ≤ 6.4.3) saiu no mesmo dia. O conserto é o **#71**, `vite` 6.4.4, sem exceção nova (tem correção).
     - [x] **O "Refazer pelo livro" trocava a escolha do pacote** (defeito da K.6b, reproduzido). O `createDraft`
           marcava as primeiras opções do pacote que a ficha tinha, e a opção deixada de fora — legal no pickup — virava
           a escolhida: o Solo de 40/40 com Martial Art na carreira e Brawling no pickup abria travado em "carreira 42 de
