@@ -8,6 +8,7 @@ import { CyberwareManager } from '../features/sheet/CharacterSheet/CyberwareMana
 import { WeaponsArmor } from '../features/sheet/CharacterSheet/WeaponsArmor';
 import { GearSection } from '../features/sheet/CharacterSheet/GearSection';
 import { NetrunnerSection } from '../features/sheet/CharacterSheet/NetrunnerSection';
+import { CreationSection } from '../features/sheet/CharacterSheet/CreationSection';
 import { SkillsSection } from '../features/sheet/CharacterSheet/SkillsSection';
 import { LifepathGenerator } from '../features/sheet/CharacterSheet/LifepathGenerator';
 import { Save, CheckCircle2, Plus, Lock, Printer } from 'lucide-react';
@@ -52,6 +53,9 @@ export const SheetPage: React.FC<SheetPageProps> = ({
     <div className="space-y-6" data-print="sheet">
       {/* Header / Identity */}
       <CharacterHeader sheet={sheet} onChange={onChange} />
+
+      {/* Character creation budget (K.6b) */}
+      <CreationSection sheet={sheet} onChange={onChange} />
 
       {/* Health & Wound Tracker */}
       <HealthTracker sheet={sheet} onChange={onChange} onRollDeathSave={onRollDeathSave} onRollStunSave={onRollStunSave} />

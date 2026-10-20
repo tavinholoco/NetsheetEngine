@@ -36,6 +36,7 @@
 import type {
   ArmorLocation,
   ArmorPiece,
+  CharacterCreation,
   CharacterSheet,
   CharacterStats,
   Cyberdeck,
@@ -49,7 +50,15 @@ import type {
 } from '../types/cyberpunk';
 import { STAT_NAMES, deriveCurrentStats } from './character';
 import { woundStateFromPoints, woundStateOf, type WoundState } from './damage';
-import { DECK_BASE, DECK_CHASSIS, PROGRAM_CLASSES, WOUND_TRACK_POINTS } from './tables';
+import {
+  DECK_BASE,
+  DECK_CHASSIS,
+  PROGRAM_CLASSES,
+  STARTING_FUNDS_DIE,
+  STAT_POOL_DICE,
+  STAT_POOL_MAX,
+  WOUND_TRACK_POINTS
+} from './tables';
 
 // --- Limites -----------------------------------------------------------------
 // Atributo: 2–10 na criação, até 15 com cromo (ver CharacterStats). O teto é
@@ -92,6 +101,14 @@ export const DECK_CODE_GATE_MAX = 40;
 export const PROGRAM_STRENGTH_MAX = 20;
 /** A MU de um programa vai de 1 a 6 no livro (S6); o grampo deixa o suplemento passar. */
 export const PROGRAM_MU_MAX = 20;
+/**
+ * O registro da criação (K.6b): as nove perícias do pacote, e os pontos gastos
+ * com folga — dez perícias de 10 dão 100. Grampos do absurdo, não o orçamento:
+ * passar do orçamento fica à vista do GM (K.6c), não barrado aqui.
+ */
+export const MAX_CAREER_SKILLS = 10;
+export const CREATION_POINTS_MAX = 100;
+const CREATION_METHODS: readonly CharacterCreation['method'][] = ['roll9d10', 'gmPool'];
 const DECK_CHASSIS_IDS = DECK_CHASSIS.map((c) => c.id);
 const PROGRAM_CLASS_IDS = PROGRAM_CLASSES.map((c) => c.id);
 
@@ -386,6 +403,34 @@ function sanitizePrograms(value: unknown, changed: string[]): NetProgram[] {
   return out;
 }
 
+/**
+ * K.6b — o que a criação gastou. Ficha sem registro (de antes da K.6, ou feita à
+ * mão) fica sem o campo, sem correção; método que não existe descarta o registro.
+ */
+function sanitizeCreation(value: unknown, changed: string[]): CharacterCreation | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!isPlainObject(value) || !CREATION_METHODS.includes(value.method as CharacterCreation['method'])) {
+    changed.push('creation');
+    return undefined;
+  }
+  const dice = safeArray(value.dice, STAT_POOL_DICE, 'creation.dice', changed);
+  const careerSkills = safeArray(value.careerSkills, MAX_CAREER_SKILLS, 'creation.careerSkills', changed);
+  return {
+    method: value.method as CharacterCreation['method'],
+    dice: dice.map((d, i) => clampInt(d, 1, 10, 1, `creation.dice[${i}]`, changed)),
+    pool: clampInt(value.pool, 0, STAT_POOL_MAX, 0, 'creation.pool', changed),
+    stats: sanitizeStats(value.stats, 'creation.stats', changed),
+    careerSkills: careerSkills.map((s, i) => safeString(s, MAX_NAME_CHARS, `creation.careerSkills[${i}]`, changed)),
+    careerPoints: clampInt(value.careerPoints, 0, CREATION_POINTS_MAX, 0, 'creation.careerPoints', changed),
+    pickupPoints: clampInt(value.pickupPoints, 0, CREATION_POINTS_MAX, 0, 'creation.pickupPoints', changed),
+    fundsDie:
+      value.fundsDie === null || value.fundsDie === undefined
+        ? null
+        : clampInt(value.fundsDie, 1, STARTING_FUNDS_DIE.sides, 1, 'creation.fundsDie', changed),
+    funds: clampInt(value.funds, 0, 100_000_000, 0, 'creation.funds', changed)
+  };
+}
+
 function sanitizeLifepath(value: unknown, changed: string[]): Lifepath {
   const src = isPlainObject(value) ? value : {};
   if (!isPlainObject(value) && value !== undefined) changed.push('lifepath');
@@ -444,6 +489,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
   const cyberware = sanitizeCyberware(input.cyberware, changed);
   const armor = sanitizeArmor(input.armor, changed);
   const deck = sanitizeDeck(input.deck, changed);
+  const creation = sanitizeCreation(input.creation, changed);
 
   const sheet: CharacterSheet = {
     id: safeString(input.id, MAX_NAME_CHARS, 'id', changed),
@@ -475,6 +521,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     gearNotes: safeString(input.gearNotes, MAX_NOTES_CHARS, 'gearNotes', changed),
     ...(deck ? { deck } : {}),
     programs: sanitizePrograms(input.programs, changed),
+    ...(creation ? { creation } : {}),
     createdAt: safeString(input.createdAt, 64, 'createdAt', changed),
     updatedAt: safeString(input.updatedAt, 64, 'updatedAt', changed)
   };

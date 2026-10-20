@@ -133,6 +133,31 @@ export interface NetProgram {
   loaded: boolean;
 }
 
+/**
+ * O que a criação com orçamento gastou (K.6b, decisão 13). Gravado pelo
+ * assistente e só por ele; o GM o compara com a ficha de hoje (K.6c) — depois da
+ * criação, o IP e o cromo sobem os números legitimamente, e o servidor não tem
+ * como barrar: o orçamento fica à vista, não trancado.
+ */
+export interface CharacterCreation {
+  /** O 9D10 num bolo, ou o bolo que o Mestre definiu. */
+  method: 'roll9d10' | 'gmPool';
+  /** Os nove dados do 9D10; vazio no bolo do Mestre. */
+  dice: number[];
+  pool: number;
+  /** Os atributos como saíram da criação. */
+  stats: CharacterStats;
+  /** As nove perícias do pacote de carreira (a habilidade especial é a décima). */
+  careerSkills: string[];
+  /** Pontos de carreira gastos, a habilidade especial incluída (de 40). */
+  careerPoints: number;
+  /** Pontos de pickup gastos (de REF + INT). */
+  pickupPoints: number;
+  /** O 1D6 da verba; `null` quando ela é do Mestre (role sem linha de salário). */
+  fundsDie: number | null;
+  funds: number;
+}
+
 /** Lifepath narrativo gerado / editado pelo jogador. */
 export interface Lifepath {
   familyBackground: string;
@@ -193,6 +218,8 @@ export interface CharacterSheet {
   deck?: Cyberdeck;
   /** Os programas (K.5b). Opcional: ficha de antes da K.5 não tem. */
   programs?: NetProgram[];
+  /** O orçamento da criação (K.6b). Opcional: ficha de antes da K.6, ou feita à mão, não tem. */
+  creation?: CharacterCreation;
   createdAt: string;
   updatedAt: string;
 }
