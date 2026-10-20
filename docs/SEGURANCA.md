@@ -1120,6 +1120,33 @@ mostra (o nome do nível vem da trilha do livro): nenhuma entrada, saída ou aut
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
 
+**20/10/2026 — K.8, o portão da Fase K inteira** (os PRs #62 a #68, e o fechamento). Cada PR respondeu as seis
+perguntas acima; aqui, o que a fase mudou junta, e o que nenhum PR sozinho mostrava.
+
+1. **Entrada nova?** A ficha engordou: a armadura por peça com os locais (K.2), o inventário e o bônus de atributo do
+   implante (K.2), o deck e os programas (K.5) e o registro da criação (K.6). **Todos passam pelo
+   `sanitizeCharacterSheet`**, com teste, nas três portas que escrevem ficha — a sincronia, o `join` e, desde a K.1,
+   o arquivo importado, que era a última porta sem validador. A rota das condições da cena (K.3b) já validava desde
+   a C.4. **Uma premissa conferida:** a ficha mais cheia que o validador deixa ainda cabe nos 64 KB da sincronia — o
+   veterano com o deck, 40 programas e o registro fica abaixo da metade (o `sheet-size` trava).
+2. **Dado novo sai?** Nada de fora da ficha. Tudo o que a K pôs nela vai a quem já via a ficha, no reenvio da sala (o
+   E.20 segue na Q). O orçamento da criação aparece só ao GM, mas é tela.
+3. **Autorização nova?** Nenhuma no servidor. **Uma trava de tela saiu** (K.1b: clonar preset sem conta, que não
+   protegia nada) e **uma tela nova é só do GM** (as condições da cena, K.3b), com o 403 `gm_only` da rota por trás.
+   Ninguém novo recebe sessão.
+4. **Jogador convidado hostil?** O "trapaceiro plausível" do portão da B — a ficha válida e inflada — **não foi
+   fechado, e a K.0 mostrou que não cabe fechá-lo no servidor**: o IP e o cromo sobem os números depois da criação, e
+   o servidor não tem o histórico. Ele ficou **à vista**: o GM vê o registro da criação contra a ficha de hoje (K.6c),
+   e cada campo novo tem grampo. O que segue aberto, na lista da Q: rolar o 9D10 da criação no servidor.
+5. **Estado novo sem limite?** Nenhum: cada coleção nova tem teto (peças 50, itens 200, programas 100, perícias do
+   registro 10), e tudo vive dentro da ficha de 64 KB. Nenhum estado novo na sala além dos três campos de cena, que se
+   substituem.
+6. **Custo por requisição a serviço externo?** Nenhum: a K não chama a IA, o Supabase nem nada pago.
+
+**A forma do sistema não mudou** — nenhuma rota, contêiner ou fronteira nova —, e o
+[`ARQUITETURA.md`](./ARQUITETURA.md) já diz da armadura por peça desde a K.2. **O que a fase ensina antes de o conserto
+estar no ar?** Nada de segurança aberto.
+
 ### Fase L — Performance e escala
 
 *(a preencher)*
@@ -1191,5 +1218,7 @@ Registrado para não ser refeito, e para o portão não repetir pergunta já res
 - **Rolagens server-authoritative** (T5.4) — o cliente pede, o servidor rola com `crypto.randomInt`.
   O SEC-05 (ficha verbatim) foi fechado na B.2, e o `currentStats` forjado na C.6: os números da
   rolagem saem da ficha saneada, recalculados pelo servidor, com as mesmas regras do cliente
-  (`src/rules/`, paridade testada na C.10).
+  (`src/rules/`, paridade testada na C.10). **A ficha válida e inflada** (o "trapaceiro plausível" da B) não é
+  barrada — o IP e o cromo sobem os números depois da criação —, mas fica **à vista do GM** desde a K.6c: o registro
+  da criação contra a ficha de hoje, no "Inspecionar ficha".
 - **Logs estruturados** que nunca registram segredos (`server/logger.ts`).
