@@ -20,7 +20,8 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
   const [skillName, setSkillName] = useState('');
   const [skillStat, setSkillStat] = useState<StatName>('REF');
   const [skillLevel, setSkillLevel] = useState(3);
-  const [suggestions, setSuggestions] = useState<string[]>(SKILL_TABLES.REF.slice(0, 8));
+  // K.7b — todas as perícias do atributo; eram só as 8 primeiras, e 17 das de INT nunca apareciam.
+  const [suggestions, setSuggestions] = useState<string[]>(SKILL_TABLES.REF);
 
   const skills = sheet.skills || [];
   // C.6 — rola com o atributo CORRENTE (humanidade e ferimento aplicados).
@@ -30,7 +31,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ sheet, onChange, o
 
   const changeStatForSuggestions = (stat: StatName) => {
     setSkillStat(stat);
-    setSuggestions(SKILL_TABLES[stat]?.slice(0, 8) || []);
+    setSuggestions(SKILL_TABLES[stat] ?? []);
   };
 
   const addSkill = () => {
