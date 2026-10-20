@@ -136,6 +136,19 @@ export const CARRY_KG_PER_BODY = 10;
 export const LIFT_KG_PER_BODY = 40;
 
 // ------------------------------------------------------------
+// Movimento (K.7c) — Run e Leap
+// ------------------------------------------------------------
+
+/** Run: metros por turno, por ponto de MA (S1, S8). */
+export const RUN_METERS_PER_MA = 3;
+
+/**
+ * Leap: o Run dividido por este número, para baixo (S1; o S8 arredonda para
+ * baixo). O Walk não existe em nenhuma fonte (RUL-11).
+ */
+export const LEAP_RUN_DIVISOR = 4;
+
+// ------------------------------------------------------------
 // Camadas de armadura (K.2) — a tabela proporcional
 // ------------------------------------------------------------
 

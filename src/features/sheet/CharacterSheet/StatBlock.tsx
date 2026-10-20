@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CharacterSheet, StatName } from '../../../types/cyberpunk';
-import { humanityFromEmp, runFromMa, walkFromMa } from '../../../utils/derivedStats';
+import { humanityFromEmp, leapFromMa, runFromMa } from '../../../utils/derivedStats';
 import { bodyTypeFor, deriveCurrentStats } from '../../../rules/character';
 import { STAT_MAX, STAT_MIN } from '../../../rules/sheetSchema';
 import { Heart, Shield, Brain, Wind, Flame } from 'lucide-react';
@@ -84,6 +84,8 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
 
   const humanity = humanityFromEmp(stats.EMP);
   const runMove = runFromMa(current.MA);
+  // K.7c — o Leap do livro (Run ÷ 4), com o MA corrente, como o Run. O Walk saiu: não existe.
+  const leap = leapFromMa(current.MA);
 
   return (
     <div className="bg-raised/70 border-l-4 border-l-accent-500 border-y border-r border-line rounded-lg p-5 shadow-glow-20 shadow-accent-500/10 space-y-4 relative overflow-hidden">
@@ -176,11 +178,11 @@ export const StatBlock: React.FC<StatBlockProps> = ({ sheet, onChange }) => {
             </div>
             <div className="bg-raised p-2 rounded border border-line">
               <span className="text-micro text-muted block uppercase">Run (m/turno)</span>
-              <span className="font-mono text-ok-400 text-lg">{runMove}</span>
+              <span className="font-mono text-ok-400 text-lg" data-testid="derived-run">{runMove}</span>
             </div>
             <div className="bg-raised p-2 rounded border border-line">
-              <span className="text-micro text-muted block uppercase">Walk (m/turno)</span>
-              <span className="font-mono text-accent-400 text-lg">{walkFromMa(stats.MA)}</span>
+              <span className="text-micro text-muted block uppercase">Leap (m)</span>
+              <span className="font-mono text-accent-400 text-lg" data-testid="derived-leap">{leap}</span>
             </div>
           </div>
           <p className="text-micro text-subtle leading-relaxed">
