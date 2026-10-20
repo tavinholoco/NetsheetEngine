@@ -164,6 +164,8 @@ trilha do livro, `WOUND_TRACK` (`rules/tables.ts:80`). "Mortal 6 (Morte Iminente
 **VEREDITO:** ADIAR — *recalibrado na G.2* (era FAZER na primeira passada).
 - **Gatilho:** a K.3 (pós-ferimento) mexer na trilha — junta as listas de passagem —, ou alguém da mesa
   confundir os nomes numa sessão.
+- ✅ **Feito na K.3a** (20/10/2026, no #65): o `WOUND_LEVEL_NAMES` saiu, o nome vem da trilha (`woundRow`) e a
+  cor fica no `wound-N`; o "(2/10)" saiu do cartão do token.
 
 ---
 

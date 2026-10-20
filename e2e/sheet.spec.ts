@@ -19,8 +19,9 @@ test("ficha padrão renderiza com estatísticas derivadas (BTM, Humanidade)", as
   await expect(page.getByText("Humanidade", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("50", { exact: true }).first()).toBeVisible();
 
-  // Bio-Monitor: a trilha do livro, 40 caixas de 1 ponto (D.1 — eram 11 botões de nível)
-  await expect(page.getByText("Saudável (OK)", { exact: true }).first()).toBeVisible();
+  // Bio-Monitor: a trilha do livro, 40 caixas de 1 ponto (D.1 — eram 11 botões de nível),
+  // e o nome do nível é o da trilha (K.3a — era "Saudável (OK)", de uma lista à parte)
+  await expect(page.getByText("Ileso", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Ponto 40 (Mortal 6)" })).toBeVisible();
 });
 

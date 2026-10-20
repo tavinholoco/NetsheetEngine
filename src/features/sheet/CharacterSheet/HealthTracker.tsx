@@ -1,7 +1,7 @@
 import React from 'react';
 import { CharacterSheet } from '../../../types/cyberpunk';
-import { WOUND_LEVEL_NAMES, isLastWoundBox } from '../../../utils/injuryRules';
-import { deathSaveTarget, deriveCurrentStats, mortalLevel, stunSaveTarget, woundEffectText } from '../../../rules/character';
+import { isLastWoundBox, woundLevelColor } from '../../../utils/injuryRules';
+import { deathSaveTarget, deriveCurrentStats, mortalLevel, stunSaveTarget, woundEffectText, woundRow } from '../../../rules/character';
 import { woundStateFromPoints, woundStateOf } from '../../../rules/damage';
 import { DAMAGE_POINTS_PER_WOUND_LEVEL, WOUND_TRACK, WOUND_TRACK_POINTS } from '../../../rules/tables';
 import { useRoomStore } from '../../../stores/useRoomStore';
@@ -27,7 +27,9 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({ sheet, onChange, o
   // mas não edita: o servidor descartaria a mudança de qualquer jeito.
   const atTable = useRoomStore((s) => s.view === 'active');
 
-  const current = WOUND_LEVEL_NAMES[woundLevel] || WOUND_LEVEL_NAMES[0];
+  // K.3a — o nome é o da trilha do livro, o mesmo do cartão do token e do
+  // painel de combate; a cor, o token wound-N.
+  const current = { name: woundRow(woundLevel).name, color: woundLevelColor(woundLevel) };
   const lastBox = isLastWoundBox(woundLevel);
   // C.7 — os alvos dos dois saves do livro, com o BODY corrente.
   const body = deriveCurrentStats(sheet).BODY;

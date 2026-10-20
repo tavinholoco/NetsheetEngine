@@ -3,16 +3,16 @@
  * ========================================================
  * Regras puras extraídas do HealthTracker.tsx para serem testáveis em unit.
  *
- * `woundLevel` 0..10 (WOUND_MAX):
- *   0   Saudável (OK)
- *   1–3 Leve → Sério → Crítico
- *   4–9 Mortal (0..5) — cada nível mortal exige death save (1d10 ≤ BODY)
- *   10  Morte iminente
- * O EFEITO de cada nível nos atributos saiu daqui na Fase C (C.5): a tabela
- * antiga (−2 a −6 em REF e MA, com notas inventadas) era regra de casa. O
- * efeito do livro mora em src/rules/tables.ts (WOUND_TRACK) e é aplicado por
- * src/rules/character.ts — o mesmo código que o servidor usa nas rolagens.
+ * `woundLevel` 0..10 (WOUND_MAX): Ileso; Leve → Sério → Crítico; Mortal 0..6
+ * — cada nível Mortal exige death save (1d10 ≤ BODY − o nível).
+ * O NOME e o EFEITO de cada nível são do livro e moram em src/rules/tables.ts
+ * (WOUND_TRACK), lidos por `woundRow` (src/rules/character.ts) — o mesmo código
+ * que o servidor usa nas rolagens e no chat. O efeito saiu daqui na Fase C
+ * (C.5): a tabela antiga era regra de casa. O nome, na K.3a (o G.05): a lista
+ * própria ("Ferimento Sério (Serious)", "Mortal 6 (Morte Iminente)") dava ao
+ * mesmo ferimento dois nomes, às vezes no mesmo cartão.
  */
+import { woundRow } from '../rules/character';
 
 // ---------------------------------------------------------------------------
 // Níveis de ferimento (índice = woundLevel 0..10)
@@ -21,24 +21,28 @@
 export const WOUND_MAX = 10;
 
 /**
- * Nomes dos níveis de ferimento (índice = woundLevel 0..10).
- * Exportado porque o TacticalGrid.tsx também consome este símbolo.
- * A cor de cada nível é o token `wound-N` do @theme (src/index.css, F.2.7):
- * a escala e o contraste dela moram lá, num lugar só.
+ * A cor de cada nível (índice = woundLevel 0..10): o token `wound-N` do @theme
+ * (src/index.css, F.2.7), onde moram a escala e o contraste dela. As classes
+ * ficam escritas por extenso para o Tailwind achá-las no código.
  */
-export const WOUND_LEVEL_NAMES: { name: string; color: string }[] = [
-  { name: 'Saudável (OK)', color: 'text-wound-0' },
-  { name: 'Ferimento Leve (Light)', color: 'text-wound-1' },
-  { name: 'Ferimento Sério (Serious)', color: 'text-wound-2' },
-  { name: 'Ferimento Crítico (Critical)', color: 'text-wound-3' },
-  { name: 'Mortal 0', color: 'text-wound-4' },
-  { name: 'Mortal 1', color: 'text-wound-5' },
-  { name: 'Mortal 2', color: 'text-wound-6' },
-  { name: 'Mortal 3', color: 'text-wound-7' },
-  { name: 'Mortal 4', color: 'text-wound-8' },
-  { name: 'Mortal 5', color: 'text-wound-9' },
-  { name: 'Mortal 6 (Morte Iminente)', color: 'text-wound-10' }
+export const WOUND_LEVEL_COLORS: readonly string[] = [
+  'text-wound-0',
+  'text-wound-1',
+  'text-wound-2',
+  'text-wound-3',
+  'text-wound-4',
+  'text-wound-5',
+  'text-wound-6',
+  'text-wound-7',
+  'text-wound-8',
+  'text-wound-9',
+  'text-wound-10'
 ];
+
+/** A cor de um `woundLevel` qualquer, grampeado como o nome (`woundRow`). */
+export function woundLevelColor(woundLevel: number): string {
+  return WOUND_LEVEL_COLORS[woundRow(woundLevel).level];
+}
 
 // O `clampWoundLevel` saiu na Fase D: a ficha passou a marcar PONTOS (D.1),
 // e o grampo mora em `woundStateFromPoints` (src/rules/damage.ts).

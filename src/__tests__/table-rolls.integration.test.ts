@@ -78,6 +78,34 @@ describe('C.3 — o ataque soma a perícia da arma', () => {
   });
 });
 
+// K.3b (o I.01) — a tela do GM manda o motivo sempre, vazio quando o GM o apaga.
+// A rota guardava o motivo antigo no lugar do vazio, e a sala nascia com um
+// ("Condições Normais de Combate") que ia parar no detalhe de um −2 sem motivo.
+describe('K.3b — o motivo é o que o GM escreveu, até vazio', () => {
+  it('sala nova, −2 sem motivo: o detalhe não inventa motivo', () => {
+    const code = mesa();
+    expect(updateRoomSettings(code, 'gm_1', undefined, -2, '').error).toBeUndefined();
+    expect(attack(code, [5]).details).toContain('+ Mod. do Mestre (−2) =');
+  });
+
+  it('apagar o motivo apaga: de −2 "escuridão" para +1 sem motivo, a escuridão sai do detalhe', () => {
+    const code = mesa();
+    updateRoomSettings(code, 'gm_1', undefined, -2, 'escuridão');
+    updateRoomSettings(code, 'gm_1', undefined, 1, '');
+    const r = attack(code, [5]);
+    expect(r.details).toContain('+ Mod. do Mestre (1) =');
+    expect(r.details).not.toContain('escuridão');
+  });
+
+  it('sem o campo, o motivo fica: a rota segue aceitando mudar só o local', () => {
+    const code = mesa();
+    updateRoomSettings(code, 'gm_1', undefined, -2, 'escuridão');
+    updateRoomSettings(code, 'gm_1', 'Beco do Afterlife');
+    expect(getRoom(code)!.modifierReason).toBe('escuridão');
+    expect(getRoom(code)!.locationName).toBe('Beco do Afterlife');
+  });
+});
+
 describe('C.4 — o modificador do GM entra em ataque e perícia', () => {
   function comModificador(value: number, reason: string): string {
     const code = mesa();

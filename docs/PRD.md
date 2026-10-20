@@ -119,7 +119,8 @@ O produto cobre **sete módulos funcionais interligados**:
   usando a ficha que ELE possui — resultado forjado é ignorado.
 - Poderes de GM: gerar NPCs e fichas de edgerunner, **aplicar dano** (o servidor
   faz a conta do livro — Fase D) e ajustar ferimentos de jogadores/NPCs, remover jogadores/NPCs, definir condições de combate
-  (localização, modificador e motivo).
+  (localização, modificador e motivo — as "Condições da cena" do GM, desde a K.3b; até ela, a rota
+  existia sem tela).
 - **Presença e reconexão**: heartbeat a cada 20s (timeout de 60s marca
   offline), reconexão automática com o mesmo peerId restaurando a ficha
   persistida (last-write-wins por `updatedAt`) e 1 sessão ativa por jogador
@@ -227,7 +228,9 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
   morte; num membro, o membro é perdido (aviso no chat).
 - **Morto** *(D.1, D.5)*: dano além de 40 pontos, mais de 8 na cabeça, ou death save
   falho. Mortal 6 ainda está vivo.
-- Bio-monitor com **11 níveis** (0 Saudável → 10 Mortal 6). Efeito do livro
+- Bio-monitor com **11 níveis** (0 Ileso → 10 Mortal 6), com o nome da trilha do
+  livro na ficha, no cartão do token e no chat *(K.3a — antes eram duas listas,
+  "Sério" e "Ferimento Sério (Serious)")*. Efeito do livro
   nos atributos, **sem acumular** entre níveis *(Fase C, C.5)*:
   **Sério** REF −2; **Crítico** REF, INT e COOL pela metade; **Mortal** REF, INT
   e COOL a um terço (arredondando para cima). Ferimento **não** afeta MA.
@@ -240,7 +243,9 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
   (nível 0). *(Fase C, C.3 — antes faltava a perícia.)*
 - O **modificador de situação do GM** (`combatModifier`, ±10) entra em ataque e
   perícia, com o motivo no detalhe da rolagem. Não entra em dano nem em save.
-  *(Fase C, C.4 — antes era exibido e nenhuma rolagem o somava.)*
+  *(Fase C, C.4 — antes era exibido e nenhuma rolagem o somava.)* O GM o escreve nas
+  "Condições da cena", e o cabeçalho da mesa o mostra a todos enquanto vale
+  *(K.3b — até ela, nada o escrevia, e o valor era sempre o 0 da criação)*.
 - **Acertar o alvo** *(Fase D, D.3)*: o ataque precisa **igualar ou superar** a
   dificuldade da faixa de alcance — queima-roupa 10 (até 1 m), curta 15 (¼ do
   alcance da arma), média 20 (½), longa 25 (alcance), extrema 30 (2×). Fumble erra

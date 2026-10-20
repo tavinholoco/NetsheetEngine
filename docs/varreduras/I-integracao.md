@@ -121,6 +121,9 @@ validação, o teto de ±10, o reenvio e o detalhe da rolagem já estão prontos
 **VEREDITO:** ADIAR — **perto da linha** ([I.2](#i2--calibragem)).
 - **Gatilho:** a primeira sessão em que o GM quiser um modificador de cena (anotar no Registro de
   sessões), ou a **K** abrir — ela mexe nas rolagens, e o campo entra junto.
+- ✅ **Feito na K.3b** (20/10/2026, no #65): as "Condições da cena" do GM chamam a rota (o local, o
+  modificador e o motivo), e o cabeçalho mostra o modificador a todos. A rota mudou numa regra: o motivo vazio
+  apaga o anterior, e a sala nasce sem motivo.
 
 ### I.02 — O contrato de cada rota é escrito à mão dos dois lados
 

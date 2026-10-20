@@ -1045,6 +1045,27 @@ só alcançava o navegador de quem importava, e a mesa sempre validou.
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
 
+**20/10/2026 — K.3 (o PR do nome do ferimento e das condições da cena).** A K.3a só troca o texto que a tela
+mostra (o nome do nível vem da trilha do livro): nenhuma entrada, saída ou autorização. As perguntas pesam na K.3b.
+
+1. **Entrada nova?** Nenhuma rota nova: a tela do GM passa a chamar a `/settings`, que existe desde a C.4 e já
+   valida no servidor — o local e o motivo pelo `sanitizeText` (sem caractere de controle, espaços juntos, 60 e
+   120 caracteres), o modificador pelo `Number`, arredondado e grampeado em −10..+10. **Uma regra mudou:** o
+   motivo vazio passou a valer (apaga o anterior), e a sala nasce sem motivo. O local vazio segue recusado (fica o
+   que havia).
+2. **Dado novo sai?** Nenhum. O local, o modificador e o motivo já iam a todos no reenvio da sala, e o motivo
+   já saía no detalhe de cada rolagem; agora o cabeçalho da mesa também os mostra. O React os escreve como texto.
+3. **Autorização nova?** Nenhuma. O GM vem da sessão (`checkIsGm` sobre o `peerId` do token) e o jogador recebe
+   **403** `gm_only` — o `server-api.integration` e o `error-codes.integration` conferem. Esconder o formulário do
+   jogador é só tela. Ninguém novo recebe sessão.
+4. **Jogador convidado hostil?** Não escreve o modificador (403). Vê o que já via: o modificador que entra na
+   rolagem dele.
+5. **Estado novo sem limite?** Nenhum: três campos por sala, com teto, que se substituem — nada acumula. Cada
+   "Aplicar" reenvia a sala, como toda ação do GM, sob o mesmo `roomLimiter`, e o botão passa pelo `useInFlight`.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
+
 ### Fase L — Performance e escala
 
 *(a preencher)*

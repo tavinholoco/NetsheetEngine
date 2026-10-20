@@ -1116,12 +1116,35 @@ seguem os grupos abaixo.
         avisar quando a sincronia da ficha falha.
         *(18/10 — **longe:** um Solo veterano com tudo preenchido dá **16,8 KB (26%)**, o dobro de tudo **35,8 KB
         (56%)**. O I.06 segue na Q com o número, e o `sheet-size.test` trava a folga.)*
-- [ ] **K.3** *(era T11.3)* **O que sobrou da rolagem e do ferimento** — a penalidade foi entregue pela
+- [x] **K.3** *(era T11.3)* **O que sobrou da rolagem e do ferimento** — a penalidade foi entregue pela
       C.5/C.6 (K.0). *(~½ dia)*
-  - [ ] **K.3a** O **G.05**: um nome por nível, o da trilha do livro (`WOUND_TRACK`); o `WOUND_LEVEL_NAMES`
+      *(20/10/2026 — os dois no **#65**, um commit cada, com o teste antes e a prova revertendo. Linha de base:
+      **976** testes em 79 arquivos (+32); E2E 7/7 (um codificava o nome antigo); tipografia limpa nas 12 telas;
+      `audit:ci`, cores e conflitos em 0; gitleaks nos 2 commits do branch, nenhum vazamento. Visto no navegador,
+      contra o `netsheet-prod`: o GM pôs "Beco atrás do Afterlife", −2 e "escuridão"; o cabeçalho passou a dizer
+      os dois, e o ataque saiu `1d10: 2 + REF (5) + Brawling (0) + Mod. do Mestre: escuridão (−2) = 5`; o token de
+      um jogador em Sério diz "Sério" no cartão, na cor `wound-2`, e "Sério · 5/40" no painel logo abaixo.)*
+  - [x] **K.3a** O **G.05**: um nome por nível, o da trilha do livro (`WOUND_TRACK`); o `WOUND_LEVEL_NAMES`
         sai, e a ficha e o cartão do token dizem a mesma coisa. A cor fica no token `wound-N`.
-  - [ ] **K.3b** O **I.01**: a tela do GM escreve o modificador de cena (−10 a +10, com o motivo) pela rota
+        *(20/10 — o `wound-names.test` (22), escrito antes, confere a pílula e o cartão "Estado" da ficha e o
+        cartão do token no grid em todo nível da trilha, nome e cor derivados da tabela. **Revertido o código, 16
+        falham:** na ficha, os Mortal 0–5 já batiam; no grid, nenhum, porque o nome vinha grudado num "(2/10)". O
+        nome sai do `woundRow`, o mesmo do servidor; a cor, de uma lista só de classes (`WOUND_LEVEL_COLORS`,
+        escritas por extenso para o Tailwind). **O "(2/10)" saiu do cartão:** era o índice do nível, ao lado dos
+        pontos do livro (5/40) do painel de combate. O E2E da ficha esperava "Saudável (OK)", e o PRD dizia "0
+        Saudável".)*
+  - [x] **K.3b** O **I.01**: a tela do GM escreve o modificador de cena (−10 a +10, com o motivo) pela rota
         `/settings`, que existe desde a C.4 sem chamador. O detalhe da rolagem já o mostra.
+        *(20/10 — as "Condições da cena", ao lado dos poderes do GM: o local, o modificador (o `NumberField`, com
+        o teto da rota) e o motivo, com o botão pelo `useInFlight`; o `roomsApi.updateSettings` é o chamador. O
+        cabeçalho mostra a todos o modificador enquanto vale. **O local entrou junto:** é a mesma rota e a mesma
+        tela, e o cabeçalho dizia "Night City - Afterlife Club" para sempre. **O contrato, conferido antes:** o GM
+        vem da sessão (`gm_only`) e todo erro sai com `code`; e **dois defeitos que a tela exporia** — o motivo
+        vazio mantinha o anterior (de "−2 escuridão" para "+1", o detalhe seguia dizendo escuridão), e a sala
+        nascia com o motivo "Condições Normais de Combate", que iria para o detalhe de um −2 sem motivo. O motivo
+        vazio agora apaga, e a sala nasce sem motivo. O `scene-settings.test` (7) e três casos no
+        `table-rolls.integration`, escritos antes: **revertido o código, 7 falham**; tirado só o `useInFlight`, o
+        clique duplo manda dois pedidos.)*
 - [x] **K.4** *(era T11.4)* Inventário e drops de NPC — *reescrever na K.0 com o que a mesa precisa
       (ver acima).* *(18/10/2026 — **saiu da K** (decisão 13): o 2020 não tem a regra, e o NPC gerado já traz o
       equipamento. Está na lista da Q (Q.3), com a versão pequena: o GM copia uma arma ou armadura do NPC para a
@@ -1213,7 +1236,8 @@ todos são quitados: **78 itens** em 16/10, 26 com fase dona (a J, a K, a L ou a
 decisões do dono. *(17/10/2026, no fechamento da J: **86** — entraram os seis ADIAR novos da J, a pista da sonda da
 J.1d e os helpers de teste da revisão da J.5. Os oito de que a J era dona, ela conferiu e deixou: agora são da Q.)*
 *(18/10/2026, na K.0: **89** — entraram o método rápido de atributos, a evolução por IP e a K.4, pela decisão 13.
-Na K.2: **91** — entraram o teto de três camadas e o EV extra por camada; e dois da Q.1, o cromo e o EV, foram feitos.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+Na K.2: **91** — entraram o teto de três camadas e o EV extra por camada; e dois da Q.1, o cromo e o EV, foram feitos.
+Na K.3 (20/10): mais dois da Q.1 feitos, o G.05 e o I.01, e nenhum ADIAR novo — seguem **91**, quatro marcados.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1282,10 +1306,11 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         cadeia de suprimento. *(A outra metade, o `supabase/setup-cli` em `latest`, **feita na J.5** (17/10, no #61, o
         fechamento da J): o gatilho disparou — o `latest` levou rate limit e deixou o `master` vermelho —, e a versão
         do CLI ficou fixa nos dois workflows.)*
-  - [ ] **I.01**: o modificador do GM não tem tela (a rota `/settings` não tem chamador). *Dona:* a K, que mexe nas
+  - [x] **I.01**: o modificador do GM não tem tela (a rota `/settings` não tem chamador). *Dona:* a K, que mexe nas
         rolagens — a **K.3b** desde a K.0. *Gatilho:* a primeira sessão em que o GM quiser um modificador de cena.
-  - [ ] **G.05**: o mesmo ferimento tem dois nomes, às vezes no mesmo cartão. *Dona:* K.3 — a **K.3a**. *Gatilho:* alguém da mesa
-        confundir os nomes.
+        *(Feito na K.3b, 20/10/2026, no #65 — com o local da cena e o motivo que se apaga.)*
+  - [x] **G.05**: o mesmo ferimento tem dois nomes, às vezes no mesmo cartão. *Dona:* K.3 — a **K.3a**. *Gatilho:* alguém da mesa
+        confundir os nomes. *(Feito na K.3a, 20/10/2026, no #65.)*
   - [ ] **I.06**: pelo REST, a rolagem e o chat perdem o erro que o WebSocket mostra, e a ficha que não sincroniza
         não avisa. *Dona:* K.2, que engorda a ficha — a **K.2f** mede. *Gatilho:* um `sse_fallback` de jogador de verdade.
         *(18/10/2026, K.2f: a ficha de um veterano com o formato novo dá 16,8 KB, 26% dos 64 KB — segue aqui.)*
@@ -1534,9 +1559,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
-| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64) | 🔄 | — |
+| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65) | 🔄 | — |
 | L | 🔨 | Performance e escala | ⬜ | — |
-| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10), dois deles já feitos na K.2 | ⬜ | — |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual
@@ -1547,7 +1572,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **944** testes, 77 arquivos *(+53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
+| `npx vitest run` | **976** testes, 79 arquivos *(+32 da K.3: `wound-names` 22, `scene-settings` 7, `table-rolls.integration` +3 — 20/10/2026; +53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
@@ -1559,7 +1584,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | `node scripts/multiplayer/h1j.mjs` | **No ar, só combinado com o dono** (14/10/2026): o deploy com a mesa aberta deixou as duas instâncias vivas **~20 s**; o despertar da hibernação, **~22 s**. **O ensaio local** (`H1J_LOCAL=1`, com o Supabase local; `H1J_SWITCH_DELAY_S=5` imita o Render da H.3d.0) com o bastão da H.3d, 15/10: **0** mensagem perdida e **6,1 s** de "reconectando" (o código de antes perdia 1) |
 | `node scripts/visual/impressao.mjs` | A ficha impressa em PDF como o navegador imprime (sem fundo), contra o `netsheet-prod`: **4 páginas A4**, tinta sobre o papel, sem controle nenhum, com a armadura por local (K.1c, 18/10/2026). Abrir o PDF e olhar — não compara pixel |
 | `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
-| `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 107 `black`/`white`, à parte. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
+| `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 108 `black`/`white`, à parte *(107 até a K.3, que pôs o `text-black` do botão das condições da cena, como os outros botões do GM)*. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
 | `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4), e **o CI exige** (F.2.10) |
 | Mono com negrito (`audit:colors`, coluna `mono+b`) | **0** (F.1.2) — e 0 no navegador, em 12 telas |
 | Migrations em produção | `0001`–`0008` *(a `0008_instance_lease` desde 16/10/2026, na H.3d.1 — PR #47; a D não teve migration)* |
