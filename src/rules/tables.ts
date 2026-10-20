@@ -163,6 +163,92 @@ export const ARMOR_LAYER_BONUS: readonly ArmorLayerRow[] = [
 ];
 
 // ------------------------------------------------------------
+// Netrunner (K.5, decisão 9) — o deck e os programas, sem a Net
+// ------------------------------------------------------------
+
+/**
+ * O deck como sai da loja: um módulo de 10 MU, Speed 0 e Data Wall 2 (S6, S12,
+ * S13). O Code Gate 0 só o S13 dá — é o "não tem", e o campo existe no S1.
+ */
+export const DECK_BASE = { mu: 10, speed: 0, dataWall: 2, codeGate: 0 } as const;
+
+/**
+ * O preço de cada melhoria, em eb (S12, S13): o segundo módulo de memória (mais
+ * 10 MU), cada ponto de Speed acima de 0 e cada ponto de Data Wall acima do
+ * padrão. O teto das melhorias diverge — Speed até 5 e Data Wall até 10 no S12,
+ * nenhum no S6 —, e fica aberto na conferência.
+ */
+export const DECK_UPGRADE_EB = { extraMemory: 5000, speedPerPoint: 2000, dataWallPerPoint: 1000 } as const;
+
+/** O que o segundo módulo de memória soma (S12, S13). */
+export const DECK_EXTRA_MEMORY_MU = 10;
+
+export type DeckChassisId = 'standard' | 'standard_used' | 'portable' | 'cellular' | 'cyberlimb' | 'cyberlimb_cellular' | 'combat';
+
+export interface DeckChassisRow {
+  id: DeckChassisId;
+  name: string;
+  /** O preço do deck padrão daquele tipo, antes das melhorias. */
+  costEb: number;
+}
+
+/**
+ * Os tipos de deck e o preço de cada um (S8, que cita o livro básico, p. 133–134
+ * e p. 90–91; S13). O S1 tem os mesmos tipos, sem preço; o S6 confirma o celular.
+ * O embutido no cyberlimb custa 1 de Humanidade e exige o cyberlimb (S8) — é um
+ * implante a lançar no cromo, como qualquer outro.
+ */
+export const DECK_CHASSIS: readonly DeckChassisRow[] = [
+  { id: 'standard', name: 'Padrão (cybermodem)', costEb: 1000 },
+  { id: 'standard_used', name: 'Padrão, usado', costEb: 500 },
+  { id: 'portable', name: 'Portátil', costEb: 2000 },
+  { id: 'cellular', name: 'Celular', costEb: 4000 },
+  { id: 'cyberlimb', name: 'Embutido no cyberlimb', costEb: 3000 },
+  { id: 'cyberlimb_cellular', name: 'Embutido no cyberlimb, celular', costEb: 5000 },
+  { id: 'combat', name: 'De combate', costEb: 3000 }
+];
+
+export type ProgramClassId =
+  | 'intrusion'
+  | 'decryption'
+  | 'detection'
+  | 'antiSystem'
+  | 'evasion'
+  | 'protection'
+  | 'antiIc'
+  | 'antiPersonnel'
+  | 'controller'
+  | 'utility'
+  | 'demon'
+  | 'other';
+
+export interface ProgramClassRow {
+  id: ProgramClassId;
+  /** O nome do livro, em inglês, como o das perícias. */
+  name: string;
+}
+
+/**
+ * As onze classes de programa do livro básico (S6, S14) e "Outra", para o
+ * programa de suplemento (o S1 também tem a sua). O S14 e o Brainware Blowout
+ * chamam a Anti-IC de "Anti-Program"; o S6 dá a Demon dentro de "Compiler".
+ */
+export const PROGRAM_CLASSES: readonly ProgramClassRow[] = [
+  { id: 'intrusion', name: 'Intrusion' },
+  { id: 'decryption', name: 'Decryption' },
+  { id: 'detection', name: 'Detection/Alarm' },
+  { id: 'antiSystem', name: 'Anti-System' },
+  { id: 'evasion', name: 'Evasion/Stealth' },
+  { id: 'protection', name: 'Protection' },
+  { id: 'antiIc', name: 'Anti-IC' },
+  { id: 'antiPersonnel', name: 'Anti-Personnel' },
+  { id: 'controller', name: 'Controller' },
+  { id: 'utility', name: 'Utility' },
+  { id: 'demon', name: 'Demon' },
+  { id: 'other', name: 'Outra' }
+];
+
+// ------------------------------------------------------------
 // Local de impacto (1d10)
 // ------------------------------------------------------------
 

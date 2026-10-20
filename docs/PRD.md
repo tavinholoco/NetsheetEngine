@@ -269,8 +269,11 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
   uso em mesas próprias, sem material oficial embutido.
 - **Não substitui o livro físico** — o produto oferece consulta rápida via
   PRD e IA, não o livro completo.
-- **Netrunning completo** (MU, programas, data walls) fica para fase avançada
-  (P3) — hoje há apenas o assistente IA com o nome temático.
+- **A Net jogável** (mapa, turnos, fortalezas de dados) fica para uma fase própria,
+  depois da L (decisão 9). **O netrunner na ficha entrou na K.5:** o deck (tipo,
+  Speed, Data Wall, Code Gate, o segundo módulo de memória), com a MU e o preço
+  pela tabela, a iniciativa na Net (1d10 + REF + Speed) e os programas digitados
+  (classe, força, MU, custo), os carregados contra a MU do deck.
 - **Sem monetização ou assinaturas** na ALPHA.
 - **Não é um VTT genérico** — o foco é Cyberpunk 2020; não há planos de
   suportar outros sistemas na fase ALPHA.

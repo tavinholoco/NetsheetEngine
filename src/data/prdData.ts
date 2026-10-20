@@ -79,7 +79,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       items: [
         'Não é um clonador de conteúdo licenciado — regras implementadas para uso em mesas próprias.',
         'Não substitui o livro físico; suporta consulta rápida via PRD e IA.',
-        'Netrunning completo (MU, programas, data walls) fica para fase avançada (P3).',
+        'A Net jogável (mapa, turnos, fortalezas de dados) fica para depois; na ficha, o deck, os programas e a MU já entram.',
         'Não há monetização ou sistema de assinaturas na ALPHA.'
       ]
     },
@@ -395,7 +395,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       status: 'em andamento',
       tasks: [
         { code: 'T11.1', title: 'Inventário e peso (ENC/EV)', status: 'concluído' },
-        { code: 'T11.2', title: 'Netrunning completo (MU, programas, data walls)', status: 'pendente' },
+        { code: 'T11.2', title: 'O netrunner na ficha: deck, programas e MU (a Net jogável fica para depois)', status: 'concluído' },
         { code: 'T11.3', title: 'Penalidades automáticas por ferimento', status: 'concluído' },
         { code: 'T11.4', title: 'Loot/NPCs: inventário e drops', status: 'pendente' },
         { code: 'T11.5', title: 'Export/Import (JSON + PDF print)', status: 'concluído' }

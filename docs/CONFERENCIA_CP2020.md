@@ -72,6 +72,9 @@ uma regra só foi aceita quando **duas ou mais concordam**. Onde só há inferê
 | S9 | [Módulo cp2020-augmented do Foundry](https://github.com/ryno4ever16/cp2020-augmented) — `DamageApplicator.js` | Sequência de dano com página do livro: SP e BTM mínimo 1 (p. 98–99); cabeça dobra (p. 103) "sem dizer quando" |
 | S10 | [FNFFAutoFire](https://github.com/krze/FNFFAutoFire) — calculadora de rajada | Aplica SP → BTM → ×2 na cabeça |
 | S11 | [karridian.net — FNFF](https://www.karridian.net/cyb_fnff.html), **só a tabela proporcional** (K.2a) | Os degraus do bônus de camada (0–4 → +5 … 27+ → 0) e as camadas em pares de dentro para fora — que a página atribui à errata do livro, entrada na 2.01, e que batem número a número com o S9. **O resto da página é regra de casa** e segue descartado (abaixo) |
+| S12 | [Cyberpunk Wiki (Fandom) — Cyberdeck](https://cyberpunk.fandom.com/wiki/Cyberdeck), **só a parte do 2020** (K.5a), que cita o livro básico de 1990 | O deck padrão (um módulo de 10 MU, Speed 0, Data Wall 2) e as melhorias: o segundo módulo (20 MU) por 5.000 eb, +1 de Speed por 2.000 eb (até 5), +1 de Data Wall por 1.000 eb (até 10). Os "slots" da mesma página são do **RED** (a nota dela cita o livro do RED) e ficam de fora |
+| S13 | [Datafort do cybersmily](https://github.com/cybersmily/cybersmily_datafort) — `cp2020-cyberdeck.ts` e `nrdeckdata.json` (K.5a) | O deck padrão (10 MU, Data Wall 2, Code Gate 0, Speed 0) e o custo das melhorias, as mesmas do S12 (Data Wall acima de 2 a 1.000 eb, Speed a 2.000, a memória dobrada a 5.000); os **tipos de deck e o preço de cada um** — padrão 1.000 (500 usado), portátil 2.000, celular 4.000, embutido no cyberlimb 3.000 (celular 5.000), de combate 3.000 —, os mesmos do S8. **Os programas e os decks com nome dele vêm do *Rache Bartmoss' Brainware Blowout***, um suplemento: não servem de régua do livro básico |
+| S14 | [`bytes_n_blades`](https://github.com/Hendo3/bytes_n_blades) — `scripts/build-netrunning-data.js` (K.5a) | As onze classes de programa do livro básico, separadas das dos suplementos, e o catálogo do básico com a página (p. 137–141): força, MU e custo. **O catálogo bate número a número com os programas do S13**, o que não prova independência — um pode ter vindo do outro (ver a K.5a) |
 
 **Fontes descartadas, e por quê** — é daqui que vinham duas premissas erradas do plano:
 
@@ -80,6 +83,8 @@ uma regra só foi aceita quando **duas ou mais concordam**. Onde só há inferê
 | [karridian.net — FNFF](https://www.karridian.net/cyb_fnff.html) | Se declara **regra de casa** que substitui o dano do livro. É a origem provável do "−2/−4/−6 em todas as ações". *Exceção (K.2a, 18/10/2026): a tabela proporcional de armadura, que ela cita como do livro e o S9 confirma — é a S11* |
 | [clon01 — combat revised](https://cyberpunk.clon01.net/htm/combat_revised.htm) | **Regra de casa** declarada ("distilled and interpreted"); inclusive tira o ×2 da cabeça |
 | [datafortress2020 — combat rules](https://datafortress2020.com/combatrules.html) | **Regra de casa** declarada |
+| [CyberMyth — NetRunning](https://www.icculus.org/~msphil/mythus/conversions/cybermyth/cm-netrun.html) | Conversão para o **Mythus**, outro sistema: o deck padrão de lá (Speed 10, Data Wall 8) é dele. **Era a "divergência no deck padrão" que a K.0 viu** — com o Mythus fora, as fontes do 2020 concordam (K.5a) |
+| [NetRunner, de damoaust](https://github.com/damoaust/NetRunner) | Um jogo de Godot com regra própria (pontos de ação, "integridade" do deck) — adaptação, não ficha do 2020 |
 | Qualquer material do **Cyberpunk RED** | Sistema diferente. O fumble que subtrai 1d10, a explosão única e o death save que piora a cada sucesso são **do RED** e estavam no código ou no plano |
 
 > **Pesquisa de 26/09/2026, sobre as três inferências que a Fase C deixou:** a escopeta foi
@@ -289,7 +294,10 @@ palavras.)*
 | Verba inicial | Salário mensal por role e nível da habilidade especial (do 1 ao 5 numa coluna, do 6 ao 10 uma a uma), multiplicado por 1D6/3 | S3, S6 (as linhas do Solo e do Nomad batem). "5 ou 6 no dado: desempregado" — **só o S6** | `eurodollars` livre | K.6a |
 | Evolução por IP | Perícia nova custa 10 IP; subir custa o nível atual × 10 × o multiplicador da perícia (×1 a ×4) | **S6 só**; o S8 tem o campo do multiplicador, todo em 1 | Não existe | Q (decisão 13) |
 | Cromo que soma atributo | O implante soma ao atributo: o Muscle and Bone Lace dá **BODY +2**, e com ele o BTM melhora (o S6 leva um BODY 10 a 12 e o BTM a −5). As variantes dos Chromebooks ("+1 BODY, mas não no BTM", "só para Lift") ficam de fora: são suplemento | S6, S8 (o S8 guarda o efeito só como texto) | `CyberwareItem` sem campo | K.2e |
-| Netrunner na ficha | Deck (MU, Speed, Data Wall), programas (classe, força, MU, custo) | Fontes de fã divergem no deck padrão; o S8 não modela a Net | Nada | K.5a — o gatilho do PDF (decisão 11) |
+| Deck do netrunner | O deck guarda MU, Speed, Data Wall e Code Gate. **O padrão:** 10 MU, Speed 0, Data Wall 2 (S6, S12, S13); Code Gate 0 só o S13 dá. **As melhorias:** o segundo módulo de memória leva a 20 MU por 5.000 eb, cada ponto de Speed custa 2.000 eb e cada ponto de Data Wall acima de 2, 1.000 eb (S12, S13). **O teto das melhorias diverge:** Speed até 5 e Data Wall até 10 no S12, sem teto no S6 — aberto, na Q; no NetSheet, só o grampo do absurdo | S6, S12, S13 | Nada | K.5b — `DECK_BASE`, `DECK_UPGRADE_EB` |
+| Tipos de deck | Padrão 1.000 eb (500 usado), portátil 2.000, celular 4.000, embutido no cyberlimb 3.000 (celular 5.000), de combate 3.000. O S8 cita o livro básico, p. 133–134 (e p. 90–91 para o do cyberlimb, que custa 1 de Humanidade e exige o cyberlimb); o S1 tem os mesmos cinco tipos, sem preço; o S6 confirma o celular, 4.000 | S8, S13 (S1, S6) | Nada | K.5b — `DECK_CHASSIS` |
+| Programas | Cada um tem nome, classe, força, MU (de 1 a 6, no S6) e custo (S1, S13, S14). **As onze classes do livro:** Intrusion, Decryption, Detection/Alarm, Anti-System, Evasion/Stealth, Protection, Anti-IC, Anti-Personnel, Controller, Utility e Demon (S6, S14). O S14 e o *Brainware Blowout* chamam a Anti-IC de "Anti-Program"; o S1 não tem a classe e tem "Shield" e "Other". Os programas carregados ocupam a MU do deck (S6, S13). **O catálogo com os números:** só o S14 e o S13, que batem e podem não ser independentes — aberto, na Q; no NetSheet, o programa é digitado, como a arma | S1, S6, S13, S14 | Nada | K.5b — `PROGRAM_CLASSES` |
+| O netrunner no personagem | A perícia **Interface** (INT), a habilidade especial do Netrunner (S1, S6); para entrar na Net, os *interface plugs* e o *link* do deck (S6) — o caminho sem cromo custa −2 de REF no S6, e o S8 dá −2 na Interface: aberto. **Iniciativa na Net:** 1d10 + REF + Speed do deck (S1, S6) | S1, S6 (S8) | A Interface existe | K.5c mostra a iniciativa; a Net jogável é ADIAR (decisão 9) |
 
 **A premissa que caiu na K.0:** o orçamento de criação **não fecha o "trapaceiro plausível"** do portão da B
 no servidor. Ele só vale no dia da criação: depois, o IP e o cromo sobem os números legitimamente. A K.6c o
@@ -342,6 +350,14 @@ e é o gatilho de comprar o PDF oficial (decisão 11).
       2 na terceira. Hoje não há EV extra (ADIAR, na Q).
 - [x] **Perícias (K.7):** conferir a lista por atributo, com as oito que faltam.
       *Fechada em 18/10 (S2, S3, S8): as oito confirmadas, e a "Psychology" de INT não existe.*
-- [ ] **O netrunner na ficha (K.5, decisão 9):** o que a ficha precisa guardar — deck, programas, MU e
+- [x] **O netrunner na ficha (K.5, decisão 9):** o que a ficha precisa guardar — deck, programas, MU e
       o que mais o livro amarra ao personagem.
       *Aberta: as fontes de fã divergem no deck padrão. É a K.5a.*
+      *(20/10/2026, K.5a — **fechada para a ficha:** o deck padrão, os tipos e as melhorias em duas fontes; a
+      "divergência" era a conversão para o Mythus. As três de baixo ficaram abertas, e nenhuma trava a K.5: o
+      gatilho do PDF não disparou.)*
+- [ ] **O teto das melhorias do deck:** Speed até 5 e Data Wall até 10 (S12), ou sem teto (S6)? Hoje, só o
+      grampo do absurdo (Speed 10, Data Wall e Code Gate 40).
+- [ ] **O catálogo de programas do livro básico** (força, MU e custo de cada um): o S14 e o S13 batem, mas o S13
+      tira os números do *Brainware Blowout* e o S14 pode ter vindo dele. Hoje o programa é digitado.
+- [ ] **Entrar na Net sem cromo:** −2 de REF (S6) ou −2 na Interface (S8)? Hoje a ficha não modela.

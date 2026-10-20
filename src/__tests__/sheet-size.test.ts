@@ -67,6 +67,17 @@ describe('K.2f — a ficha cheia contra os 64 KB', () => {
     expect(veterano).toBeLessThan(MAX_SHEET_BYTES / 3);
   });
 
+  // K.5b — o netrunner engorda a ficha com o deck e os programas.
+  it('o veterano netrunner, com o deck e 40 programas, ainda cabe com folga', () => {
+    const programs = Array.from({ length: 40 }, (_, i) => ({
+      id: `prog_1792300000000_${i}abc`, name: texto(20, `Programa de ataque ${i}`), programClass: 'antiIc',
+      strength: 6, mu: 5, costEb: 1480, loaded: i < 4
+    }));
+    const deck = { model: texto(30, 'Zetatech Paraline 5750 modificado'), chassis: 'cellular', speed: 3, dataWall: 8, codeGate: 4, extraMemory: true };
+    const netrunner = bytes({ ...fichaCheia({ skills: 45, cyberware: 15, weapons: 8, armor: 8, gear: 40, events: 12 }), deck, programs });
+    expect(netrunner).toBeLessThan(MAX_SHEET_BYTES / 2);
+  });
+
   it('a ficha de colecionador (o dobro de tudo) ainda cabe', () => {
     const colecionador = bytes(fichaCheia({ skills: 100, cyberware: 30, weapons: 20, armor: 16, gear: 100, events: 30 }));
     expect(colecionador).toBeLessThan(MAX_SHEET_BYTES);

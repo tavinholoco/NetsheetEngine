@@ -83,6 +83,13 @@ const FICHA = {
     lifeEvents: ["Sobreviveu a uma tentativa de assassinato", "Conseguiu um contato poderoso"]
   },
   gearNotes: "Kit de primeiros socorros, agenda eletrônica, 2 carregadores extras.",
+  // K.5 — o deck e os programas, para a seção do netrunner sair na folha.
+  deck: { model: "Zetatech Paraline", chassis: "cellular", speed: 2, dataWall: 4, codeGate: 2, extraMemory: false },
+  programs: [
+    { id: "pg1", name: "Hammer", programClass: "intrusion", strength: 4, mu: 1, costEb: 400, loaded: true },
+    { id: "pg2", name: "Killer II", programClass: "antiIc", strength: 2, mu: 5, costEb: 1320, loaded: true },
+    { id: "pg3", name: "Shield", programClass: "protection", strength: 3, mu: 1, costEb: 150, loaded: false }
+  ],
   createdAt: "2026-10-18T12:00:00.000Z",
   updatedAt: "2026-10-18T12:00:00.000Z"
 };

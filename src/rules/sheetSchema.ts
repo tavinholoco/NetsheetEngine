@@ -38,8 +38,10 @@ import type {
   ArmorPiece,
   CharacterSheet,
   CharacterStats,
+  Cyberdeck,
   CyberwareItem,
   GearItem,
+  NetProgram,
   Lifepath,
   SkillItem,
   StatName,
@@ -47,7 +49,7 @@ import type {
 } from '../types/cyberpunk';
 import { STAT_NAMES, deriveCurrentStats } from './character';
 import { woundStateFromPoints, woundStateOf, type WoundState } from './damage';
-import { WOUND_TRACK_POINTS } from './tables';
+import { DECK_BASE, DECK_CHASSIS, PROGRAM_CLASSES, WOUND_TRACK_POINTS } from './tables';
 
 // --- Limites -----------------------------------------------------------------
 // Atributo: 2–10 na criação, até 15 com cromo (ver CharacterStats). O teto é
@@ -78,6 +80,20 @@ export const CYBER_STAT_BONUS_MAX = 5;
 /** Peso de uma unidade de item, em kg (K.2d). */
 export const GEAR_WEIGHT_MAX_KG = 1000;
 export const GEAR_QTY_MAX = 999;
+/**
+ * O deck e os programas (K.5b). O teto das melhorias não é regra — a wiki dá
+ * Speed até 5 e Data Wall até 10, o S6 diz que o livro não tem teto (aberto na
+ * conferência) —; são os grampos do absurdo, folgados acima dos dois.
+ */
+export const MAX_PROGRAMS = 100;
+export const DECK_SPEED_MAX = 10;
+export const DECK_DATA_WALL_MAX = 40;
+export const DECK_CODE_GATE_MAX = 40;
+export const PROGRAM_STRENGTH_MAX = 20;
+/** A MU de um programa vai de 1 a 6 no livro (S6); o grampo deixa o suplemento passar. */
+export const PROGRAM_MU_MAX = 20;
+const DECK_CHASSIS_IDS = DECK_CHASSIS.map((c) => c.id);
+const PROGRAM_CLASS_IDS = PROGRAM_CLASSES.map((c) => c.id);
 
 // Tetos de texto. Um `handle` de 10 MB seria transmitido para todos a cada
 // broadcast. O texto longo legítimo é o `gearNotes`.
@@ -318,6 +334,58 @@ function sanitizeGear(value: unknown, changed: string[]): GearItem[] {
   return out;
 }
 
+/**
+ * K.5b — o deck. Ficha sem deck (de antes da K.5, ou de quem não é netrunner)
+ * fica sem o campo, sem correção. Tipo que não existe vira o padrão.
+ */
+function sanitizeDeck(value: unknown, changed: string[]): Cyberdeck | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!isPlainObject(value)) {
+    changed.push('deck');
+    return undefined;
+  }
+  let chassis = value.chassis as Cyberdeck['chassis'];
+  if (!DECK_CHASSIS_IDS.includes(chassis)) {
+    changed.push('deck.chassis');
+    chassis = 'standard';
+  }
+  return {
+    model: safeString(value.model, MAX_NAME_CHARS, 'deck.model', changed),
+    chassis,
+    speed: clampInt(value.speed, 0, DECK_SPEED_MAX, DECK_BASE.speed, 'deck.speed', changed),
+    dataWall: clampInt(value.dataWall, 0, DECK_DATA_WALL_MAX, DECK_BASE.dataWall, 'deck.dataWall', changed),
+    codeGate: clampInt(value.codeGate, 0, DECK_CODE_GATE_MAX, DECK_BASE.codeGate, 'deck.codeGate', changed),
+    extraMemory: safeBool(value.extraMemory)
+  };
+}
+
+/** K.5b — os programas. Classe que não existe vira "Outra": o programa ainda serve. */
+function sanitizePrograms(value: unknown, changed: string[]): NetProgram[] {
+  const raw = safeArray(value, MAX_PROGRAMS, 'programs', changed);
+  const out: NetProgram[] = [];
+  raw.forEach((item, i) => {
+    if (!isPlainObject(item)) {
+      changed.push(`programs[${i}]`);
+      return;
+    }
+    let programClass = item.programClass as NetProgram['programClass'];
+    if (!PROGRAM_CLASS_IDS.includes(programClass)) {
+      changed.push(`programs[${i}].programClass`);
+      programClass = 'other';
+    }
+    out.push({
+      id: safeString(item.id, MAX_NAME_CHARS, `programs[${i}].id`, changed),
+      name: safeString(item.name, MAX_NAME_CHARS, `programs[${i}].name`, changed),
+      programClass,
+      strength: clampInt(item.strength, 0, PROGRAM_STRENGTH_MAX, 0, `programs[${i}].strength`, changed),
+      mu: clampInt(item.mu, 0, PROGRAM_MU_MAX, 1, `programs[${i}].mu`, changed),
+      costEb: clampInt(item.costEb, 0, 10_000_000, 0, `programs[${i}].costEb`, changed),
+      loaded: safeBool(item.loaded, true)
+    });
+  });
+  return out;
+}
+
 function sanitizeLifepath(value: unknown, changed: string[]): Lifepath {
   const src = isPlainObject(value) ? value : {};
   if (!isPlainObject(value) && value !== undefined) changed.push('lifepath');
@@ -375,6 +443,7 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
   const woundLevel = wound.woundLevel;
   const cyberware = sanitizeCyberware(input.cyberware, changed);
   const armor = sanitizeArmor(input.armor, changed);
+  const deck = sanitizeDeck(input.deck, changed);
 
   const sheet: CharacterSheet = {
     id: safeString(input.id, MAX_NAME_CHARS, 'id', changed),
@@ -404,6 +473,8 @@ export function sanitizeCharacterSheet(input: unknown): SheetValidationResult | 
     lifepath: sanitizeLifepath(input.lifepath, changed),
     gear: sanitizeGear(input.gear, changed),
     gearNotes: safeString(input.gearNotes, MAX_NOTES_CHARS, 'gearNotes', changed),
+    ...(deck ? { deck } : {}),
+    programs: sanitizePrograms(input.programs, changed),
     createdAt: safeString(input.createdAt, 64, 'createdAt', changed),
     updatedAt: safeString(input.updatedAt, 64, 'updatedAt', changed)
   };
