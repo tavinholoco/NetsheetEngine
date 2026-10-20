@@ -27,6 +27,7 @@ import {
   STAT_POOL_MIN
 } from '../../../rules/tables';
 import { clientRng } from '../../../utils/diceEngine';
+import { formatEb } from '../../../lib/format';
 import { NumberField } from './NumberField';
 
 /**
@@ -45,7 +46,7 @@ interface CreationSectionProps {
   rng?: Rng;
 }
 
-const eb = (n: number) => `${n.toLocaleString('pt-BR')} eb`;
+const eb = formatEb;
 
 const field = 'bg-surface border border-field text-xs text-fg-strong px-2 py-1.5 rounded focus:border-accent-400 focus:outline-none';
 const numberField = `${field} font-mono w-12`;
