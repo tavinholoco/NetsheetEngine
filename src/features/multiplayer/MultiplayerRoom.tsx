@@ -18,6 +18,7 @@ import { useRoomStore } from '../../stores/useRoomStore';
 import { useSheetStore } from '../../stores/useSheetStore';
 import { woundStateOf } from '../../rules/damage';
 import { mortalLevel, woundRow } from '../../rules/character';
+import { woundLevelColor } from '../../utils/injuryRules';
 import { useUiStore } from '../../stores/useUiStore';
 import { useInFlight } from '../../hooks/useInFlight';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
@@ -1175,7 +1176,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 ))}
               </div>
               <div className="font-mono text-micro text-muted space-y-1">
-                <p>💥 Ferimento: <span className="text-danger-300">{inspectedPlayer.sheet.woundLevel}/10</span></p>
+                {/* Revisão da K — o nome da trilha do livro, como o cartão do token (K.3a):
+                    o "2/10" era o índice do nível. */}
+                <p>💥 Ferimento: <span className={woundLevelColor(inspectedPlayer.sheet.woundLevel)}>{woundRow(inspectedPlayer.sheet.woundLevel).name}</span></p>
                 <p>💰 €$ {inspectedPlayer.sheet.eurodollars.toLocaleString()}</p>
                 <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
                 <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>

@@ -13,6 +13,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { useRoomStore } from '../stores/useRoomStore';
+import { WOUND_TRACK } from '../rules/tables';
 import { stubRoomTransport } from '../test/roomTransport';
 import type { CharacterSheet } from '../types/cyberpunk';
 import type { GameRoom, RoomPlayer } from '../types/multiplayer';
@@ -137,10 +138,10 @@ describe('G.04 — os modais leem o jogador da sala, não a foto de quando abrir
     render(<MultiplayerRoom onOpenAuthModal={() => {}} />);
     const vexRow = screen.getByText('Vex').closest('div[draggable]') as HTMLElement;
     await userEvent.click(within(vexRow).getByTitle('Inspecionar ficha'));
-    expect(within(screen.getByRole('dialog')).getByText('0/10')).toBeTruthy();
+    expect(within(screen.getByRole('dialog')).getByText(WOUND_TRACK[0].name)).toBeTruthy();
 
     salaMuda(jogador('peer_vex', 'Vex', 7));
-    expect(within(screen.getByRole('dialog')).getByText('7/10')).toBeTruthy();
+    expect(within(screen.getByRole('dialog')).getByText(WOUND_TRACK[7].name)).toBeTruthy();
   });
 });
 

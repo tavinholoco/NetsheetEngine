@@ -14,7 +14,7 @@ import { MultiplayerRoom } from '../features/multiplayer/MultiplayerRoom';
 import { useRoomStore } from '../stores/useRoomStore';
 import { stubRoomTransport } from '../test/roomTransport';
 import { creationReport } from '../rules/creation';
-import { CAREER_SKILL_POINTS } from '../rules/tables';
+import { CAREER_SKILL_POINTS, WOUND_TRACK } from '../rules/tables';
 import type { CharacterCreation, CharacterSheet, CharacterStats } from '../types/cyberpunk';
 import type { GameRoom, RoomPlayer } from '../types/multiplayer';
 
@@ -173,5 +173,32 @@ describe('K.6c — o GM vê o orçamento na mesa', () => {
     expect(screen.queryByLabelText('Vex fora do orçamento de criação')).toBeNull();
     await userEvent.setup().click(inspecionar('Vex'));
     expect(screen.queryByRole('region', { name: /orçamento de criação/i })).toBeNull();
+  });
+});
+
+/**
+ * Revisão da K — o resto do "Inspecionar ficha", ao lado do orçamento, falava
+ * outra língua: o ferimento pelo índice ("2/10"), que a K.3a tirou do cartão do
+ * token, e a verba em "€$", com o orçamento logo abaixo em "eb".
+ */
+describe('Revisão da K — o "Inspecionar ficha" fala como a ficha', () => {
+  const ferido = jogador('peer_vex', ficha({ handle: 'Vex', woundLevel: 2 }));
+
+  function abrir() {
+    const s = useRoomStore.getState();
+    s.setPeerId('peer_dono');
+    s.setSessionToken('token');
+    s.setRoomCode(CODE);
+    s.setRoom(mesa([DONO, ferido]));
+    s.setView('active');
+    render(<MultiplayerRoom onOpenAuthModal={() => {}} />);
+    return userEvent.setup().click(inspecionar('Vex'));
+  }
+
+  it('o ferimento sai pelo nome da trilha do livro, não pelo índice', async () => {
+    await abrir();
+    const modal = screen.getByRole('dialog');
+    expect(within(modal).getByText(WOUND_TRACK[2].name)).toBeInTheDocument();
+    expect(within(modal).queryByText(/\d+\/10/)).toBeNull();
   });
 });
