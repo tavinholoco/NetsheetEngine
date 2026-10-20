@@ -103,7 +103,7 @@ export const PRD_DOCUMENT: PrdDocument = {
       name: 'Ficha de Personagem',
       description: 'Criador e gestor de fichas de edgerunner: identidade, atributos, perícias, cyberware, armas e armaduras.',
       features: [
-        'Autocalculo de estatísticas derivadas (BTM, SP por localização, perda de humanidade)',
+        'Autocalculo de estatísticas derivadas (BTM, SP por localização com as camadas do livro, EV no REF, Carry e Lift, Run e Leap, perda de humanidade)',
         'Gestão de cyberware com custo em eb e perda de humanidade',
         'Rastreamento de ferimentos (bio-monitor 0–10) com penalidades',
         'Lifepath narrativo editável',

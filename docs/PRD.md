@@ -96,15 +96,23 @@ O produto cobre **sete módulos funcionais interligados**:
 - Árvore de perícias com rolagem integrada (atributo + nível + 1d10!).
 - Assistente de criação pelo orçamento do livro (9D10 ou bolo do Mestre, 40 pontos de carreira,
   *pickup* de REF + INT, verba pelo salário × 1D6/3), que grava o que foi gasto para o GM ver.
-- Cyberware com custo em eb e **perda de humanidade**.
-- Arsenal: armas (dano por fórmula, ex.: `2d6+2`) e proteção SP por
-  localização.
+- Cyberware com custo em eb e **perda de humanidade**; o implante que soma num atributo (o Lace:
+  BODY +2) entra no atributo corrente, e com ele o BTM (K.2e).
+- Arsenal: armas (dano por fórmula, ex.: `2d6+2`) e a **armadura por peça**, que cobre vários
+  locais: o SP de cada local combina as camadas pela tabela proporcional do livro, e o **EV** de cada
+  peça vestida sai do REF (K.2).
+- **Inventário** com peso, contra o **Carry** (BODY × 10 kg) e o **Lift** (BODY × 40 kg) — acima do
+  Carry, só um aviso: nenhuma fonte penaliza o peso (K.2d).
+- **Netrunner**: o deck e os programas, com a MU e o preço pela tabela (K.5 — a Net jogável fica para
+  depois, ver os não-objetivos).
 - Bio-monitor de ferimentos: a trilha do livro, **40 caixas de 1 ponto** (10 níveis × 4), com o
   efeito do nível nos atributos, stun e death save, e o estado **Morto**.
 - Lifepath narrativo editável + gerador 1d10.
 - Persistência: nuvem (Supabase, JSONB) com fallback localStorage offline e
   autosave; modo visitante permite criar localmente, login habilita a nuvem.
-- Presets/clonagem de "Lendas de Night City" e import/export JSON.
+- Presets/clonagem de "Lendas de Night City" e import/export JSON — o import passa pelo validador e
+  diz o que corrigiu, e a ficha importada abre sem conta (K.1). **Folha de impressão** pelo
+  "Salvar como PDF" do navegador, sem biblioteca no bundle (K.1c).
 
 ### 4.2 Mesa Multiplayer (`/multiplayer`, `/room/:code`)
 
@@ -194,8 +202,9 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 - Derivados: **BTM** pelo tipo corporal, **só BODY**: 2 → 0, 3–4 → −1, 5–7 → −2,
   8–9 → −3, 10 → −4, 11+ → −5. **Humanidade = EMP × 10**; RUN = MA × 3; LEAP = RUN ÷ 4, para baixo.
   *(Fase C, C.2 — antes era BODY + REF com sinal invertido.)*
-- **Atributos correntes** (`deriveCurrentStats`, Fase C, C.6): base → **−1 EMP a
-  cada 10 de Humanidade perdida** → efeito do ferimento. **Toda rolagem**, da
+- **Atributos correntes** (`deriveCurrentStats`, Fase C, C.6): base → **o cromo
+  instalado que soma atributo** (K.2e) → **REF menos o EV da armadura vestida** (K.2c) →
+  **−1 EMP a cada 10 de Humanidade perdida** → efeito do ferimento. **Toda rolagem**, da
   ficha ou da mesa, usa esses valores; a ficha mostra "rola com N" quando o
   valor corrente difere da base. O servidor recalcula e nunca confia no
   `currentStats` enviado pelo cliente.
