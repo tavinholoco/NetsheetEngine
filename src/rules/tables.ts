@@ -249,6 +249,248 @@ export const PROGRAM_CLASSES: readonly ProgramClassRow[] = [
 ];
 
 // ------------------------------------------------------------
+// Criação de personagem (K.6, decisão 13) — os orçamentos
+// ------------------------------------------------------------
+
+/** Cada atributo, na criação, vai de 2 a 10 (S3, S5, S6). O cromo sobe depois. */
+export const CREATION_STAT_MIN = 2;
+export const CREATION_STAT_MAX = 10;
+
+/**
+ * O 9D10 num bolo: nove dados de 10 somados, e o total distribuído entre os nove
+ * atributos (S5, S6). O outro método da decisão 13 é o bolo que o Mestre define
+ * (o cinemático do S5): o número é dele. O S3 dá 65 fixos — uma fonte só, aberto.
+ */
+export const STAT_POOL_DICE = 9;
+
+/** O bolo do Mestre não sai do que nove atributos comportam: 9 × 2 a 9 × 10. */
+export const STAT_POOL_MIN = STAT_POOL_DICE * CREATION_STAT_MIN;
+export const STAT_POOL_MAX = STAT_POOL_DICE * CREATION_STAT_MAX;
+
+/**
+ * Os pontos de carreira: 40, nas dez perícias do pacote do role — a habilidade
+ * especial é uma delas —, nenhuma acima de 10 (S3, S6; o S5 confirma os 40).
+ */
+export const CAREER_SKILL_POINTS = 40;
+export const CREATION_SKILL_MAX = 10;
+
+/**
+ * O *pickup*: REF + INT em pontos, em qualquer perícia fora do pacote de carreira
+ * e fora da habilidade especial (S3, S6; o S5 confirma o REF + INT).
+ */
+export const PICKUP_STATS: readonly StatName[] = ['REF', 'INT'];
+
+export interface CareerSkill {
+  /** O nome como o `SKILL_TABLES` escreve (a comparação ignora caixa e pontuação). */
+  name: string;
+  stat: StatName;
+}
+
+export interface CareerPackageRow {
+  /** O role como o `OFFICIAL_ROLES` o chama. */
+  role: string;
+  /** As perícias fixas do pacote. */
+  skills: readonly CareerSkill[];
+  /** Escolhas do jogador: `count` perícias dentre `options`. */
+  choices?: readonly { count: number; options: readonly CareerSkill[] }[];
+}
+
+const AWARENESS: CareerSkill = { name: 'Awareness/Notice', stat: 'INT' };
+const EDUCATION: CareerSkill = { name: 'Education & Gen. Know.', stat: 'INT' };
+const PERSUASION: CareerSkill = { name: 'Persuasion & Fast Talk', stat: 'EMP' };
+const HUMAN_PERCEPTION: CareerSkill = { name: 'Human Perception', stat: 'EMP' };
+const BASIC_TECH: CareerSkill = { name: 'Basic Tech', stat: 'TECH' };
+
+/**
+ * Os dez pacotes de carreira: nove perícias e a habilidade especial (S3, S6,
+ * S13 — iguais nos dez; o S13 dá a página de cada role, p. 6–22). O Solo escolhe
+ * Brawling ou Martial Art; o Techie, três perícias de TECH. "Weapons Tech" (S3,
+ * S6) é a Weaponsmith (S13): a única perícia de TECH de armas nas listas (S2, S3,
+ * S8). O atributo de cada perícia é o das listas por atributo (S2, S3, S8).
+ */
+export const CAREER_PACKAGES: readonly CareerPackageRow[] = [
+  {
+    role: 'Solo',
+    skills: [
+      AWARENESS,
+      { name: 'Handgun', stat: 'REF' },
+      { name: 'Melee', stat: 'REF' },
+      { name: 'Weaponsmith', stat: 'TECH' },
+      { name: 'Rifle', stat: 'REF' },
+      { name: 'Athletics', stat: 'REF' },
+      { name: 'Submachinegun', stat: 'REF' },
+      { name: 'Stealth', stat: 'REF' }
+    ],
+    choices: [{ count: 1, options: [{ name: 'Brawling', stat: 'REF' }, { name: 'Martial Art', stat: 'REF' }] }]
+  },
+  {
+    role: 'Rockerboy',
+    skills: [
+      AWARENESS,
+      { name: 'Perform', stat: 'EMP' },
+      { name: 'Wardrobe & Style', stat: 'ATTR' },
+      { name: 'Composition', stat: 'INT' },
+      { name: 'Brawling', stat: 'REF' },
+      { name: 'Play Instrument', stat: 'TECH' },
+      { name: 'Streetwise', stat: 'COOL' },
+      PERSUASION,
+      { name: 'Seduction', stat: 'EMP' }
+    ]
+  },
+  {
+    role: 'Netrunner',
+    skills: [
+      AWARENESS,
+      BASIC_TECH,
+      EDUCATION,
+      { name: 'System Knowledge', stat: 'INT' },
+      { name: 'CyberTech', stat: 'TECH' },
+      { name: 'Cyberdeck Design', stat: 'TECH' },
+      { name: 'Composition', stat: 'INT' },
+      { name: 'Electronics', stat: 'TECH' },
+      { name: 'Programming', stat: 'INT' }
+    ]
+  },
+  {
+    role: 'Tech',
+    skills: [
+      AWARENESS,
+      BASIC_TECH,
+      { name: 'CyberTech', stat: 'TECH' },
+      { name: 'Teaching', stat: 'INT' },
+      EDUCATION,
+      { name: 'Electronics', stat: 'TECH' }
+    ],
+    choices: [
+      {
+        count: 3,
+        options: [
+          { name: 'Gyro Tech', stat: 'TECH' },
+          { name: 'Aero Tech', stat: 'TECH' },
+          { name: 'Weaponsmith', stat: 'TECH' },
+          { name: 'Electronic Security', stat: 'TECH' }
+        ]
+      }
+    ]
+  },
+  {
+    role: 'Medtechie',
+    skills: [
+      AWARENESS,
+      BASIC_TECH,
+      { name: 'Diagnose Illness', stat: 'INT' },
+      EDUCATION,
+      { name: 'Cryotank Operation', stat: 'TECH' },
+      { name: 'Library Search', stat: 'INT' },
+      { name: 'Pharmaceuticals', stat: 'TECH' },
+      { name: 'Zoology', stat: 'INT' },
+      HUMAN_PERCEPTION
+    ]
+  },
+  {
+    role: 'Media',
+    skills: [
+      AWARENESS,
+      { name: 'Composition', stat: 'INT' },
+      EDUCATION,
+      PERSUASION,
+      HUMAN_PERCEPTION,
+      { name: 'Social', stat: 'EMP' },
+      { name: 'Streetwise', stat: 'COOL' },
+      { name: 'Photo & Film', stat: 'TECH' },
+      { name: 'Interview', stat: 'EMP' }
+    ]
+  },
+  {
+    role: 'Cop',
+    skills: [
+      AWARENESS,
+      { name: 'Handgun', stat: 'REF' },
+      HUMAN_PERCEPTION,
+      { name: 'Athletics', stat: 'REF' },
+      EDUCATION,
+      { name: 'Brawling', stat: 'REF' },
+      { name: 'Melee', stat: 'REF' },
+      { name: 'Interrogation', stat: 'COOL' },
+      { name: 'Streetwise', stat: 'COOL' }
+    ]
+  },
+  {
+    role: 'Corp',
+    skills: [
+      AWARENESS,
+      HUMAN_PERCEPTION,
+      EDUCATION,
+      { name: 'Library Search', stat: 'INT' },
+      { name: 'Social', stat: 'EMP' },
+      PERSUASION,
+      { name: 'Stock Market', stat: 'INT' },
+      { name: 'Wardrobe & Style', stat: 'ATTR' },
+      { name: 'Personal Grooming', stat: 'ATTR' }
+    ]
+  },
+  {
+    role: 'Fixer',
+    skills: [
+      AWARENESS,
+      { name: 'Forgery', stat: 'TECH' },
+      { name: 'Handgun', stat: 'REF' },
+      { name: 'Brawling', stat: 'REF' },
+      { name: 'Melee', stat: 'REF' },
+      { name: 'Pick Lock', stat: 'TECH' },
+      { name: 'Pick Pocket', stat: 'TECH' },
+      { name: 'Intimidate', stat: 'COOL' },
+      PERSUASION
+    ]
+  },
+  {
+    role: 'Nomad',
+    skills: [
+      AWARENESS,
+      { name: 'Endurance', stat: 'BODY' },
+      { name: 'Melee', stat: 'REF' },
+      { name: 'Rifle', stat: 'REF' },
+      { name: 'Driving', stat: 'REF' },
+      BASIC_TECH,
+      { name: 'Wilderness Survival', stat: 'INT' },
+      { name: 'Brawling', stat: 'REF' },
+      { name: 'Athletics', stat: 'REF' }
+    ]
+  }
+];
+
+/**
+ * A verba inicial: o salário de um mês pelo role e o nível da habilidade
+ * especial, vezes 1D6/3 — os meses de emprego (S3, S6). O dado e o divisor.
+ */
+export const STARTING_FUNDS_DIE = { sides: 6, divisor: 3 } as const;
+
+export interface StartingSalaryRow {
+  role: string;
+  /** O salário do mês, em eb: o nível 1–5 numa coluna, e o 6, 7, 8, 9 e 10 uma a uma. */
+  byRank: readonly [number, number, number, number, number, number];
+}
+
+/**
+ * O salário por role e nível da habilidade especial (S3 e S13, célula a célula;
+ * o S6 confirma o Solo no 1–5, no 7 e no 10, e o Nomad no 10). **O Fixer não
+ * está aqui:** o S3 não o traz, e a linha dele só o S13 dá — uma fonte, aberta
+ * na conferência. Sem linha, a verba é do Mestre ("o resto, a critério do GM" —
+ * S3). O "5 ou 6 no dado, desempregado" também é de uma fonte só (S6): fora.
+ */
+export const STARTING_SALARY: readonly StartingSalaryRow[] = [
+  { role: 'Rockerboy', byRank: [1000, 1500, 2000, 5000, 8000, 12000] },
+  { role: 'Solo', byRank: [2000, 3000, 4500, 7000, 9000, 12000] },
+  { role: 'Cop', byRank: [1000, 1200, 3000, 5000, 7000, 9000] },
+  { role: 'Corp', byRank: [1500, 3000, 5000, 7000, 9000, 12000] },
+  { role: 'Media', byRank: [1000, 1200, 3000, 5000, 7000, 10000] },
+  { role: 'Tech', byRank: [1000, 2000, 3000, 4000, 5000, 8000] },
+  { role: 'Netrunner', byRank: [1000, 2000, 3000, 5000, 7000, 10000] },
+  { role: 'Medtechie', byRank: [1600, 3000, 5000, 7000, 10000, 15000] },
+  { role: 'Nomad', byRank: [1000, 1500, 2000, 3000, 4000, 5000] }
+];
+
+// ------------------------------------------------------------
 // Local de impacto (1d10)
 // ------------------------------------------------------------
 

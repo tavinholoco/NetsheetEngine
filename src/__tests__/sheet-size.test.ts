@@ -78,6 +78,21 @@ describe('K.2f — a ficha cheia contra os 64 KB', () => {
     expect(netrunner).toBeLessThan(MAX_SHEET_BYTES / 2);
   });
 
+  // K.6b — o registro da criação: nove nomes de perícia e uns números.
+  it('o veterano com o registro da criação, no tamanho máximo que o validador deixa, segue abaixo de um terço', () => {
+    const stats = { INT: 10, REF: 10, TECH: 10, COOL: 10, ATTR: 10, LUCK: 10, MA: 10, BODY: 10, EMP: 10 };
+    const creation = {
+      method: 'roll9d10', dice: [10, 10, 10, 10, 10, 10, 10, 10, 10], pool: 90, stats,
+      careerSkills: Array.from({ length: 10 }, (_, i) => texto(120, `Perícia de carreira ${i}`)),
+      careerPoints: 100, pickupPoints: 100, fundsDie: 6, funds: 100_000_000
+    };
+    const comCriacao = bytes({ ...fichaCheia({ skills: 45, cyberware: 15, weapons: 8, armor: 8, gear: 40, events: 12 }), creation });
+    const sem = bytes(fichaCheia({ skills: 45, cyberware: 15, weapons: 8, armor: 8, gear: 40, events: 12 }));
+    expect(comCriacao - sem).toBeGreaterThan(0);
+    expect(comCriacao - sem).toBeLessThan(2 * 1024);
+    expect(comCriacao).toBeLessThan(MAX_SHEET_BYTES / 3);
+  });
+
   it('a ficha de colecionador (o dobro de tudo) ainda cabe', () => {
     const colecionador = bytes(fichaCheia({ skills: 100, cyberware: 30, weapons: 20, armor: 16, gear: 100, events: 30 }));
     expect(colecionador).toBeLessThan(MAX_SHEET_BYTES);

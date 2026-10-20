@@ -11,6 +11,7 @@ import {
 import { TacticalGrid } from './TacticalGrid';
 import { CombatPanel } from './CombatPanel';
 import { SceneConditions, signedModifier } from './SceneConditions';
+import { CreationBudget, CreationBudgetMark } from './CreationBudget';
 import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
 import { trailingThrottle } from '../../lib/throttle';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -918,6 +919,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                       <span className="text-micro px-1 py-0.5 rounded bg-surface border border-line-strong text-signal-400 shrink-0">
                         {p.role}
                       </span>
+                      {/* K.6c — o orçamento da criação, à vista do GM */}
+                      {isGm && <CreationBudgetMark handle={p.handle} sheet={p.sheet} />}
                     </div>
                     <div className="flex items-center space-x-1 shrink-0">
                       <button
@@ -1177,6 +1180,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
                 <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
                 <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>
               </div>
+              {isGm && <CreationBudget sheet={inspectedPlayer.sheet} />}
               <DialogClose className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer">
                 Fechar
               </DialogClose>

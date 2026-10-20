@@ -107,6 +107,7 @@ export const PRD_DOCUMENT: PrdDocument = {
         'Gestão de cyberware com custo em eb e perda de humanidade',
         'Rastreamento de ferimentos (bio-monitor 0–10) com penalidades',
         'Lifepath narrativo editável',
+        'Criação pelo orçamento do livro (9D10 ou bolo do Mestre, 40 pontos de carreira, pickup de REF + INT, verba pelo salário × 1D6/3), à vista do GM na mesa',
         'Presets e clonagem de lendas de Night City'
       ],
       status: 'em andamento'

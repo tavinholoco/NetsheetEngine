@@ -1085,6 +1085,29 @@ mostra (o nome do nível vem da trilha do livro): nenhuma entrada, saída ou aut
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
 
+**20/10/2026 — K.6 (o PR da criação com orçamento).**
+
+1. **Entrada nova?** Um campo na ficha, o `creation`, que o servidor recebe na sincronia e o import lê do arquivo:
+   o método (só os dois da tabela — outro descarta o registro), nove dados de 1 a 10, o bolo até 90, os atributos
+   pelos grampos de sempre, nove a dez nomes de perícia de 120 caracteres, os pontos até 100, o 1D6 de 1 a 6 e a
+   verba até 100 milhões. Tudo no `sanitizeCharacterSheet`, com teste; a ficha antiga abre sem o campo.
+2. **Dado novo sai?** O registro vai junto com a ficha, para quem já a via — no reenvio da sala, como o resto (o
+   E.20 segue na Q). **O bloco do orçamento só aparece para o GM**, mas é tela: o jogador que abrir o reenvio lê o
+   registro dos outros, como já lê a ficha inteira. Nada que a ficha não carregasse.
+3. **Autorização nova?** Nenhuma. O registro é escrito pelo cliente, como a ficha; o servidor não o confere contra
+   nada e não decide nada por ele.
+4. **Jogador convidado hostil?** Pode forjar o registro, rerrolar o 9D10 até gostar, ou apagar o registro — o
+   9D10 rola no navegador, sem testemunha. **É o "trapaceiro plausível", e a K.0 mostrou que barrar não cabe:** o
+   IP e o cromo sobem os números depois da criação, e o servidor não tem o histórico. O que muda é que ele fica
+   **à vista**: o GM vê o bolo que não bate com os dados, o registro acima do orçamento, o atributo base que subiu
+   ou passou de 10, a perícia acima do orçamento hoje, e a ficha sem registro — e a lista de jogadores marca quem
+   tem aviso. Rolar o 9D10 no servidor (com a mesa como testemunha) é ADIAR, na lista da Q.
+5. **Estado novo sem limite?** Nenhum: o registro é um objeto de tamanho fixo — no máximo que o validador deixa,
+   menos de 2 KB a mais numa ficha de veterano (o `sheet-size` trava).
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança aberto.
+
 ### Fase L — Performance e escala
 
 *(a preencher)*
