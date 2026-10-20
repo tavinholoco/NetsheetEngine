@@ -6,9 +6,10 @@
  *
  * Desde a Fase C, o BTM, a humanidade e os atributos correntes moram em
  * src/rules/character.ts (fonte única, lida também pelo servidor). Aqui
- * ficam o que ainda não passou pela conferência contra o livro:
- * - Run: MA × 3 metros por turno; Leap: Run ÷ 4, para baixo (K.7c — a tabela
- *   em src/rules/tables.ts). O Walk, que não existe no livro, saiu (RUL-11).
+ * ficam os derivados que só a ficha mostra — o servidor não os lê:
+ * - Run: MA × 3 metros por turno; Leap: Run ÷ 4, para baixo. Conferidos na
+ *   K.7c, com os números na tabela (src/rules/tables.ts, S1 e S8). O Walk,
+ *   que não existe no livro, saiu (RUL-11).
  * - Humanidade restante, para o painel de cromo.
  * O SP por localização (`armorSpAt`) foi para src/rules/damage.ts na Fase D.
  */
