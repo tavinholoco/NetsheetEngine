@@ -93,6 +93,8 @@ O produto cobre **sete módulos funcionais interligados**:
 - Atributos primários (INT, REF, TECH, COOL, ATTR, LUCK, MA, BODY, EMP) com
   autocalculo dos derivados: **BTM**, Humanidade (EMP × 10), RUN/WALK.
 - Árvore de perícias com rolagem integrada (atributo + nível + 1d10!).
+- Assistente de criação pelo orçamento do livro (9D10 ou bolo do Mestre, 40 pontos de carreira,
+  *pickup* de REF + INT, verba pelo salário × 1D6/3), que grava o que foi gasto para o GM ver.
 - Cyberware com custo em eb e **perda de humanidade**.
 - Arsenal: armas (dano por fórmula, ex.: `2d6+2`) e proteção SP por
   localização.
@@ -181,6 +183,13 @@ Regras do sistema Cyberpunk 2020 (2ª edição) implementadas no produto:
 ### Atributos
 - Nove atributos primários: **INT, REF, TECH, COOL, ATTR, LUCK, MA, BODY, EMP**.
 - Faixa na criação: **2–10**; até **15** com ciberware (cromo).
+- **Criação com orçamento** (K.6): o bolo de atributos pelo **9D10** ou pelo número que o
+  Mestre define (18 a 90); **40 pontos** nas dez perícias do pacote de carreira do role, a
+  habilidade especial entre elas, até 10 cada; o *pickup* de **REF + INT** fora do pacote; a
+  verba pelo **salário do nível da habilidade × 1D6/3** (o Fixer, sem a linha em duas fontes,
+  recebe a verba do Mestre). Passar de um orçamento trava; a ficha grava o que gastou, e o GM o
+  vê na mesa contra a ficha de hoje — **à vista, não barrado**: o IP e o cromo sobem os números
+  depois da criação.
 - Derivados: **BTM** pelo tipo corporal, **só BODY**: 2 → 0, 3–4 → −1, 5–7 → −2,
   8–9 → −3, 10 → −4, 11+ → −5. **Humanidade = EMP × 10**; RUN = MA × 3.
   *(Fase C, C.2 — antes era BODY + REF com sinal invertido.)*
