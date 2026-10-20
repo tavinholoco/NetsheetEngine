@@ -260,3 +260,98 @@ export function applyCreation(sheet: CharacterSheet, draft: CreationDraft): Part
     }
   };
 }
+
+// ------------------------------------------------------------
+// K.6c — o orçamento à vista do GM
+// ------------------------------------------------------------
+
+export interface CreationReportLine {
+  key: 'stats' | 'career' | 'pickup';
+  label: string;
+  /** O que a criação registrou; `null` sem registro. */
+  atCreation: number | null;
+  /** O orçamento; `null` quando não se sabe (o bolo de quem não registrou). */
+  budget: number | null;
+  now: number;
+}
+
+export interface CreationReport {
+  recorded: boolean;
+  method: CreationMethod | null;
+  dice: number[];
+  pool: number | null;
+  funds: number | null;
+  lines: CreationReportLine[];
+  /** O que passou de um orçamento, ou não bate — a lista de jogadores marca. */
+  warnings: string[];
+  /** O que o GM deve saber e não é passar do orçamento (a ficha sem registro). */
+  notes: string[];
+}
+
+/**
+ * A ficha de hoje contra o que a criação gastou. Não decide nada: o IP e o cromo
+ * sobem os números depois da criação, e o servidor não tem o histórico (K.0).
+ * Sem registro, confere o pacote do role (todas as opções) contra os 40 e o
+ * pickup contra o REF + INT de hoje — o que dá para conferir sem o bolo.
+ */
+export function creationReport(sheet: CharacterSheet): CreationReport {
+  const c = sheet.creation;
+  const skills = sheet.skills ?? [];
+  const role = officialRoleFor(sheet)?.name ?? '';
+  const pkg = careerPackageFor(role);
+  const careerNames = new Set(
+    (c ? c.careerSkills : pkg ? [...pkg.skills, ...(pkg.choices ?? []).flatMap((ch) => ch.options)].map((s) => s.name) : []).map(normalizeName)
+  );
+  const sa = normalizeName(sheet.specialAbilityName);
+  const level = (n: unknown) => Number(n) || 0;
+  const careerNow = sum(skills.filter((s) => careerNames.has(normalizeName(s.name))).map((s) => level(s.level))) + level(sheet.specialAbilityRank);
+  const pickupNow = sum(
+    skills.filter((s) => !s.isSpecialAbility && !careerNames.has(normalizeName(s.name)) && normalizeName(s.name) !== sa).map((s) => level(s.level))
+  );
+  const statsNow = statsTotal(sheet.stats);
+
+  const lines: CreationReportLine[] = [
+    { key: 'stats', label: 'Atributos', atCreation: c ? statsTotal(c.stats) : null, budget: c ? Math.max(c.pool, STAT_POOL_MIN) : null, now: statsNow },
+    { key: 'career', label: 'Carreira', atCreation: c ? c.careerPoints : null, budget: CAREER_SKILL_POINTS, now: careerNow },
+    { key: 'pickup', label: 'Pickup', atCreation: c ? c.pickupPoints : null, budget: pickupBudgetOf(c ? c.stats : sheet.stats), now: pickupNow }
+  ];
+
+  const warnings: string[] = [];
+  const notes: string[] = [];
+  if (!c) {
+    notes.push('Sem registro de criação: a ficha não diz de que orçamento saiu.');
+  } else {
+    if (c.method === 'roll9d10' && (c.dice.length !== STAT_POOL_DICE || sum(c.dice) !== c.pool)) {
+      warnings.push(`O bolo (${c.pool}) não bate com os dados registrados (${c.dice.join(' ') || 'nenhum'}).`);
+    }
+    const foraNaCriacao = STAT_NAMES.filter((s) => c.stats[s] < CREATION_STAT_MIN || c.stats[s] > CREATION_STAT_MAX);
+    if (foraNaCriacao.length) warnings.push(`Na criação, atributo fora de 2 a 10 (${foraNaCriacao.map((s) => `${s} ${c.stats[s]}`).join(', ')}).`);
+    for (const l of lines) {
+      if (l.atCreation !== null && l.budget !== null && l.atCreation > l.budget) {
+        warnings.push(`Na criação, ${l.label.toLowerCase()} passou do orçamento: ${l.atCreation} de ${l.budget}.`);
+      }
+    }
+    const statsAtCreation = lines[0].atCreation!;
+    if (statsNow > statsAtCreation) {
+      warnings.push(`Os atributos base subiram desde a criação: ${statsAtCreation} → ${statsNow} (o cromo soma à parte, e o IP não sobe atributo).`);
+    }
+  }
+  const acimaDe10 = STAT_NAMES.filter((s) => level(sheet.stats?.[s]) > CREATION_STAT_MAX);
+  if (acimaDe10.length) {
+    warnings.push(`Atributo base acima de 10 (${acimaDe10.map((s) => `${s} ${sheet.stats[s]}`).join(', ')}): o cromo soma à parte.`);
+  }
+  for (const l of lines.slice(1)) {
+    if (l.budget !== null && l.now > l.budget) warnings.push(`${l.label} hoje: ${l.now} de ${l.budget} — o IP explica? Pergunte.`);
+  }
+
+  return {
+    recorded: !!c,
+    method: c?.method ?? null,
+    dice: c?.dice ?? [],
+    pool: c?.pool ?? null,
+    funds: c?.funds ?? null,
+    lines,
+    warnings,
+    notes
+  };
+}
