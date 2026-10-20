@@ -91,7 +91,7 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 
 ```bash
 npx tsc --noEmit          # typecheck — deve dar 0 erros
-npx vitest run            # 944 testes depois da K.2, 18/10 (ver "Linha de base atual" no plano; a sonda não rastreada da J.1d fica fora)
+npx vitest run            # 976 testes depois da K.3, 20/10 (ver "Linha de base atual" no plano; a sonda não rastreada da J.1d fica fora)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)
 npm run audit:ci          # portão de vulnerabilidades — falha em alta/crítica sem exceção nomeada
@@ -152,12 +152,13 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   pesquisa e uma opção recomendada (decisão 11). Registre a regra com as suas palavras e a página que
   a fonte cita; **nunca copie texto ou tabela do livro** para o repositório, que é público.
 - Há um padrão recorrente aqui: **coisa construída de ponta a ponta e nunca ligada.** O
-  `currentStats` foi ligado na Fase C, e o `combatModifier` **pela metade** — a rolagem o soma, e nenhuma
-  tela o escreve (a rota `/settings` não tem chamador: I.01, ADIAR); o `@theme` de cores é da Fase F; o
-  `deletePlayer` ganhou botão na G.3 (estava sem desde a Fase 0).
+  `currentStats` foi ligado na Fase C, e o `combatModifier` em duas vezes — a C.4 ligou a soma na rolagem,
+  e a tela que o escreve só veio na K.3b (a rota `/settings` ficou sem chamador da C à K: o I.01); o
+  `@theme` de cores é da Fase F; o `deletePlayer` ganhou botão na G.3 (estava sem desde a Fase 0).
   Antes de construir algo novo, confira se o que existe já resolve.
 - **Botão cuja ação repetida estraga a mesa passa pelo `useInFlight`** (`src/hooks/`, G.06): entrar, criar,
-  aplicar dano, NPC ataca e próximo turno — dano em dobro e assento órfão foram reproduzidos. Os outros
+  aplicar dano, NPC ataca, próximo turno e as condições da cena (K.3b) — dano em dobro e assento órfão
+  foram reproduzidos. Os outros
   botões do GM ("Gerar NPC", "Gerar Jogador", "Rolar iniciativa") **ainda não passam**: em dobro, o
   resultado fica à vista e se desfaz — ADIAR na revisão da G.3, com gatilho na lista do bloco Q. Os testes de tela da
   mesa montam o `MultiplayerRoom` com o `stubRoomTransport` (`src/test/roomTransport.ts`).
