@@ -749,8 +749,9 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
             {/* K.3b — o modificador da cena entra em toda rolagem de ataque e
                 perícia: a mesa inteira o vê enquanto ele vale. */}
             {!!room?.combatModifier && (
-              <p className="text-micro font-mono text-signal-300">
-                {`Mod. do Mestre ${signedModifier(room.combatModifier)}${room.modifierReason ? ` · ${room.modifierReason}` : ''}`}
+              <p className="text-micro text-signal-300">
+                Mod. do Mestre <span className="font-mono">{signedModifier(room.combatModifier)}</span>
+                {room.modifierReason ? ` · ${room.modifierReason}` : ''}
               </p>
             )}
             {isGm && inviteState === 'manual' && (
