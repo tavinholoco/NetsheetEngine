@@ -1,6 +1,7 @@
 import React from 'react';
 import type { CharacterSheet } from '../../types/cyberpunk';
 import { creationReport } from '../../rules/creation';
+import { formatEb } from '../../lib/format';
 
 /**
  * K.6c — O ORÇAMENTO DA CRIAÇÃO, À VISTA DO GM
@@ -22,7 +23,7 @@ export const CreationBudget: React.FC<{ sheet: CharacterSheet }> = ({ sheet }) =
             <>Bolo do Mestre · <span className="font-mono text-fg-strong">{report.pool}</span></>
           )}
           {report.funds !== null && (
-            <> · verba <span className="font-mono text-fg-strong">{report.funds.toLocaleString('pt-BR')} eb</span></>
+            <> · verba <span className="font-mono text-fg-strong">{formatEb(report.funds)}</span></>
           )}
         </p>
       )}

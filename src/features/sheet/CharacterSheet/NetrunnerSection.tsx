@@ -11,6 +11,7 @@ import {
   PROGRAM_MU_MAX,
   PROGRAM_STRENGTH_MAX
 } from '../../../rules/sheetSchema';
+import { formatEb } from '../../../lib/format';
 import { NumberField } from './NumberField';
 
 /**
@@ -27,7 +28,7 @@ interface NetrunnerSectionProps {
   onChange: (updated: Partial<CharacterSheet>) => void;
 }
 
-const eb = (n: number) => `${n.toLocaleString('pt-BR')} eb`;
+const eb = formatEb;
 
 const field = 'bg-surface border border-field text-xs text-fg-strong px-2 py-1.5 rounded focus:border-cyber-400 focus:outline-none';
 const numberField = `${field} font-mono w-14`;

@@ -87,6 +87,16 @@ export function careerPackageFor(role: string): CareerPackageRow | undefined {
   return CAREER_PACKAGES.find((p) => p.role === role);
 }
 
+/** Toda perícia que o pacote pode ter: as fixas e todas as opções das escolhas. */
+export function packageSkills(pkg: CareerPackageRow): CareerSkill[] {
+  return [...pkg.skills, ...(pkg.choices ?? []).flatMap((c) => c.options)];
+}
+
+/** Quantas perícias o pacote tem, sem a habilidade especial: as fixas e as escolhas (nove nos dez). */
+export function careerSlots(pkg: CareerPackageRow): number {
+  return pkg.skills.length + sum((pkg.choices ?? []).map((c) => c.count));
+}
+
 /** As nove perícias de carreira: as fixas, mais as escolhidas, até o número de cada escolha. */
 export function careerSkillsOf(pkg: CareerPackageRow, picks: readonly string[]): CareerSkill[] {
   const picked = picks.map(normalizeName);
@@ -159,7 +169,7 @@ export function blockersOf(draft: CreationDraft): string[] {
     out.push('Escolha um role do livro: o pacote de carreira sai dele.');
   } else {
     const career = careerSkillsOf(pkg, draft.picks);
-    const missing = pkg.skills.length + sum((pkg.choices ?? []).map((c) => c.count)) - career.length;
+    const missing = careerSlots(pkg) - career.length;
     if (missing > 0) out.push(`Faça as escolhas do pacote de carreira (falta${missing > 1 ? 'm' : ''} ${missing}).`);
     const acima = career.filter((s) => (draft.career[s.name] ?? 0) > CREATION_SKILL_MAX).map((s) => s.name);
     if (draft.saRank > CREATION_SKILL_MAX) acima.push(specialAbilityOf(draft.role));
@@ -198,7 +208,7 @@ export function createDraft(sheet: CharacterSheet): CreationDraft {
   const picks = (pkg?.choices ?? []).flatMap((choice) =>
     choice.options.filter((o) => byName.has(normalizeName(o.name))).slice(0, choice.count).map((o) => o.name)
   );
-  const allCareer = pkg ? [...pkg.skills, ...(pkg.choices ?? []).flatMap((c) => c.options)] : [];
+  const allCareer = pkg ? packageSkills(pkg) : [];
   const careerNames = new Set((pkg ? careerSkillsOf(pkg, picks) : []).map((s) => normalizeName(s.name)));
   const sa = normalizeName(sheet.specialAbilityName);
 
@@ -300,7 +310,7 @@ export function creationReport(sheet: CharacterSheet): CreationReport {
   const role = officialRoleFor(sheet)?.name ?? '';
   const pkg = careerPackageFor(role);
   const careerNames = new Set(
-    (c ? c.careerSkills : pkg ? [...pkg.skills, ...(pkg.choices ?? []).flatMap((ch) => ch.options)].map((s) => s.name) : []).map(normalizeName)
+    (c ? c.careerSkills : pkg ? packageSkills(pkg).map((s) => s.name) : []).map(normalizeName)
   );
   const sa = normalizeName(sheet.specialAbilityName);
   const level = (n: unknown) => Number(n) || 0;
