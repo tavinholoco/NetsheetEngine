@@ -227,12 +227,19 @@ export const DEFAULT_ARMOR: ArmorPiece[] = [
   { id: 'arm_light_lleg', name: 'Armadura Leve — Perna Esquerda', locations: ['Left Leg'], sp: 14, ev: 0, equipped: true }
 ];
 
-/** Perícias de atributo do CP2020 agrupadas por atributo primário. */
+/**
+ * Perícias de atributo do CP2020 agrupadas por atributo primário. K.7a (RUL-12):
+ * pela lista de pickup do S3 (p. 4) e o `default-skills.db` do S8, que concordam
+ * (o S2 confirma — docs/CONFERENCIA_CP2020.md). "Psychology" não existe em
+ * nenhuma, e "Social" é só de EMP; as quatro de piloto são perícias separadas.
+ * "Expert" e "Language" o S3 tem e o S8 não: ficam. As artes marciais o S8 dá por
+ * estilo, com bônus de combate — outra regra: fica "(escolha)".
+ */
 export const SKILL_TABLES: Record<StatName, string[]> = {
-  INT: ['Awareness / Notice', 'Biology', 'Botany', 'Chemistry', 'Composition', 'Diagnose Illness', 'Education & Gen. Know.', 'Expert: (escolha)', 'Geology', 'Hide / Evade', 'History', 'Language (escolha)', 'Library Search', 'Mathematics', 'Physics', 'Programming', 'Psychology', 'Social', 'Stock Market', 'System Knowledge', 'Teaching', 'Zoology'],
-  REF: ['Archery', 'Athletics', 'Brawling', 'Dance', 'Dodge & Escape', 'Driving', 'Fencing', 'Handgun', 'Heavy Weapons', 'Martial Art (escolha)', 'Melee', 'Motorcycle', 'Operate Hvy. Machinery', 'Pilot (escolha)', 'Rifle', 'Stealth', 'Submachinegun'],
-  TECH: ['Aero Tech', 'AV Tech', 'Basic Tech', 'Cryotank Operation', 'CyberTech', 'Demolitions', 'Disguise', 'Electronic Security', 'Electronics', 'First Aid', 'Forgery', 'Gyro Tech', 'Paint / Draw / Sculpt', 'Photo & Film', 'Pick Lock', 'Pick Pocket', 'Play Instrument', 'Weaponsmith'],
-  COOL: ['Intimidate', 'Oratory', 'Resist Torture / Drugs', 'Streetwise'],
+  INT: ['Accounting', 'Anthropology', 'Awareness / Notice', 'Biology', 'Botany', 'Chemistry', 'Composition', 'Diagnose Illness', 'Education & Gen. Know.', 'Expert: (escolha)', 'Gamble', 'Geology', 'Hide / Evade', 'History', 'Language (escolha)', 'Library Search', 'Mathematics', 'Physics', 'Programming', 'Shadow / Track', 'Stock Market', 'System Knowledge', 'Teaching', 'Wilderness Survival', 'Zoology'],
+  REF: ['Archery', 'Athletics', 'Brawling', 'Dance', 'Dodge & Escape', 'Driving', 'Fencing', 'Handgun', 'Heavy Weapons', 'Martial Art (escolha)', 'Melee', 'Motorcycle', 'Operate Hvy. Machinery', 'Pilot (Dirigible)', 'Pilot (Fixed Wing)', 'Pilot (Gyro)', 'Pilot (Vectored Thrust)', 'Rifle', 'Stealth', 'Submachinegun'],
+  TECH: ['Aero Tech', 'AV Tech', 'Basic Tech', 'Cryotank Operation', 'CyberTech', 'Cyberdeck Design', 'Demolitions', 'Disguise', 'Electronic Security', 'Electronics', 'First Aid', 'Forgery', 'Gyro Tech', 'Paint / Draw / Sculpt', 'Pharmaceuticals', 'Photo & Film', 'Pick Lock', 'Pick Pocket', 'Play Instrument', 'Weaponsmith'],
+  COOL: ['Interrogation', 'Intimidate', 'Oratory', 'Resist Torture / Drugs', 'Streetwise'],
   ATTR: ['Personal Grooming', 'Wardrobe & Style'],
   LUCK: [],
   MA: [],

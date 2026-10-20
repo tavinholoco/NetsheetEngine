@@ -40,7 +40,7 @@ import type { CharacterSheet, CharacterStats } from '../types/cyberpunk';
 const statsAll = (n: number): CharacterStats => ({ INT: n, REF: n, TECH: n, COOL: n, ATTR: n, LUCK: n, MA: n, BODY: n, EMP: n });
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
 
-/** Os atributos em cuja lista a perícia está, sem o "(escolha)" (o "Social" ainda está em dois — a K.7a tira o de INT). */
+/** Os atributos em cuja lista a perícia está, sem o "(escolha)". */
 const statsInTables = (name: string) =>
   (Object.keys(SKILL_TABLES) as (keyof typeof SKILL_TABLES)[]).filter((stat) =>
     SKILL_TABLES[stat].some((s) => normalizeName(s.replace('(escolha)', '')) === normalizeName(name))
@@ -79,7 +79,7 @@ describe('K.6a — a tabela da criação', () => {
     }
   });
 
-  it('cada perícia do pacote tem o atributo das listas da ficha; as que faltam são as quatro da K.7a', () => {
+  it('cada perícia do pacote tem o atributo das listas da ficha, e nenhuma falta nelas (a K.7a pôs as quatro)', () => {
     const faltam = new Set<string>();
     for (const pkg of CAREER_PACKAGES) {
       for (const skill of [...pkg.skills, ...(pkg.choices ?? []).flatMap((c) => c.options)]) {
@@ -88,7 +88,7 @@ describe('K.6a — a tabela da criação', () => {
         else faltam.add(skill.name);
       }
     }
-    expect([...faltam].sort()).toEqual(['Cyberdeck Design', 'Interrogation', 'Pharmaceuticals', 'Wilderness Survival']);
+    expect([...faltam]).toEqual([]);
   });
 
   it('o salário: nove roles, seis colunas que nunca descem; o Fixer, sem duas fontes, não está', () => {

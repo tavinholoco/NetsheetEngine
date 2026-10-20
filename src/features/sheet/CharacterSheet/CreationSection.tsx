@@ -51,12 +51,10 @@ const field = 'bg-surface border border-field text-xs text-fg-strong px-2 py-1.5
 const numberField = `${field} font-mono w-12`;
 const stepTitle = 'text-micro text-accent-400 uppercase tracking-caps';
 
-/** Toda perícia das listas da ficha, uma vez por nome (o "Social" está em dois: vale o último, EMP — a K.7a corrige). */
-const ALL_SKILLS: { name: string; stat: StatName }[] = [
-  ...new Map(
-    (Object.keys(SKILL_TABLES) as StatName[]).flatMap((stat) => SKILL_TABLES[stat].map((name) => [name, { name, stat }] as const))
-  ).values()
-];
+/** Toda perícia das listas da ficha, com o atributo dela (cada nome em um atributo só — K.7a). */
+const ALL_SKILLS: { name: string; stat: StatName }[] = (Object.keys(SKILL_TABLES) as StatName[]).flatMap((stat) =>
+  SKILL_TABLES[stat].map((name) => ({ name, stat }))
+);
 const baseName = (name: string) => normalizeName(name.replace('(escolha)', ''));
 
 const BudgetLine: React.FC<{ label: string; budget: Budget; testId: string }> = ({ label, budget, testId }) => {
