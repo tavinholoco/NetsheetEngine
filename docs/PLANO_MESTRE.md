@@ -627,8 +627,8 @@ de cada fase.
 > **Ponto de corte:** com A–D fechadas o jogo roda certo; com a R, roda certo **em produção** (sem ela,
 > qualquer participante tomava o GM, apagava a mesa ou gastava a banda do workspace); com a F, tem a
 > identidade nova. O que resta — a K, a L, o bloco Q e a M — é profundidade, escala e a dívida dos
-> ADIAR. *(A I fechou em 16/10/2026 e a J em 17/10/2026; o detalhe das duas segue logo abaixo, até o próximo
-> corte para o `historico/`.)*
+> ADIAR. *(A I fechou em 16/10/2026, a J em 17/10/2026 e a K em 20/10/2026; o detalhe das três segue logo abaixo,
+> até o próximo corte para o `historico/`.)*
 
 ---
 
@@ -1272,9 +1272,36 @@ seguem os grupos abaixo.
         some com o Walk. O Leap lê o Run corrente, para baixo (S8). O PRD diz "RUN/WALK" (seção 4.1); o E2E não cita
         nenhum dos dois.
       - **Sem migration e sem mudança no servidor.** A estimativa de ½ dia se mantém, em três commits.
-- [ ] **K.8** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
-- [ ] **K.9** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase K concluída em:** ____/____/______
+- [x] **K.8** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+      *(20/10/2026 — cada PR da K respondeu as seis perguntas; a entrada da fase inteira está no fim da seção da K
+      no [`SEGURANCA.md`](./SEGURANCA.md#fase-k--profundidade-de-sistema): tudo o que a ficha ganhou passa pelo
+      `sanitizeCharacterSheet` nas três portas que escrevem ficha (a sincronia, o `join` e, desde a K.1, o arquivo
+      importado); nenhuma autorização nova no servidor; o "trapaceiro plausível" da B **ficou à vista do GM, não
+      barrado** — a K.0 mostrou que barrar não cabe —, e o "O que já está no lugar" passou a dizer isso. **A forma do
+      sistema não mudou:** nenhuma rota, contêiner ou fronteira nova, e o [`ARQUITETURA.md`](./ARQUITETURA.md) já trazia
+      a armadura por peça desde a K.2.)*
+- [x] **K.9** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+      *(20/10/2026 — no branch do fechamento, a partir do `master` em `2d367b6`, verde depois do #68. **Rodado tudo:**
+      `tsc` 0; **1064** testes em 87 arquivos; build; E2E 7/7; o smoke de WebSocket 5/5 contra o build de produção;
+      tipografia limpa nas 12 telas; a ficha impressa em 6 páginas, com o Leap; `audit:ci` limpo; cores e conflitos em
+      0; gitleaks no repositório inteiro, **315 commits**, nenhum vazamento. **O RLS não rodou:** o Docker desta
+      máquina estava parado, e a K não mudou schema nem teve migration — o último é o 63/63 da J.0. **A revisão do que
+      a K produziu:** duas duplicações da própria fase — o formatador de eurodólar em três componentes e "as perícias
+      do pacote" três vezes no `creation.ts` — viraram o `formatEb` (`src/lib/format.ts`), o `packageSkills` e o
+      `careerSlots`. **Documento que a fase tornou falso:** o PRD dava os atributos correntes sem o cromo e o EV, e a
+      armadura como "SP por localização"; a seção da ficha ganhou o que a K trouxe. **Os ADIAR novos da K** entraram na
+      lista da Q em cada PR (de 86 para 99, com quatro feitos); os que a K era dona estão marcados lá. **A memória**
+      ganhou só o que o repo não carrega: duas armadilhas do ambiente (o roteiro de tipografia que cai na primeira
+      rodada com o servidor recém-subido, e o da impressão que pede a pasta). **Falta:** o merge do PR do fechamento e o
+      `master` verde depois dele.)*
+- [x] ✅ **Fase K concluída em:** 20/10/2026 *(a K.0 no #62; a K.1 no #63; a K.2 no #64; a K.3 no #65; a K.5 no #66;
+      a K.6 no #67; a K.7 no #68; o fechamento no #69)*
+
+> ***Fase K fechada em 20/10/2026.*** *A próxima é a **Fase L** — aguentar uma mesa de verdade —, começando pela L.0. A K
+> deixa para o bloco Q treze ADIAR novos (o método rápido, a evolução por IP e os "drops" da K.0; as camadas de armadura;
+> o deck; a criação; as artes marciais) e o I.06, que
+> segue com o número da K.2f; e, para a L, a ficha mais gorda — o veterano com tudo fica abaixo da metade dos 64 KB, o
+> que a L.1 (o reenvio por diferença) deve levar em conta.*
 
 ---
 
@@ -1390,6 +1417,8 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
       *(17/10/2026 — **a J fechou e deixou os seus oito**, conferidos no [ledger](./varreduras/J-seguranca.md),
       nenhum gatilho disparado — a não ser a metade do CLI no item das actions, feita na J.5. Os da J passam a ser da
       Q.)*
+      *(20/10/2026 — **a K fechou e fez os quatro dela** (o cromo e o EV na K.2, o G.05 e o I.01 na K.3); o I.06, que ela
+      mediu na K.2f, segue aqui com o número. Os da L e da M ficam com elas.)*
   - [ ] **E.20**: a ficha de todo NPC vai a todos os jogadores. *Dona:* J.1b. *Gatilho:* um jogador espiar a ficha
         do NPC, ou a L.1 abrir.
   - [ ] **E.21**: "esta sala existe?" responde no ritmo do limitador global. *Dona:* J.1b. *Gatilho:* a mesa abrir
@@ -1686,7 +1715,7 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | H | 🔍 | Varredura: multiplayer — ledger com 14 itens, 3 FAZER (#44, 14/10); o H.1j no ar com o dono (o deploy perdia ~20 s); a H.3a–c com dois FAZER e o H.02 (#46); a H.3d — o H.13, FAZER por decisão do dono: a passagem de bastão entre instâncias (`0008` no #47, o código no #48, o aviso antes do fechamento no #49), provada no ar com 0 perdida (#50) — e a regra de merge virou "pode, mas não no meio de um combate" | ✅ | 16/10/2026 |
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
-| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66); a K.6 — a criação com orçamento: os pacotes e o salário conferidos, o assistente na ficha e o orçamento à vista do GM na mesa (#67); a K.7 — as perícias pelas fontes (com os quatro pilotos), a tela que sugere todas, e o Leap no lugar do Walk (#68) | 🔄 | — |
+| K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66); a K.6 — a criação com orçamento: os pacotes e o salário conferidos, o assistente na ficha e o orçamento à vista do GM na mesa (#67); a K.7 — as perícias pelas fontes (com os quatro pilotos), a tela que sugere todas, e o Leap no lugar do Walk (#68); o fechamento, com o portão da fase e a revisão do que ela produziu (#69) | ✅ | 20/10/2026 |
 | L | 🔨 | Performance e escala | ⬜ | — |
 | Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7 | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
@@ -1695,21 +1724,21 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a Fase J (17/10/2026) |
+| Verificação | Ao fechar a Fase K (20/10/2026) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
 | `npx vitest run` | **1064** testes, 87 arquivos *(+26 da K.7: `skill-tables` 12, `skill-suggestions` 4, `movement` 11, `derived-stats` −1 (o Walk) — 20/10/2026; +33 da K.6: `rules-creation` 19, `creation-wizard` 5, `creation-budget` 8, `sheet-size` +1 — 20/10/2026; +29 da K.5: `rules-netrun` 20, `netrunner-section` 8, `sheet-size` +1 — 20/10/2026; +32 da K.3: `wound-names` 22, `scene-settings` 7, `table-rolls.integration` +3 — 20/10/2026; +53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.11. *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
-| `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) |
+| `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) — de novo ao fechar a K (`BASE_URL=http://127.0.0.1:3100`, com o `netsheet-prod`) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
-| gitleaks local (v8.23.3, a do CI) | **277** commits varridos no `master` em `e1f02e6`, nenhum vazamento — `gitleaks detect --source . --config .gitleaks.toml --redact`. O `master` tem um commit sem merge a mais: o `b1daf6e`, que só apaga arquivo, e o gitleaks não conta (J.5) |
+| gitleaks local (v8.23.3, a do CI) | **315** commits varridos ao fechar a K (o branch do fechamento sobre o `master` em `2d367b6`), nenhum vazamento — `gitleaks detect --source . --config .gitleaks.toml --redact`. Eram 277 na J.5. O histórico tem um commit sem merge a mais: o `b1daf6e`, que só apaga arquivo, e o gitleaks não conta (J.5) |
 | `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia) |
 | Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
 | `node scripts/multiplayer/h1a.mjs` | A mesa de base da H.1a (14/10/2026): três contextos, do zero ao combate, **0** erro de console; um chat custa **6,7 KB** por aba, o ataque mais o dano **~52–72 KB** (depende de o ataque do NPC ferir), 45 s parada **0,5 KB**; a sala no fim, **~17 KB**. Rodada de novo ao fechar a H.3: os mesmos números. `npm run build` antes; sobe o próprio servidor |
 | `node scripts/multiplayer/h1j.mjs` | **No ar, só combinado com o dono** (14/10/2026): o deploy com a mesa aberta deixou as duas instâncias vivas **~20 s**; o despertar da hibernação, **~22 s**. **O ensaio local** (`H1J_LOCAL=1`, com o Supabase local; `H1J_SWITCH_DELAY_S=5` imita o Render da H.3d.0) com o bastão da H.3d, 15/10: **0** mensagem perdida e **6,1 s** de "reconectando" (o código de antes perdia 1) |
-| `node scripts/visual/impressao.mjs` | A ficha impressa em PDF como o navegador imprime (sem fundo), contra o `netsheet-prod`: **6 páginas A4** desde a K.5 (eram 4 na K.1c, 18/10/2026; o deck e os programas entraram na ficha do roteiro), tinta sobre o papel, sem controle nenhum, com a armadura por peça. Abrir o PDF e olhar — não compara pixel |
+| `node scripts/visual/impressao.mjs <pasta>` | A ficha impressa em PDF como o navegador imprime (sem fundo), contra o `netsheet-prod`: **6 páginas A4** desde a K.5 (de novo ao fechar a K, com o Leap no lugar do Walk; a seção da criação fica fora da folha) (eram 4 na K.1c, 18/10/2026; o deck e os programas entraram na ficha do roteiro), tinta sobre o papel, sem controle nenhum, com a armadura por peça. Abrir o PDF e olhar — não compara pixel |
 | `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
 | `npm run audit:colors` | **0** a migrar, e **o CI exige** (F.2.10) — era 1.879 na F.0e e 322 depois da F.2 mecânica. 111 `black`/`white`, à parte *(107 até a K.3, que pôs o `text-black` do botão das condições da cena, como os outros botões do GM; 108 até a K.6, que pôs o dos três botões do assistente de criação — os dois de rolar e o "Aplicar")*. Uma exceção nomeada (o hex do campo `color` do token do grid, sem leitor) |
 | `npx tsx scripts/migrate-colors.ts --conflitos` | **0** conflitos de cor no mesmo elemento (eram 19 — F.2.4), e **o CI exige** (F.2.10) |
