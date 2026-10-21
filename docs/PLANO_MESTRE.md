@@ -1292,13 +1292,15 @@ seguem os grupos abaixo.
       armadura como "SP por localização"; a seção da ficha ganhou o que a K trouxe. **Os ADIAR novos da K** entraram na
       lista da Q em cada PR (de 86 para 99, com quatro feitos); os que a K era dona estão marcados lá. **A memória**
       ganhou só o que o repo não carrega: duas armadilhas do ambiente (o roteiro de tipografia que cai na primeira
-      rodada com o servidor recém-subido, e o da impressão que pede a pasta). **Falta:** o merge do PR do fechamento e o
-      `master` verde depois dele.)*
+      rodada com o servidor recém-subido, e o da impressão que pede a pasta). **Passo 6 conferido:** o #69 mergeado em
+      20/10, e o `master` verde depois dele.)*
 - [x] **K.10** **Revisão do código da K** *(pedido do dono depois do merge do #69, 20/10/2026; o PR #70)*: o código
       dos #62 a #69 lido de novo atrás de duplicação, código morto, regra em dois lugares, validação sem par, cor, a11y e
       documento que diverge, e cada achado pelo filtro. **16 achados: seis consertos, cada um com o teste antes e a
       prova revertendo; sete ADIAR; três DESCARTAR.** Seis em 16 passa de um terço — os dois menores (a mono e o
-      comentário) são de uma linha, e o dono aprovou os seis.
+      comentário) são de uma linha, e o dono aprovou os seis. **Mergeado em 20/10** — e o `master` ficou **vermelho**
+      depois dele, não pelo código: no portão de audit, o alerta alto do `launch-editor` (GHSA-587h-7wmj-h5pm, pelo
+      `vite` ≤ 6.4.3) saiu no mesmo dia. O conserto é o **#71**, `vite` 6.4.4, sem exceção nova (tem correção).
     - [x] **O "Refazer pelo livro" trocava a escolha do pacote** (defeito da K.6b, reproduzido). O `createDraft`
           marcava as primeiras opções do pacote que a ficha tinha, e a opção deixada de fora — legal no pickup — virava
           a escolhida: o Solo de 40/40 com Martial Art na carreira e Brawling no pickup abria travado em "carreira 42 de
@@ -1785,7 +1787,7 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) — de novo ao fechar a K (`BASE_URL=http://127.0.0.1:3100`, com o `netsheet-prod`) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
 | gitleaks local (v8.23.3, a do CI) | **315** commits varridos ao fechar a K (o branch do fechamento sobre o `master` em `2d367b6`), nenhum vazamento — `gitleaks detect --source . --config .gitleaks.toml --redact`. Eram 277 na J.5. O histórico tem um commit sem merge a mais: o `b1daf6e`, que só apaga arquivo, e o gitleaks não conta (J.5) |
-| `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia) |
+| `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia; 20/10: `vite@6.4.4`, o alerta alto do `launch-editor` — GHSA-587h-7wmj-h5pm — publicado no dia, que deixou o `master` vermelho depois do #70) |
 | Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
 | `node scripts/multiplayer/h1a.mjs` | A mesa de base da H.1a (14/10/2026): três contextos, do zero ao combate, **0** erro de console; um chat custa **6,7 KB** por aba, o ataque mais o dano **~52–72 KB** (depende de o ataque do NPC ferir), 45 s parada **0,5 KB**; a sala no fim, **~17 KB**. Rodada de novo ao fechar a H.3: os mesmos números. `npm run build` antes; sobe o próprio servidor |
