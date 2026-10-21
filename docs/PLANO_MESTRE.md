@@ -1436,7 +1436,7 @@ público mudar.
       - [x] **L.1d** O cliente aplica a diferença e, se o `rev` pular, pede a sala inteira.
       - [x] **L.1e** O `/sheet` responde sem a sala; o smoke do CI e o protocolo atualizados.
       - [x] **L.1f** Medir antes e depois — a sala da L.0 e o `h1a.mjs`.
-- [ ] **L.2** `manualChunks` separando **o Supabase**, que está no chunk de entrada e é carregado até
+- [x] **L.2** `manualChunks` separando **o Supabase**, que está no chunk de entrada e é carregado até
       para quem só quer rolar dados — é o maior contribuinte identificado do 1,3 MB. **Não** investir em
       lazy-loading do Yjs: a [ADR 0002](./adr/0002-yjs-websockets.md) o deixou sob observação, e não vale
       otimizar o carregamento de algo que pode sair inteiro. ~~Revisar se
@@ -1447,6 +1447,13 @@ público mudar.
       *Medido na L.0 (20/10/2026):* 56 kB gzip, 30% da entrada, e importado no boot — o `manualChunks` dá cache,
       não primeira carga. **Fica**, só como separação do React e do Supabase em chunks próprios: é uma configuração,
       e o deploy deixa de invalidar os dois.
+      *(21/10/2026 — feita: o `vendorChunk` do `vite.config.ts`, travado no `vendor-chunks.test` (3 testes; revertida a
+      configuração, os 3 falham). A entrada era **635 kB / 188,4 kB gzip** num arquivo; agora são três, que o
+      `index.html` pré-carrega juntos: o app **221 kB / 70,5 kB**, o React 194 kB / 60,7 kB e o Supabase 219 kB /
+      57,2 kB gzip — a primeira visita baixa os mesmos 188,4 kB. **O cache, provado:** mudando só o `App.tsx` e
+      buildando de novo, o chunk do app troca de hash e os dois das bibliotecas, não — quem volta depois de um
+      deploy baixa 70,5 kB, não 188,4 (−63%). Só o React e o Supabase: uma biblioteca que só uma tela carrega (o
+      Yjs) num chunk fixo viria para o boot.)*
 - [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que a E.1f e a G.1f mapearam. *(ARQ-05)*
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [ ] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
@@ -1783,8 +1790,8 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         perder dado entre dois dumps, ou o volume de fichas tornar inaceitável perder um mês.
   - [ ] **Os avisos de descontinuação do CI**: a CodeQL Action do v3 para o v4 (antes de dezembro de 2026), e as
         actions em Node 20 (`actions/checkout@v4`, `supabase/setup-cli@v1`). *Gatilho:* a data, um run falhar, ou
-        sair versão nova. *(O Ubuntu 26 do `ubuntu-latest` se confere no primeiro run depois de 19/10/2026, no passo
-        3b do ritual.)*
+        sair versão nova. *(O Ubuntu 26 do `ubuntu-latest`: **chegou em 21/10/2026**, no CI do merge do #73 — os quatro
+        jobs na `ubuntu-26.04`, verdes.)*
   - [ ] **Os três diagramas adiados** do [`ARQUITETURA.md`](./ARQUITETURA.md#diagramas-adiados): a sequência do
         handshake, a reconexão com last-write-wins e as camadas de token visual.
   - [ ] **A [ADR 0002](./adr/0002-yjs-websockets.md) (Yjs sob observação)**: rever com o que a L mediu. Se o
@@ -1916,7 +1923,7 @@ vermelho se algum virar erro antes:
 
 | Aviso | Onde | Gatilho |
 |---|---|---|
-| `ubuntu-latest` passa a ser Ubuntu 26 | os 4 jobs do `ci.yml` e o `keepalive.yml` | **A partir de 19/10/2026** — conferir o primeiro run depois dessa data |
+| `ubuntu-latest` passa a ser Ubuntu 26 | os 4 jobs do `ci.yml` e o `keepalive.yml` | ✅ **Chegou em 21/10/2026** — o CI do merge do #73 rodou os quatro jobs na `ubuntu-26.04`, verdes. O keepalive se confere no próximo agendado |
 | CodeQL Action v3 descontinuada | `github/codeql-action/upload-sarif@v3` (gitleaks) | **Dezembro de 2026** — trocar por `@v4` antes |
 | Actions em Node 20 forçadas a rodar em Node 24 | `actions/checkout@v4`, `supabase/setup-cli@v1` | Um run falhar por isso, ou sair versão nova das duas |
 | **Node 20 na matriz do `validate`** *(revisão pós-D)* | `ci.yml` — o runtime do **projeto**, não das actions | ✅ **Resolvido na R.8 (29/09):** o CI lê o `.node-version` (24), o mesmo arquivo do Render |
