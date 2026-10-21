@@ -1447,7 +1447,7 @@ público mudar.
       *Medido na L.0 (20/10/2026):* 56 kB gzip, 30% da entrada, e importado no boot — o `manualChunks` dá cache,
       não primeira carga. **Fica**, só como separação do React e do Supabase em chunks próprios: é uma configuração,
       e o deploy deixa de invalidar os dois.
-      *(21/10/2026 — feita: o `vendorChunk` do `vite.config.ts`, travado no `vendor-chunks.test` (3 testes; revertida a
+      *(21/10/2026 — feita, no #74: o `vendorChunk` do `vite.config.ts`, travado no `vendor-chunks.test` (3 testes; revertida a
       configuração, os 3 falham). A entrada era **635 kB / 188,4 kB gzip** num arquivo; agora são três, que o
       `index.html` pré-carrega juntos: o app **221 kB / 70,5 kB**, o React 194 kB / 60,7 kB e o Supabase 219 kB /
       57,2 kB gzip — a primeira visita baixa os mesmos 188,4 kB. **O cache, provado:** mudando só o `App.tsx` e
