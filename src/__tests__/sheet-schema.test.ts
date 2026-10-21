@@ -195,7 +195,9 @@ describe("SEC-05 pelo HTTP — ficha forjada não vira estado da mesa", () => {
       });
 
     expect(res.status).toBe(200);
-    const stored = res.body.players.p1.sheet;
+    // L.1 — o /sheet responde sem a sala; o que ficou gravado se lê na sala.
+    const sala = await request(app).get(`/api/rooms/${code}`).set("X-Session-Token", token);
+    const stored = sala.body.players.p1.sheet;
     expect(stored.woundLevel).toBe(0);
     expect(stored.stats.BODY).toBe(STAT_MAX);
     expect(stored.stats.REF).toBe(STAT_MAX);
