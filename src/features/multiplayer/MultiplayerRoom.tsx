@@ -6,8 +6,11 @@ import {
   InitiativeEntry,
   TableRollKind,
   TacticalGridState,
-  TacticalToken
+  TacticalToken,
+  RoomFullMessage,
+  RoomPatchMessage
 } from '../../types/multiplayer';
+import { applyRoomPatch } from '../../lib/roomPatch';
 import { TacticalGrid } from './TacticalGrid';
 import { CombatPanel } from './CombatPanel';
 import { SceneConditions, signedModifier } from './SceneConditions';
@@ -196,7 +199,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
 
   // Fase 5 (T5.2) — TRANSPORTE UNIFICADO: tenta WebSocket; se não conectar
   // (bloqueado/falhou), cai automaticamente para o SSE (EventSource). Ambos
-  // entregam o MESMO payload (room inteiro em JSON).
+  // entregam o MESMO payload — desde a L.1, a sala inteira na entrada e depois
+  // só a diferença (`delta=1`).
   // Fase 5 (T5.3) — sobre o WS também trafega o protocolo binário do Yjs
   // (grid CRDT + awareness): binário → YjsGridConnection; texto → JSON.
   useEffect(() => {
@@ -206,6 +210,26 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       return;
     }
     let disposed = false;
+    // L.1 (ARQ-01) — o rev da sala que esta conexão tem; -1 até a sala inteira
+    // chegar. Uma diferença que parte de outro rev é uma que não vimos: pede a
+    // sala inteira e ignora as diferenças até ela chegar.
+    let rev = -1;
+    let awaitingFull = false;
+    const requestFull = () => {
+      if (awaitingFull) return;
+      awaitingFull = true;
+      if (wsRef.current === ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ type: 'resync' }));
+        } catch {
+          /* o onclose reconecta, e a entrada é a sala inteira */
+        }
+      } else if (sse) {
+        // O SSE não tem volta: reabrir o stream é pedir a sala inteira.
+        sse.close();
+        sse = connectSse();
+      }
+    };
 
     /** Devolve `'restart'` quando o servidor avisa que vai trocar de instância (H.3d.4). */
     const handlePayload = (raw: string): 'restart' | void => {
@@ -220,6 +244,26 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
           useRoomStore.getState().setErrorMsg(String(parsed.error || 'Ação rejeitada pelo servidor.'));
           return;
         }
+        if (parsed?.type === 'room:full') {
+          const m = parsed as RoomFullMessage;
+          rev = m.rev;
+          awaitingFull = false;
+          useRoomStore.getState().setRoom(m.room);
+          return;
+        }
+        if (parsed?.type === 'room:patch') {
+          const m = parsed as RoomPatchMessage;
+          const current = useRoomStore.getState().room;
+          if (awaitingFull) return;
+          if (!current || m.base !== rev) {
+            requestFull();
+            return;
+          }
+          rev = m.rev;
+          useRoomStore.getState().setRoom(applyRoomPatch(current, m));
+          return;
+        }
+        // A sala inteira sem `type` — a de antes da L.1.
         useRoomStore.getState().setRoom(parsed);
       } catch {
         /* ignore */
@@ -233,7 +277,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       // query porque `EventSource` não aceita header customizado — mesma
       // limitação que o WebSocket já contorna do mesmo jeito, logo abaixo.
       const es = new EventSource(
-        apiUrl(`/api/rooms/${roomCode}/stream?token=${encodeURIComponent(sessionToken)}`)
+        apiUrl(`/api/rooms/${roomCode}/stream?token=${encodeURIComponent(sessionToken)}&delta=1`)
       );
       eventSourceRef.current = es;
       es.onmessage = (ev) => handlePayload(ev.data);
@@ -244,7 +288,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     };
 
     let sse: EventSource | null = null;
-    const socketUrl = wsUrl(`/ws/rooms/${roomCode}?token=${encodeURIComponent(sessionToken)}`);
+    const socketUrl = wsUrl(`/ws/rooms/${roomCode}?token=${encodeURIComponent(sessionToken)}&delta=1`);
     const ws = new WebSocket(socketUrl);
     ws.binaryType = 'arraybuffer';
     wsRef.current = ws;
