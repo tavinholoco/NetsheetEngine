@@ -91,3 +91,34 @@ export interface GameRoom {
   removedPeerIds?: string[];
 }
 
+/**
+ * L.1 (ARQ-01) — o reenvio por diferença. Quem abre o socket (ou o SSE) com
+ * `delta=1` recebe a sala inteira uma vez (`room:full`) e, depois, só o que
+ * mudou (`room:patch`). Cada diferença diz de qual `rev` parte (`base`): se não
+ * for o que o cliente tem, ele pede a sala inteira (`{ type: "resync" }`).
+ * Quem não pede `delta` — a aba aberta antes do deploy — recebe a sala inteira
+ * a cada mudança, como antes. Contrato em docs/PROTOCOLO_MULTIPLAYER.md.
+ */
+export interface RoomFullMessage {
+  type: 'room:full';
+  rev: number;
+  room: GameRoom;
+}
+
+export interface RoomPatchMessage {
+  type: 'room:patch';
+  /** O rev que o cliente precisa ter para aplicar esta diferença. */
+  base: number;
+  /** O rev depois de aplicada. */
+  rev: number;
+  /** Os campos do topo que mudaram (o grid, a iniciativa e as condições da cena moram aqui). */
+  set?: Partial<GameRoom>;
+  /** Os campos do topo que deixaram de existir. */
+  unset?: string[];
+  /** Cada jogador que mudou, inteiro; `null` é quem saiu. */
+  players?: Record<string, RoomPlayer | null>;
+  npcs?: Record<string, RoomPlayer | null>;
+  /** `drop` tira as mais antigas (o teto do chat) e `append` põe as novas; `replace` troca tudo. */
+  chat?: { drop: number; append: ChatMessage[] } | { replace: ChatMessage[] };
+}
+
