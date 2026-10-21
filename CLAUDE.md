@@ -118,6 +118,11 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   a um socket da mesa passa pelo `sendToSocket`**, com o teto de 1 MiB (SEC-18) — envio novo também; a
   exceção, comentada, é o aviso da troca de instância —, o SSE tem 3 streams por jogador, e o awareness do
   Yjs é conferido em `server/awarenessGuard.ts` (forma, dono, cursor só do GM — SEC-17).
+- **Desde a L.1 (21/10), a sala sai na vista do papel e por diferença.** O jogador não recebe a ficha do NPC
+  (E.20) em porta nenhuma: **porta nova que entregue a sala passa pelo `roomViewFor`** (`server/roomDelta.ts`), e
+  entrada de socket ou stream pelo `roomEntryFor` do `server.ts`. Quem conecta com `delta=1` recebe `room:full`
+  e depois `room:patch` com `rev`; sem `delta`, a sala inteira, como antes — é o que mantém a aba aberta viva
+  num deploy. O lado do cliente é o `src/lib/roomPatch.ts`; o contrato, o §6.2 do `PROTOCOLO_MULTIPLAYER.md`.
 - **Ver o app rodando:** a configuração `netsheet-dev` do [`.claude/launch.json`](./.claude/launch.json)
   (`npm run dev`, porta 3000) abre o preview no painel. Em modo dev, **deep link volta para `/`**
   (G.02 do [ledger da G](./docs/varreduras/G-frontend.md): ADIAR, com a versão de uma linha pronta) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,

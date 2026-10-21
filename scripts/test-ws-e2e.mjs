@@ -8,6 +8,8 @@
 //   1. Frames de texto (JSON) são processados (chat + broadcast)
 //   2. Frames binários (protocolo Yjs) são roteados sem crash
 //   3. rollResult forjado no `message` é ignorado (anti-forjamento)
+//   4. L.1 — com `delta=1`, a sala inteira na entrada e depois só a diferença;
+//      sem ele (os passos acima), a sala inteira a cada mudança, como antes
 // Uso (servidor de produção em :3000): node scripts/test-ws-e2e.mjs
 // No CI: roda no job validate (smoke test do servidor).
 // ============================================================
@@ -51,12 +53,28 @@ ws.on("message", (raw) => {
 });
 await new Promise((r, rej) => { ws.once("open", r); ws.once("error", rej); });
 
+// L.1 — um segundo socket do mesmo GM, pedindo a diferença.
+const wsDelta = new WebSocket(`${WS_URL}/ws/rooms/${code}?token=${encodeURIComponent(data.sessionToken)}&delta=1`);
+const deltaMsgs = [];
+wsDelta.on("error", () => { errored = true; });
+wsDelta.on("message", (raw, isBinary) => {
+  if (isBinary) return;
+  try { deltaMsgs.push(JSON.parse(raw.toString("utf8"))); } catch { /* não é JSON */ }
+});
+await new Promise((r, rej) => { wsDelta.once("open", r); wsDelta.once("error", rej); });
+
 // 3. Mensagem de texto via WS → broadcast chega de volta
 ws.send(JSON.stringify({ type: "message", text: "ping-ci" }));
 await wait(700);
 const last = received[received.length - 1]?.chatMessages || [];
 const found = last.find((m) => m.text === "ping-ci");
 check("3. Texto (isBinary=false) processado → broadcast", !!found && found.senderHandle === "CI_GM");
+const entrada = deltaMsgs[0];
+const doChat = deltaMsgs.find((m) => m.type === "room:patch" && m.chat && JSON.stringify(m.chat).includes("ping-ci"));
+check(
+  "3b. Com delta=1: a sala inteira na entrada, e a mensagem como diferença pequena (L.1)",
+  entrada?.type === "room:full" && entrada.rev > 0 && !!doChat && doChat.base >= entrada.rev && JSON.stringify(doChat).length < 2048
+);
 
 // 4. rollResult forjado no message é IGNORADO (anti-forjamento)
 ws.send(JSON.stringify({ type: "message", text: "hack?", rollResult: { total: 999 } }));
@@ -77,6 +95,7 @@ const last3 = received[received.length - 1]?.chatMessages || [];
 check("6. Texto processado após binário", last3.some((m) => m.text === "ping-pos-binary"));
 
 ws.close();
+wsDelta.close();
 // Sai da sala de teste: o GM era o único, então o servidor a apaga. Contra
 // produção (verify-prod.mjs), isso evita deixar a sala até o coletor (24 h).
 await fetch(`${BASE}/api/rooms/${code}/leave`, {

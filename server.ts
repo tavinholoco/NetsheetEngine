@@ -26,6 +26,8 @@ import { MAX_PROMPT_CHARS, NETRUNNER_SYSTEM_PROMPT } from "./server/aiPrompt.js"
 import { WS_LIMITS, WsRateLimiter, allowInWindow, type WsBudget } from "./server/wsLimits.js";
 // Fase J (J.1d — SEC-17) — o awareness do Yjs é entrada de usuário.
 import { checkAwarenessUpdate } from "./server/awarenessGuard.js";
+import { RoomFeed, audienceOf, roomViewFor, type RoomAudience } from "./server/roomDelta.js";
+import type { GameRoom } from "./src/types/multiplayer.js";
 import {
   createRoom,
   getRoom,
@@ -313,10 +315,11 @@ function getSessionPeerIdFromQuery(req: express.Request, code: string): string |
 // Antes, o status saía do TEXTO — 404 se a mensagem dizia "não encontrad",
 // senão 403 —, e renomear uma mensagem mudava o status da API. O
 // `respondToCombat` da Fase D repetia a ideia com outra regra; virou esta.
-function respondWithResult(res: express.Response, result: RoomResult<object>) {
+// L.1 (E.20) — a sala vai como o papel de quem pediu a recebe.
+function respondWithResult(res: express.Response, result: RoomResult<object>, requesterPeerId: string) {
   if (!result.room) return sendError(res, result.code, result.error);
   broadcastRoomUpdate(result.room.code);
-  return res.json(result.room);
+  return res.json(roomViewFor(result.room, audienceOf(result.room, requesterPeerId)));
 }
 
 // SSE Active Connections Map: roomCode -> Set<Response>
@@ -385,6 +388,99 @@ function sendToSocket(code: string, ws: WebSocket, data: string | Uint8Array): b
   }
 }
 
+// ==========================================
+// L.1 (ARQ-01) — O REENVIO POR DIFERENÇA
+// ==========================================
+// Quem conecta com `delta=1` recebe a sala inteira uma vez (`room:full`, com o
+// `rev`) e depois só o que mudou (`room:patch`); quem não pede — a aba aberta
+// antes do deploy — recebe a sala inteira a cada mudança, como antes. As peças
+// puras estão em server/roomDelta.ts. Um `RoomFeed` por papel e por sala: o
+// Mestre e o jogador recebem vistas diferentes (E.20). O feed só vive enquanto
+// a sala tem quem escute: sem ninguém, quem chegar recebe a sala inteira.
+const roomFeeds = new Map<string, Record<RoomAudience, RoomFeed>>();
+const wsDelta = new WeakSet<WebSocket>();
+const sseDelta = new WeakSet<Response>();
+
+function feedFor(key: string): Record<RoomAudience, RoomFeed> {
+  let feed = roomFeeds.get(key);
+  if (!feed) {
+    feed = { gm: new RoomFeed(), player: new RoomFeed() };
+    roomFeeds.set(key, feed);
+  }
+  return feed;
+}
+
+function dropFeedIfIdle(key: string): void {
+  if (!wsClients[key]?.size && !sseClients[key]?.size) roomFeeds.delete(key);
+}
+
+/** Leva o feed do papel até a sala de agora: a diferença (se houve) e a sala inteira, sob demanda. */
+function advanceFeed(key: string, room: GameRoom, audience: RoomAudience) {
+  const view = roomViewFor(room, audience);
+  const patch = feedFor(key)[audience].advance(view);
+  let full: string | null = null;
+  return {
+    view,
+    patch: patch ? JSON.stringify(patch) : null,
+    full: () => (full ??= JSON.stringify(view))
+  };
+}
+
+interface RoomListener {
+  audience: RoomAudience;
+  delta: boolean;
+  send: (text: string) => void;
+}
+
+/** Cada socket e cada stream da sala, com o papel de quem escuta. */
+function forEachListener(key: string, room: GameRoom, fn: (l: RoomListener) => void, except?: WebSocket | Response): void {
+  for (const res of [...(sseClients[key] ?? [])]) {
+    if (res === except) continue;
+    fn({ audience: audienceOf(room, ssePeer.get(res)), delta: sseDelta.has(res), send: (t) => sendToSse(key, res, t) });
+  }
+  for (const ws of [...(wsClients[key] ?? [])]) {
+    if (ws === except) continue;
+    fn({ audience: audienceOf(room, wsPeer.get(ws)), delta: wsDelta.has(ws), send: (t) => sendToSocket(key, ws, t) });
+  }
+}
+
+/**
+ * A sala inteira para quem chega (ou pede `resync`). Antes, o feed do papel vai
+ * até agora — e quem já escuta recebe a diferença que isso der, para todos
+ * ficarem no mesmo `rev`. Quem chega fica de fora dessa diferença (`except`):
+ * ela parte de um rev que ele não tem.
+ */
+function roomEntryFor(key: string, room: GameRoom, peerId: string, delta: boolean, except?: WebSocket | Response): string {
+  const audience = audienceOf(room, peerId);
+  const d = advanceFeed(key, room, audience);
+  if (d.patch) {
+    forEachListener(key, room, (l) => {
+      if (l.delta && l.audience === audience) l.send(d.patch!);
+    }, except);
+  }
+  if (!delta) return d.full();
+  return JSON.stringify({ type: "room:full", rev: feedFor(key)[audience].rev, room: d.view });
+}
+
+/** E.03 (SEC-15) — stream que não lê não acumula reenvios na memória. */
+function sendToSse(key: string, res: Response, text: string): void {
+  const clients = sseClients[key];
+  if (res.writableLength > WS_LIMITS.maxBufferedBytes) {
+    logger.warn("slow_consumer_closed", { room: key, peerId: ssePeer.get(res), transport: "sse", bytes: res.writableLength });
+    clients?.delete(res);
+    try { res.end(); } catch { /* já fechado */ }
+    return;
+  }
+  try {
+    res.write(`data: ${text}\n\n`);
+    if (typeof (res as any).flush === 'function') {
+      (res as any).flush();
+    }
+  } catch (e) {
+    clients?.delete(res);
+  }
+}
+
 function broadcastRoomUpdate(code: string) {
   const room = getRoom(code);
   if (!room) return;
@@ -403,38 +499,20 @@ function broadcastRoomUpdate(code: string) {
     logger.error("yjs_seed_failed", { room: code.toUpperCase(), message: (e as Error)?.message || String(e) });
     destroyRoomYjs(code);
   }
-  const payload = JSON.stringify(room);
-
-  // SSE (fallback) — mesmo payload JSON
-  const clients = sseClients[code.toUpperCase()];
-  if (clients && clients.size > 0) {
-    const ssePayload = `data: ${payload}\n\n`;
-    clients.forEach(res => {
-      // E.03 (SEC-15) — stream que não lê não acumula reenvios na memória.
-      if (res.writableLength > WS_LIMITS.maxBufferedBytes) {
-        logger.warn("slow_consumer_closed", { room: code.toUpperCase(), peerId: ssePeer.get(res), transport: "sse", bytes: res.writableLength });
-        clients.delete(res);
-        try { res.end(); } catch { /* já fechado */ }
-        return;
-      }
-      try {
-        res.write(ssePayload);
-        if (typeof (res as any).flush === 'function') {
-          (res as any).flush();
-        }
-      } catch (e) {
-        clients.delete(res);
-      }
-    });
-  }
-
-  // Fase 5 (T5.2) — WebSocket (transporte base): mesmo payload, menor latência.
+  // L.1 — o mesmo texto pelo SSE (fallback) e pelo WebSocket (o transporte
+  // base, T5.2); o que muda é o papel e se quem escuta pediu diferença. Os dois
+  // feeds andam a cada reenvio, mesmo sem ninguém do papel escutando: quem
+  // chegar depois recebe a sala inteira com o rev certo.
   // E.03 (SEC-15) — socket que não lê é fechado, em vez de o servidor guardar
   // cada reenvio da sala para ele; desde a J (SEC-18), no `sendToSocket`.
-  const sockets = wsClients[code.toUpperCase()];
-  if (sockets && sockets.size > 0) {
-    for (const ws of sockets) sendToSocket(code, ws, payload);
-  }
+  const key = code.toUpperCase();
+  if (!wsClients[key]?.size && !sseClients[key]?.size) return;
+  const deliveries = { gm: advanceFeed(key, room, "gm"), player: advanceFeed(key, room, "player") };
+  forEachListener(key, room, (l) => {
+    const d = deliveries[l.audience];
+    if (!l.delta) l.send(d.full());
+    else if (d.patch) l.send(d.patch);
+  });
 }
 
 // ==========================================
@@ -556,7 +634,7 @@ app.post("/api/rooms/create", roomLimiter, (req, res) => {
   }
   const result = createRoom(code, name, gmHandle, gmPeerId);
   broadcastRoomUpdate(result.room.code);
-  res.json({ room: result.room, sessionToken: result.sessionToken });
+  res.json({ room: roomViewFor(result.room, "gm"), sessionToken: result.sessionToken });
 });
 
 // Join a room
@@ -606,14 +684,14 @@ app.post("/api/rooms/join", roomLimiter, (req, res) => {
   // hora, não pelo debounce. Quem dava F5 logo antes de uma queda voltava com
   // um token que o servidor restaurado não conhecia — e virava outro jogador.
   void persistRoomNow(result.room.code);
-  res.json({ room: result.room, sessionToken: result.sessionToken });
+  res.json({ room: roomViewFor(result.room, audienceOf(result.room, peerId)), sessionToken: result.sessionToken });
 });
 
 // Get current room state (B.3 — SEC-02)
 // Antes devolvia a sala INTEIRA — fichas, chat e grid — para quem soubesse o
 // código. Agora o payload depende de haver sessão na mesa:
 //   sem token          → recorte público (o mesmo que o lobby já expõe)
-//   token válido       → sala completa
+//   token válido       → sala completa, na vista do papel (L.1 — E.20)
 //   token inválido     → 401, para não mascarar bug de cliente com meio payload
 app.get("/api/rooms/:code", (req, res) => {
   const room = getRoom(req.params.code);
@@ -630,7 +708,7 @@ app.get("/api/rooms/:code", (req, res) => {
   if (!peerId) {
     return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
-  res.json(room);
+  res.json(roomViewFor(room, audienceOf(room, peerId)));
 });
 
 // Sync player sheet (T1.7 — autenticado por token)
@@ -649,7 +727,9 @@ app.post("/api/rooms/:code/sheet", roomLimiter, (req, res) => {
   const result = updatePlayerSheet(req.params.code, peerId, sheet);
   if (!result.room) return sendError(res, result.code, result.error);
   broadcastRoomUpdate(result.room.code);
-  res.json(result.room);
+  // L.1 — sem a sala: o cliente sincroniza a ficha a cada pausa de 600 ms na
+  // edição e nunca leu esta resposta; a sala chega pelo reenvio.
+  res.json({ ok: true });
 });
 
 // GM Power: Update player's Bio-Monitor / health
@@ -663,7 +743,7 @@ app.post("/api/rooms/:code/player-health", roomLimiter, (req, res) => {
     return sendError(res, "invalid_input", "targetPeerId e woundLevel são obrigatórios.");
   }
   const result = updatePlayerWoundLevel(req.params.code, requesterPeerId, targetPeerId, woundLevel);
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // Tactical Grid sync (T1.2 — apenas GM)
@@ -677,7 +757,7 @@ app.post("/api/rooms/:code/tactical-grid", roomLimiter, (req, res) => {
     return sendError(res, "invalid_input", "gridState é obrigatório.");
   }
   const result = updateTacticalGrid(req.params.code, requesterPeerId, gridState);
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // GM Power: Generate random NPC
@@ -692,7 +772,7 @@ app.post("/api/rooms/:code/npcs/generate", roomLimiter, (req, res) => {
     return sendError(res, "npcs_full", `A mesa já tem ${MAX_NPCS_PER_ROOM} NPCs. Remova algum para gerar outro.`);
   }
   const result = generateRoomNpc(req.params.code, requesterPeerId, archetypeId);
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // GM Power: Generate random Player Edgerunner sheet
@@ -702,7 +782,7 @@ app.post("/api/rooms/:code/players/generate", roomLimiter, (req, res) => {
     return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const result = generateRoomPlayerEdgerunner(req.params.code, requesterPeerId);
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // GM Power: Delete GM-generated player sheet
@@ -714,7 +794,7 @@ app.post("/api/rooms/:code/players/:targetPeerId/delete", roomLimiter, (req, res
   const result = deleteGeneratedPlayer(req.params.code, requesterPeerId, req.params.targetPeerId);
   // R.3 (SEC-09) — a sessão já foi revogada; fecha o que ele ainda tem aberto.
   if (result.room && result.removedPeerId) closePeerSockets(req.params.code, result.removedPeerId);
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // GM Power: Delete NPC
@@ -724,7 +804,7 @@ app.post("/api/rooms/:code/npcs/:npcId/delete", roomLimiter, (req, res) => {
     return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const result = deleteRoomNpc(req.params.code, requesterPeerId, req.params.npcId);
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // GM Power: Update NPC Wound Level
@@ -738,7 +818,7 @@ app.post("/api/rooms/:code/npcs/:npcId/health", roomLimiter, (req, res) => {
     return sendError(res, "invalid_input", "woundLevel é obrigatório.");
   }
   const result = updateNpcWoundLevel(req.params.code, requesterPeerId, req.params.npcId, woundLevel);
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // Fase D (D.1) — GM aplica dano: o servidor faz a conta do livro (armadura →
@@ -750,7 +830,7 @@ app.post("/api/rooms/:code/damage", roomLimiter, (req, res) => {
     return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { targetId, raw, location } = req.body ?? {};
-  return respondWithResult(res, applyDamage(req.params.code, requesterPeerId, { targetId, raw, location }));
+  return respondWithResult(res, applyDamage(req.params.code, requesterPeerId, { targetId, raw, location }), requesterPeerId);
 });
 
 // Fase D (D.3) — GM ataca com um NPC: o servidor rola ataque contra a
@@ -761,7 +841,7 @@ app.post("/api/rooms/:code/attack", roomLimiter, (req, res) => {
     return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { attackerId, targetId, range, difficulty } = req.body ?? {};
-  return respondWithResult(res, resolveGmAttack(req.params.code, requesterPeerId, { attackerId, targetId, range, difficulty }));
+  return respondWithResult(res, resolveGmAttack(req.params.code, requesterPeerId, { attackerId, targetId, range, difficulty }), requesterPeerId);
 });
 
 // Fase D (D.5) — GM estabiliza quem está em Mortal: para o death save por turno.
@@ -771,7 +851,7 @@ app.post("/api/rooms/:code/stabilize", roomLimiter, (req, res) => {
     return sendError(res, "session_invalid", ERR_SESSAO_MESA);
   }
   const { targetId, stabilized } = req.body ?? {};
-  return respondWithResult(res, setStabilized(req.params.code, requesterPeerId, { targetId, stabilized }));
+  return respondWithResult(res, setStabilized(req.params.code, requesterPeerId, { targetId, stabilized }), requesterPeerId);
 });
 
 // Send chat message (T1.7 — autenticado; handle/role vêm do servidor).
@@ -785,7 +865,7 @@ app.post("/api/rooms/:code/message", roomLimiter, chatLimiter, (req, res) => {
   }
   const { text } = req.body ?? {};
   const result = postChatMessage(req.params.code, requesterPeerId, text);
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // Fase 5 (T5.4) — rolagem server-authoritative (fallback REST p/ SSE): o
@@ -799,7 +879,7 @@ app.post("/api/rooms/:code/roll", roomLimiter, (req, res) => {
   const result = rollDiceForPlayer(req.params.code, requesterPeerId, { kind, skillName });
   if (!result.room) return sendError(res, result.code, result.error);
   broadcastRoomUpdate(result.room.code);
-  return res.json({ room: result.room, roll: result.roll });
+  return res.json({ room: roomViewFor(result.room, audienceOf(result.room, requesterPeerId)), roll: result.roll });
 });
 
 // Fase 3 (T3.4) — heartbeat: mantém o jogador online enquanto a aba estiver
@@ -826,7 +906,7 @@ app.post("/api/rooms/:code/settings", roomLimiter, (req, res) => {
   }
   const { locationName, combatModifier, modifierReason } = req.body ?? {};
   const result = updateRoomSettings(req.params.code, requesterPeerId, locationName, combatModifier, modifierReason);
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // Leave room endpoint (T1.7 — autenticado por token)
@@ -846,6 +926,7 @@ app.post("/api/rooms/:code/leave", roomLimiter, async (req, res) => {
     await deleteRoomPersisted(req.params.code);
     // Fase 5 (T5.3) — descarta o doc CRDT/awareness da sala encerrada.
     destroyRoomYjs(req.params.code);
+    roomFeeds.delete(req.params.code.toUpperCase());
   }
   res.json({ success: true });
 });
@@ -869,7 +950,7 @@ app.post("/api/rooms/:code/initiative", roomLimiter, (req, res) => {
     // E.3c — antes devolvia a sala e a reenviava a todos, sem conferir o GM.
     return sendError(res, "invalid_input", "Informe action (next ou roll) ou initiativeList.");
   }
-  return respondWithResult(res, result);
+  return respondWithResult(res, result, requesterPeerId);
 });
 
 // Server-Sent Events (SSE) stream for live real-time updates (< 50ms latency)
@@ -932,11 +1013,16 @@ app.get("/api/rooms/:code/stream", (req, res) => {
       /* já fechado */
     }
   }
+  // L.1 — a sala inteira de entrada, antes de entrar na lista (a diferença que
+  // levar o feed até agora parte de um rev que este stream não tem).
+  const delta = req.query?.delta === "1";
+  const entrada = roomEntryFor(code, room, peerId, delta);
   sseClients[code].add(res);
   ssePeer.set(res, peerId);
+  if (delta) sseDelta.add(res);
 
   // Send initial state immediately
-  res.write(`data: ${JSON.stringify(room)}\n\n`);
+  res.write(`data: ${entrada}\n\n`);
 
   // Keep-alive ping interval to keep connection alive through cloud proxies
   const keepAlive = setInterval(() => {
@@ -951,6 +1037,7 @@ app.get("/api/rooms/:code/stream", (req, res) => {
   req.on("close", () => {
     clearInterval(keepAlive);
     sseClients[code]?.delete(res);
+    dropFeedIfIdle(code);
   });
 });
 
@@ -967,8 +1054,9 @@ app.get("/api/rooms/:code/stream", (req, res) => {
 //   { type: "message", text?, rollResult? }  → postChatMessage (broadcast)
 //   { type: "heartbeat" }                    → touchPlayer (sem broadcast)
 //   { type: "initiative", action?, initiativeList? } → nextTurn/updateInitiative
-// O broadcast (room inteiro em JSON) é o MESMO do SSE — o cliente usa WS ou
-// cai para SSE automaticamente.
+//   { type: "resync" }                       → a sala inteira, só a quem pediu (L.1)
+// O broadcast é o MESMO do SSE — o cliente usa WS ou cai para SSE
+// automaticamente. Desde a L.1, com `?delta=1`, é a diferença (ver o reenvio).
 // R.4 (SEC-10) — o `maxPayload` era o padrão do `ws` (100 MiB); agora é o
 // mesmo teto do REST. Quadro maior fecha o socket com 1009.
 const wss = new WebSocketServer({ noServer: true, maxPayload: WS_LIMITS.maxPayloadBytes });
@@ -1249,11 +1337,17 @@ function dropSocketAwareness(code: string, ws: WebSocket): void {
 interface WsConnMeta {
   code: string;
   peerId: string;
+  /** L.1 — o cliente pediu o reenvio por diferença (`?delta=1`). */
+  delta: boolean;
 }
 
 wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMeta) => {
-  const { code, peerId } = meta;
+  const { code, peerId, delta } = meta;
+  // L.1 — a sala inteira de entrada, antes de entrar na lista (ver o SSE).
+  const inicial = getRoom(code);
+  const entrada = inicial ? roomEntryFor(code, inicial, peerId, delta) : null;
   wsPeer.set(ws, peerId);
+  if (delta) wsDelta.add(ws);
   if (!wsClients[code]) wsClients[code] = new Set();
   wsClients[code].add(ws);
 
@@ -1267,8 +1361,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
   }
 
   // Estado inicial imediato (mesmo comportamento do SSE)
-  const room = getRoom(code);
-  if (room) sendToSocket(code, ws, JSON.stringify(room));
+  if (entrada) sendToSocket(code, ws, entrada);
 
   ws.on("message", (raw: any, isBinary: boolean) => {
     // H.3d — o que chega entre a entrega do bastão e o fechamento do socket
@@ -1330,6 +1423,15 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           if (result?.room) broadcastRoomUpdate(code);
           break;
         }
+        case "resync": {
+          // L.1 — o cliente viu um buraco no rev e pede a sala inteira. É banda
+          // (a sala inteira a um socket), então tem o teto das ações.
+          if (!wsDelta.has(ws)) break;
+          if (!wsAllow(ws, code, peerId, "action", "Muitas ações. Aguarde um instante.")) break;
+          const room = getRoom(code);
+          if (room) sendToSocket(code, ws, roomEntryFor(code, room, peerId, true, ws));
+          break;
+        }
         default:
           break;
       }
@@ -1374,6 +1476,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
       // Sem sockets WS — o doc Yjs pode ser descartado (o JSON é a verdade)
       destroyRoomYjs(code);
     }
+    dropFeedIfIdle(code);
   });
 
   ws.on("error", () => {
@@ -1474,6 +1577,7 @@ function startRoomCollector(): void {
       logger.info("rooms_collected", { count: collected.length, codes: collected.slice(0, 10) });
       for (const code of collected) {
         destroyRoomYjs(code);
+        roomFeeds.delete(code.toUpperCase());
         await deleteRoomPersisted(code);
       }
     })().catch((e) => {
@@ -1686,7 +1790,7 @@ export function attachRealtime(server: http.Server): void {
       socket.destroy();
       return;
     }
-    const meta: WsConnMeta = { code, peerId };
+    const meta: WsConnMeta = { code, peerId, delta: url.searchParams.get("delta") === "1" };
     try {
       wss.handleUpgrade(req, socket, head, (ws) => {
         wss.emit("connection", ws, req, meta);

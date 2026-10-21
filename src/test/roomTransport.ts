@@ -32,10 +32,14 @@ export class ControlledWebSocket {
   onclose: ((ev: { code: number }) => void) | null = null;
   onmessage: ((ev: { data: unknown }) => void) | null = null;
   onerror: (() => void) | null = null;
+  /** L.1 — o que a tela mandou pelo socket (o `resync`, por exemplo). */
+  sent: unknown[] = [];
   constructor(readonly url: string) {
     ControlledWebSocket.instances.push(this);
   }
-  send() {}
+  send(data: unknown) {
+    this.sent.push(data);
+  }
   close() {
     this.readyState = 3;
   }
@@ -63,10 +67,16 @@ export class ControlledEventSource {
   static instances: ControlledEventSource[] = [];
   onmessage: ((ev: { data: string }) => void) | null = null;
   onerror: (() => void) | null = null;
+  closed = false;
   constructor(readonly url: string) {
     ControlledEventSource.instances.push(this);
   }
-  close() {}
+  close() {
+    this.closed = true;
+  }
+  receive(data: string) {
+    this.onmessage?.({ data });
+  }
 }
 
 /**
