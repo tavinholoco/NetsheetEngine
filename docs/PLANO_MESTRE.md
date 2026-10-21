@@ -1416,7 +1416,7 @@ público mudar.
       - **Ordem da fase:** L.1 → L.2 → L.5 → L.3 → L.4 → L.6, um PR por etapa.
 - [x] **L.1** Broadcast por delta ~~(`chat:new`, `player:health`, `initiative:set`)~~; estado completo só
       no join e na reconexão. *(ARQ-01)*
-      *(21/10/2026 — feita: +33 testes, 1105 em 90 arquivos; a prova revertendo derruba 7 de 8 no servidor, 5 de
+      *(21/10/2026 — feita, no #73: +33 testes, 1105 em 90 arquivos; a prova revertendo derruba 7 de 8 no servidor, 5 de
       6 na tela e 6 do E.20. **Medido com o `h1a.mjs`**, o mesmo roteiro no `master` e no branch, build de
       produção: um chat custava **6,8 KB por aba** e custa **0,2 KB**; o combate, de **51,9 KB** para **7,9 KB**.
       Na mesa grande da L.0 (sala de 122 KB): o chat vai em 0,21 KB, o token movido em 2,2 KB, a virada de
