@@ -593,7 +593,7 @@ quem tem outra ocupação. Ponto de corte natural: **fechando A–D o jogo já r
 identidade visual nova; e as varreduras viram manutenção de fim de semana.
 *(Revisão de robustez, 29/09/2026: o que resta, de E a M, soma **18,5–23,5 dias** pelas estimativas
 das próprias fases — e duas estão curtas: a K com a Net inteira (ver K.0) e a L com o broadcast por
-diferença (ver L.0).)*
+diferença (ver L.0).)* *(20/10/2026, L.0: a L foi de 3 para **4–5 dias** — a L.1 sozinha leva ~2.)*
 
 Legenda: 🔨 construção · 🔍 varredura (filtro de necessidade obrigatório)
 
@@ -1339,12 +1339,12 @@ seguem os grupos abaixo.
 
 ---
 
-### FASE L — AGUENTAR UMA MESA DE VERDADE 🔨 *(3 dias)*
+### FASE L — AGUENTAR UMA MESA DE VERDADE 🔨 *(4–5 dias, refeita na L.0 — era 3)*
 
 Com jogadores convidados (decisão 3), é a fase que mais pode esperar — e a primeira a antecipar se o
 público mudar.
 
-- [ ] **L.0** 🔍 **Verificação de premissas** — *(acrescentado na revisão pós-D, 29/09/2026)*. Já
+- [x] **L.0** 🔍 **Verificação de premissas** — *(acrescentado na revisão pós-D, 29/09/2026)*. Já
       sabido: a L.2 falava de um bundle que não existe mais (ver a nota nela); a L.6 perdeu a fonte de
       dado que supunha (ver a nota nela); e a **R.4 põe teto no abuso** do broadcast — a L.1 fica com o
       custo do **uso normal**, e deve ser decidida com os números do Registro de sessões (R.12), não
@@ -1360,8 +1360,73 @@ público mudar.
       - **A L.3 depende dos mapas de corte da E.1f e da G.1f** — sem eles, fatiar vira varredura nova.
       - **A L.5 parte de 20 `any`** (fora de teste e de comentário; eram 23 na auditoria) e **12
         `console.*`** no cliente.
-- [ ] **L.1** Broadcast por delta (`chat:new`, `player:health`, `initiative:set`); estado completo só
+      *(20–21/10/2026 — medidas contra o `master` em `4b90aaf`, com a linha de base batendo: `tsc` 0, **1072**
+      testes em 87 arquivos. A sala foi montada pelo próprio `roomManager`, e o chunk, por um plugin de medida no
+      build, fora do repositório. **Caiu uma premissa e cresceu outra:** os três eventos da L.1 não cobrem o que
+      mais pesa — a ficha editada e o token movido —, e a L.1 abrir dispara o gatilho do E.20. O que cada item
+      mediu:)*
+      - **L.1 — a sala da K pesa o dobro, e o reenvio sai de três portas que o plano não via.** Com o chat cheio:
+        4 jogadores com fichas novas, **57 KB** por reenvio; 4 veteranos (a ficha da K.2f), **102 KB**; 6 veteranos
+        e 6 NPCs, **142 KB** — 103 KB só de fichas. Com uma conexão por jogador e o GM, e 150 ações por hora, a mesa
+        grande gasta **~1 MB por ação e 0,57 GB numa sessão de 4 h**: com 2–4 sessões no mês, **1,1–2,3 GB dos
+        5 GB** do workspace, perto do gatilho de 2,5 GB. Uma mensagem de chat sozinha teria ~140 bytes, e um jogador,
+        ~3 KB. As portas:
+        - **A ficha editada** reenvia todas as fichas a cada pausa de 600 ms (`MultiplayerRoom.tsx:392`), e os três
+          eventos do texto original (`chat:new`, `player:health`, `initiative:set`) não a cobrem.
+        - **O token movido** chega pelo Yjs e termina num `broadcastRoomUpdate` (`server.ts:1164`): cada *drop* no
+          grid reenvia a sala inteira, além do update binário.
+        - **A resposta REST** de toda ação devolve a sala inteira, e o cliente a joga fora — fora o criar e o
+          entrar, que a gravam (`api/rooms.ts:54`). No `/sheet`, é mais uma sala por edição.
+        - **Uma armadilha:** o heartbeat muda o `lastActiveAt` do jogador sem reenviar (`touchPlayer`), e o cliente
+          não lê o campo. Uma diferença ingênua por jogador mandaria a ficha de todos a cada ação.
+        - **O E.20 dispara:** o gatilho dele é "a L.1 abrir". A tela do jogador não lê a ficha do NPC — a lista
+          dos NPCs é do GM (`MultiplayerRoom.tsx:961`) —, então o reenvio passa a ser por papel.
+        - Os 12 `broadcastRoomUpdate` ficam: a diferença nasce **num ponto só**, o reenvio. Mudam a recepção no
+          cliente (`MultiplayerRoom.tsx:223`), o SSE (o mesmo texto), o smoke do CI (`scripts/test-ws-e2e.mjs` lê o
+          `chatMessages` da sala inteira) e o [`PROTOCOLO_MULTIPLAYER.md`](./PROTOCOLO_MULTIPLAYER.md).
+          **Estimativa: ~2 dias.**
+        - **O formato:** por seção, sem biblioteca. O JSON Merge Patch (RFC 7396) troca lista inteira — o chat não
+          seria só anexado —, o `fast-json-patch` não sai versão desde 2022 e o `jsondiffpatch` gera diferença
+          genérica e opaca. Um `rev` por reenvio: o WebSocket é TCP e chega em ordem, então o buraco só vem da
+          reconexão ou do socket lento derrubado (E.03) — e aí o cliente pede a sala inteira.
+      - **O `perMessageDeflate` comprime a sala 10×, e a memória segue sem medida.** Com fichas do gerador (texto
+        variado, não repetido): a sala de 7 jogadores, 6 NPCs e o chat cheio, **58 KB → 5,6 KB**; um jogador, 3,1 KB
+        → 1,3 KB (2,4×). A CPU é desprezível (~0,4 ms para comprimir a sala). O risco do README do `ws` é de alta
+        concorrência no **Linux** ([nodejs/node#8871](https://github.com/nodejs/node/issues/8871)), e só o Windows
+        está à mão. Depois da L.1, o deflate só pesaria na entrada e na reconexão (`threshold: 1024`): **segue ADIAR**,
+        na lista do bloco Q, com o plano de medida escrito lá.
+      - **L.2 — o Supabase é 30% da entrada, e o `manualChunks` não o tira da primeira carga.** O chunk de entrada
+        tem **620 kB / 184 kB gzip**; o Supabase, **214 kB / 56 kB gzip**, e o React, 190 kB / 59 kB gzip. O
+        `App.tsx` importa o `auth` no boot (`App.tsx:11`), e o `supabase-js` é feito de classes, que o bundler não
+        corta. Separado, a primeira visita baixa os mesmos bytes em três arquivos; o ganho é de **cache**: depois de
+        um deploy, quem volta baixa ~68 kB gzip, não 184. Tirar o Supabase do boot é ADIAR (lista do bloco Q). No
+        Vite 7+ (Rolldown), o `manualChunks` está descontinuado em favor de outra opção — no 6.4.4 daqui, vale.
+      - **L.3 — os mapas servem pelo nome, não pela linha.** Os cortes do E.18 e do G.21 estão por função; as
+        linhas envelheceram (`roomManager` 1.579 → 1.730, `server.ts` 1.436 → 1.721, `MultiplayerRoom` 1.049 →
+        1.198). A K pôs dois arquivos na fila: `CreationSection.tsx` (450) e `sheetSchema.ts` (530). A L.1 nasce
+        em módulos novos, então a L.3 não briga com ela.
+      - **L.5 — os mesmos 20 `any` e 12 `console.*`.** Sete `any` no `server.ts` (o E.16) e **11 dos 20 são
+        `catch (e: any)`** — com o `strict`, sem o `any` o `e` vira `unknown` e cada um pede um estreitamento. O G.18
+        segue: o `cyberpunk_broadcast_roll` não tem ouvinte. Não há ESLint. O `no-console` não está nos presets do
+        `typescript-eslint`. Versões com mais de duas semanas: **eslint 10.12.0** (02/10) e **typescript-eslint
+        8.71.1** (05/10, aceita o ESLint 10 e o TypeScript ~5.8); o `"type": "module"` já está no `package.json`.
+      - **L.6 — o Registro de sessões está vazio.** Nenhuma sessão em produção, nenhum `sse_fallback` contado.
+        Não há estatística pública confiável de WebSocket bloqueado (o que se acha é relato de "menos de 3%"). E o
+        SSE tem um uso que não é o proxy: quem abre a página na janela da troca de instância cai nele (H.14).
+      - **Ordem da fase:** L.1 → L.2 → L.5 → L.3 → L.4 → L.6, um PR por etapa.
+- [ ] **L.1** Broadcast por delta ~~(`chat:new`, `player:health`, `initiative:set`)~~; estado completo só
       no join e na reconexão. *(ARQ-01)*
+      *Refeita na L.0 (21/10/2026):* a diferença **por seção, num ponto só** — o reenvio guarda o último texto de
+      cada parte que mandou e manda só o que mudou: mensagens novas do chat, cada jogador, cada NPC, o grid, a
+      iniciativa e o resto do topo.
+      - [ ] **L.1a** Os módulos puros, testados sozinhos: a diferença no servidor (`server/roomDelta.ts`) e o
+            *merge* no cliente.
+      - [ ] **L.1b** O reenvio por diferença, com o `rev`; a sala inteira na entrada do WebSocket, no SSE e a quem
+            pedir; o `lastActiveAt` fora do envio.
+      - [ ] **L.1c** O reenvio por papel — o jogador não recebe a ficha do NPC (o **E.20**).
+      - [ ] **L.1d** O cliente aplica a diferença e, se o `rev` pular, pede a sala inteira.
+      - [ ] **L.1e** O `/sheet` responde sem a sala; o smoke do CI e o protocolo atualizados.
+      - [ ] **L.1f** Medir antes e depois — a sala da L.0 e o `h1a.mjs`.
 - [ ] **L.2** `manualChunks` separando **o Supabase**, que está no chunk de entrada e é carregado até
       para quem só quer rolar dados — é o maior contribuinte identificado do 1,3 MB. **Não** investir em
       lazy-loading do Yjs: a [ADR 0002](./adr/0002-yjs-websockets.md) o deixou sob observação, e não vale
@@ -1370,6 +1435,9 @@ público mudar.
       *Premissa corrigida na revisão pós-D (29/09):* o `motion` saiu na ARQ-10 (02/09), e o chunk de
       entrada é **629 kB / 186 kB gzip** desde que a C.1 tirou o `mathjs` — não 1,3 MB. Medir o que o
       Supabase pesa hoje antes de separar; se o ganho não pagar o `manualChunks`, a L.2 vira DESCARTAR.
+      *Medido na L.0 (20/10/2026):* 56 kB gzip, 30% da entrada, e importado no boot — o `manualChunks` dá cache,
+      não primeira carga. **Fica**, só como separação do React e do Supabase em chunks próprios: é uma configuração,
+      e o deploy deixa de invalidar os dois.
 - [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que a E.1f e a G.1f mapearam. *(ARQ-05)*
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [ ] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
@@ -1380,6 +1448,9 @@ público mudar.
       *Premissa corrigida na revisão pós-D (29/09):* o Render Hobby **guarda log por 7 dias** — "meses
       de log" não existe. O dado vem do **Registro de sessões** (R.12), preenchido depois de cada
       sessão. Poucas sessões registradas = evidência fraca: dizer isso ao decidir.
+      *Medido na L.0 (20/10/2026):* **zero** sessões registradas. A recomendação é **manter**, dizendo que a
+      evidência é nenhuma: o SSE é por onde entra quem abre a página na troca de instância (H.14), e a diferença
+      da L.1 passa por ele sem custo — é o mesmo texto.
 - [ ] **L.7** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [ ] **L.8** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
 - [ ] ✅ **Fase L concluída em:** ____/____/______
@@ -1400,7 +1471,8 @@ Na K.5 (20/10): **94** — entraram o teto das melhorias do deck, o catálogo de
 cromo, na Q.5. Na K.6 (20/10): **98** — entraram o salário do Fixer, o desempregado e o bolo fixo de 65, e o
 arredondamento do 1D6/3 com o nível 0 (na Q.5), e o 9D10 rolado no servidor (na Q.2). Na K.7 (20/10): **99** — entrou o
 bônus das artes marciais por estilo (na Q.5). Na revisão da K (20/10, #70): **106** — sete da revisão do código da
-fase, seis na Q.3 e um na Q.5.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+fase, seis na Q.3 e um na Q.5. Na L.0 (20/10): **108** — as respostas REST das ações sem a sala (na Q.2) e o
+Supabase fora do boot (na Q.3).)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1492,6 +1564,10 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         `initiative`, com a L.1. *Donas:* J.1b e L.1.
   - [ ] **Compressão do WebSocket** (`perMessageDeflate`, o risco 2 do custo zero), com medição de memória antes.
         *Dona:* L.0 e L.1. *Gatilho:* a banda do workspace passar de 2,5 GB num mês.
+        *(20/10/2026, L.0: a sala comprime 10× e um jogador 2,4×, com CPU desprezível — a medida está na L.0. A L.0 não
+        a liga: depois da L.1, só a entrada e a reconexão passariam do `threshold: 1024`. **A medida que falta:** carga
+        num contêiner Linux — 30 salas de 7 sockets, a sala da L.0 reenviada, a memória do processo com e sem
+        `serverNoContextTakeover` — antes de qualquer linha no `server.ts`.)*
   - [ ] **E.18** e **G.21**: os cortes dos arquivos grandes, no backend e no frontend. *Dona:* L.3.
   - [ ] **E.11**: `code.toUpperCase()` em 25 pontos, sem dono. *Dona:* L.3 (o `roomKey` vai para o módulo de
         salas). *Gatilho:* uma sala "não encontrada" por maiúscula ou espaço.
@@ -1553,7 +1629,16 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         classificador de segurança do assistente, e a medida ficou com o dono. *Gatilho:* o dono rodar a sonda local
         (`npx vitest run src/__tests__/zz-j-probe.integration.test.ts` — arquivo não rastreado, não commitar) e trazer
         o número. Fonte: a nota na J.1d, acima.
+  - [ ] **As respostas REST das ações sem a sala** (L.0): toda rota de ação devolve a sala inteira, e o cliente só
+        lê a do criar e a do entrar. A L.1 tira a do `/sheet`, a mais frequente; as outras seguem — uma sala a mais
+        por ação, 1/(N+1) do reenvio. Mudar o corpo é mudar o contrato (I.02): 31 conferências de teste leem a sala
+        do corpo. *Gatilho:* a banda do workspace passar de 2,5 GB num mês, ou uma rota de ação mudar de corpo.
+        Fonte: a L.0, acima.
 - [ ] **Q.3** **Tela.** Fonte: [`G-frontend.md`](./varreduras/G-frontend.md), a não ser onde o item diz outra.
+  - [ ] **O Supabase fora do boot** (L.0): o `supabase-js` (56 kB gzip, 30% da entrada) é importado pelo `App.tsx`
+        para ler a sessão, e quem só rola dados também o baixa. A versão menor é ler a sessão do `localStorage` no
+        boot e carregar o cliente sob demanda. *Gatilho:* o chunk de entrada passar de 250 kB gzip, ou a primeira
+        carga num celular virar queixa da mesa. Fonte: a L.0, acima.
   - [ ] **G.01**: a ficha é espelhada na store durante o render do `App` (a versão de uma linha está no ledger).
         *Gatilho:* o aviso esconder um erro numa depuração, ou lentidão ao digitar na ficha.
   - [ ] **G.02**: no dev, o deep link volta para `/` (a versão de uma linha está pronta). *Gatilho:* precisar do HMR
@@ -1770,8 +1855,8 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
 | K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66); a K.6 — a criação com orçamento: os pacotes e o salário conferidos, o assistente na ficha e o orçamento à vista do GM na mesa (#67); a K.7 — as perícias pelas fontes (com os quatro pilotos), a tela que sugere todas, e o Leap no lugar do Walk (#68); o fechamento, com o portão da fase e a revisão do que ela produziu (#69); a revisão do código da fase, K.10, com seis consertos — o "Refazer" que trocava a escolha do pacote entre eles (#70) | ✅ | 20/10/2026 |
-| L | 🔨 | Performance e escala | ⬜ | — |
-| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7 | ⬜ | — |
+| L | 🔨 | Performance e escala — a L.0 mediu (a sala da K pesa o dobro, o reenvio sai também do token movido e da resposta REST, e o E.20 entra na L.1) | 🔄 | — |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7; 106 na revisão da K; 108 na L.0 (20/10) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual
