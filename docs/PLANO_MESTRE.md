@@ -1456,8 +1456,21 @@ público mudar.
       Yjs) num chunk fixo viria para o boot.)*
 - [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que a E.1f e a G.1f mapearam. *(ARQ-05)*
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
-- [ ] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
+- [x] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
       `--max-warnings 0` no CI. *(ARQ-07)*
+      *(21/10/2026 — feita: o `eslint.config.js` com os presets recomendados do ESLint e do typescript-eslint, sem regra
+      que precise de tipos (o `tsc` já confere), o `no-explicit-any` em erro e o `no-console` no cliente; nas versões com
+      mais de duas semanas (eslint 10.12.0, typescript-eslint 8.71.1, `@eslint/js` 10.0.1, `globals` 17.13.0). **Medido
+      antes de consertar:** o preset acusou 14.756 problemas, quase todos nos worktrees das sessões em `.claude/` (fora do
+      alcance agora); no código, 346 — 223 `no-undef` dos scripts sem os globais do Node, 69 nomes sem uso, 47 `any`.
+      **Zerado:** os 20 `any` fora de teste (os 7 do `server.ts`, o E.16; 11 eram `catch (e: any)`, que viraram o
+      `errorMessage` de `src/lib/`) e os 27 dos testes; os 12 `console.*` do cliente (o G.17) — o erro que já ia para a
+      tela perdeu o log, o "Sair" que falha passou a avisar num toast, o de melhor esforço ganhou o comentário, e o
+      `ErrorBoundary` é a única exceção nomeada; o G.18 (o evento das rolagens sem ouvinte); 42 nomes sem uso. **Duas
+      exceções nomeadas**, no lugar: o `console.error` do `ErrorBoundary` e o `no-control-regex` do `sanitizeText`.
+      Três handlers do grid sem botão (limpar, tema e tamanho) saíram — ADIAR, na lista do bloco Q. O `npm run lint` é o
+      ESLint, com `--max-warnings 0`, e o `tsc` virou `npm run typecheck`: um passo cada no CI. +7 testes, 1115 em 94
+      arquivos; revertida a regra, o `lint-gate.test` falha, e um `any` de volta derruba o `npm run lint`.)*
 - [ ] **L.6** **Decidir o fallback SSE com o dado da B.7.** Ninguém caiu para SSE em meses de uso? Remove
       o endpoint, o mapa `sseClients`, o caminho duplo do broadcast e o `EventSource` do cliente. Alguém
       caiu? Mantém, e a dúvida está encerrada com evidência em vez de opinião.
@@ -1489,7 +1502,8 @@ arredondamento do 1D6/3 com o nível 0 (na Q.5), e o 9D10 rolado no servidor (na
 bônus das artes marciais por estilo (na Q.5). Na revisão da K (20/10, #70): **106** — sete da revisão do código da
 fase, seis na Q.3 e um na Q.5. Na L.0 (20/10): **108** — as respostas REST das ações sem a sala (na Q.2) e o
 Supabase fora do boot (na Q.3). Na L.1 (21/10): **109** — a ficha editada que vai inteira (na Q.2); e o E.20, da
-Q.1, feito.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+Q.1, feito. Na L.5 (21/10): **111** — os controles do grid do GM e as regras dos hooks no lint (na Q.3); e o E.16,
+o G.17 e o G.18, da Q.1, feitos.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1590,8 +1604,8 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
   - [ ] **E.18** e **G.21**: os cortes dos arquivos grandes, no backend e no frontend. *Dona:* L.3.
   - [ ] **E.11**: `code.toUpperCase()` em 25 pontos, sem dono. *Dona:* L.3 (o `roomKey` vai para o módulo de
         salas). *Gatilho:* uma sala "não encontrada" por maiúscula ou espaço.
-  - [ ] **E.16** (sete `any` no `server.ts`), **G.17** (doze `console.*` no cliente) e **G.18** (o "broadcast" das
-        rolagens da ficha, sem ouvinte). *Dona:* L.5.
+  - [x] **E.16** (sete `any` no `server.ts`), **G.17** (doze `console.*` no cliente) e **G.18** (o "broadcast" das
+        rolagens da ficha, sem ouvinte). *Dona:* L.5. *(Feitos na L.5, 21/10/2026.)*
   - [ ] **E.05**: o `sseClients` guarda um `Set` vazio por sala, para sempre. *Dona:* L.6; o item some se o SSE sair.
   - [ ] **G.25**: as notas de versão chamam de atual a v0.4.0, do "Cyberpunk 2077". *Dona:* M.4.
   - [ ] **Restauração de teste do backup** (R.10), num projeto Supabase novo. *Dona:* M.0, que a exige antes do fim.
@@ -1658,6 +1672,15 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         do corpo. *Gatilho:* a banda do workspace passar de 2,5 GB num mês, ou uma rota de ação mudar de corpo.
         Fonte: a L.0, acima.
 - [ ] **Q.3** **Tela.** Fonte: [`G-frontend.md`](./varreduras/G-frontend.md), a não ser onde o item diz outra.
+  - [ ] **Os controles do grid do GM** (L.5): limpar todos os tokens, trocar o tema e o tamanho do grid estavam escritos
+        no `TacticalGrid` (`handleClearAllTokens`, `handleChangeTheme`, `handleChangeDimensions`) e nunca tiveram botão —
+        o "construído e nunca ligado" do `CLAUDE.md`. Saíram na L.5 para o lint passar; voltam do histórico do git. O
+        limpar usava o `confirm()` do navegador. *Gatilho:* o GM querer outro tema ou outro tamanho de grid numa sessão.
+        Fonte: a L.5, acima.
+  - [ ] **As regras dos hooks do React no lint** (L.5): o `eslint-plugin-react-hooks` (`rules-of-hooks` e
+        `exhaustive-deps`) ficou fora do modo mínimo; dois comentários do `useUserActivity` desligavam uma regra que nunca
+        esteve instalada, e viraram o porquê das dependências. *Gatilho:* um bug de efeito com dependência faltando, ou
+        um efeito novo que dependa de memória para estar certo. Fonte: a L.5, acima.
   - [ ] **O Supabase fora do boot** (L.0): o `supabase-js` (56 kB gzip, 30% da entrada) é importado pelo `App.tsx`
         para ler a sessão, e quem só rola dados também o baixa. A versão menor é ler a sessão do `localStorage` no
         boot e carregar o cliente sob demanda. *Gatilho:* o chunk de entrada passar de 250 kB gzip, ou a primeira
@@ -1879,7 +1902,7 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
 | K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66); a K.6 — a criação com orçamento: os pacotes e o salário conferidos, o assistente na ficha e o orçamento à vista do GM na mesa (#67); a K.7 — as perícias pelas fontes (com os quatro pilotos), a tela que sugere todas, e o Leap no lugar do Walk (#68); o fechamento, com o portão da fase e a revisão do que ela produziu (#69); a revisão do código da fase, K.10, com seis consertos — o "Refazer" que trocava a escolha do pacote entre eles (#70) | ✅ | 20/10/2026 |
 | L | 🔨 | Performance e escala — a L.0 mediu (a sala da K pesa o dobro, o reenvio sai também do token movido e da resposta REST, e o E.20 entra na L.1) | 🔄 | — |
-| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7; 106 na revisão da K; 108 na L.0 (20/10); 109 na L.1, com o E.20 feito (21/10) | ⬜ | — |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7; 106 na revisão da K; 108 na L.0 (20/10); 109 na L.1, com o E.20 feito; 111 na L.5, com o E.16, o G.17 e o G.18 feitos (21/10) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual

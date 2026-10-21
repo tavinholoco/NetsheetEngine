@@ -650,6 +650,7 @@ perde a mais por isso.
 **Sintoma observado:** nenhum.
 
 **VEREDITO:** ADIAR — a dona é a **L.5** (ESLint, zerar `any` e `console.*`). **Gatilho:** a L.5 abrir.
+- ✅ **Feito na L.5** (21/10/2026): os sete com tipo, e o `no-explicit-any` em erro no CI.
 
 ---
 
