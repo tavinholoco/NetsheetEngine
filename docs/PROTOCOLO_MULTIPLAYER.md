@@ -102,7 +102,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | ~~`GET`~~ | ~~`/api/rooms`~~ | — | **Saiu na R.11 (29/09/2026)** — listava o código de toda sala a qualquer visitante. A sala se acha pelo código-convite (`NC-2020-K7Q9XD`, prefixo do GM + sufixo aleatório do cliente) ou pelo link `/room/CÓDIGO` |
 | `POST` | `/api/rooms/create` | `{ code, name, gmHandle, gmPeerId }` | `{ room, sessionToken }` · **409** `room_exists` se o código já é de uma mesa (R.2 — antes, a mesa era apagada) · **503** `rooms_full` se o servidor já tem o máximo de salas abertas (E.03 — `MAX_ROOMS`, padrão 30) · **400** `invalid_input` se o `gmPeerId` vier fora do formato do `peerId` (I.03); sem ele, o servidor gera um |
 | `POST` | `/api/rooms/join` | `{ code, peerId, handle, sheet }` + header `X-Session-Token` para voltar ao próprio assento (R.1) | `{ room, sessionToken }` · **409** `seat_taken` se o assento é de outro · **409** `room_full` se a sala já tem 16 assentos (R.16 — quem já tem assento sempre volta) · **403** `removed_by_gm` (R.3) · **413** `sheet_too_large` se a ficha saneada passa de 64 KB (E.03) · **400** `invalid_input` se o `peerId` sai de `[A-Za-z0-9_-]{1,64}` (I.03 — SEC-16: ele vira segmento de URL no "Remover" do GM) |
-| `GET` | `/api/rooms/:code` | — | **Sem token:** recorte público `{ code, name, gmHandle, playersCount }`. **Com `X-Session-Token` válido:** `GameRoom` completo. **Token inválido:** 401. (404 se não existe) |
+| `GET` | `/api/rooms/:code` | — | **Sem token:** recorte público `{ code, name, gmHandle, playersCount }`. **Com `X-Session-Token` válido:** `GameRoom` completo, **na vista do papel** (§6.2 — o jogador não recebe a ficha do NPC, L.1). **Token inválido:** 401. (404 se não existe) |
 
 > Validações do `code`: 2–24 caracteres alfanuméricos ou hífen (eram 12 até a R.11), normalizado para
 > maiúsculas (`NC-2020-K7Q9XD`). Código inválido → **400**.
@@ -118,7 +118,7 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 
 | Método | Rota | Permissão | Corpo | Resposta |
 |---|---|---|---|---|
-| `POST` | `/api/rooms/:code/sheet` | qualquer membro | `{ sheet }` | `GameRoom` (ficha sincronizada; **o ferimento do cliente é ignorado** — D.1) · **413** `sheet_too_large` acima de 64 KB (E.03) |
+| `POST` | `/api/rooms/:code/sheet` | qualquer membro | `{ sheet }` | `{ ok: true }` — **sem a sala desde a L.1** (o cliente sincroniza a cada pausa de 600 ms na edição e nunca leu a resposta; a ficha chega à mesa pelo reenvio). **O ferimento do cliente é ignorado** — D.1 · **413** `sheet_too_large` acima de 64 KB (E.03) |
 | `POST` | `/api/rooms/:code/message` | qualquer membro | `{ text }` | `GameRoom` (chat atualizado) |
 | `POST` | `/api/rooms/:code/roll` | qualquer membro | `{ kind, skillName? }` | `{ room, roll }` (RNG no servidor) |
 | `POST` | `/api/rooms/:code/heartbeat` | qualquer membro | `{}` | `{ success, isOnline }` (sem broadcast) |
@@ -135,6 +135,10 @@ Base: `http://<host>:3000`. Limites: `roomLimiter` **120 req/min/IP**; `chatLimi
 | `POST` | `/api/rooms/:code/npcs/:npcId/health` | **GM** | `{ woundLevel }` | `GameRoom` |
 | `POST` | `/api/rooms/:code/settings` | **GM** | `{ locationName?, combatModifier?, modifierReason? }` | `GameRoom` — o modificador grampeado em −10..+10 (C.4); o motivo vazio **apaga** o anterior, o local vazio mantém o que havia. Chamada pelas "Condições da cena" do GM desde a K.3b (o I.01) |
 | `POST` | `/api/rooms/:code/initiative` | **GM** | `{ action: "next" }`, `{ action: "roll" }` (D.4 — servidor rola para todos) **ou** `{ initiativeList }` (campos montados um a um) | `GameRoom` |
+
+**A sala nas respostas (L.1):** toda resposta que traz o `GameRoom` — o criar, o entrar, a leitura e as ações
+acima — o traz **na vista de quem pediu** (§6.2). As ações seguem devolvendo a sala inteira, que o cliente
+ignora; tirá-la é ADIAR, na lista do bloco Q do plano (é mudar o corpo de 15 rotas).
 
 **Anti-forjamento (T5.4):** o campo `rollResult` enviado no `message` é **ignorado** — vira texto
 normal. Rolagens só existem via `roll`/`/roll`, com RNG e bônus derivados da ficha do servidor.
@@ -172,14 +176,15 @@ da mensagem, e a sala inexistente respondia "Room not found", em inglês, na tel
 ## 4. WebSocket — handshake
 
 ```
-ws(s)://<host>/ws/rooms/:code?token=<sessionToken>
+ws(s)://<host>/ws/rooms/:code?token=<sessionToken>&delta=1
 ```
 
 1. O servidor intercepta o upgrade HTTP em `/ws/rooms/:code` (regex `[A-Za-z0-9-]+`; o tamanho
    quem confere é a sessão — só existe token para sala que existe).
 2. `verifySession(code, token)` resolve o `peerId` do autor.
    - **Inválido** → responde `HTTP/1.1 401 Unauthorized` e destrói o socket.
-3. **Conectado** → o servidor envia imediatamente o **estado inicial** (sala inteira em JSON).
+3. **Conectado** → o servidor envia imediatamente o **estado inicial**: com `delta=1`, `{ type: "room:full",
+   rev, room }`; sem ele, a sala inteira em JSON (§6.2).
 
 **Close codes:** `4400–4499` = fechamento permanente (ex.: `4400` sessão encerrada no leave ou na
 expulsão; `4409` conexão substituída — o jogador abriu mais de 3 sockets, R.4). `1009` = quadro
@@ -240,6 +245,7 @@ reconectar.
 | `initiative` | `{ type, action: "next" }` | `nextTurn` (GM — rola o death save de quem está em Mortal, D.5) |
 | `initiative` | `{ type, action: "roll" }` | `rollInitiative` (GM — D.4) |
 | `initiative` | `{ type, initiativeList }` | `updateInitiative` (GM) |
+| `resync` | `{ type }` | **L.1:** só para o socket com `delta=1` — responde a ele `room:full` com o `rev` de agora. O cliente pede quando uma diferença parte de um `rev` que ele não tem. Conta no teto das ações (é a sala inteira) |
 
 Qualquer outro `type` ou JSON inválido é ignorado silenciosamente. Tipos de rolagem válidos:
 `attack`, `damage`, `save`, `stun` e `skill` — as fórmulas estão na [§6.1](#61-rolagem-server-authoritative-t54).
@@ -254,12 +260,15 @@ rola e edita a iniciativa pelo REST (§3.2) — I.04 no
 
 | Mensagem | Formato | Quando |
 |---|---|---|
-| **Broadcast de sala** | `GameRoom` inteiro em JSON | Após **qualquer** mutação (chat, roll, grid, iniciativa, join/leave, presença) |
+| **Sala inteira** *(L.1)* | `{ type: "room:full", rev, room }` | Na entrada do socket com `delta=1`, e em resposta ao `resync` |
+| **Diferença** *(L.1)* | `{ type: "room:patch", base, rev, set?, unset?, players?, npcs?, chat? }` | Após **qualquer** mutação (chat, roll, grid, iniciativa, join/leave, presença), ao socket com `delta=1` — só o que mudou na vista dele (§6.2) |
+| **Broadcast de sala** | `GameRoom` inteiro em JSON, sem `type` | O mesmo momento, ao socket **sem** `delta=1` — a aba aberta antes do deploy da L.1 |
 | **Erro pontual** | `{ type: "error", error: string, code }` | Ex.: mensagem vazia (`invalid_input`); teto de chat ou de ações estourado, uma vez por janela (`rate_limited` — R.4). Vai só ao autor |
 | **Erro de rolagem** | `{ type: "roll-error", error: string, code }` | Ex.: perícia inexistente, tipo inválido (vai só ao autor). O `code` é o da tabela do §3 (E.3c) |
 
 > O cliente (`handlePayload`) reconhece `error`/`roll-error` pelo campo `type` e exibe no banner;
-> qualquer outro payload é tratado como o estado da sala (`setRoom`).
+> `room:full` e `room:patch` pelo `type` (§6.2); qualquer outro payload é tratado como o estado da
+> sala (`setRoom`).
 
 ### 6.1 Rolagem server-authoritative (T5.4)
 
@@ -284,12 +293,41 @@ Regras FNFF implementadas:
 Em `attack` e `skill`, **10 explode encadeando** (teto de 10 dados extras) e **1 é falha
 automática**, com um segundo dado para a tabela de fumble do livro. O total **não** perde 1d10.
 
+### 6.2 O reenvio por diferença e a vista por papel (L.1 — ARQ-01, E.20)
+
+Até a L.1, cada mutação reenviava a sala inteira a cada conexão: a mesa de 6 veteranos pesava **142 KB por
+reenvio, ~1 MB por ação** (L.0). Agora quem pede `delta=1` recebe a sala inteira uma vez e depois só o que mudou.
+O servidor guarda, por sala e por papel, o texto de cada parte que mandou (`RoomFeed`, em
+[`server/roomDelta.ts`](../server/roomDelta.ts)); o cliente aplica com o `applyRoomPatch`
+([`src/lib/roomPatch.ts`](../src/lib/roomPatch.ts)). Os tipos estão em `src/types/multiplayer.ts`.
+
+| Campo da diferença | O que leva |
+|---|---|
+| `base` · `rev` | O `rev` que o cliente precisa ter para aplicar, e o de depois (`base + 1`). O `rev` é por sala e por papel, e só anda quando há diferença |
+| `set` · `unset` | Os campos do topo que mudaram, inteiros (o grid, a iniciativa, as condições da cena, o turno…), e os que deixaram de existir |
+| `players` · `npcs` | Cada um que mudou, **inteiro**; `null` é quem saiu |
+| `chat` | `{ drop, append }` — tira as `drop` mais antigas (o teto de 100, E.03) e põe as novas no fim; ou `{ replace }`, o chat inteiro, quando mudou outra coisa |
+
+- **O buraco.** O WebSocket é TCP e chega em ordem: uma diferença só se perde na reconexão ou quando o servidor
+  derruba o socket lento (E.03). Uma diferença cujo `base` não é o `rev` do cliente é uma que ele não viu: ele
+  pede a sala inteira (`resync` no socket; no SSE, reabre o stream, que começa com ela) e ignora as diferenças até
+  ela chegar.
+- **Quem chega.** Antes da sala inteira de entrada, o feed do papel vai até a sala de agora — e quem já escuta
+  recebe a diferença que isso der, para todos ficarem no mesmo `rev`. Quem chega fica de fora dela.
+- **Compatível com a aba aberta.** Sem `delta=1`, o servidor manda a sala inteira a cada mutação, como antes. O
+  deploy da L.1 não quebra a mesa aberta com o JavaScript velho; o F5 a leva ao caminho novo.
+- **A vista por papel (E.20).** O Mestre (`gmPeerId`) recebe a sala como ela é; o jogador recebe os NPCs **sem a
+  ficha** — atributos, armas e ferimento do NPC são segredo do Mestre. Ninguém recebe o `lastActiveAt`: o
+  heartbeat o muda sem reenvio, e a tela não o lê. Vale em toda porta que entrega a sala: o reenvio, a entrada do
+  socket e do SSE, a leitura (`GET`) e as respostas REST. A sala do servidor, a que vai para o banco, não muda.
+  Sem `gmPeerId`, todos recebem a vista do jogador — ver a sala não promove ninguém a GM (o vão da J.1g).
+
 ---
 
 ## 7. Fallback SSE
 
 ```
-GET /api/rooms/:code/stream?token=<sessionToken>   (EventSource)
+GET /api/rooms/:code/stream?token=<sessionToken>&delta=1   (EventSource)
 ```
 
 - **Exige sessão da sala** desde a Fase B (B.3 — SEC-02); sem token válido, **401**. O token vai na
@@ -299,7 +337,8 @@ GET /api/rooms/:code/stream?token=<sessionToken>   (EventSource)
   que a Fase L (L.6) usa para decidir se o fallback fica ou sai. *Até a H.3b (14/10/2026), uma queda de
   rede comum também abria o SSE e entrava na conta (E.14, H.09).*
 - Headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache, no-transform`.
-- Envia o **estado inicial** imediatamente e depois cada broadcast como `data: <room JSON>\n\n`.
+- Envia o **estado inicial** imediatamente e depois cada broadcast como `data: <JSON>\n\n` — com `delta=1`, a
+  sala inteira (`room:full`) e depois as diferenças (`room:patch`), como o WebSocket (§6.2).
 - Keep-alive: `: ping\n\n` a cada **15s** (atravessa proxies).
 - Cada conexão re-sincroniza o estado completo → reconexão do EventSource é segura.
 - **O stream é encerrado** quando o dono sai da mesa ou é removido pelo GM (R.3): o token só é
@@ -310,7 +349,7 @@ GET /api/rooms/:code/stream?token=<sessionToken>   (EventSource)
   chegar à instância que entregou recebe **200** com o mesmo `retry: 1500\n\n` e o fim — **nunca um 503**: o
   `EventSource` desiste para sempre de uma resposta que não é 200, mas reconecta sozinho de um stream que
   acaba. Ele volta a cada 1,5 s até cair na instância nova.
-- O payload é **idêntico** ao do WebSocket (mesma função `broadcastRoomUpdate`).
+- O payload é **idêntico** ao do WebSocket (mesma função `broadcastRoomUpdate`), com e sem `delta=1`.
 
 ---
 
