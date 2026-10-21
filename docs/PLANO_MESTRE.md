@@ -1458,7 +1458,7 @@ público mudar.
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [x] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
       `--max-warnings 0` no CI. *(ARQ-07)*
-      *(21/10/2026 — feita: o `eslint.config.js` com os presets recomendados do ESLint e do typescript-eslint, sem regra
+      *(21/10/2026 — feita, no #75: o `eslint.config.js` com os presets recomendados do ESLint e do typescript-eslint, sem regra
       que precise de tipos (o `tsc` já confere), o `no-explicit-any` em erro e o `no-console` no cliente; nas versões com
       mais de duas semanas (eslint 10.12.0, typescript-eslint 8.71.1, `@eslint/js` 10.0.1, `globals` 17.13.0). **Medido
       antes de consertar:** o preset acusou 14.756 problemas, quase todos nos worktrees das sessões em `.claude/` (fora do
