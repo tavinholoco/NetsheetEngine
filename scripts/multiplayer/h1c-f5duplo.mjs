@@ -6,7 +6,7 @@ import { startSlowProxy } from "./slowproxy.mjs";
 const server = await startServer({ port: 3223 });
 const proxy = startSlowProxy({ listenPort: 3323, targetPort: 3223, latencyMs: 0, downBps: 50_000_000, upBps: 50_000_000, drainOnClose: true });
 const code = "HD-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-const { gmToken } = await seedRoom(server.base, code);
+await seedRoom(server.base, code);
 const browser = await chromium.launch();
 const log = (...a) => console.log("•", ...a);
 try {

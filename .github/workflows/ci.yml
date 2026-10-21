@@ -89,6 +89,12 @@ jobs:
         run: npm ci
 
       - name: Typecheck (tsc --noEmit)
+        run: npm run typecheck
+
+      # L.5 (ARQ-07): os presets recomendados do ESLint e do typescript-eslint,
+      # sem `any` e sem `console.*` no cliente. Aviso também falha. Exceção é
+      # nomeada no lugar, com o motivo (eslint.config.js).
+      - name: Lint (ESLint, --max-warnings 0)
         run: npm run lint
 
       # Fase F (F.2.10): a cor mora no @theme do src/index.css. Cor escrita à

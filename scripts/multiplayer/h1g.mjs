@@ -3,7 +3,7 @@
 // que perde a conexão numa queda breve (o E.14): volta ao WebSocket?
 import {
   chromium, startServer, person, seedRoom, gmInit, setHandle, enterAsGm,
-  session, roomState, api, say, waitText, sleep
+  session, roomState, say, waitText, sleep
 } from "./lib.mjs";
 import { startSlowProxy } from "./slowproxy.mjs";
 
