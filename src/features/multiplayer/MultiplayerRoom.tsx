@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { CharacterSheet } from '../../types/cyberpunk';
 import {
   RoomPlayer,
   ChatMessage,
@@ -11,6 +10,7 @@ import {
   RoomPatchMessage
 } from '../../types/multiplayer';
 import { applyRoomPatch } from '../../lib/roomPatch';
+import { errorMessage } from '../../lib/errorMessage';
 import { TacticalGrid } from './TacticalGrid';
 import { CombatPanel } from './CombatPanel';
 import { SceneConditions, signedModifier } from './SceneConditions';
@@ -23,7 +23,6 @@ import { useSheetStore } from '../../stores/useSheetStore';
 import { woundStateOf } from '../../rules/damage';
 import { mortalLevel, woundRow } from '../../rules/character';
 import { woundLevelColor } from '../../utils/injuryRules';
-import { useUiStore } from '../../stores/useUiStore';
 import { useInFlight } from '../../hooks/useInFlight';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
@@ -60,15 +59,11 @@ interface RoomTab {
 export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModal }) => {
   // Fase 4 (T4.3) — estado da sala vem da useRoomStore
   const view = useRoomStore((s) => s.view);
-  const setView = useRoomStore((s) => s.setView);
   const roomCode = useRoomStore((s) => s.roomCode);
   const setRoomCode = useRoomStore((s) => s.setRoomCode);
   const room = useRoomStore((s) => s.room);
-  const setRoom = useRoomStore((s) => s.setRoom);
   const peerId = useRoomStore((s) => s.peerId);
-  const setPeerId = useRoomStore((s) => s.setPeerId);
   const sessionToken = useRoomStore((s) => s.sessionToken);
-  const setSessionToken = useRoomStore((s) => s.setSessionToken);
   const errorMsg = useRoomStore((s) => s.errorMsg);
   const setErrorMsg = useRoomStore((s) => s.setErrorMsg);
   const resetRoom = useRoomStore((s) => s.resetRoom);
@@ -189,8 +184,6 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     const el = chatBox.current;
     if (el && chatAtBottom.current) el.scrollTop = el.scrollHeight;
   }, [lastChatId]);
-
-  const ensurePeerId = roomsApi.getPeerId;
 
   // R.11 — o lobby não lista salas (entra-se pelo código ou pelo link do GM).
   // Aqui havia uma consulta a /api/rooms a cada 8 s, com a aba do lobby
@@ -459,8 +452,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       try {
         await roomsApi.createRoom({ code: roomCode.trim(), name: roomName, gmHandle: handle });
         useRoomStore.getState().setView('active');
-      } catch (e: any) {
-        setErrorMsg(e?.message || 'Erro ao criar sala.');
+      } catch (e) {
+        setErrorMsg(errorMessage(e, 'Erro ao criar sala.'));
       }
     });
   };
@@ -473,8 +466,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       try {
         await roomsApi.joinRoom({ code: targetCode, handle, sheet });
         useRoomStore.getState().setView('active');
-      } catch (e: any) {
-        setErrorMsg(e?.message || 'Sala não encontrada.');
+      } catch (e) {
+        setErrorMsg(errorMessage(e, 'Sala não encontrada.'));
       }
     });
   };
@@ -513,7 +506,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   const roomAction = (p: Promise<unknown>): Promise<void> =>
     p.then(
       () => {},
-      (e: any) => setErrorMsg(e?.message || 'Ação negada pelo servidor.')
+      (e: unknown) => setErrorMsg(errorMessage(e, 'Ação negada pelo servidor.'))
     );
 
   // Fase 5 (T5.3) — grid editado pelo TacticalGrid:

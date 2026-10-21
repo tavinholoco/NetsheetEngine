@@ -17,9 +17,7 @@ import {
   ChevronUp,
   Send,
   MessageSquare,
-  UserX,
-  MoreVertical,
-  MessageCircle
+  UserX
 } from 'lucide-react';
 import {
   User,
@@ -340,8 +338,8 @@ export const FriendsList: React.FC<FriendsListProps> = ({ user, isMinimized = fa
       if (friend.uid.startsWith('npc_')) {
         setFriendsReloadKey((k) => k + 1);
       }
-    } catch (err) {
-      console.error('Erro ao desfazer amizade:', err);
+    } catch {
+      // Melhor esforço, como antes: o Realtime traz a lista de volta como ela está no banco.
     }
   };
 

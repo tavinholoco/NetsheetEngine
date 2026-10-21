@@ -3,6 +3,7 @@ import { CharacterSheet } from '../../types/cyberpunk';
 import { Bot, Send, Sparkles, Lock, Dices, User } from 'lucide-react';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import { askGemini } from '../../api/gemini';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface AiAssistantProps {
   sheet: CharacterSheet;
@@ -21,7 +22,7 @@ interface ChatMessage {
 // `server/aiPrompt.ts` na Fase B (B.1 — SEC-01): enquanto era o cliente que o
 // mandava, qualquer um podia trocá-lo e usar a chave do dono como proxy de LLM.
 
-export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user, onOpenAuthModal }) => {
+export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange: _onChange, user, onOpenAuthModal }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -51,13 +52,13 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ sheet, onChange, user,
     try {
       const text = await askGemini(content);
       setMessages((prev) => [...prev, { id: 'a_' + Date.now(), role: 'assistant', text }]);
-    } catch (e: any) {
+    } catch (e) {
       setMessages((prev) => [
         ...prev,
         {
           id: 'err_' + Date.now(),
           role: 'assistant',
-          text: `⚠️ Falha de conexão com o NETRUNNER IA: ${e?.message || 'Verifique a GEMINI_API_KEY no servidor.'}`
+          text: `⚠️ Falha de conexão com o NETRUNNER IA: ${errorMessage(e, 'Verifique a GEMINI_API_KEY no servidor.')}`
         }
       ]);
     } finally {

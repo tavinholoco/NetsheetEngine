@@ -2,7 +2,6 @@ import React from 'react';
 import { TabType } from './CyberpunkMenu';
 import { APP_VERSION } from '../version';
 import {
-  Home,
   Radio,
   Cpu,
   Swords,
@@ -11,7 +10,6 @@ import {
   FileText,
   User as UserIcon,
   Shield,
-  Zap,
   Terminal,
   ArrowRight
 } from 'lucide-react';

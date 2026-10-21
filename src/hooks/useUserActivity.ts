@@ -97,7 +97,7 @@ export function useUserActivity(uid?: string, isInGame: boolean = false): Activi
       // Presença limpa: deslogou ou desmontou → offline no banco
       syncPresence('offline', uid);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // As dependências são só o uid e o isInGame, de propósito: o resto é lido na hora.
   }, [uid, isInGame]);
 
   // Presença ao fechar a aba / alternar para outra aba
@@ -118,7 +118,7 @@ export function useUserActivity(uid?: string, isInGame: boolean = false): Activi
       window.removeEventListener('pagehide', onPageHide);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Sem dependências, de propósito: os ouvintes ficam a vida inteira do app.
   }, []);
 
   return status;

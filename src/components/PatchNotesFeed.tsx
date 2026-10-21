@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Terminal, FileCode, CheckCircle2, ShieldAlert, Cpu } from 'lucide-react';
+import { Terminal } from 'lucide-react';
 
 export interface PatchNote {
   version: string;

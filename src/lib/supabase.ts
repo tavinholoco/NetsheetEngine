@@ -425,10 +425,8 @@ function avatarPublicUrl(path: string): string {
  */
 async function cleanupOldAvatarObjects(uid: string, keepPath: string): Promise<void> {
   const { data, error } = await auth.storage.from('avatars').list(uid, { limit: 100 });
-  if (error) {
-    console.warn('Falha ao listar avatares antigos (limpeza adiada):', error.message);
-    return;
-  }
+  // Sem a lista, a limpeza fica para o próximo envio.
+  if (error) return;
   const stale = (data ?? [])
     .map((f) => f.name)
     .filter((n) => n && !n.endsWith('/') && `${uid}/${n}` !== keepPath);
@@ -466,14 +464,12 @@ export async function uploadAvatar(uid: string, file: File | Blob): Promise<stri
   await cleanupOldAvatarObjects(uid, path);
 
   const url = avatarPublicUrl(path);
-  const { error: profileError } = await auth
+  // Não bloqueia o upload — o avatar fica no bucket mesmo sem o link no perfil
+  // (o erro da gravação não é lido).
+  await auth
     .from('profiles')
     .update({ avatar_url: url })
     .eq('id', uid);
-  if (profileError) {
-    // Não bloqueia o upload — o avatar fica no bucket mesmo sem o link no perfil.
-    console.warn('Avatar enviado, mas falhou ao salvar avatar_url no perfil:', profileError.message);
-  }
   return url;
 }
 

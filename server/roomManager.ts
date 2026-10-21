@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { GameRoom, RoomPlayer, ChatMessage, InitiativeEntry, TacticalGridState } from "../src/types/multiplayer.js";
+import { GameRoom, RoomPlayer, ChatMessage, InitiativeEntry } from "../src/types/multiplayer.js";
 import { ArmorLocation, CharacterSheet, RollResult } from "../src/types/cyberpunk.js";
 import { generateRandomNpc } from "../src/utils/npcGenerator.js";
 // Fase B (B.2 — SEC-05) — a ficha é entrada não confiável. A validação mora
@@ -42,7 +42,7 @@ import { logger } from "./logger.js";
  * devolve junto), ou uma falha com `code` obrigatório — o compilador não deixa
  * um erro sair sem código. A rota responde pelo `code` (server/errors.ts).
  */
-export type RoomResult<T extends object = {}> =
+export type RoomResult<T extends object = Record<never, never>> =
   | ({ room: GameRoom; error?: undefined; code?: undefined } & T)
   | (RoomFailure & { [K in keyof T]?: undefined });
 
@@ -154,6 +154,8 @@ export function restoreRoomSessions(code: string, data: unknown): number {
 /** Remove caracteres de controle, colapsa espaços e trunca. */
 export function sanitizeText(value: unknown, maxLength: number): string {
   if (typeof value !== "string") return "";
+  // L.5 — exceção nomeada ao no-control-regex: tirar caractere de controle é o propósito.
+  // eslint-disable-next-line no-control-regex
   return value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, maxLength);
 }
 

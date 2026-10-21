@@ -22,6 +22,7 @@ import type { Modifier } from './rules/dice';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';
 import { APP_VERSION } from './version';
+import { errorMessage } from './lib/errorMessage';
 import { Dice5, CheckCircle2 } from 'lucide-react';
 
 // ===========================================================================
@@ -55,7 +56,6 @@ export default function App() {
   const saveToast = useUiStore((s) => s.saveToast);
   const isSavingSheet = useUiStore((s) => s.isSavingSheet);
 
-  const rollHistory = useRollStore((s) => s.rollHistory);
   const lastRollBanner = useRollStore((s) => s.lastRollBanner);
   const addRoll = useRollStore((s) => s.addRoll);
 
@@ -67,8 +67,6 @@ export default function App() {
   const sheetResult = useCharacterSheet();
   syncSheetStore(sheetResult);
   const {
-    authLoading,
-    roster,
     updateSheet: handleUpdateSheet,
     loadSheet,
     loadPresetAsNewSheet,
@@ -121,9 +119,8 @@ export default function App() {
     try {
       const savedHandle = await saveCurrentSheet();
       useUiStore.getState().showSaveToast(`Ficha de "${savedHandle}" foi atualizada e salva no seu perfil com sucesso!`);
-    } catch (e: any) {
-      console.error('Error saving sheet:', e);
-      useUiStore.getState().showSaveToast(`Ficha salva localmente no navegador! Aviso da nuvem: ${e?.message || 'Erro de conexão'}`);
+    } catch (e) {
+      useUiStore.getState().showSaveToast(`Ficha salva localmente no navegador! Aviso da nuvem: ${errorMessage(e, 'Erro de conexão')}`);
     } finally {
       useUiStore.getState().setSavingSheet(false);
     }
@@ -138,9 +135,8 @@ export default function App() {
     try {
       const savedHandle = await saveCurrentSheetAndReset();
       useUiStore.getState().showSaveToast(`Ficha de "${savedHandle}" salva! Formulário limpo e novo personagem em branco iniciado.`);
-    } catch (e: any) {
-      console.error('Error saving sheet:', e);
-      useUiStore.getState().showSaveToast(`Ficha salva localmente no navegador! Aviso da nuvem: ${e?.message || 'Erro de conexão'}`);
+    } catch (e) {
+      useUiStore.getState().showSaveToast(`Ficha salva localmente no navegador! Aviso da nuvem: ${errorMessage(e, 'Erro de conexão')}`);
     } finally {
       useUiStore.getState().setSavingSheet(false);
     }
@@ -151,7 +147,8 @@ export default function App() {
       await firebaseSignOut(auth);
       resetToBlankSheet();
     } catch (e) {
-      console.error('Error signing out:', e);
+      // L.5 — o log no console não chegava a quem clicou em "Sair".
+      useUiStore.getState().showSaveToast(`Não foi possível sair: ${errorMessage(e, 'Erro de conexão')}`);
     }
   };
 

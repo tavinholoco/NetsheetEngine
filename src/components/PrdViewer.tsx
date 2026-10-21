@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PRD_DOCUMENT } from '../data/prdData';
 import type { PrdStatus, PrdTask } from '../types/prd';
-import { FileText, Layers, Rocket, Cpu, CheckCircle2, Loader2, Terminal } from 'lucide-react';
+import { FileText, Layers, Rocket, Cpu, CheckCircle2, Terminal } from 'lucide-react';
 
 const STATUS_STYLE: Record<PrdStatus, { label: string; cls: string }> = {
   'concluído': { label: 'CONCLUÍDO', cls: 'bg-ok-950/80 text-ok-400 border-ok-500/60' },

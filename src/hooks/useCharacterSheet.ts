@@ -33,6 +33,7 @@ import {
   type SheetMeta
 } from '../lib/supabase';
 import type { CharacterSheet } from '../types/cyberpunk';
+import { errorMessage } from '../lib/errorMessage';
 import { DEFAULT_ARMOR } from '../data/cyberpunkData';
 
 const LS_ACTIVE_KEY = 'cyberpunk_active_sheet_v1';
@@ -314,8 +315,8 @@ export function useCharacterSheet(): UseCharacterSheetResult {
       try {
         await saveCharacterSheet(user.uid, current);
         lastCloudSaveRef.current = current.updatedAt;
-      } catch (e: any) {
-        throw new Error(e?.message || 'Falha de conexão com a nuvem');
+      } catch (e) {
+        throw new Error(errorMessage(e, 'Falha de conexão com a nuvem'), { cause: e });
       }
     }
     setLocalRosterOwner(user?.uid ?? null);
@@ -334,7 +335,8 @@ export function useCharacterSheet(): UseCharacterSheetResult {
   const deleteCharacter = useCallback(
     (id: string) => {
       if (user) {
-        deleteCharacterSheet(user.uid, id).catch((e) => console.error('Erro ao deletar ficha:', e));
+        // Melhor esforço: a ficha sai do roster local na hora; a da nuvem, quando a rede deixar.
+        deleteCharacterSheet(user.uid, id).catch(() => {});
       }
       writeLocalRoster(readLocalRoster().filter((s) => s.id !== id));
       if (!user) {

@@ -18,6 +18,7 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import { app } from "../../server";
 import { createRoom, getRoom, isValidPeerId, joinRoom } from "../../server/roomManager";
+import type { CharacterSheet } from "../types/cyberpunk";
 
 const SHEET = {
   handle: "Hostil",
@@ -96,7 +97,7 @@ describe("I.03 — a defesa no roomManager, para todo caminho que não passe pel
   it("o joinRoom não senta peerId fora do formato", () => {
     const c = code();
     createRoom(c, "Mesa", "Dono", "peer_dono");
-    expect(joinRoom(c, "peer/x", "Hostil", SHEET as any)).toBeNull();
+    expect(joinRoom(c, "peer/x", "Hostil", SHEET as unknown as CharacterSheet)).toBeNull();
     expect(getRoom(c)!.players["peer/x"]).toBeUndefined();
   });
 

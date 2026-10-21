@@ -12,6 +12,7 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import { app } from "../../server";
 import { createRoom, joinRoom, getRoom, verifySession } from "../../server/roomManager";
+import type { CharacterSheet } from "../types/cyberpunk";
 
 const SHEET = {
   handle: "Vex",
@@ -73,7 +74,7 @@ describe("R.2 — SEC-08: create com código em uso", () => {
   it("o roomManager também se recusa — defesa para qualquer caminho futuro", () => {
     const c = code();
     createRoom(c, "Mesa do dono", "Dono", "peer_dono");
-    joinRoom(c, "peer_vex", "Vex", SHEET as any);
+    joinRoom(c, "peer_vex", "Vex", SHEET as unknown as CharacterSheet);
     expect(() => createRoom(c, "Tomada", "Hostil", "peer_hostil")).toThrow(/já existe/);
     expect(getRoom(c)!.gmPeerId).toBe("peer_dono");
     expect(getRoom(c)!.players.peer_vex).toBeTruthy();

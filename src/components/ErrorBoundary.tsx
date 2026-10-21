@@ -24,6 +24,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    // L.5 — exceção nomeada ao no-console: é o único registro de uma tela que
+    // caiu, e o cliente não tem para onde mandar log (custo zero).
+    // eslint-disable-next-line no-console
     console.error('[NETSHEET ENGINE] Erro capturado pelo ErrorBoundary:', error, errorInfo);
   }
 

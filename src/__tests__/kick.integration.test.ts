@@ -27,6 +27,7 @@ import {
   deleteGeneratedPlayer,
   restoreRoom
 } from "../../server/roomManager";
+import type { CharacterSheet } from "../types/cyberpunk";
 
 const SHEET = {
   handle: "Intruso",
@@ -54,8 +55,8 @@ describe("R.3 — SEC-09: a expulsão revoga", () => {
   it("o token do expulso deixa de valer; o do GM e o dos outros, não", () => {
     const c = code();
     const gm = createRoom(c, "Mesa", "Dono", "peer_dono");
-    const intruso = joinRoom(c, "peer_intruso", "Intruso", SHEET as any)!;
-    const vex = joinRoom(c, "peer_vex", "Vex", { ...SHEET, handle: "Vex" } as any)!;
+    const intruso = joinRoom(c, "peer_intruso", "Intruso", SHEET as unknown as CharacterSheet)!;
+    const vex = joinRoom(c, "peer_vex", "Vex", { ...SHEET, handle: "Vex" } as unknown as CharacterSheet)!;
 
     deleteGeneratedPlayer(c, "peer_dono", "peer_intruso");
 
@@ -68,10 +69,10 @@ describe("R.3 — SEC-09: a expulsão revoga", () => {
   it("a reconexão automática não traz o expulso de volta pelo mesmo peerId", () => {
     const c = code();
     createRoom(c, "Mesa", "Dono", "peer_dono");
-    joinRoom(c, "peer_intruso", "Intruso", SHEET as any);
+    joinRoom(c, "peer_intruso", "Intruso", SHEET as unknown as CharacterSheet);
     deleteGeneratedPlayer(c, "peer_dono", "peer_intruso");
 
-    expect(joinRoom(c, "peer_intruso", "Intruso", SHEET as any)).toBeNull();
+    expect(joinRoom(c, "peer_intruso", "Intruso", SHEET as unknown as CharacterSheet)).toBeNull();
     expect(getRoom(c)!.players.peer_intruso).toBeUndefined();
   });
 
@@ -79,7 +80,7 @@ describe("R.3 — SEC-09: a expulsão revoga", () => {
     const c = code();
     createRoom(c, "Mesa", "Dono", "peer_dono");
     for (let i = 0; i < 60; i++) {
-      joinRoom(c, `peer_${i}`, `J${i}`, SHEET as any);
+      joinRoom(c, `peer_${i}`, `J${i}`, SHEET as unknown as CharacterSheet);
       deleteGeneratedPlayer(c, "peer_dono", `peer_${i}`);
     }
     const removidos = getRoom(c)!.removedPeerIds!;
@@ -90,7 +91,7 @@ describe("R.3 — SEC-09: a expulsão revoga", () => {
     // Snapshot do banco, restaurado num processo novo:
     const snapshot = JSON.parse(JSON.stringify(getRoom(c)));
     expect(restoreRoom(snapshot)).toBe(true);
-    expect(joinRoom(c, "peer_59", "J59", SHEET as any)).toBeNull();
+    expect(joinRoom(c, "peer_59", "J59", SHEET as unknown as CharacterSheet)).toBeNull();
   });
 
   it("remover NPC gerado não entra na lista (não é gente)", () => {

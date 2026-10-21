@@ -68,7 +68,6 @@ export class YjsGridConnection {
 
     // Awareness local mudou → envia; awareness remoto aplicado via handleBinary.
     this.awareness.on("update", (changes: { added: number[]; updated: number[]; removed: number[] }, origin: unknown) => {
-      const { added, updated, removed } = changes;
       if (origin === "local") {
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, messageAwareness);

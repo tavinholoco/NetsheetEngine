@@ -22,6 +22,7 @@ import {
   generateRoomPlayerEdgerunner,
   MAX_SEATS_PER_ROOM
 } from "../../server/roomManager";
+import type { CharacterSheet } from "../types/cyberpunk";
 
 const SHEET = {
   handle: "Vex",
@@ -40,7 +41,7 @@ function code(): string {
 function encher(c: string): string {
   let ultimo = "";
   for (let i = 0; Object.keys(getRoom(c)!.players).length < MAX_SEATS_PER_ROOM; i++) {
-    ultimo = joinRoom(c, `peer_${i}`, `J${i}`, SHEET as any)!.sessionToken;
+    ultimo = joinRoom(c, `peer_${i}`, `J${i}`, SHEET as unknown as CharacterSheet)!.sessionToken;
   }
   return ultimo;
 }
@@ -54,7 +55,7 @@ describe("R.16 — SEC-13: teto de assentos", () => {
   it("100 joins de peerIds novos não criam 100 assentos (o flood do portão)", () => {
     const c = code();
     createRoom(c, "Mesa", "Dono", "peer_dono");
-    for (let i = 0; i < 100; i++) joinRoom(c, `flood_${i}`, `F${i}`, SHEET as any);
+    for (let i = 0; i < 100; i++) joinRoom(c, `flood_${i}`, `F${i}`, SHEET as unknown as CharacterSheet);
     expect(Object.keys(getRoom(c)!.players).length).toBe(MAX_SEATS_PER_ROOM);
   });
 
@@ -64,8 +65,8 @@ describe("R.16 — SEC-13: teto de assentos", () => {
     const token = encher(c);
     const ultimo = `peer_${MAX_SEATS_PER_ROOM - 2}`;
 
-    expect(joinRoom(c, "peer_atrasado", "Atrasado", SHEET as any)).toBeNull();
-    expect(joinRoom(c, ultimo, "J", SHEET as any, token)).not.toBeNull();
+    expect(joinRoom(c, "peer_atrasado", "Atrasado", SHEET as unknown as CharacterSheet)).toBeNull();
+    expect(joinRoom(c, ultimo, "J", SHEET as unknown as CharacterSheet, token)).not.toBeNull();
   });
 
   it("quando o GM remove alguém, abre um lugar", () => {
@@ -73,7 +74,7 @@ describe("R.16 — SEC-13: teto de assentos", () => {
     createRoom(c, "Mesa", "Dono", "peer_dono");
     encher(c);
     deleteGeneratedPlayer(c, "peer_dono", "peer_0");
-    expect(joinRoom(c, "peer_novo", "Novo", SHEET as any)).not.toBeNull();
+    expect(joinRoom(c, "peer_novo", "Novo", SHEET as unknown as CharacterSheet)).not.toBeNull();
   });
 
   it("fichas geradas pelo GM ocupam lugar — e param no teto", () => {

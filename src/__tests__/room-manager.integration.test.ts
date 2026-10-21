@@ -13,7 +13,6 @@ import {
   joinRoom,
   leaveRoom,
   getRoom,
-  restoreRoom,
   verifySession,
   updatePlayerWoundLevel,
   updateTacticalGrid,
@@ -33,6 +32,7 @@ import {
   getAllActiveRooms
 } from "../../server/roomManager";
 import type { GameRoom } from "../../src/types/multiplayer";
+import type { CharacterSheet } from "../../src/types/cyberpunk";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -48,7 +48,7 @@ function uniqueCode(): string {
 
 const stats = { INT: 5, REF: 6, TECH: 5, COOL: 5, ATTR: 5, LUCK: 5, MA: 5, BODY: 6, EMP: 5 };
 
-function sheet(handle: string, updatedAt = "2026-08-01T00:00:00.000Z"): any {
+function sheet(handle: string, updatedAt = "2026-08-01T00:00:00.000Z"): CharacterSheet {
   return {
     id: `sheet_${handle}`,
     handle,
@@ -62,7 +62,7 @@ function sheet(handle: string, updatedAt = "2026-08-01T00:00:00.000Z"): any {
     cyberware: [],
     armor: [],
     updatedAt
-  };
+  } as unknown as CharacterSheet;
 }
 
 /** Esvazia a sala no final do teste (remove da memória global do manager). */
@@ -89,7 +89,7 @@ afterEach(() => {
 describe("roomManager — sessões (T1.7)", () => {
   it("createRoom emite token que verifica para o GM na sala", () => {
     const code = uniqueCode();
-    const { room, sessionToken } = createRoom(code, "Mesa de Teste", "Mestre", "gm_1");
+    const { sessionToken } = createRoom(code, "Mesa de Teste", "Mestre", "gm_1");
     expect(verifySession(code, sessionToken)).toBe("gm_1");
     expect(verifySession("OUTRA-SALA", sessionToken)).toBeNull(); // token é por sala
     expect(verifySession(code, "token_fake")).toBeNull();
@@ -195,7 +195,7 @@ describe("roomManager — GM: claim pelo handle e transferência (T1.8)", () => 
 
   it("GM sai com jogadores online → cargo é transferido (T1.8)", () => {
     const code = uniqueCode();
-    const { room, sessionToken } = createRoom(code, "Mesa de Teste", "Mestre", "gm_1");
+    const { sessionToken } = createRoom(code, "Mesa de Teste", "Mestre", "gm_1");
     joinRoom(code, "peer_a", "Alice", sheet("Alice"));
     const r = leaveRoom(code, "gm_1");
     expect(r.room).toBeTruthy();
