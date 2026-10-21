@@ -1414,19 +1414,28 @@ público mudar.
         Não há estatística pública confiável de WebSocket bloqueado (o que se acha é relato de "menos de 3%"). E o
         SSE tem um uso que não é o proxy: quem abre a página na janela da troca de instância cai nele (H.14).
       - **Ordem da fase:** L.1 → L.2 → L.5 → L.3 → L.4 → L.6, um PR por etapa.
-- [ ] **L.1** Broadcast por delta ~~(`chat:new`, `player:health`, `initiative:set`)~~; estado completo só
+- [x] **L.1** Broadcast por delta ~~(`chat:new`, `player:health`, `initiative:set`)~~; estado completo só
       no join e na reconexão. *(ARQ-01)*
+      *(21/10/2026 — feita: +33 testes, 1105 em 90 arquivos; a prova revertendo derruba 7 de 8 no servidor, 5 de
+      6 na tela e 6 do E.20. **Medido com o `h1a.mjs`**, o mesmo roteiro no `master` e no branch, build de
+      produção: um chat custava **6,8 KB por aba** e custa **0,2 KB**; o combate, de **51,9 KB** para **7,9 KB**.
+      Na mesa grande da L.0 (sala de 122 KB): o chat vai em 0,21 KB, o token movido em 2,2 KB, a virada de
+      iniciativa em 2 KB, e a ficha editada em **15 KB** — a ficha inteira do veterano, que é a parte que sobra
+      (ADIAR, na lista do bloco Q). **Compatível com a aba aberta:** sem `delta=1`, o servidor manda a sala
+      inteira como antes — o smoke do CI segue nesse caminho e ganhou o novo (6/6 contra o build de produção). O
+      contrato está no [`PROTOCOLO_MULTIPLAYER.md`](./PROTOCOLO_MULTIPLAYER.md#62-o-reenvio-por-diferença-e-a-vista-por-papel-l1--arq-01-e20),
+      e o portão, no [`SEGURANCA.md`](./SEGURANCA.md#fase-l--performance-e-escala).)*
       *Refeita na L.0 (21/10/2026):* a diferença **por seção, num ponto só** — o reenvio guarda o último texto de
       cada parte que mandou e manda só o que mudou: mensagens novas do chat, cada jogador, cada NPC, o grid, a
       iniciativa e o resto do topo.
-      - [ ] **L.1a** Os módulos puros, testados sozinhos: a diferença no servidor (`server/roomDelta.ts`) e o
+      - [x] **L.1a** Os módulos puros, testados sozinhos: a diferença no servidor (`server/roomDelta.ts`) e o
             *merge* no cliente.
-      - [ ] **L.1b** O reenvio por diferença, com o `rev`; a sala inteira na entrada do WebSocket, no SSE e a quem
+      - [x] **L.1b** O reenvio por diferença, com o `rev`; a sala inteira na entrada do WebSocket, no SSE e a quem
             pedir; o `lastActiveAt` fora do envio.
-      - [ ] **L.1c** O reenvio por papel — o jogador não recebe a ficha do NPC (o **E.20**).
-      - [ ] **L.1d** O cliente aplica a diferença e, se o `rev` pular, pede a sala inteira.
-      - [ ] **L.1e** O `/sheet` responde sem a sala; o smoke do CI e o protocolo atualizados.
-      - [ ] **L.1f** Medir antes e depois — a sala da L.0 e o `h1a.mjs`.
+      - [x] **L.1c** O reenvio por papel — o jogador não recebe a ficha do NPC (o **E.20**).
+      - [x] **L.1d** O cliente aplica a diferença e, se o `rev` pular, pede a sala inteira.
+      - [x] **L.1e** O `/sheet` responde sem a sala; o smoke do CI e o protocolo atualizados.
+      - [x] **L.1f** Medir antes e depois — a sala da L.0 e o `h1a.mjs`.
 - [ ] **L.2** `manualChunks` separando **o Supabase**, que está no chunk de entrada e é carregado até
       para quem só quer rolar dados — é o maior contribuinte identificado do 1,3 MB. **Não** investir em
       lazy-loading do Yjs: a [ADR 0002](./adr/0002-yjs-websockets.md) o deixou sob observação, e não vale
@@ -1472,7 +1481,8 @@ cromo, na Q.5. Na K.6 (20/10): **98** — entraram o salário do Fixer, o desemp
 arredondamento do 1D6/3 com o nível 0 (na Q.5), e o 9D10 rolado no servidor (na Q.2). Na K.7 (20/10): **99** — entrou o
 bônus das artes marciais por estilo (na Q.5). Na revisão da K (20/10, #70): **106** — sete da revisão do código da
 fase, seis na Q.3 e um na Q.5. Na L.0 (20/10): **108** — as respostas REST das ações sem a sala (na Q.2) e o
-Supabase fora do boot (na Q.3).)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+Supabase fora do boot (na Q.3). Na L.1 (21/10): **109** — a ficha editada que vai inteira (na Q.2); e o E.20, da
+Q.1, feito.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1526,8 +1536,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
       Q.)*
       *(20/10/2026 — **a K fechou e fez os quatro dela** (o cromo e o EV na K.2, o G.05 e o I.01 na K.3); o I.06, que ela
       mediu na K.2f, segue aqui com o número. Os da L e da M ficam com elas.)*
-  - [ ] **E.20**: a ficha de todo NPC vai a todos os jogadores. *Dona:* J.1b. *Gatilho:* um jogador espiar a ficha
-        do NPC, ou a L.1 abrir.
+  - [x] **E.20**: a ficha de todo NPC vai a todos os jogadores. *Dona:* J.1b. *Gatilho:* um jogador espiar a ficha
+        do NPC, ou a L.1 abrir. *(Feito na L.1c, 21/10/2026 — o gatilho disparou com a L.1: a vista por papel, em toda porta
+        que entrega a sala.)*
   - [ ] **E.21**: "esta sala existe?" responde no ritmo do limitador global. *Dona:* J.1b. *Gatilho:* a mesa abrir
         para gente de fora, ou a J.1b achar outra leitura que responda existência.
   - [ ] **E.22**: ids como `__proto__` dão 500. *Dona:* J.1d. *Gatilho:* uma rota nova indexar `players`/`npcs`
@@ -1561,7 +1572,8 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
   - [ ] **I.02**: o contrato de cada rota é escrito à mão dos dois lados. *Dona:* L.1. *Gatilho:* uma rota mudar de
         corpo e o cliente quebrar sem teste que pegue.
   - [ ] **I.04**: duas portas do servidor sem chamador; a leitura de existência sai com o E.21, e a mensagem
-        `initiative`, com a L.1. *Donas:* J.1b e L.1.
+        `initiative`, com a L.1. *Donas:* J.1b e L.1. *(21/10/2026: a L.1 não precisou dela — a diferença nasce no
+        reenvio, não nas mensagens. Segue aqui.)*
   - [ ] **Compressão do WebSocket** (`perMessageDeflate`, o risco 2 do custo zero), com medição de memória antes.
         *Dona:* L.0 e L.1. *Gatilho:* a banda do workspace passar de 2,5 GB num mês.
         *(20/10/2026, L.0: a sala comprime 10× e um jogador 2,4×, com CPU desprezível — a medida está na L.0. A L.0 não
@@ -1629,6 +1641,10 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         classificador de segurança do assistente, e a medida ficou com o dono. *Gatilho:* o dono rodar a sonda local
         (`npx vitest run src/__tests__/zz-j-probe.integration.test.ts` — arquivo não rastreado, não commitar) e trazer
         o número. Fonte: a nota na J.1d, acima.
+  - [ ] **A ficha editada vai inteira** (L.1): a diferença é por jogador, e a ficha do veterano pesa ~15 KB a cada
+        pausa de 600 ms na edição — é o que sobra de caro no reenvio. A versão menor é a diferença por campo da ficha
+        (as listas de perícias, armas e cromo por id), no mesmo `RoomFeed`. *Gatilho:* a banda do workspace passar de
+        2,5 GB num mês, ou a medida de uma sessão real mostrar a ficha editada como o maior custo. Fonte: a L.1, acima.
   - [ ] **As respostas REST das ações sem a sala** (L.0): toda rota de ação devolve a sala inteira, e o cliente só
         lê a do criar e a do entrar. A L.1 tira a do `/sheet`, a mais frequente; as outras seguem — uma sala a mais
         por ação, 1/(N+1) do reenvio. Mudar o corpo é mudar o contrato (I.02): 31 conferências de teste leem a sala
@@ -1856,7 +1872,7 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
 | K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66); a K.6 — a criação com orçamento: os pacotes e o salário conferidos, o assistente na ficha e o orçamento à vista do GM na mesa (#67); a K.7 — as perícias pelas fontes (com os quatro pilotos), a tela que sugere todas, e o Leap no lugar do Walk (#68); o fechamento, com o portão da fase e a revisão do que ela produziu (#69); a revisão do código da fase, K.10, com seis consertos — o "Refazer" que trocava a escolha do pacote entre eles (#70) | ✅ | 20/10/2026 |
 | L | 🔨 | Performance e escala — a L.0 mediu (a sala da K pesa o dobro, o reenvio sai também do token movido e da resposta REST, e o E.20 entra na L.1) | 🔄 | — |
-| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7; 106 na revisão da K; 108 na L.0 (20/10) | ⬜ | — |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7; 106 na revisão da K; 108 na L.0 (20/10); 109 na L.1, com o E.20 feito (21/10) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual

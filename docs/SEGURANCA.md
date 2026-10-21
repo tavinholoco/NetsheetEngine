@@ -1167,7 +1167,38 @@ e um comentário.
 
 ### Fase L — Performance e escala
 
-*(a preencher)*
+**21/10/2026 — L.1 (o PR do reenvio por diferença).** A L vai ao ar em vários PRs, como a K: uma entrada por
+PR, e a L.7 fecha a fase inteira.
+
+1. **Entrada nova?** Duas, as duas fechadas. O `delta` da URL do WebSocket e do SSE: só o texto exato `"1"`
+   liga a diferença; qualquer outra coisa é o caminho de antes. A mensagem `resync` do socket: sem corpo, só
+   vale no socket que pediu `delta=1`, e conta no teto das ações (120 por minuto por jogador, com a rolagem e a
+   iniciativa — R.4).
+2. **Dado novo sai?** **Sai menos.** O **E.20** fechou: a ficha do NPC (atributos, armas, ferimento) ia a todo
+   jogador em todo reenvio; agora só o Mestre (`gmPeerId`) a recebe, em **toda porta que entrega a sala** — o
+   reenvio, a entrada do socket e do SSE, a leitura (`GET`) e as respostas REST. Conferido no
+   `room-delta.integration.test`, com sockets de verdade, e nenhum texto que chega ao jogador contém os atributos
+   de um NPC; revertida a vista, seis testes falham. O `lastActiveAt` deixou de sair. O `rev` é um contador por
+   sala e por papel, sem significado fora dela. Segue saindo a todos o que já saía: as fichas dos jogadores (a
+   mesa vê a dos colegas) e o `removedPeerIds`.
+3. **Autorização nova?** Uma decisão nova, que não autoriza ação: **quem recebe a vista do Mestre**. É o
+   `gmPeerId`, e só ele — o `audienceOf` não usa o `checkIsGm`, que promove a GM quem tem o *handle* do Mestre
+   numa sala sem `gmPeerId` (o vão da J.1g, na lista do bloco Q). Ver a sala não promove ninguém: sem `gmPeerId`,
+   todos recebem a vista do jogador. Ninguém novo recebe sessão.
+4. **Jogador convidado hostil?** Pode pedir `resync` sem parar: no teto das ações, é no máximo 120 salas
+   inteiras por minuto **só para ele** — antes, cada ação dele já reenviava a sala inteira **a todos**. Pode abrir
+   o socket sem `delta` e receber a sala inteira a cada mudança, como qualquer aba de antes da L.1: é o custo de
+   antes, não um novo, e na vista do jogador. Não lê mais a ficha do NPC.
+5. **Estado novo sem limite?** O `RoomFeed`: por sala, o texto das partes da última vista mandada, uma por papel
+   — perto de **duas vezes o tamanho da sala** (~0,25 MB na mesa grande da L.0). Sai quando a sala fica sem
+   ninguém escutando, quando ela acaba (a saída do último, o coletor) e na troca de instância (é memória do
+   processo). O teto vem dos tetos da sala (E.03): 30 salas, 16 assentos com fichas de até 64 KB, 32 NPCs. As
+   marcas de quem pediu `delta` são `WeakSet`, e saem com o socket.
+6. **Custo por requisição a serviço externo?** Nenhum. **Corta banda do Render**, que é a cota que desliga o
+   serviço: no `h1a.mjs`, um chat custava 6,8 KB por aba e custa 0,2 KB; o combate, de 51,9 KB para 7,9 KB.
+
+**O que este PR ensina antes de o conserto estar no ar?** O E.20 estava escrito no ledger da E desde 30/09
+(ADIAR, sem sintoma): o PR não publica nada que não estivesse publicado, e leva o conserto junto.
 
 ### Fase M — Validação e encerramento
 

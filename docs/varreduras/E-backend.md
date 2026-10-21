@@ -316,6 +316,8 @@ dela, seria um segundo `JSON.stringify` por reenvio — custo de CPU na instânc
 **VEREDITO:** ADIAR
 - **Gatilho:** a mesa do dono se importar (um jogador "espiar" a ficha do NPC), ou a L.1 abrir — o
   filtro por papel entra no mesmo trabalho. Levado à J.1b como linha da tabela de superfície.
+- ✅ **Feito na L.1c** (21/10/2026): o gatilho disparou com a L.1. A ficha do NPC só vai ao Mestre, em toda porta
+  que entrega a sala (`roomViewFor`, em `server/roomDelta.ts`); teste no `room-delta.integration.test`.
 
 ### E.23 — Compressão HTTP no Express
 
