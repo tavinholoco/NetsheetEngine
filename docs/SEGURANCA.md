@@ -1200,6 +1200,19 @@ PR, e a L.7 fecha a fase inteira.
 **O que este PR ensina antes de o conserto estar no ar?** O E.20 estava escrito no ledger da E desde 30/09
 (ADIAR, sem sintoma): o PR não publica nada que não estivesse publicado, e leva o conserto junto.
 
+**21/10/2026 — L.2 (o PR dos chunks do React e do Supabase).** Só configuração de build.
+
+1. **Entrada nova?** Nenhuma.
+2. **Dado novo sai?** Nenhum: os mesmos bytes, em três arquivos em vez de um, servidos pelo próprio origin. O
+   segredo no bundle continua o mesmo — as três `VITE_` de sempre (J.12).
+3. **Autorização nova?** Nenhuma.
+4. **Jogador convidado hostil?** Nada novo.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum. O CSP não muda: `script-src 'self'` cobre os chunks novos
+   (o `fonts-csp` do E2E passou contra o build de produção).
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
+
 ### Fase M — Validação e encerramento
 
 *(a preencher)*
