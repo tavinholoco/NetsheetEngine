@@ -683,6 +683,11 @@ testável (nenhum dos seis precisa).
 chamam direto. O `server.ts` não: as rotas, o reenvio e o Yjs só se testam subindo o app. O corte que
 mais barateia teste é o do `server.ts`, não o do `roomManager`.
 
+- ✅ **O `server.ts` cortado na L.3a** (22/10/2026), como o mapa propunha: `server/http.ts`, `server/routes/rooms.ts`,
+  `server/routes/ai.ts`, `server/realtime.ts` (que levou também o reenvio por diferença da L.1) e `server/yjsGrid.ts`,
+  mais o `server/wsGateway.ts` (o socket e o *upgrade*, que o mapa punha no `realtime`: separado, o `yjsGrid` depende
+  do `realtime` sem ciclo). O `server.ts` ficou com 298 linhas. O `roomManager` é a L.3b.
+
 ---
 
 ## Pesquisa usada nesta varredura

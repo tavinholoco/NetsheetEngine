@@ -15,7 +15,7 @@ da sala (`GameRoom` em JSON) para todos os membros.
 ```
 ┌─────────┐   WebSocket (base) / SSE (fallback)   ┌──────────────┐
 │ Cliente │ ──────── mensagens JSON ────────────▶ │  Express     │
-│ (React) │ ◀──────── broadcast room JSON ─────── │  server.ts   │
+│ (React) │ ◀──── sala inteira / diferença ────── │  server/     │
 │         │ ─── binário Yjs (grid CRDT) ────────▶ │  roomManager │
 └─────────┘ ◀── binário Yjs (updates/awareness) ─ │  Supabase    │
                                                   └──────────────┘
@@ -33,7 +33,10 @@ O cliente (`MultiplayerRoom.tsx`) tenta o WebSocket primeiro; se **nunca** conec
 SSE. Se o WS cair **depois** de conectar, tenta o WebSocket de novo, com espera crescente — 3 s, 6 s,
 12 s… até 30 s, e volta a 3 s quando conecta — e **não** cai para o SSE *(H.3b, 14/10/2026: antes, uma
 queda breve seguida de uma tentativa que falhava levava ao SSE para sempre — o H.09)*. Ambos os
-transportes entregam o **mesmo payload**: a sala inteira serializada em JSON.
+transportes entregam o **mesmo payload**: a sala inteira serializada em JSON — desde a L.1, a sala inteira na
+entrada e depois só a diferença, a quem pede `delta=1` (§6.2). *(Desde a L.3a, 22/10/2026, o servidor é módulos:
+as rotas em `server/routes/`, o reenvio em `server/realtime.ts`, o socket em `server/wsGateway.ts` e o grid em
+`server/yjsGrid.ts`.)*
 
 ---
 
