@@ -1462,7 +1462,7 @@ público mudar.
             e `routes/ai.ts`), quem escuta cada sala e o reenvio (`server/realtime.ts`), o grid CRDT (`server/yjsGrid.ts`) e o
             socket com o *upgrade* (`server/wsGateway.ts`). O `yjsGrid` depende do `realtime`, não o contrário: o espelho
             do grid entra no reenvio pelo `onBeforeBroadcast`. O teste que trava status escrito à mão passou a olhar o
-            `server/` inteiro (revertido, deixava passar um status à mão numa rota). *(22/10/2026)*
+            `server/` inteiro (revertido, deixava passar um status à mão numa rota). *(22/10/2026, no #77)*
       - [ ] **L.3b** O `roomManager` (1.732 linhas): sessões, salas, assentos, chat, poderes do GM e combate; o `roomKey` do
             **E.11** nasce no módulo de salas.
       - [ ] **L.3c** O `MultiplayerRoom` (1.235) e o `TacticalGrid` (763): o `useRoomTransport`, o lobby, o chat, a barra
