@@ -198,8 +198,19 @@ describe("E.3c — o erro pelo WebSocket também leva o code", () => {
 });
 
 describe("E.3c — a trava: status e erro só pela tabela", () => {
-  it("o server.ts não escreve mais `status(4xx).json({ error` à mão", () => {
-    const fonte = fs.readFileSync(path.resolve(__dirname, "../../server.ts"), "utf8");
+  it("o servidor (o server.ts e o server/) não escreve `status(4xx).json({ error` à mão", () => {
+    // L.3a — as rotas saíram para server/; a trava olha o servidor inteiro.
+    const raiz = path.resolve(__dirname, "../..");
+    const arquivos = [
+      "server.ts",
+      ...fs
+        .readdirSync(path.join(raiz, "server"), { recursive: true })
+        .map(String)
+        .filter((f) => f.endsWith(".ts"))
+        .map((f) => path.join("server", f))
+    ];
+    expect(arquivos).toContain(path.join("server", "routes", "rooms.ts"));
+    const fonte = arquivos.map((f) => fs.readFileSync(path.join(raiz, f), "utf8")).join("\n");
     const aMao = fonte.match(/\.status\(\d{3}\)\.json\(\{\s*error/g) ?? [];
     expect(aMao).toEqual([]);
   });
