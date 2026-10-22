@@ -130,7 +130,9 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   (quem escuta cada sala, os envios, o reenvio por diferença, o estado da troca de instância), `server/yjsGrid.ts` (o
   grid CRDT) e `server/wsGateway.ts` (o socket e o *upgrade*). O `server.ts` liga tudo e guarda o health, os vigias,
   o bastão e o boot. O `yjsGrid` depende do `realtime`, não o contrário: o espelho do grid entra no reenvio pelo
-  `onBeforeBroadcast`, registrado no `server.ts`.
+  `onBeforeBroadcast`, registrado no `server.ts`. **Desde a L.3b**, o `roomManager.ts` é um barril: a lógica da mesa
+  mora em `server/room/` (`sessions`, `rooms`, `chat`, `wounds`, `seats`, `gmPowers`, `combat`), sem ciclo, e o código de
+  sala se normaliza só pelo `roomKey` (`server/room/key.ts`, o E.11).
 - **Ver o app rodando:** a configuração `netsheet-dev` do [`.claude/launch.json`](./.claude/launch.json)
   (`npm run dev`, porta 3000) abre o preview no painel. Em modo dev, **deep link volta para `/`**
   (G.02 do [ledger da G](./docs/varreduras/G-frontend.md): ADIAR, com a versão de uma linha pronta) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,

@@ -1463,8 +1463,13 @@ público mudar.
             socket com o *upgrade* (`server/wsGateway.ts`). O `yjsGrid` depende do `realtime`, não o contrário: o espelho
             do grid entra no reenvio pelo `onBeforeBroadcast`. O teste que trava status escrito à mão passou a olhar o
             `server/` inteiro (revertido, deixava passar um status à mão numa rota). *(22/10/2026, no #77)*
-      - [ ] **L.3b** O `roomManager` (1.732 linhas): sessões, salas, assentos, chat, poderes do GM e combate; o `roomKey` do
-            **E.11** nasce no módulo de salas.
+      - [x] **L.3b** O `roomManager` (1.732 linhas → um barril de 16): `server/room/` com `sessions`, `rooms` (o mapa, os
+            tetos, a presença, o GM, o recorte público), `chat`, `wounds` (o ferimento na ficha, puro), `seats` (criar, entrar,
+            sair, os removidos), `gmPowers` e `combat`. Três desvios do mapa tiram os ciclos: o `createRoom` foi para `seats`
+            (criar a sala é sentar o Mestre), o ferimento para `wounds`, o `MAX_REMOVED_PEERS` para `rooms`. O barril reexporta
+            os mesmos 52 nomes. **O E.11 feito:** o `roomKey` (`server/room/key.ts`, sem dependência) nos 29 pontos que
+            normalizavam à mão — o stream SSE aberto com espaço no código achava a sala e não recebia o reenvio
+            (reproduzido no `room-key.integration.test`; revertida a linha do stream, falha). *(22/10/2026)*
       - [ ] **L.3c** O `MultiplayerRoom` (1.235) e o `TacticalGrid` (763): o `useRoomTransport`, o lobby, o chat, a barra
             lateral, a iniciativa e os modais; o cartão do token, o *drop* e o formulário de token.
       - [ ] **L.3d** O `FriendsList` (721), o `CyberpunkMenu` (607) e o `App` (386).
@@ -1615,9 +1620,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         num contêiner Linux — 30 salas de 7 sockets, a sala da L.0 reenviada, a memória do processo com e sem
         `serverNoContextTakeover` — antes de qualquer linha no `server.ts`.)*
   - [ ] **E.18** e **G.21**: os cortes dos arquivos grandes, no backend e no frontend. *Dona:* L.3. *(22/10/2026: o
-        `server.ts` feito na L.3a; o resto, nas L.3b–d.)*
-  - [ ] **E.11**: `code.toUpperCase()` em 25 pontos, sem dono. *Dona:* L.3 (o `roomKey` vai para o módulo de
-        salas). *Gatilho:* uma sala "não encontrada" por maiúscula ou espaço.
+        `server.ts` feito na L.3a, o `roomManager` na L.3b; o resto, nas L.3c–d.)*
+  - [x] **E.11**: `code.toUpperCase()` em 25 pontos, sem dono. *Dona:* L.3 (o `roomKey` vai para o módulo de
+        salas). *Gatilho:* uma sala "não encontrada" por maiúscula ou espaço. *(Feito na L.3b, 22/10/2026.)*
   - [x] **E.16** (sete `any` no `server.ts`), **G.17** (doze `console.*` no cliente) e **G.18** (o "broadcast" das
         rolagens da ficha, sem ouvinte). *Dona:* L.5. *(Feitos na L.5, 21/10/2026.)*
   - [ ] **E.05**: o `sseClients` guarda um `Set` vazio por sala, para sempre. *Dona:* L.6; o item some se o SSE sair.

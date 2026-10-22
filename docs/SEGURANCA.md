@@ -1252,6 +1252,26 @@ e as rotas saíram dele. Ele passou a ler o `server/` inteiro; com a versão ant
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
 
+**22/10/2026 — L.3b (o PR que corta o `roomManager`, com o E.11).** Os blocos mudaram de arquivo inteiros, com o
+comentário de cima; o barril reexporta os mesmos 52 nomes.
+
+1. **Entrada nova?** Nenhuma. A validação de tudo o que entra na mesa (o código, o `peerId`, a ficha, o texto) é a
+   mesma, em `server/room/rooms.ts` e nos módulos que a usam.
+2. **Dado novo sai?** Nenhum.
+3. **Autorização nova?** Nenhuma. O `checkIsGm` e o emitir sessão (o `bindSession`, a prova de posse da R.1) mudaram de
+   arquivo sem mudar de corpo. Uma coisa mudou de alcance: funções internas que um módulo usa de outro (o `checkIsGm`,
+   o `bindSession`, o `writeWound`…) passaram a ser `export` entre os módulos de `server/room/` — o barril, que é o que
+   o resto do servidor importa, não as reexporta.
+4. **Jogador convidado hostil?** Um a menos: o E.11 fechou o stream SSE que, aberto com espaço no código, achava a sala
+   e não recebia o reenvio (um stream mudo, não um vazamento). Toda chave de mapa por código de sala sai do `roomKey`.
+5. **Estado novo sem limite?** Nenhum: os mesmos mapas, em outros arquivos.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**A trava que poderia ter ficado para trás:** o teste de que o `roomManager` não devolve erro sem `code` lia o arquivo
+— que virou o barril. Ele passou a ler o `server/room/`, e confere que o `combat.ts` está entre os lidos.
+
+**O que este PR ensina antes de o conserto estar no ar?** O E.11 estava no ledger da E desde 30/09; o conserto vai junto.
+
 ### Fase M — Validação e encerramento
 
 *(a preencher)*
