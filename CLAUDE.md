@@ -111,8 +111,9 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   não escreve o próprio ferimento.
 - **Desde a Fase E (30/09) o servidor tem contrato de erro e tetos.** Todo erro da API é
   `{ error, code }`, e o status sai do `code` por uma tabela só ([`server/errors.ts`](./server/errors.ts));
-  no `roomManager`, o tipo `RoomResult` não deixa erro sair sem `code`, e no `server.ts` a única saída
-  é o `sendError`. **Rota nova segue isso** — um teste trava status escrito à mão. A mesa tem tetos
+  no `roomManager`, o tipo `RoomResult` não deixa erro sair sem `code`, e no servidor a única saída
+  é o `sendError` (`server/http.ts`). **Rota nova segue isso** — um teste trava status escrito à mão, no `server.ts`
+  e em todo o `server/`. A mesa tem tetos
   (30 salas, 32 NPCs, ficha de 64 KB, chat de 100, 1 MiB por socket lento) e o grid tem forma
   conferida nas duas portas, REST e Yjs (SEC-14, SEC-15). O ledger da varredura está em
   `docs/varreduras/E-backend.md`, com o mapa de cortes que a L.3 vai usar. **Desde a J (17/10), todo envio
@@ -121,9 +122,15 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   Yjs é conferido em `server/awarenessGuard.ts` (forma, dono, cursor só do GM — SEC-17).
 - **Desde a L.1 (21/10), a sala sai na vista do papel e por diferença.** O jogador não recebe a ficha do NPC
   (E.20) em porta nenhuma: **porta nova que entregue a sala passa pelo `roomViewFor`** (`server/roomDelta.ts`), e
-  entrada de socket ou stream pelo `roomEntryFor` do `server.ts`. Quem conecta com `delta=1` recebe `room:full`
+  entrada de socket ou stream pelo `roomEntryFor` (`server/realtime.ts`). Quem conecta com `delta=1` recebe `room:full`
   e depois `room:patch` com `rev`; sem `delta`, a sala inteira, como antes — é o que mantém a aba aberta viva
   num deploy. O lado do cliente é o `src/lib/roomPatch.ts`; o contrato, o §6.2 do `PROTOCOLO_MULTIPLAYER.md`.
+- **Desde a L.3a (22/10), o servidor é módulos** (o mapa da E.1f): `server/http.ts` (a borda — proxy, CORS, helmet,
+  limitadores, `sendError`, a sessão), `server/routes/rooms.ts` e `routes/ai.ts` (as rotas), `server/realtime.ts`
+  (quem escuta cada sala, os envios, o reenvio por diferença, o estado da troca de instância), `server/yjsGrid.ts` (o
+  grid CRDT) e `server/wsGateway.ts` (o socket e o *upgrade*). O `server.ts` liga tudo e guarda o health, os vigias,
+  o bastão e o boot. O `yjsGrid` depende do `realtime`, não o contrário: o espelho do grid entra no reenvio pelo
+  `onBeforeBroadcast`, registrado no `server.ts`.
 - **Ver o app rodando:** a configuração `netsheet-dev` do [`.claude/launch.json`](./.claude/launch.json)
   (`npm run dev`, porta 3000) abre o preview no painel. Em modo dev, **deep link volta para `/`**
   (G.02 do [ledger da G](./docs/varreduras/G-frontend.md): ADIAR, com a versão de uma linha pronta) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,

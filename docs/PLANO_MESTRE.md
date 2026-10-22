@@ -1455,6 +1455,19 @@ público mudar.
       deploy baixa 70,5 kB, não 188,4 (−63%). Só o React e o Supabase: uma biblioteca que só uma tela carrega (o
       Yjs) num chunk fixo viria para o boot.)*
 - [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que a E.1f e a G.1f mapearam. *(ARQ-05)*
+      *(22/10/2026 — os mapas somam 22 arquivos novos em sete arquivos grandes; a L.3 vai em quatro PRs, um corte cada,
+      sem mudar comportamento — a suíte, o E2E, o smoke do WebSocket e o `h1a.mjs` provam cada um. Os testes só importam
+      do `server.ts` o `app`, o `attachRealtime`, o `runPresenceSweep`, o `pruneExpiredBuckets` e o `drainForHandoff`.)*
+      - [x] **L.3a** O `server.ts` (1.824 linhas → 298): a borda HTTP (`server/http.ts`), as rotas (`server/routes/rooms.ts`
+            e `routes/ai.ts`), quem escuta cada sala e o reenvio (`server/realtime.ts`), o grid CRDT (`server/yjsGrid.ts`) e o
+            socket com o *upgrade* (`server/wsGateway.ts`). O `yjsGrid` depende do `realtime`, não o contrário: o espelho
+            do grid entra no reenvio pelo `onBeforeBroadcast`. O teste que trava status escrito à mão passou a olhar o
+            `server/` inteiro (revertido, deixava passar um status à mão numa rota). *(22/10/2026)*
+      - [ ] **L.3b** O `roomManager` (1.732 linhas): sessões, salas, assentos, chat, poderes do GM e combate; o `roomKey` do
+            **E.11** nasce no módulo de salas.
+      - [ ] **L.3c** O `MultiplayerRoom` (1.235) e o `TacticalGrid` (763): o `useRoomTransport`, o lobby, o chat, a barra
+            lateral, a iniciativa e os modais; o cartão do token, o *drop* e o formulário de token.
+      - [ ] **L.3d** O `FriendsList` (721), o `CyberpunkMenu` (607) e o `App` (386).
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [x] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
       `--max-warnings 0` no CI. *(ARQ-07)*
@@ -1601,7 +1614,8 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         a liga: depois da L.1, só a entrada e a reconexão passariam do `threshold: 1024`. **A medida que falta:** carga
         num contêiner Linux — 30 salas de 7 sockets, a sala da L.0 reenviada, a memória do processo com e sem
         `serverNoContextTakeover` — antes de qualquer linha no `server.ts`.)*
-  - [ ] **E.18** e **G.21**: os cortes dos arquivos grandes, no backend e no frontend. *Dona:* L.3.
+  - [ ] **E.18** e **G.21**: os cortes dos arquivos grandes, no backend e no frontend. *Dona:* L.3. *(22/10/2026: o
+        `server.ts` feito na L.3a; o resto, nas L.3b–d.)*
   - [ ] **E.11**: `code.toUpperCase()` em 25 pontos, sem dono. *Dona:* L.3 (o `roomKey` vai para o módulo de
         salas). *Gatilho:* uma sala "não encontrada" por maiúscula ou espaço.
   - [x] **E.16** (sete `any` no `server.ts`), **G.17** (doze `console.*` no cliente) e **G.18** (o "broadcast" das

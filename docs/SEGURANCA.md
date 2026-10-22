@@ -1233,6 +1233,25 @@ e está abaixo.
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
 
+**22/10/2026 — L.3a (o PR que corta o `server.ts`).** Os blocos mudaram de arquivo pelas linhas, sem reescrita; o
+que o portão olha é se alguma trava se perdeu no caminho.
+
+1. **Entrada nova?** Nenhuma. As rotas, o *upgrade* e as mensagens do socket são as mesmas, com a mesma validação.
+2. **Dado novo sai?** Nenhum. A vista por papel (E.20) segue em toda porta: o `roomViewFor` nas rotas e o
+   `roomEntryFor` na entrada do socket e do stream — o `room-delta.integration` passa sem mudança.
+3. **Autorização nova?** Nenhuma. A ordem das travas é a mesma: o `installHttpBasics` põe o proxy de confiança, o
+   corpo JSON, o CORS, o limitador global e o helmet antes de qualquer rota; a recusa da troca de instância
+   (`503 server_restarting`) segue antes das rotas da mesa; o 404 em JSON e o tratador de erro, depois de todas.
+4. **Jogador convidado hostil?** Nada novo. Os tetos do socket (R.4, SEC-18) seguem no `wsGateway` e no `realtime`.
+5. **Estado novo sem limite?** Nenhum: os mesmos mapas, em outro arquivo. O único estado que mudou de forma é o
+   da troca de instância (`draining`, `announcing`), agora atrás de funções no `realtime`.
+6. **Custo por requisição a serviço externo?** Nenhum. A rota da IA mudou de arquivo com as quatro travas da B.1.
+
+**A trava que poderia ter ficado para trás:** o teste que proíbe status escrito à mão (`E.3c`) lia só o `server.ts`,
+e as rotas saíram dele. Ele passou a ler o `server/` inteiro; com a versão antiga, um status à mão numa rota passaria.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
+
 ### Fase M — Validação e encerramento
 
 *(a preencher)*
