@@ -13,6 +13,7 @@ import { RoomFeed, audienceOf, roomViewFor, type RoomAudience } from "./roomDelt
 import { getRoom } from "./roomManager.js";
 import { queueRoomPersist } from "./roomPersistence.js";
 import type { GameRoom } from "../src/types/multiplayer.js";
+import { roomKey } from "./room/key.js";
 
 // SSE Active Connections Map: roomCode -> Set<Response>
 export const sseClients: Record<string, Set<Response>> = {};
@@ -29,7 +30,7 @@ export const wsPeer = new WeakMap<WebSocket, string>();
 // Fase 5 (T5.2) — fecha as conexões de um peer (sair da mesa ou ser removido
 // pelo GM). Desde a R.3, as duas: WebSocket e stream SSE.
 export function closePeerSockets(code: string, peerId: string): void {
-  const key = code.toUpperCase();
+  const key = roomKey(code);
   const sockets = wsClients[key];
   if (sockets) {
     for (const ws of sockets) {
@@ -64,7 +65,7 @@ export function closePeerSockets(code: string, peerId: string): void {
  */
 export function sendToSocket(code: string, ws: WebSocket, data: string | Uint8Array): boolean {
   if (ws.readyState !== WebSocket.OPEN) return false;
-  const key = code.toUpperCase();
+  const key = roomKey(code);
   if (ws.bufferedAmount > WS_LIMITS.maxBufferedBytes) {
     logger.warn("slow_consumer_closed", { room: key, peerId: wsPeer.get(ws), transport: "ws", bytes: ws.bufferedAmount });
     wsClients[key]?.delete(ws);
@@ -173,7 +174,7 @@ export function sendToSse(key: string, res: Response, text: string): void {
 
 /** A sala acabou (a saída do último, o coletor): o feed dela vai junto. */
 export function dropRoomFeed(code: string): void {
-  roomFeeds.delete(code.toUpperCase());
+  roomFeeds.delete(roomKey(code));
 }
 
 /** O que roda a cada reenvio, antes de entregar (o espelho do grid no doc Yjs). */
@@ -196,7 +197,7 @@ export function broadcastRoomUpdate(code: string) {
   // chegar depois recebe a sala inteira com o rev certo.
   // E.03 (SEC-15) — socket que não lê é fechado, em vez de o servidor guardar
   // cada reenvio da sala para ele; desde a J (SEC-18), no `sendToSocket`.
-  const key = code.toUpperCase();
+  const key = roomKey(code);
   if (!wsClients[key]?.size && !sseClients[key]?.size) return;
   const deliveries = { gm: advanceFeed(key, room, "gm"), player: advanceFeed(key, room, "player") };
   forEachListener(key, room, (l) => {

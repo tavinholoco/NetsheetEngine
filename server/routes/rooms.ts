@@ -67,6 +67,7 @@ import {
   ssePeer
 } from "../realtime.js";
 import { destroyRoomYjs } from "../yjsGrid.js";
+import { roomKey } from "../room/key.js";
 
 // Resposta padronizada das ações na sala: a sala, ou o erro pelo `code` (E.3c).
 // Antes, o status saía do TEXTO — 404 se a mensagem dizia "não encontrad",
@@ -117,7 +118,7 @@ export function registerRoomRoutes(app: Express): void {
     // R.2 (SEC-08) — código em uso é outra mesa, com gente dentro: nunca
     // sobrescrever. Antes, qualquer um apagava a mesa com o código do lobby.
     if (getRoom(code)) {
-      return sendError(res, "room_exists", `Já existe uma mesa com o código ${code.trim().toUpperCase()}. Entre nela pelo código, ou escolha outro.`);
+      return sendError(res, "room_exists", `Já existe uma mesa com o código ${roomKey(code)}. Entre nela pelo código, ou escolha outro.`);
     }
     // E.03 (SEC-15) — salas abertas têm teto: criar não exige login no servidor,
     // e cada sala é memória na instância de 512 MB e uma linha no banco.
@@ -448,7 +449,7 @@ export function registerRoomRoutes(app: Express): void {
 
   // Server-Sent Events (SSE) stream for live real-time updates (< 50ms latency)
   app.get("/api/rooms/:code/stream", (req, res) => {
-    const code = req.params.code.toUpperCase();
+    const code = roomKey(req.params.code);
     const room = getRoom(code);
     if (!room) {
       return sendError(res, "room_not_found", ERR_SALA_NAO_ENCONTRADA);

@@ -12,6 +12,7 @@ import { logger } from "./logger.js";
 import { getRoom } from "./roomManager.js";
 import { queueRoomPersist } from "./roomPersistence.js";
 import { broadcastRoomUpdate, sendToSocket, wsClients, wsPeer } from "./realtime.js";
+import { roomKey } from "./room/key.js";
 
 // ==========================================
 // FASE 5 (T5.3) — GRID CRDT (Yjs) POR SALA
@@ -42,7 +43,7 @@ const roomYjs = new Map<string, RoomYjsEntry>();
  * e acopla os watchers de updates/awareness (uma única vez por entrada).
  */
 export function getRoomYjs(code: string): RoomYjsEntry | null {
-  const key = code.toUpperCase();
+  const key = roomKey(code);
   let entry = roomYjs.get(key);
   if (entry) return entry;
   const room = getRoom(key);
@@ -76,7 +77,7 @@ function watchYjsUpdates(entry: RoomYjsEntry, code: string): void {
   });
 
   entry.awareness.on("update", ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }, origin: unknown) => {
-    const sockets = wsClients[code.toUpperCase()];
+    const sockets = wsClients[roomKey(code)];
     if (!sockets || sockets.size === 0) return;
     const changed = [...added, ...updated, ...removed];
     if (changed.length === 0) return;
@@ -92,7 +93,7 @@ function watchYjsUpdates(entry: RoomYjsEntry, code: string): void {
 
 /** Destrói o doc/awareness de uma sala (ex.: sala encerrada). */
 export function destroyRoomYjs(code: string): void {
-  const key = code.toUpperCase();
+  const key = roomKey(code);
   const entry = roomYjs.get(key);
   if (entry) {
     roomYjs.delete(key);
@@ -107,7 +108,7 @@ export function destroyRoomYjs(code: string): void {
 
 /** Encaminha um update Yjs para os outros sockets da sala (não ecoa o autor). */
 function broadcastYjsUpdate(code: string, update: Uint8Array, origin: unknown): void {
-  const sockets = wsClients[code.toUpperCase()];
+  const sockets = wsClients[roomKey(code)];
   if (!sockets || sockets.size === 0) return;
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, messageSync);
@@ -125,7 +126,7 @@ function broadcastYjsUpdate(code: string, update: Uint8Array, origin: unknown): 
  * recebem o revert via broadcastYjsUpdate).
  */
 function mirrorDocToJson(code: string, originWs: WebSocket): boolean {
-  const key = code.toUpperCase();
+  const key = roomKey(code);
   const entry = roomYjs.get(key);
   const room = getRoom(key);
   if (!entry || !room) return true;
@@ -191,7 +192,7 @@ function mirrorDocToJson(code: string, originWs: WebSocket): boolean {
 
 /** Seed JSON → doc quando o grid mudou por REST (no-op se já igual). */
 export function seedDocFromJson(code: string): void {
-  const key = code.toUpperCase();
+  const key = roomKey(code);
   const entry = roomYjs.get(key);
   const room = getRoom(key);
   if (!entry || !room || !room.tacticalGrid) return;
@@ -226,7 +227,7 @@ export function handleYjsBinary(code: string, ws: WebSocket, raw: Buffer): void 
   } else if (messageType === messageAwareness) {
     const update = decoding.readVarUint8Array(decoder);
     // J.1d (SEC-17) — quem escreve e o que vem dentro, antes de aplicar e repassar.
-    const key = code.toUpperCase();
+    const key = roomKey(code);
     const peerId = wsPeer.get(ws);
     const verdict = checkAwarenessUpdate(update, {
       own: wsAwarenessId.get(ws),
@@ -265,7 +266,7 @@ const awarenessRejectLogged = new WeakSet<WebSocket>();
 /** Tira da mesa o estado de awareness de um socket que fechou. */
 export function dropSocketAwareness(code: string, ws: WebSocket): void {
   const id = wsAwarenessId.get(ws);
-  const entry = roomYjs.get(code.toUpperCase());
+  const entry = roomYjs.get(roomKey(code));
   if (id === undefined || !entry || !entry.awareness.getStates().has(id)) return;
   awarenessProtocol.removeAwarenessStates(entry.awareness, [id], "server");
 }
@@ -281,7 +282,7 @@ export function seedDocFromJsonSafely(code: string): void {
   try {
     seedDocFromJson(code);
   } catch (e) {
-    logger.error("yjs_seed_failed", { room: code.toUpperCase(), message: (e as Error)?.message || String(e) });
+    logger.error("yjs_seed_failed", { room: roomKey(code), message: (e as Error)?.message || String(e) });
     destroyRoomYjs(code);
   }
 }
