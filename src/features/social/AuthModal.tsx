@@ -23,9 +23,10 @@ interface AuthModalProps {
 const OAUTH_PENDING_KEY = 'cyberpunk_oauth_pending';
 
 /** Traduz erros do Supabase Auth para mensagens pt-BR (mantendo o UX do Firebase). */
-function translateAuthError(err: any): string {
+function translateAuthError(erro: unknown): string {
+  const err = erro as { code?: unknown; status?: unknown; message?: unknown } | null | undefined;
   const code = String(err?.code || err?.status || '');
-  const msg = String(err?.message || err || '');
+  const msg = String(err?.message || erro || '');
 
   if (code === 'invalid_credentials' || msg.includes('Invalid login credentials')) {
     return 'E-mail ou senha incorretos.';
@@ -70,8 +71,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       if (u) {
         try {
           await saveUserProfile(u);
-        } catch (e) {
-          console.error('Erro ao sincronizar perfil pós-OAuth:', e);
+        } catch {
+          // Melhor esforço: o perfil se grava de novo no próximo login.
         }
       }
     });
@@ -107,8 +108,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         await signInWithEmailAndPassword(auth, email, password);
       }
       onClose();
-    } catch (err: any) {
-      console.error('Auth error:', err);
+    } catch (err) {
       setErrorMsg(translateAuthError(err));
     } finally {
       setLoading(false);
@@ -124,8 +124,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       sessionStorage.setItem(OAUTH_PENDING_KEY, '1');
       await signInWithPopup(auth, googleProvider);
       onClose();
-    } catch (err: any) {
-      console.error('Google Auth Error:', err);
+    } catch {
       sessionStorage.removeItem(OAUTH_PENDING_KEY);
       setErrorMsg('Falha no login com Google. Verifique se o redirect URI está configurado no Google Console.');
     } finally {

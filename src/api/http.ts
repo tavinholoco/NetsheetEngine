@@ -51,7 +51,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       throw new ApiError(0, 'Falha de conexão com o servidor.');
     }
 
-    const data: any = await res.json().catch(() => ({}));
+    const data: { code?: unknown; error?: unknown } = await res.json().catch(() => ({}));
     if (!res.ok) {
       const code = typeof data?.code === 'string' ? data.code : undefined;
       if (res.status === 503 && code === 'server_restarting' && Date.now() - started < RESTART_GIVE_UP_MS) {

@@ -19,7 +19,7 @@ import { writeGridToDoc } from '../lib/gridDoc';
 import { YjsGridConnection } from '../lib/yjsConnection';
 import { useRoomStore } from '../stores/useRoomStore';
 import { controlRoomTransport, ControlledWebSocket, ControlledEventSource } from '../test/roomTransport';
-import type { GameRoom, TacticalGridState } from '../types/multiplayer';
+import type { GameRoom, RoomPlayer, TacticalGridState } from '../types/multiplayer';
 
 const CODE = 'NC-2020-K7Q9XD';
 
@@ -42,7 +42,7 @@ function mesa(g: TacticalGridState): GameRoom {
     combatModifier: 0,
     modifierReason: '',
     players: {
-      peer_vex: { peerId: 'peer_vex', handle: 'Vex', isOnline: true, sheet: { handle: 'Vex' } } as any
+      peer_vex: { peerId: 'peer_vex', handle: 'Vex', isOnline: true, sheet: { handle: 'Vex' } } as unknown as RoomPlayer
     },
     chatMessages: [],
     initiativeList: [],

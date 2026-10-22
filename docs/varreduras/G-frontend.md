@@ -475,6 +475,7 @@ nada.
 
 **VEREDITO:** ADIAR — a dona é a **L.5** (ESLint, zerar `any` e `console.*`), como o E.16. **Gatilho:** a
 L.5 abrir.
+- ✅ **Feito na L.5** (21/10/2026): onze saíram; o do `ErrorBoundary` ficou como exceção nomeada do `no-console`.
 
 ### G.18 — O "broadcast" das rolagens da ficha não tem ouvinte
 
@@ -485,6 +486,7 @@ L.5 abrir.
 desde a T5.4 (a mesa só aceita rolagem do servidor). Código morto com comentário falso.
 
 **VEREDITO:** ADIAR — a dona é a **L.5**, com o G.17. **Gatilho:** a L.5 abrir.
+- ✅ **Feito na L.5** (21/10/2026): o evento saiu, e o comentário diz o que a store faz; teste no `roll-store.test`.
 
 ### G.19 — Cada arrasto no grid regrava todos os tokens no Yjs
 

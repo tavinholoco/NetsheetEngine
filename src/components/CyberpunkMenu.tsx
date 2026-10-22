@@ -3,11 +3,9 @@ import {
   Home,
   Radio,
   Cpu,
-  UserCheck,
   Bot,
   Dice5,
   FileText,
-  User as UserIcon,
   Shield,
   Skull,
   Swords,
@@ -22,7 +20,7 @@ import {
   Newspaper,
   X
 } from 'lucide-react';
-import { User, generateCyberpunkId, fetchUserProfile } from '../lib/supabase';
+import { generateCyberpunkId, fetchUserProfile } from '../lib/supabase';
 import { ActivityStatus } from '../hooks/useUserActivity';
 import { PatchNotesFeed } from './PatchNotesFeed';
 import { APP_VERSION } from '../version';

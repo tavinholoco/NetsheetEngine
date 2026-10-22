@@ -41,7 +41,7 @@ function mesa(code: string): GameRoom {
 interface Call {
   path: string;
   token?: string;
-  body: Record<string, any>;
+  body: { code?: string; peerId?: string; [campo: string]: unknown };
 }
 
 /** O servidor de mentira: `join` e `create` devolvem um token novo a cada vez. */
@@ -116,7 +116,7 @@ async function joinByLobby() {
 }
 
 async function createByLobby() {
-  useSheetStore.setState({ user: { uid: 'u1', displayName: 'Dono' } as any });
+  useSheetStore.setState({ user: { uid: 'u1', displayName: 'Dono' } as NonNullable<ReturnType<typeof useSheetStore.getState>['user']> });
   const user = userEvent.setup();
   mount('/multiplayer');
   await user.type(screen.getByPlaceholderText(/prefixo do código/i), 'NC-2020');

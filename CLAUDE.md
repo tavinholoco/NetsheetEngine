@@ -90,7 +90,8 @@ A memória complementa com decisões e preferências; ela é local desta máquin
 ## Comandos que importam
 
 ```bash
-npx tsc --noEmit          # typecheck — deve dar 0 erros
+npx tsc --noEmit          # typecheck — deve dar 0 erros (no CI, `npm run typecheck`)
+npm run lint              # ESLint, --max-warnings 0 (L.5): nenhum `any`, nenhum `console.*` no cliente; exceção nomeada no lugar
 npx vitest run            # 1072 testes ao fechar a K e a revisão dela (K.10), 20/10 (ver "Linha de base atual" no plano; a sonda não rastreada da J.1d fica fora)
 npm run build             # Vite (cliente) + esbuild (servidor)
 npm run test:e2e          # Playwright, 7 testes, sobe o servidor de produção (o fonts-csp exercita o CSP do ar)

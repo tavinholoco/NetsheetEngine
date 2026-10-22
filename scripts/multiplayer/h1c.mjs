@@ -3,7 +3,7 @@
 // lobby digitando o código. O GM, pelo deep link.
 import {
   chromium, startServer, person, seedRoom, gmInit, setHandle, enterAsGm,
-  session, roomState, api, waitText, sleep
+  session, roomState, api, sleep
 } from "./lib.mjs";
 
 const server = await startServer({ port: 3221 });

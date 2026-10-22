@@ -1213,6 +1213,26 @@ PR, e a L.7 fecha a fase inteira.
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
 
+**21/10/2026 — L.5 (o PR do ESLint).** Ferramenta de desenvolvimento e limpeza; o que muda no comportamento é pouco,
+e está abaixo.
+
+1. **Entrada nova?** Nenhuma. No WebSocket, o quadro de texto do cliente deixou de ser `any`: é um objeto de campos
+   `unknown`, e cada um segue conferido por quem o usa (o `roomManager` saneia o texto e valida a rolagem e a
+   iniciativa) — o mesmo caminho de antes, agora escrito no tipo.
+2. **Dado novo sai?** Nenhum. Saíram doze `console.*` do cliente, que só o dono via no DevTools; um deles dizia o motivo
+   de uma falha de login. O do `ErrorBoundary` fica, como exceção nomeada.
+3. **Autorização nova?** Nenhuma.
+4. **Jogador convidado hostil?** Nada novo.
+5. **Estado novo sem limite?** Nenhum.
+6. **Custo por requisição a serviço externo?** Nenhum. As quatro dependências novas são de desenvolvimento
+   (`eslint`, `@eslint/js`, `typescript-eslint`, `globals`), fixadas em versões com mais de duas semanas. Não vão para
+   o bundle nem para a imagem que roda (o estágio final do `Dockerfile` usa `npm ci --omit=dev`); o estágio de build
+   as instala, e o build do Render leva alguns segundos a mais (os 500 minutos do mês, no custo zero, sobram). O
+   `audit:ci` (produção) segue limpo. O `npm audit` completo mostra duas
+   moderadas de **antes** desta fase — o `vitest` ≤ 4.1.11 (dev), também no `master`.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
+
 ### Fase M — Validação e encerramento
 
 *(a preencher)*

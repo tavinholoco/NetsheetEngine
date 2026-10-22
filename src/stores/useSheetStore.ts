@@ -12,7 +12,7 @@
  * ============================================================
  */
 import { create } from 'zustand';
-import { useCharacterSheet, UseCharacterSheetResult, createBlankCharacterSheet } from '../hooks/useCharacterSheet';
+import { UseCharacterSheetResult, createBlankCharacterSheet } from '../hooks/useCharacterSheet';
 import type { CharacterSheet } from '../types/cyberpunk';
 
 type SheetActions = Pick<
@@ -34,7 +34,7 @@ type SheetState = {
   roster: UseCharacterSheetResult['roster'];
 } & SheetActions
 
-export const useSheetStore = create<SheetState>((set) => ({
+export const useSheetStore = create<SheetState>(() => ({
   user: null,
   authLoading: true,
   // Ficha em branco como estado inicial válido (evita crash de `sheet.stats`

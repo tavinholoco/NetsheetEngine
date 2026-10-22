@@ -10,7 +10,7 @@ import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 // Fase 5 (T5.2) — WebSocket puro (ws, já instalado) como transporte base do
 // multiplayer. SSE mantido como fallback automático no cliente.
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer, WebSocket, type RawData } from "ws";
 // Fase 5 (T5.3) — Grid tático como estado CRDT (Yjs) sobre o mesmo WebSocket.
 import * as Y from "yjs";
 import * as encoding from "lib0/encoding";
@@ -27,7 +27,7 @@ import { WS_LIMITS, WsRateLimiter, allowInWindow, type WsBudget } from "./server
 // Fase J (J.1d — SEC-17) — o awareness do Yjs é entrada de usuário.
 import { checkAwarenessUpdate } from "./server/awarenessGuard.js";
 import { RoomFeed, audienceOf, roomViewFor, type RoomAudience } from "./server/roomDelta.js";
-import type { GameRoom } from "./src/types/multiplayer.js";
+import type { GameRoom, InitiativeEntry } from "./src/types/multiplayer.js";
 import {
   createRoom,
   getRoom,
@@ -64,7 +64,6 @@ import {
   MAX_SHEET_BYTES,
   type RoomResult,
   verifySession,
-  sanitizeText,
   isValidRoomCode,
   isValidPeerId,
   touchPlayer,
@@ -473,9 +472,7 @@ function sendToSse(key: string, res: Response, text: string): void {
   }
   try {
     res.write(`data: ${text}\n\n`);
-    if (typeof (res as any).flush === 'function') {
-      (res as any).flush();
-    }
+    (res as Response & { flush?: () => void }).flush?.();
   } catch (e) {
     clients?.delete(res);
   }
@@ -573,8 +570,8 @@ app.post("/api/gemini", aiLimiter, async (req, res) => {
 
     logger.info("ai_request", { userId: user.id, promptChars: prompt.length });
     res.json({ text: response.text });
-  } catch (error: any) {
-    logger.error("gemini_api_error", { message: error?.message || String(error) });
+  } catch (error) {
+    logger.error("gemini_api_error", { message: (error as Error)?.message || String(error) });
     // Mensagem do provedor pode conter detalhe interno — não repassa ao cliente.
     sendError(res, "ai_failed", "Falha ao contatar o Netrunner IA. Tente de novo em instantes.");
   }
@@ -1139,7 +1136,7 @@ function watchYjsUpdates(entry: RoomYjsEntry, code: string): void {
     broadcastYjsUpdate(code, update, origin);
   });
 
-  entry.awareness.on("update", ({ added, updated, removed }: any, origin: unknown) => {
+  entry.awareness.on("update", ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }, origin: unknown) => {
     const sockets = wsClients[code.toUpperCase()];
     if (!sockets || sockets.size === 0) return;
     const changed = [...added, ...updated, ...removed];
@@ -1363,7 +1360,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
   // Estado inicial imediato (mesmo comportamento do SSE)
   if (entrada) sendToSocket(code, ws, entrada);
 
-  ws.on("message", (raw: any, isBinary: boolean) => {
+  ws.on("message", (raw: RawData, isBinary: boolean) => {
     // H.3d — o que chega entre a entrega do bastão e o fechamento do socket
     // não é executado: a instância nova não leria.
     if (draining) return;
@@ -1375,7 +1372,8 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
     // typeof (que em ws@8.21.1 entrega texto como Buffer).
     if (!isBinary) {
       const text = Buffer.isBuffer(raw) ? raw.toString("utf8") : String(raw);
-      let msg: any;
+      // Cada campo é conferido por quem o usa (o roomManager saneia e valida).
+      let msg: { type?: unknown; text?: unknown; kind?: unknown; skillName?: unknown; action?: unknown; initiativeList?: unknown };
       try {
         msg = JSON.parse(text);
       } catch {
@@ -1390,7 +1388,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           // — só o tipo "roll" gera dado, no servidor).
           // R.4 — o mesmo teto do `chatLimiter` do REST, que o WS não tinha.
           if (!wsAllow(ws, code, peerId, "chat", "Muitas mensagens. Aguarde um instante.")) break;
-          const result = postChatMessage(code, peerId, msg.text);
+          const result = postChatMessage(code, peerId, msg.text as string);
           if (result.room) broadcastRoomUpdate(code);
           // Erro de volta para o autor (ex.: mensagem vazia)
           else if (result.error) sendToSocket(code, ws, JSON.stringify({ type: "error", error: result.error, code: result.code }));
@@ -1400,7 +1398,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
           // Fase 5 (T5.4) — RNG server-authoritative
           // R.4 — rolagem e iniciativa dividem o teto do `roomLimiter` do REST.
           if (!wsAllow(ws, code, peerId, "action", "Muitas ações. Aguarde um instante.")) break;
-          const result = rollDiceForPlayer(code, peerId, { kind: msg.kind, skillName: msg.skillName });
+          const result = rollDiceForPlayer(code, peerId, { kind: msg.kind as string, skillName: msg.skillName as string | undefined });
           if (result.room) broadcastRoomUpdate(code);
           else sendToSocket(code, ws, JSON.stringify({ type: "roll-error", error: result.error, code: result.code }));
           break;
@@ -1418,7 +1416,7 @@ wss.on("connection", (ws: WebSocket, _req: http.IncomingMessage, meta: WsConnMet
               : msg.action === "roll"
                 ? rollInitiative(code, peerId)
                 : Array.isArray(msg.initiativeList)
-                ? updateInitiative(code, peerId, msg.initiativeList)
+                ? updateInitiative(code, peerId, msg.initiativeList as InitiativeEntry[])
                 : null;
           if (result?.room) broadcastRoomUpdate(code);
           break;
@@ -1515,11 +1513,12 @@ app.use("/api", (_req, res) => {
 });
 
 // T1.4 — erro de parsing/payload do express.json em formato JSON
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((erro: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  const err = erro as { type?: string; message?: string; stack?: string } | undefined;
   if (err?.type === "entity.too.large") {
     return sendError(res, "payload_too_large", "Payload excede o limite de 1MB.");
   }
-  if (err?.type === "entity.parse.failed" || err instanceof SyntaxError) {
+  if (err?.type === "entity.parse.failed" || erro instanceof SyntaxError) {
     return sendError(res, "invalid_json", "JSON inválido no corpo da requisição.");
   }
   logger.error("unhandled_error", { message: err?.message || String(err), stack: err?.stack });

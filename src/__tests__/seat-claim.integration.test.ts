@@ -24,6 +24,7 @@ import {
   deleteGeneratedPlayer,
   seatClaimRefusal
 } from "../../server/roomManager";
+import type { CharacterSheet } from "../types/cyberpunk";
 
 const SHEET = {
   handle: "Vex",
@@ -42,16 +43,16 @@ describe("R.1 — SEC-07: o convidado não toma o GM", () => {
   it("join com o gmPeerId, sem o token do GM, é recusado — e o GM continua GM", () => {
     const c = code();
     const gm = createRoom(c, "Mesa do dono", "Dono", "peer_dono");
-    const convidado = joinRoom(c, "peer_hostil", "Hostil", SHEET as any)!;
+    const convidado = joinRoom(c, "peer_hostil", "Hostil", SHEET as unknown as CharacterSheet)!;
 
     // O convidado recebe o gmPeerId legitimamente, no estado da sala:
     const gmPeerId = convidado.room.gmPeerId!;
     expect(gmPeerId).toBe("peer_dono");
 
     // ...e tenta o assento dele sem prova (o ataque reproduzido em 29/09):
-    expect(joinRoom(c, gmPeerId, "Dono", SHEET as any)).toBeNull();
+    expect(joinRoom(c, gmPeerId, "Dono", SHEET as unknown as CharacterSheet)).toBeNull();
     // ...nem com o próprio token, que prova outro assento:
-    expect(joinRoom(c, gmPeerId, "Dono", SHEET as any, convidado.sessionToken)).toBeNull();
+    expect(joinRoom(c, gmPeerId, "Dono", SHEET as unknown as CharacterSheet, convidado.sessionToken)).toBeNull();
 
     // O GM verdadeiro segue com sessão e com o cargo:
     expect(verifySession(c, gm.sessionToken)).toBe("peer_dono");
@@ -63,10 +64,10 @@ describe("R.1 — SEC-07: o convidado não toma o GM", () => {
   it("assento de jogador também: sem o token dele, ninguém o reivindica", () => {
     const c = code();
     createRoom(c, "Mesa", "Dono", "peer_dono");
-    const vex = joinRoom(c, "peer_vex", "Vex", SHEET as any)!;
-    joinRoom(c, "peer_hostil", "Hostil", SHEET as any);
+    const vex = joinRoom(c, "peer_vex", "Vex", SHEET as unknown as CharacterSheet)!;
+    joinRoom(c, "peer_hostil", "Hostil", SHEET as unknown as CharacterSheet);
 
-    expect(joinRoom(c, "peer_vex", "Vex", SHEET as any)).toBeNull();
+    expect(joinRoom(c, "peer_vex", "Vex", SHEET as unknown as CharacterSheet)).toBeNull();
     expect(verifySession(c, vex.sessionToken)).toBe("peer_vex");
   });
 
@@ -85,7 +86,7 @@ describe("R.1 — SEC-07: o convidado não toma o GM", () => {
     // Desde a R.3 o GM não pode remover a si mesmo; o estado vem de snapshot:
     delete getRoom(c)!.players["peer_dono"];
     expect(getRoom(c)!.gmPeerId).toBe("peer_dono");
-    expect(joinRoom(c, "peer_dono", "Dono", SHEET as any)).toBeNull();
+    expect(joinRoom(c, "peer_dono", "Dono", SHEET as unknown as CharacterSheet)).toBeNull();
   });
 
   it("o GM não remove a si mesmo (ficaria trancado fora da própria mesa)", () => {
@@ -102,9 +103,9 @@ describe("R.1 — a reconexão legítima continua funcionando", () => {
   it("com o token vigente, o dono reentra no próprio assento: token novo, o antigo revogado", () => {
     const c = code();
     createRoom(c, "Mesa", "Dono", "peer_dono");
-    const vex = joinRoom(c, "peer_vex", "Vex", SHEET as any)!;
+    const vex = joinRoom(c, "peer_vex", "Vex", SHEET as unknown as CharacterSheet)!;
 
-    const re = joinRoom(c, "peer_vex", "Vex", SHEET as any, vex.sessionToken)!;
+    const re = joinRoom(c, "peer_vex", "Vex", SHEET as unknown as CharacterSheet, vex.sessionToken)!;
     expect(re).toBeTruthy();
     expect(Object.keys(re.room.players)).toHaveLength(2); // não duplica
     expect(verifySession(c, re.sessionToken)).toBe("peer_vex");
@@ -115,7 +116,7 @@ describe("R.1 — a reconexão legítima continua funcionando", () => {
     const c = code();
     createRoom(c, "Mesa", "Dono", "peer_dono");
     expect(seatClaimRefusal(c, "peer_novo")).toBeNull();
-    expect(joinRoom(c, "peer_novo", "Novo", SHEET as any)).toBeTruthy();
+    expect(joinRoom(c, "peer_novo", "Novo", SHEET as unknown as CharacterSheet)).toBeTruthy();
   });
 });
 

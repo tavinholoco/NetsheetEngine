@@ -56,7 +56,6 @@ try {
   // --- A aba 2 (duplicada) ---
   const tab2 = await duplicate(ana, "Ana-aba2");
   await sleep(1000);
-  const sTab2 = await tab2.page.evaluate(() => sessionStorage.getItem("cyberpunk_session_token"));
   const v1 = await fetch(`${server.base}/api/rooms/${code}`, { headers: { "X-Session-Token": s0.token } });
   log("depois da aba 2:", await seats(await gmTok()), "| token da aba 1 vale?", v1.status === 200 && !!(await v1.json()).players, "| aba 1 socket:", sockState(ana));
 

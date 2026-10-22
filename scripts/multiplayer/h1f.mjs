@@ -1,7 +1,7 @@
 // H.1f — o GM sai (T1.8): janela de dois GMs ou de nenhum? E o 4400 do expulso.
 import {
   chromium, startServer, person, seedRoom, gmInit, setHandle, enterAsGm,
-  session, roomState, api, say, waitText, sleep
+  session, roomState, api, sleep
 } from "./lib.mjs";
 
 const server = await startServer({ port: 3241 });

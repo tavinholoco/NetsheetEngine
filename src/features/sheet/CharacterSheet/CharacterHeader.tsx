@@ -1,7 +1,7 @@
 import React from 'react';
 import { CharacterSheet } from '../../../types/cyberpunk';
 import { OFFICIAL_ROLES } from '../../../data/cyberpunkData';
-import { User, Shield, DollarSign, Image } from 'lucide-react';
+import { User, DollarSign } from 'lucide-react';
 
 interface CharacterHeaderProps {
   sheet: CharacterSheet;

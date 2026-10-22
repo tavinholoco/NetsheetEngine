@@ -12,11 +12,11 @@ import {
   Grid,
   Eye,
   Crosshair,
-  Loader2,
-  X,
-  Palette,
-  HelpCircle
+  X
 } from 'lucide-react';
+
+/** O que o GM põe no grid pelo formulário (o token do jogador entra com a ficha). */
+type NewTokenType = Exclude<TacticalToken['type'], 'player'>;
 
 interface TacticalGridProps {
   gridState?: TacticalGridState;
@@ -111,7 +111,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [isAddingToken, setIsAddingToken] = useState(false);
   const [newTokenName, setNewTokenName] = useState('');
-  const [newTokenType, setNewTokenType] = useState<'npc' | 'cover' | 'hazard'>('npc');
+  const [newTokenType, setNewTokenType] = useState<NewTokenType>('npc');
   const [newTokenSp, setNewTokenSp] = useState(15);
   const [dragOverSector, setDragOverSector] = useState<{ x: number; y: number } | null>(null);
 
@@ -230,7 +230,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
           t => t.peerId === charPeerId || t.id === `token_${charPeerId}` || t.id === `npc_token_${charPeerId}`
         );
 
-        let updatedTokens = [...gridState.tokens];
+        const updatedTokens = [...gridState.tokens];
 
         if (existingTokenIndex >= 0) {
           updatedTokens[existingTokenIndex] = {
@@ -259,8 +259,8 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
           tokens: updatedTokens
         });
       }
-    } catch (err) {
-      console.error('Failed to handle drop on canvas', err);
+    } catch {
+      // Um arrasto que não veio deste grid (outro app, um arquivo) não vira token.
     }
   };
 
@@ -298,39 +298,6 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
       tokens: gridState.tokens.filter(t => t.id !== tokenId)
     });
     if (selectedTokenId === tokenId) setSelectedTokenId(null);
-  };
-
-  // GM: Clear all tokens
-  const handleClearAllTokens = () => {
-    if (roleMode !== 'gm') return;
-    if (!confirm('Deseja realmente remover TODOS os tokens e elementos do Grid Tático?')) return;
-    onUpdateGrid({
-      ...gridState,
-      tokens: []
-    });
-    setSelectedTokenId(null);
-  };
-
-  // GM: Change theme background color
-  const handleChangeTheme = (themeKey: string) => {
-    if (roleMode !== 'gm') return;
-    onUpdateGrid({
-      ...gridState,
-      theme: themeKey
-    });
-  };
-
-  // GM: Change grid dimensions
-  const handleChangeDimensions = (deltaCols: number, deltaRows: number) => {
-    if (roleMode !== 'gm') return;
-    const newCols = Math.min(16, Math.max(4, gridState.cols + deltaCols));
-    const newRows = Math.min(12, Math.max(4, gridState.rows + deltaRows));
-
-    onUpdateGrid({
-      ...gridState,
-      cols: newCols,
-      rows: newRows
-    });
   };
 
   return (
@@ -382,7 +349,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
               <label className="text-micro text-muted uppercase font-bold block mb-1">Tipo de Elemento</label>
               <select
                 value={newTokenType}
-                onChange={(e) => setNewTokenType(e.target.value as any)}
+                onChange={(e) => setNewTokenType(e.target.value as NewTokenType)}
                 className="w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-accent-300 focus:outline-none focus:border-accent-500"
               >
                 <option value="npc">👾 Inimigo / NPC</option>

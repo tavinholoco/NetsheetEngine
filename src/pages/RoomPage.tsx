@@ -5,6 +5,7 @@ import { useRoomStore } from '../stores/useRoomStore';
 import { useSheetStore } from '../stores/useSheetStore';
 // Fase 7 (T7.3) — camada HTTP centralizada
 import * as roomsApi from '../api/rooms';
+import { errorMessage } from '../lib/errorMessage';
 
 /**
  * Fase 7 (T7.1 + T7.4) — PÁGINA DE SALA (/room/:code)
@@ -63,9 +64,9 @@ export const RoomPage: React.FC<RoomPageProps> = ({ onOpenAuthModal }) => {
         useRoomStore.getState().setErrorMsg('');
         useRoomStore.getState().setView('active');
       })
-      .catch((e: any) => {
+      .catch((e: unknown) => {
         // Sala encerrada/sessão inválida: fica no lobby para re-entrada manual.
-        useRoomStore.getState().setErrorMsg(e?.message || 'Sala não encontrada ou expirada.');
+        useRoomStore.getState().setErrorMsg(errorMessage(e, 'Sala não encontrada ou expirada.'));
       });
   }, [code]);
 
