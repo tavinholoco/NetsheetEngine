@@ -1469,7 +1469,7 @@ público mudar.
             (criar a sala é sentar o Mestre), o ferimento para `wounds`, o `MAX_REMOVED_PEERS` para `rooms`. O barril reexporta
             os mesmos 52 nomes. **O E.11 feito:** o `roomKey` (`server/room/key.ts`, sem dependência) nos 29 pontos que
             normalizavam à mão — o stream SSE aberto com espaço no código achava a sala e não recebia o reenvio
-            (reproduzido no `room-key.integration.test`; revertida a linha do stream, falha). *(22/10/2026)*
+            (reproduzido no `room-key.integration.test`; revertida a linha do stream, falha). *(22/10/2026, no #78)*
       - [ ] **L.3c** O `MultiplayerRoom` (1.235) e o `TacticalGrid` (763): o `useRoomTransport`, o lobby, o chat, a barra
             lateral, a iniciativa e os modais; o cartão do token, o *drop* e o formulário de token.
       - [ ] **L.3d** O `FriendsList` (721), o `CyberpunkMenu` (607) e o `App` (386).
