@@ -1482,7 +1482,7 @@ público mudar.
             (o `isAddingToken` nunca vira `true`) — entrou no item dos controles do grid do GM, na Q.3. A prova: a suíte
             (1134 em 96), o E2E 7/7, o smoke 6/6 no `netsheet-prod` e o `h1a.mjs` com os números da L.1 (chat 0,2 KB por
             aba, combate 7,8 KB, nenhum erro de console); estragado o `resync` no hook novo, o `room-patch-client` cai.
-            *(23/10/2026)*
+            *(23/10/2026, no #79)*
       - [ ] **L.3d** O `FriendsList` (721), o `CyberpunkMenu` (607) e o `App` (386).
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [x] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
