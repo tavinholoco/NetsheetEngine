@@ -94,14 +94,24 @@ export type Excecao = {
  * "dá trabalho migrar" não é motivo.
  */
 export const EXCECOES: Excecao[] = [
+  // O mesmo campo nos dois arquivos para onde a L.3c moveu as cinco cores do TacticalGrid.
   {
-    arquivo: "src/features/multiplayer/TacticalGrid.tsx",
+    arquivo: "src/features/multiplayer/AddTokenForm.tsx",
     categoria: "hex",
-    ate: 5,
+    ate: 3,
     motivo:
       "O campo `color` do token do grid: persistido, validado no gridDoc e sem nenhum leitor — o grid pinta por `type`, com classes. Não é cor de tela.",
     gatilho: "A Fase G decidir o campo (remover ou passar a ler).",
-    revisadoEm: "30/09/2026"
+    revisadoEm: "23/10/2026"
+  },
+  {
+    arquivo: "src/features/multiplayer/gridDrop.ts",
+    categoria: "hex",
+    ate: 2,
+    motivo:
+      "O campo `color` do token do grid: persistido, validado no gridDoc e sem nenhum leitor — o grid pinta por `type`, com classes. Não é cor de tela.",
+    gatilho: "A Fase G decidir o campo (remover ou passar a ler).",
+    revisadoEm: "23/10/2026"
   }
 ];
 
