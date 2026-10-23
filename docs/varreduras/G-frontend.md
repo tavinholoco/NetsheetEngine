@@ -558,6 +558,13 @@ sem os sockets dentro do componente, a tela da mesa se testa sem servidor.
 | `CyberpunkMenu.tsx` | 609 | **`ProfileCard`** — o cartão do usuário existe em **duas cópias** (`:282` no celular, `:528` no computador); e o efeito do avatar num hook | ADIAR (L.3) |
 | `App.tsx` | 390 | **`PageHeader`** (o `pageInfoMap`, `:245–282`) e as rolagens da ficha num hook | ADIAR (L.3) |
 
+- ✅ **O `MultiplayerRoom` e o `TacticalGrid` cortados na L.3c** (23/10/2026), como o mapa propunha. A sala (1.235 linhas
+  → 386): `useRoomTransport` (que levou também o `rev`, o `room:full`/`room:patch` e o `resync` da L.1), `RoomLobby`,
+  `RoomChat`, `RoomSidebar`, `InitiativePanel` e `RoomDialogs` (os dois modais num arquivo). O grid (763 → 394):
+  `gridDrop.ts` (`sectorFromPoint` e `gridAfterDrop`, puros e testados no `grid-drop.test`), `TokenPopover`,
+  `AddTokenForm` e `gridTheme.ts` (o `THEME_STYLES` e o nome das linhas). O `AddTokenForm` não tem botão que o abra —
+  no item dos controles do grid do GM, na Q.3. O `FriendsList`, o `CyberpunkMenu` e o `App` são a L.3d.
+
 ---
 
 ## G.1g — Regra de jogo e mesa *(achados fora das seis áreas)*

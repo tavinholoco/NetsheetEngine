@@ -1272,6 +1272,28 @@ comentário de cima; o barril reexporta os mesmos 52 nomes.
 
 **O que este PR ensina antes de o conserto estar no ar?** O E.11 estava no ledger da E desde 30/09; o conserto vai junto.
 
+**23/10/2026 — L.3c (o PR que corta o `MultiplayerRoom` e o `TacticalGrid`).** Só o cliente; os blocos mudaram de
+arquivo inteiros, por um script que confere a primeira e a última linha de cada um. O servidor não mudou.
+
+1. **Entrada nova?** Nenhuma. O cliente manda as mesmas mensagens pelas mesmas portas: o `useRoomTransport` abre o
+   socket e o stream com a mesma URL (o token na query, `delta=1`), e o chat, as rolagens e as ações do GM chamam a
+   mesma camada `api/rooms`.
+2. **Dado novo sai?** Nenhum. A tela mostra o que a sala traz; a vista por papel (E.20) é do servidor.
+3. **Autorização nova?** Nenhuma — e nenhuma vivia no cliente. O "só o dono move o próprio token" do *drop* foi para o
+   `gridAfterDrop`, sem mudar, e segue sendo conforto de tela: quem decide é o servidor (o `grid-ownership.integration`,
+   T5.3). O `grid-drop.test` passou a travar a versão do cliente também.
+4. **Jogador convidado hostil?** Nada novo. Um arrasto que não veio do grid (outro app, um arquivo, JSON nulo) segue
+   sem mudar nada — agora com teste.
+5. **Estado novo sem limite?** Nenhum. Os refs da reconexão (H.09, H.3d) e a conexão Yjs mudaram de arquivo com o
+   efeito que os limpa.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**A trava que poderia ter ficado para trás:** a exceção nomeada do `audit-colors` (as cinco cores hex do campo
+`color` do token) apontava para o `TacticalGrid.tsx`; com as cores em outros arquivos, o portão das cores ficou
+vermelho na bateria local. A exceção seguiu as cores, com o mesmo motivo e o mesmo gatilho — não subiu de nível.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
+
 ### Fase M — Validação e encerramento
 
 *(a preencher)*

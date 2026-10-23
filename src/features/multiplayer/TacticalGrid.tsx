@@ -1,22 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { TacticalGridState, TacticalToken, RoomPlayer } from '../../types/multiplayer';
 import { RemoteCursor } from '../../lib/yjsConnection';
-import { woundLevelColor } from '../../utils/injuryRules';
-import { woundRow } from '../../rules/character';
-import { 
-  Plus, 
-  Trash2, 
-  User, 
-  Flame, 
-  Shield, 
-  Grid,
-  Eye,
-  Crosshair,
-  X
-} from 'lucide-react';
-
-/** O que o GM põe no grid pelo formulário (o token do jogador entra com a ficha). */
-type NewTokenType = Exclude<TacticalToken['type'], 'player'>;
+import { THEME_STYLES, ROWS_LABELS } from './gridTheme';
+import { gridAfterDrop, sectorFromPoint } from './gridDrop';
+import { TokenPopover } from './TokenPopover';
+import { AddTokenForm } from './AddTokenForm';
+import { User, Flame, Shield, Grid, Eye, Crosshair } from 'lucide-react';
 
 interface TacticalGridProps {
   gridState?: TacticalGridState;
@@ -33,61 +22,6 @@ interface TacticalGridProps {
   /** Fase D (D.3) — ações de combate do GM no cartão do token selecionado. */
   renderTokenCombat?: (token: TacticalToken) => React.ReactNode;
 }
-
-interface ThemeConfig {
-  bg: string;
-  border: string;
-  gridColor: string;
-  colorDot: string;
-  name: string;
-}
-
-const THEME_STYLES: Record<string, ThemeConfig> = {
-  alley: {
-    bg: 'bg-surface',
-    border: 'border-accent-500/40',
-    gridColor: 'border-line/80',
-    colorDot: 'bg-accent-500',
-    name: 'Beco Neon (Escuro / Cyan)'
-  },
-  corpo: {
-    bg: 'bg-raised',
-    border: 'border-roll-500/50',
-    gridColor: 'border-roll-900/60',
-    colorDot: 'bg-roll-400',
-    name: 'Praça Arasaka (Azul)'
-  },
-  netrunner: {
-    bg: 'bg-ok-950',
-    border: 'border-ok-500/50',
-    gridColor: 'border-ok-900/60',
-    colorDot: 'bg-ok-400',
-    name: 'Net Matrix (Verde)'
-  },
-  industrial: {
-    bg: 'bg-caution-950',
-    border: 'border-caution-500/50',
-    gridColor: 'border-caution-900/60',
-    colorDot: 'bg-caution-500',
-    name: 'Zona Industrial (Amarelo)'
-  },
-  club: {
-    bg: 'bg-cyber-950',
-    border: 'border-cyber-500/50',
-    gridColor: 'border-cyber-900/60',
-    colorDot: 'bg-cyber-400',
-    name: 'Boate Totentanz (Roxo)'
-  },
-  redalert: {
-    bg: 'bg-fault-950',
-    border: 'border-fault-500/50',
-    gridColor: 'border-fault-900/60',
-    colorDot: 'bg-fault-500',
-    name: 'Alerta de Combate (Magenta)'
-  }
-};
-
-const ROWS_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'];
 
 export const TacticalGrid: React.FC<TacticalGridProps> = ({
   gridState = {
@@ -110,9 +44,6 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
   const isDraggingRef = useRef<boolean>(false);
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [isAddingToken, setIsAddingToken] = useState(false);
-  const [newTokenName, setNewTokenName] = useState('');
-  const [newTokenType, setNewTokenType] = useState<NewTokenType>('npc');
-  const [newTokenSp, setNewTokenSp] = useState(15);
   const [dragOverSector, setDragOverSector] = useState<{ x: number; y: number } | null>(null);
 
   // Global reset for drag state when mouse or drag completes anywhere in document
@@ -130,8 +61,6 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
 
   const themeConfig = THEME_STYLES[gridState.theme] || THEME_STYLES.alley;
   const selectedToken = gridState.tokens.find(t => String(t.id) === String(selectedTokenId));
-  const isRightHalf = selectedToken ? selectedToken.x >= Math.floor(gridState.cols / 2) : false;
-  const isBottomHalf = selectedToken ? selectedToken.y >= Math.floor(gridState.rows / 2) : false;
 
   // GM cursor tracking (Fase 5 T5.3) — publica a posição do mouse no grid
   // via awareness (percentuais relativos ao canvas). Só o GM emite.
@@ -148,22 +77,10 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
     if (roleMode === 'gm' && onCursorMove) onCursorMove(null, null);
   }, [roleMode, onCursorMove]);
 
-  // Helper to calculate col/row from mouse position on the grid canvas
+  // Helper to calculate col/row from mouse position on the grid canvas (a conta, no gridDrop)
   const getSectorFromEvent = (e: React.DragEvent | React.MouseEvent): { x: number; y: number } | null => {
     if (!gridCanvasRef.current) return null;
-    const rect = gridCanvasRef.current.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return null;
-
-    const relX = Math.min(Math.max(0, e.clientX - rect.left), rect.width - 1);
-    const relY = Math.min(Math.max(0, e.clientY - rect.top), rect.height - 1);
-
-    const x = Math.floor((relX / rect.width) * gridState.cols);
-    const y = Math.floor((relY / rect.height) * gridState.rows);
-
-    return {
-      x: Math.min(gridState.cols - 1, Math.max(0, x)),
-      y: Math.min(gridState.rows - 1, Math.max(0, y))
-    };
+    return sectorFromPoint(gridCanvasRef.current.getBoundingClientRect(), e.clientX, e.clientY, gridState.cols, gridState.rows);
   };
 
   // Canvas Drag Over — GM e jogador (mover o próprio token, Fase 5 T5.3)
@@ -187,7 +104,7 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
   };
 
   // Canvas Drop Handler — GM pode tudo; jogador move o PRÓPRIO token
-  // (o servidor T5.3 valida a permissão do dono). Zero latency drop.
+  // (o servidor T5.3 valida a permissão do dono). Zero latency drop. A conta, no gridDrop.
   const handleCanvasDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOverSector(null);
@@ -198,96 +115,11 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
 
     try {
       const dataStr = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
-      if (!dataStr) return;
-
-      const data = JSON.parse(dataStr);
-
-      if (data.type === 'token_drag') {
-        // Dragging an existing token already placed on the tactical grid
-        const { tokenId } = data;
-        const draggedToken = gridState.tokens.find(t => t.id === tokenId);
-        // Jogador só move o próprio token; GM move qualquer um.
-        if (!draggedToken) return;
-        if (roleMode !== 'gm' && draggedToken.peerId !== peerId) return;
-        const updatedTokens = gridState.tokens.map(t => {
-          if (t.id === tokenId) {
-            return { ...t, x: sector.x, y: sector.y };
-          }
-          return t;
-        });
-
-        onUpdateGrid({
-          ...gridState,
-          tokens: updatedTokens
-        });
-      } else if (data.type === 'character_drag') {
-        // Arrastar ficha da barra lateral (criar token) é poder exclusivo do GM
-        if (roleMode !== 'gm') return;
-        // Dragging a character sheet or NPC card from the sidebar
-        const { peerId: charPeerId, handle, role, isNpc, hp } = data;
-
-        const existingTokenIndex = gridState.tokens.findIndex(
-          t => t.peerId === charPeerId || t.id === `token_${charPeerId}` || t.id === `npc_token_${charPeerId}`
-        );
-
-        const updatedTokens = [...gridState.tokens];
-
-        if (existingTokenIndex >= 0) {
-          updatedTokens[existingTokenIndex] = {
-            ...updatedTokens[existingTokenIndex],
-            x: sector.x,
-            y: sector.y
-          };
-        } else {
-          const newTokenId = isNpc ? `npc_token_${charPeerId}` : `token_${charPeerId}`;
-          const newToken: TacticalToken = {
-            id: newTokenId,
-            name: handle,
-            type: isNpc ? 'npc' : 'player',
-            x: sector.x,
-            y: sector.y,
-            peerId: charPeerId,
-            role: role || 'Solo',
-            hp: hp || 0,
-            color: isNpc ? '#ef4444' : '#06b6d4'
-          };
-          updatedTokens.push(newToken);
-        }
-
-        onUpdateGrid({
-          ...gridState,
-          tokens: updatedTokens
-        });
-      }
+      const next = gridAfterDrop(gridState, dataStr, sector, roleMode, peerId);
+      if (next) onUpdateGrid(next);
     } catch {
-      // Um arrasto que não veio deste grid (outro app, um arquivo) não vira token.
+      // O que o drop não entende não muda o grid.
     }
-  };
-
-  // GM: Add new Custom Token / Cover / Hazard to grid
-  const handleAddToken = () => {
-    if (!newTokenName.trim()) return;
-
-    const newToken: TacticalToken = {
-      id: 'token_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
-      name: newTokenName.trim(),
-      type: newTokenType,
-      x: Math.floor(gridState.cols / 2),
-      y: Math.floor(gridState.rows / 2),
-      spCover: newTokenType === 'cover' ? newTokenSp : undefined,
-      hp: newTokenType === 'npc' ? 0 : undefined,
-      status: 'Normal',
-      color: newTokenType === 'npc' ? '#ef4444' : newTokenType === 'cover' ? '#64748b' : '#f59e0b'
-    };
-
-    onUpdateGrid({
-      ...gridState,
-      tokens: [...gridState.tokens, newToken]
-    });
-
-    setNewTokenName('');
-    setIsAddingToken(false);
-    setSelectedTokenId(newToken.id);
   };
 
   // GM: Remove token from grid
@@ -322,79 +154,12 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
 
       {/* GM Form: Add Element (NPC / Cover / Hazard) */}
       {roleMode === 'gm' && isAddingToken && (
-        <div className="bg-raised border border-accent-800 p-4 rounded-lg space-y-3 animate-fadeIn shadow-xl">
-          <div className="flex items-center justify-between border-b border-line pb-2">
-            <h3 className="text-xs font-bold text-accent-400 uppercase tracking-caps flex items-center space-x-2">
-              <Plus className="w-4 h-4 text-accent-400" />
-              <span>ADICIONAR ELEMENTO AO GRID TÁTICO</span>
-            </h3>
-            <button onClick={() => setIsAddingToken(false)} className="text-muted hover:text-white">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="text-micro text-muted uppercase font-bold block mb-1">Nome do Elemento</label>
-              <input
-                type="text"
-                placeholder="Ex: Barricada, Inimigo A, Fogo..."
-                value={newTokenName}
-                onChange={(e) => setNewTokenName(e.target.value)}
-                className="w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
-              />
-            </div>
-
-            <div>
-              <label className="text-micro text-muted uppercase font-bold block mb-1">Tipo de Elemento</label>
-              <select
-                value={newTokenType}
-                onChange={(e) => setNewTokenType(e.target.value as NewTokenType)}
-                className="w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-accent-300 focus:outline-none focus:border-accent-500"
-              >
-                <option value="npc">👾 Inimigo / NPC</option>
-                <option value="cover">🛡️ Cobertura (Blindagem/Barricada)</option>
-                <option value="hazard">🔥 Perigo Ambiental (Fogo/Gás/Acid)</option>
-              </select>
-            </div>
-
-            {newTokenType === 'cover' ? (
-              <div>
-                <label className="text-micro text-muted uppercase font-bold block mb-1">Pontos de Blindagem (SP)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={newTokenSp}
-                  onChange={(e) => setNewTokenSp(Number(e.target.value))}
-                  className="font-mono w-full bg-surface border border-field rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-accent-500"
-                />
-              </div>
-            ) : (
-              <div className="flex items-end">
-                <button
-                  onClick={handleAddToken}
-                  disabled={!newTokenName.trim()}
-                  className="w-full py-1.5 rounded bg-accent-500 hover:bg-accent-400 disabled:opacity-50 text-black font-extrabold text-xs uppercase transition-all cursor-pointer"
-                >
-                  Confirmar e Posicionar
-                </button>
-              </div>
-            )}
-          </div>
-
-          {newTokenType === 'cover' && (
-            <div className="flex justify-end pt-1">
-              <button
-                onClick={handleAddToken}
-                disabled={!newTokenName.trim()}
-                className="px-4 py-1.5 rounded bg-accent-500 hover:bg-accent-400 disabled:opacity-50 text-black font-extrabold text-xs uppercase transition-all cursor-pointer"
-              >
-                Confirmar e Posicionar
-              </button>
-            </div>
-          )}
-        </div>
+        <AddTokenForm
+          gridState={gridState}
+          onUpdateGrid={onUpdateGrid}
+          onClose={() => setIsAddingToken(false)}
+          onAdded={setSelectedTokenId}
+        />
       )}
 
       {/* 
@@ -581,152 +346,17 @@ export const TacticalGrid: React.FC<TacticalGridProps> = ({
 
           {/* SIDE POPOVER STATUS WINDOW (Anchored alongside clicked token, no backdrop overlay) */}
           {selectedToken && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="absolute z-50 w-64 sm:w-72 bg-surface/95 border-2 border-signal-400 rounded-xl p-3.5 shadow-glow-25 shadow-signal-400/40 space-y-3 text-left animate-fadeIn backdrop-blur-md"
-              style={{
-                top: isBottomHalf
-                  ? 'auto'
-                  : `${Math.min(55, Math.max(3, (selectedToken.y / gridState.rows) * 100))}%`,
-                bottom: isBottomHalf
-                  ? `${Math.min(55, Math.max(3, 100 - ((selectedToken.y + 1) / gridState.rows) * 100))}%`
-                  : 'auto',
-                left: isRightHalf
-                  ? 'auto'
-                  : `${Math.min(55, Math.max(2, ((selectedToken.x + 1) / gridState.cols) * 100 + 1))}%`,
-                right: isRightHalf
-                  ? `${Math.min(55, Math.max(2, 100 - (selectedToken.x / gridState.cols) * 100 + 1))}%`
-                  : 'auto',
-              }}
-            >
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedTokenId(null)}
-                className="absolute top-2.5 right-2.5 text-muted hover:text-white p-1 rounded transition-all cursor-pointer"
-                title="Fechar Janela"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              {/* Header */}
-              <div className="flex items-center space-x-2.5 border-b border-line pb-2.5 pr-6">
-                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold shrink-0 ${
-                  selectedToken.type === 'player'
-                    ? 'bg-accent-950 border-accent-400 text-accent-300 shadow-glow-10 shadow-accent-500/60'
-                    : selectedToken.type === 'npc'
-                    ? 'bg-fault-950 border-fault-500 text-fault-300 shadow-glow-10 shadow-fault-500/60'
-                    : selectedToken.type === 'cover'
-                    ? 'bg-raised border-night-400 text-fg'
-                    : 'bg-caution-950 border-caution-500 text-caution-300'
-                }`}>
-                  {selectedToken.type === 'player' && <User className="w-4 h-4 text-accent-400" />}
-                  {selectedToken.type === 'npc' && <Crosshair className="w-4 h-4 text-fault-400" />}
-                  {selectedToken.type === 'cover' && <Shield className="w-4 h-4 text-fg-soft" />}
-                  {selectedToken.type === 'hazard' && <Flame className="w-4 h-4 text-caution-400 animate-pulse" />}
-                </div>
-
-                <div className="overflow-hidden">
-                  <h4 className="text-sm font-extrabold text-white uppercase tracking-caps truncate">
-                    {selectedToken.name}
-                  </h4>
-                  <div className="flex items-center space-x-1.5 pt-0.5">
-                    <span className="font-mono text-micro px-1.5 py-0.5 rounded bg-signal-400 text-black uppercase shrink-0">
-                      SETOR {ROWS_LABELS[selectedToken.y] || selectedToken.y}{selectedToken.x + 1}
-                    </span>
-                    <span className="text-micro px-1.5 py-0.5 rounded bg-raised text-accent-300 border border-line font-bold uppercase shrink-0">
-                      {selectedToken.type.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Details */}
-              <div className="space-y-1.5 bg-raised/90 p-2.5 rounded-lg border border-line text-mini text-fg-soft">
-                <div className="flex justify-between items-center py-0.5 border-b border-line/60">
-                  <span className="text-muted">Setor:</span>
-                  <span className="font-mono text-signal-400">
-                    {ROWS_LABELS[selectedToken.y] || selectedToken.y}{selectedToken.x + 1}
-                  </span>
-                </div>
-
-                {selectedToken.spCover !== undefined && (
-                  <div className="flex justify-between items-center py-0.5 border-b border-line/60">
-                    <span className="text-muted">Blindagem (SP):</span>
-                    <span className="font-mono text-accent-400">{selectedToken.spCover} SP</span>
-                  </div>
-                )}
-
-                {selectedToken.hp !== undefined && (selectedToken.type === 'player' || selectedToken.type === 'npc') && (
-                  <div className="flex justify-between items-center py-0.5 border-b border-line/60">
-                    <span className="text-muted">Bio-Monitor:</span>
-                    {/* K.3a — o nome da trilha do livro, como na ficha. O "(2/10)"
-                        saiu: era o índice do nível, e o painel de combate logo
-                        abaixo conta os pontos do livro (8/40). */}
-                    <span className={`font-mono ${woundLevelColor(selectedToken.hp)}`}>
-                      {woundRow(selectedToken.hp).name}
-                    </span>
-                  </div>
-                )}
-
-                {selectedToken.role && (
-                  <div className="flex justify-between items-center py-0.5 border-b border-line/60">
-                    <span className="text-muted">Função:</span>
-                    <span className="font-bold text-cyber-400">{selectedToken.role}</span>
-                  </div>
-                )}
-
-                {selectedToken.peerId && players[selectedToken.peerId] && (
-                  <div className="flex justify-between items-center py-0.5">
-                    <span className="text-muted">Edgerunner:</span>
-                    <span className="font-bold text-accent-300 truncate max-w-[120px]">{players[selectedToken.peerId].handle}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col gap-1.5 pt-0.5">
-                {selectedToken.peerId && players[selectedToken.peerId] && onInspectPlayer && (
-                  <button
-                    onClick={() => {
-                      onInspectPlayer(players[selectedToken.peerId!]);
-                      setSelectedTokenId(null);
-                    }}
-                    className="w-full py-1.5 rounded bg-accent-950 hover:bg-accent-900 border border-accent-700 text-accent-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-accent-400" />
-                    <span>Inspecionar Ficha</span>
-                  </button>
-                )}
-
-                {roleMode === 'gm' && selectedToken.peerId && players[selectedToken.peerId] && onSelectPlayerForHealthEdit && (
-                  <button
-                    onClick={() => {
-                      onSelectPlayerForHealthEdit(players[selectedToken.peerId!]);
-                      setSelectedTokenId(null);
-                    }}
-                    className="w-full py-1.5 rounded bg-danger-950 hover:bg-danger-900 border border-danger-700 text-danger-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-danger-400" />
-                    <span>Editar Saúde</span>
-                  </button>
-                )}
-
-                {roleMode === 'gm' && renderTokenCombat?.(selectedToken)}
-
-                {roleMode === 'gm' && (
-                  <button
-                    onClick={() => {
-                      handleRemoveToken(selectedToken.id);
-                      setSelectedTokenId(null);
-                    }}
-                    className="w-full py-1.5 rounded bg-fault-950 hover:bg-fault-900 border border-fault-800 text-fault-300 font-extrabold text-mini uppercase transition-all flex items-center justify-center space-x-1 cursor-pointer shadow-sm"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-fault-400" />
-                    <span>Remover do Grid</span>
-                  </button>
-                )}
-              </div>
-            </div>
+            <TokenPopover
+              selectedToken={selectedToken}
+              gridState={gridState}
+              players={players}
+              roleMode={roleMode}
+              onClose={() => setSelectedTokenId(null)}
+              onInspectPlayer={onInspectPlayer}
+              onSelectPlayerForHealthEdit={onSelectPlayerForHealthEdit}
+              renderTokenCombat={renderTokenCombat}
+              onRemoveToken={handleRemoveToken}
+            />
           )}
         </div>
       </div>
