@@ -523,6 +523,9 @@ streams que o reenvio nunca visita. Nenhum cliente manda código assim.
 
 **Versão 10× menor:** um `roomKey(code)` só — nasce com o corte "salas" do mapa (E.18).
 
+- ✅ **Feito na L.3b** (22/10/2026): o `roomKey` (`server/room/key.ts`) nos 29 pontos. O stream mudo foi reproduzido
+  antes no `room-key.integration.test`.
+
 **Reversível:** sim.
 
 **VEREDITO:** ADIAR
@@ -686,7 +689,10 @@ mais barateia teste é o do `server.ts`, não o do `roomManager`.
 - ✅ **O `server.ts` cortado na L.3a** (22/10/2026), como o mapa propunha: `server/http.ts`, `server/routes/rooms.ts`,
   `server/routes/ai.ts`, `server/realtime.ts` (que levou também o reenvio por diferença da L.1) e `server/yjsGrid.ts`,
   mais o `server/wsGateway.ts` (o socket e o *upgrade*, que o mapa punha no `realtime`: separado, o `yjsGrid` depende
-  do `realtime` sem ciclo). O `server.ts` ficou com 298 linhas. O `roomManager` é a L.3b.
+  do `realtime` sem ciclo). O `server.ts` ficou com 298 linhas.
+- ✅ **O `roomManager` cortado na L.3b** (22/10/2026), em `server/room/`: os seis do mapa e mais dois, para não haver
+  ciclo — o `wounds` (o ferimento que os assentos, os poderes do GM e o combate escrevem) e o `key` (o `roomKey`). O
+  `createRoom` foi para o `seats`. O `roomManager.ts` é o barril, com os mesmos nomes.
 
 ---
 

@@ -26,6 +26,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { exportRoomSessions, getRoom, isRoomAbandoned, restoreRoom, restoreRoomSessions } from "./roomManager.js";
 import type { GameRoom } from "../src/types/multiplayer.js";
 import { logger } from "./logger.js";
+import { roomKey } from "./room/key.js";
 
 const ROOMS_TABLE = "rooms";
 const SAVE_DEBOUNCE_MS = 2000;
@@ -82,7 +83,7 @@ function clearPending(key: string): void {
 export function queueRoomPersist(code: string): void {
   const client = getDb();
   if (!client || frozen) return;
-  const key = code.trim().toUpperCase();
+  const key = roomKey(code);
   const since = pendingSince.get(key) ?? Date.now();
   const existing = pendingTimers.get(key);
   if (existing) clearTimeout(existing);
@@ -100,7 +101,7 @@ export function queueRoomPersist(code: string): void {
  * volta para a fila do debounce.
  */
 export function persistRoomNow(code: string): Promise<boolean> {
-  const key = code.trim().toUpperCase();
+  const key = roomKey(code);
   // O que estava agendado vai junto: esta gravação leva o estado de agora.
   clearPending(key);
   const previous = writeChains.get(key) ?? Promise.resolve(true);
@@ -152,7 +153,7 @@ async function writeRoom(key: string): Promise<boolean> {
 export async function deleteRoomPersisted(code: string): Promise<void> {
   const client = getDb();
   if (!client || frozen) return;
-  const key = code.trim().toUpperCase();
+  const key = roomKey(code);
   clearPending(key);
   const { error } = await client.from(ROOMS_TABLE).delete().eq("code", key);
   if (error) {

@@ -29,6 +29,7 @@ import {
   wsPeer
 } from "./realtime.js";
 import { destroyRoomYjs, dropSocketAwareness, handleYjsBinary, messageAwareness } from "./yjsGrid.js";
+import { roomKey } from "./room/key.js";
 
 // ==========================================
 // FASE 5 (T5.2) — WEBSOCKET: /ws/rooms/:code
@@ -245,7 +246,7 @@ export function attachRealtime(server: http.Server): void {
       socket.destroy();
       return;
     }
-    const code = match[1].toUpperCase();
+    const code = roomKey(match[1]);
     const token = url.searchParams.get("token") || "";
     const peerId = verifySession(code, token);
     if (!peerId) {

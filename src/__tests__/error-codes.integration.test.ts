@@ -215,7 +215,11 @@ describe("E.3c — a trava: status e erro só pela tabela", () => {
     expect(aMao).toEqual([]);
   });
   it("o roomManager não devolve erro sem `code`", () => {
-    const fonte = fs.readFileSync(path.resolve(__dirname, "../../server/roomManager.ts"), "utf8");
+    // L.3b — o roomManager virou o barril de server/room/; a trava lê os módulos.
+    const pasta = path.resolve(__dirname, "../../server/room");
+    const arquivos = fs.readdirSync(pasta).filter((f) => f.endsWith(".ts"));
+    expect(arquivos).toContain("combat.ts");
+    const fonte = arquivos.map((f) => fs.readFileSync(path.join(pasta, f), "utf8")).join("\n");
     const semCode = fonte.match(/\{\s*room:\s*null,\s*error:/g) ?? [];
     expect(semCode).toEqual([]);
   });
