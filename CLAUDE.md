@@ -132,7 +132,10 @@ npm run backup:db         # dump de produção FORA do repo (docs/BACKUP.md) —
   o bastão e o boot. O `yjsGrid` depende do `realtime`, não o contrário: o espelho do grid entra no reenvio pelo
   `onBeforeBroadcast`, registrado no `server.ts`. **Desde a L.3b**, o `roomManager.ts` é um barril: a lógica da mesa
   mora em `server/room/` (`sessions`, `rooms`, `chat`, `wounds`, `seats`, `gmPowers`, `combat`), sem ciclo, e o código de
-  sala se normaliza só pelo `roomKey` (`server/room/key.ts`, o E.11).
+  sala se normaliza só pelo `roomKey` (`server/room/key.ts`, o E.11). **Desde a L.3c (23/10), a tela da mesa também é
+  módulos** em `src/features/multiplayer/`: o transporte (WebSocket, SSE, `rev` da L.1, Yjs, heartbeat, ficha) mora no
+  `useRoomTransport`, e o `MultiplayerRoom` monta `RoomLobby`, `RoomChat`, `RoomSidebar`, `InitiativePanel` e
+  `RoomDialogs`; a conta do arrasto no grid é o `gridDrop.ts`, puro, e o cartão do token é o `TokenPopover`.
 - **Ver o app rodando:** a configuração `netsheet-dev` do [`.claude/launch.json`](./.claude/launch.json)
   (`npm run dev`, porta 3000) abre o preview no painel. Em modo dev, **deep link volta para `/`**
   (G.02 do [ledger da G](./docs/varreduras/G-frontend.md): ADIAR, com a versão de uma linha pronta) — navegue pelo menu. Criar mesa exige login; para testar como GM sem login,
