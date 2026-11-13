@@ -1294,6 +1294,80 @@ vermelho na bateria local. A exceção seguiu as cores, com o mesmo motivo e o m
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
 
+**13/11/2026 — L.3d (o PR que corta o `FriendsList`, o `CyberpunkMenu` e o `App`).** Só o cliente; os blocos
+mudaram de arquivo inteiros, com as classes de antes. O servidor não mudou.
+
+1. **Entrada nova?** Nenhuma. O cliente manda as mesmas mensagens pelas mesmas portas: o `useRoomTransport` não foi
+tocado, e o `AddFriendPanel` chama a mesma `sendFriendRequest` com o mesmo perfil (agora do `profileFromUser`). O
+`useAvatarProfile` guarda a dependência `[user, activeTab]` do efeito de antes — inclusive a consulta por troca de aba
+(o G.11, ADIAR).
+2. **Dado novo sai?** Nenhum. A tela mostra o que a store e a sala já davam; o `ProfileCard` recebe o avatar, o
+`#NC-####` e o status que o cartão antigo lia.
+3. **Autorização nova?** Nenhuma — e nenhuma vivia no cliente. O cartão do perfil abre a aba do perfil, como antes
+(`setActiveTab('profile')`), e o "Sair" segue como callback do `App`.
+4. **Jogador convidado hostil?** Nada novo. O que a tela deixa fazer não mudou: os painéis (busca, pendentes) falam com
+as mesmas funções e a RLS decide.
+5. **Estado novo sem limite?** Nenhum. O estado da busca mudou de componente e morre junto com ele (o painel desmonta ao
+fechar); o chat continua com o canal compartilhado do `subscribeShared`.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**A trava que poderia ter ficado para trás:** nada de autorização vive no cliente, mas duas coisas de tela mudaram de
+arquivo e foram conferidas: o cartão do perfil perdeu a duplicação sem perder o `title` (nome do usuário no hover) nem
+o anel da aba ativa no computador; e o `App` perdeu o `RouteFallback` para o `AppRoutes`, que o mantém igual. O portão
+das cores (`audit:colors`) e o de conflitos de classe passaram com **zero** depois do corte — as classes foram movidas,
+não reescritas. O cartão continua sem `tabIndex` nem papel (o G.12, ADIAR desde a G): o corte moveu como estava.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
+
+**13/11/2026 — L.4 (o PR que divide a camada Supabase, o ARQ-06).** Renomear e dividir, sem mudar contrato.
+
+1. **Entrada nova?** Nenhuma. As cinco funções de autenticação mudaram de nome (`signUpWithEmail`, `signInWithEmail`,
+`signInWithProvider`, `onAuthChange`, `signOut`) e **continuam com a mesma assinatura**, incluindo o client no primeiro
+parâmetro. Nenhuma rota, nenhum receptor, nenhuma mensagem nova no WebSocket.
+2. **Dado novo sai?** Nenhum. As queries são as mesmas, coluna a coluna; o `select('*')` de `profiles` já era assim
+antes desta fase.
+3. **Autorização nova?** Nenhuma. Nenhuma migration, nenhuma policy, a RLS intocada. O cliente continua com a chave
+anon do bundle (J.12) e fala com o Supabase com o JWT do próprio usuário.
+4. **Jogador convidado hostil?** Nada novo: as mesmas portas com os mesmos nomes, agora em arquivos diferentes.
+5. **Estado novo sem limite?** Nenhum. O `sharedChannels` (o mapa de canais com refcount, fix do T2.12) mudou de arquivo
+sem mudar de forma; agora mora em `client.ts` e só os módulos da camada o usam.
+6. **Custo por requisição a serviço externo?** Nenhum.
+
+**A trava que poderia ter ficado para trás:** o `subscribeShared`. Um canal Realtime novo escrito sem ele derruba a tela
+com o `ErrorBoundary` ("cannot add postgres_changes callbacks after subscribe()"), e o erro só aparece com o menu
+montado em dois lugares. Ficou escrita no cabeçalho do `lib/supabase/index.ts`, junto do mapa dos seis módulos. O
+caminho de import não mudou em nenhum arquivo — o barril é o contrato.
+
+**O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
+
+**13/11/2026 — L.7, o portão da fase L inteira.** O que a fase mudou, em resumo: o reenvio por diferença com a vista
+por papel (L.1), três chunks de biblioteca (L.2), o ESLint com `--max-warnings 0` e os `any`/`console.*` zerados (L.5),
+sete módulos novos no servidor (L.3a–c) e doze no cliente (L.3d), e a camada Supabase em seis módulos por domínio
+(L.4). A L.6 não mudou código: decidiu manter o SSE.
+
+1. **Entrada nova?** Uma, na L.1 (o `delta=1` e o `resync`, já registrados acima) e nenhuma nas outras etapas.
+2. **Dado novo sai?** Sai **menos**: o E.20 fechou na L.1 (a ficha do NPC só vai ao Mestre, em toda porta). O resto é
+o mesmo dado, por arquivos diferentes.
+3. **Autorização nova?** Nenhuma. A vista por papel da L.1 é uma decisão de **audiência**, não de ação, e não promove
+ninguém a GM.
+4. **Jogador convidado hostil?** Um a menos desde a L.1 (o `resync` entra no teto das ações, e ele não lê mais a ficha
+do NPC); nas etapas de corte, nada novo.
+5. **Estado novo sem limite?** O `RoomFeed` da L.1 continua com o teto dos tetos da sala (30 salas, 16 assentos de 64 KB,
+32 NPCs), e sai quando a sala fica sem ninguém. Os cortes não criaram estado novo.
+6. **Custo por requisição a serviço externo?** Nenhum. A fase **cortou** banda, que é a cota que desliga o serviço: um
+chat de 6,8 KB para 0,2 KB por aba, o combate de 51,9 KB para 7,9 KB (medido de novo no fechamento, com o `h1a.mjs`
+contra o build de produção).
+
+**A trava que poderia ter ficado para trás:** duas, as duas pegas. O teste que proíbe status escrito à mão passou a ler o
+`server/` inteiro (L.3a), e o teste de que o `roomManager` não devolve erro sem `code` passou a ler o `server/room/`
+(L.3b). Na L.3d e na L.4, a rede foi a suíte inteira (1134), o E2E (7/7), o smoke (6/6) e o `h1a.mjs` com os mesmos
+números — nenhuma trava de segurança mora no cliente.
+
+**O que a fase ensina antes de o conserto estar no ar?** Nada de segurança — e uma lição de processo: a L.3 fatiou
+1.824 + 1.732 + 1.235 + 763 + 721 + 607 + 386 linhas em dezenove arquivos novos sem quebrar nada, porque cada corte
+levou a suíte, o E2E, o smoke e o roteiro de mesa junto. O que mais pesou no `master` não foi o corte: foi uma advisory
+de dependência publicada entre dois merges (o `body-parser`, no fechamento).
+
 ### Fase M — Validação e encerramento
 
 *(a preencher)*

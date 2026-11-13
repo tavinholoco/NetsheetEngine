@@ -67,5 +67,5 @@ Storage), com:
 ## Referências
 
 - `supabase/migrations/` — migrations 0001–0004 (schema + RLS + bucket).
-- `src/lib/supabase.ts` — API de dados (auth, perfis, amizades, chat, fichas).
+- `src/lib/supabase/` — API de dados (auth, perfis, amizades, chat, fichas), um módulo por domínio desde a L.4, com o `index.ts` de barril.
 - Fase 2 do `PLANO_DE_ACAO.md` (T2.1–T2.20).

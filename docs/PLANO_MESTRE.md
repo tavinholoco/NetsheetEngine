@@ -1454,7 +1454,7 @@ público mudar.
       buildando de novo, o chunk do app troca de hash e os dois das bibliotecas, não — quem volta depois de um
       deploy baixa 70,5 kB, não 188,4 (−63%). Só o React e o Supabase: uma biblioteca que só uma tela carrega (o
       Yjs) num chunk fixo viria para o boot.)*
-- [ ] **L.3** Fatiar os arquivos grandes aproveitando os cortes que a E.1f e a G.1f mapearam. *(ARQ-05)*
+- [x] **L.3** Fatiar os arquivos grandes aproveitando os cortes que a E.1f e a G.1f mapearam. *(ARQ-05)*
       *(22/10/2026 — os mapas somam 22 arquivos novos em sete arquivos grandes; a L.3 vai em quatro PRs, um corte cada,
       sem mudar comportamento — a suíte, o E2E, o smoke do WebSocket e o `h1a.mjs` provam cada um. Os testes só importam
       do `server.ts` o `app`, o `attachRealtime`, o `runPresenceSweep`, o `pruneExpiredBuckets` e o `drainForHandoff`.)*
@@ -1483,8 +1483,29 @@ público mudar.
             (1134 em 96), o E2E 7/7, o smoke 6/6 no `netsheet-prod` e o `h1a.mjs` com os números da L.1 (chat 0,2 KB por
             aba, combate 7,8 KB, nenhum erro de console); estragado o `resync` no hook novo, o `room-patch-client` cai.
             *(23/10/2026, no #79)*
-      - [ ] **L.3d** O `FriendsList` (721), o `CyberpunkMenu` (607) e o `App` (386).
-- [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
+      - [x] **L.3d** O `FriendsList` (721), o `CyberpunkMenu` (607) e o `App` (386).
+            *(13/11/2026 — o `FriendsList` → **283**: o `FriendChatBox` em arquivo próprio, o `AddFriendPanel` com o estado da
+            busca junto, a lista de pedidos no `PendingRequests`, o `friendVisuals` (o ícone e o LED, que a lista e os pedidos
+            desenhavam cada um) e o `friendProfile` (o perfil do pedido, montado duas vezes igual). O `CyberpunkMenu` → **416**:
+            o dado em `menu/menuConfig.ts` (itens, avatares, LED), o efeito do avatar em `menu/useAvatarProfile.ts` e o cartão
+            do usuário — **duas cópias**, no celular e no computador — num `menu/ProfileCard.tsx` com `variant`. O `App` →
+            **192**: a faixa de título no `AppPageHeader`, as rotas e as páginas lazy no `AppRoutes`, os dois avisos flutuantes
+            em `RollBanner`/`SaveToastBanner` e as rolagens da ficha no `useSheetRollHandlers`. **A prova:** a suíte (1134 em
+            96), o E2E 7/7, o smoke 6/6 no build de produção e o `h1a.mjs` com os números da L.1 — um chat 0,2 KB por aba, o
+            combate 7,9 KB, a sala 16,9 KB, zero erro de console. O `dist/index` segue em 221 kB / 70,9 kB gzip. **Achado no
+            corte:** o botão da rede de amigos com o menu minimizado troca um estado que a versão minimizada não lê — clicar
+            nele não abre nada (é de antes; entrou na lista da Q.3). Fecha a L.3 e o E.18/G.21.)*
+- [x] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
+      *(13/11/2026 — o `src/lib/supabase.ts` de **891 linhas** virou `src/lib/supabase/`: `client` (o cliente, o provider do
+      Google, os canais compartilhados e o `subscribeShared`), `types` (os tipos públicos e as linhas de cada tabela), `auth`,
+      `profiles` (perfil, `#NC-####` e o bucket), `friends` (amizades, pendentes e os NPCs), `chat` (mensagens diretas) e
+      `sheets` (as fichas), com o `index.ts` de barril — **quem importava de `lib/supabase` continua importando do mesmo
+      caminho**. Os nomes do Firebase saíram: `auth` → **`supabase`**, `createUserWithEmailAndPassword` → `signUpWithEmail`,
+      `signInWithEmailAndPassword` → `signInWithEmail`, `signInWithPopup` → `signInWithProvider`, `onAuthStateChanged` →
+      `onAuthChange` e `firebaseSignOut` → `signOut`; **as assinaturas ficaram iguais** — é renomear e dividir, não mudar
+      contrato. Os quatro pontos de chamada acompanharam (`App`, `AuthModal`, `useCharacterSheet`, `api/gemini`). **A prova:**
+      o `tsc` (a rede do item), o lint, a suíte (1134 em 96), o E2E 7/7, o smoke 6/6 e o `h1a.mjs` nos mesmos números da
+      L.3d — o renome não encostou em comportamento.)*
 - [x] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
       `--max-warnings 0` no CI. *(ARQ-07)*
       *(21/10/2026 — feita, no #75: o `eslint.config.js` com os presets recomendados do ESLint e do typescript-eslint, sem regra
@@ -1500,7 +1521,7 @@ público mudar.
       Três handlers do grid sem botão (limpar, tema e tamanho) saíram — ADIAR, na lista do bloco Q. O `npm run lint` é o
       ESLint, com `--max-warnings 0`, e o `tsc` virou `npm run typecheck`: um passo cada no CI. +7 testes, 1115 em 94
       arquivos; revertida a regra, o `lint-gate.test` falha, e um `any` de volta derruba o `npm run lint`.)*
-- [ ] **L.6** **Decidir o fallback SSE com o dado da B.7.** Ninguém caiu para SSE em meses de uso? Remove
+- [x] **L.6** **Decidir o fallback SSE com o dado da B.7.** Ninguém caiu para SSE em meses de uso? Remove
       o endpoint, o mapa `sseClients`, o caminho duplo do broadcast e o `EventSource` do cliente. Alguém
       caiu? Mantém, e a dúvida está encerrada com evidência em vez de opinião.
       *Premissa corrigida na revisão pós-D (29/09):* o Render Hobby **guarda log por 7 dias** — "meses
@@ -1509,9 +1530,17 @@ público mudar.
       *Medido na L.0 (20/10/2026):* **zero** sessões registradas. A recomendação é **manter**, dizendo que a
       evidência é nenhuma: o SSE é por onde entra quem abre a página na troca de instância (H.14), e a diferença
       da L.1 passa por ele sem custo — é o mesmo texto.
-- [ ] **L.7** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
-- [ ] **L.8** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [ ] ✅ **Fase L concluída em:** ____/____/______
+      *Decidido em 13/11/2026 — **manter**, com a evidência que existe, que é nenhuma:* o Registro de sessões continua
+      vazio (nenhuma sessão em produção registrada), então a pergunta "alguém caiu para SSE?" não tem estatística — e
+      remover com essa evidência seria decidir por opinião, o que o item proíbe. Pesa a favor de manter: o SSE é por onde
+      entra quem abre a página na janela da troca de instância (H.14, com `sse_fallback` no mesmo minuto de
+      `lease_released` como gatilho) e a diferença da L.1 passa por ele sem custo, porque é o mesmo texto. O E.05 (o
+      `sseClients` guardando um `Set` vazio por sala) **segue na lista da Q.2** — o item só sumiria se o SSE saísse. Este
+      é o único item da fase que fecha por decisão, e não por código.
+- [x] **L.7** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
+- [x] **L.8** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
+- [x] ✅ **Fase L concluída em:** 13/11/2026 *(a L.0, a L.1, a L.2 e a L.5 em 20–21/10, os #73–#75; a L.3a–c em
+      22–23/10, os #77–#79; a L.3d, a L.4 e o fechamento em 13/11/2026, um PR por etapa)*
 
 ---
 
@@ -1532,7 +1561,9 @@ bônus das artes marciais por estilo (na Q.5). Na revisão da K (20/10, #70): **
 fase, seis na Q.3 e um na Q.5. Na L.0 (20/10): **108** — as respostas REST das ações sem a sala (na Q.2) e o
 Supabase fora do boot (na Q.3). Na L.1 (21/10): **109** — a ficha editada que vai inteira (na Q.2); e o E.20, da
 Q.1, feito. Na L.5 (21/10): **111** — os controles do grid do GM e as regras dos hooks no lint (na Q.3); e o E.16,
-o G.17 e o G.18, da Q.1, feitos.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
+o G.17 e o G.18, da Q.1, feitos.)*
+*(13/11/2026, ao fechar a L: **113** — a rede de amigos com o menu minimizado, na Q.3, e o primeiro parâmetro morto da
+autenticação, na Q.2. A L não deixou nenhum outro ADIAR: a L.6 fechou por decisão.)* **Por que depois da L:** a J, a K e a L são donas de 26 itens, e a L muda o código onde vivem outros (o
 protocolo na L.1, os cortes na L.3, o ESLint na L.5). Fazer antes seria fazer duas vezes. **Por que antes da M:** a
 M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o que a Q fez.
 
@@ -1630,9 +1661,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         a liga: depois da L.1, só a entrada e a reconexão passariam do `threshold: 1024`. **A medida que falta:** carga
         num contêiner Linux — 30 salas de 7 sockets, a sala da L.0 reenviada, a memória do processo com e sem
         `serverNoContextTakeover` — antes de qualquer linha no `server.ts`.)*
-  - [ ] **E.18** e **G.21**: os cortes dos arquivos grandes, no backend e no frontend. *Dona:* L.3. *(22/10/2026: o
+  - [x] **E.18** e **G.21**: os cortes dos arquivos grandes, no backend e no frontend. *Dona:* L.3. *(22/10/2026: o
         `server.ts` feito na L.3a, o `roomManager` na L.3b; 23/10: o `MultiplayerRoom` e o `TacticalGrid` na L.3c; o resto,
-        na L.3d.)*
+        na L.3d — **feito em 13/11/2026**: o `FriendsList` 721 → 283, o `CyberpunkMenu` 607 → 416 e o `App` 386 → 192.)*
   - [x] **E.11**: `code.toUpperCase()` em 25 pontos, sem dono. *Dona:* L.3 (o `roomKey` vai para o módulo de
         salas). *Gatilho:* uma sala "não encontrada" por maiúscula ou espaço. *(Feito na L.3b, 22/10/2026.)*
   - [x] **E.16** (sete `any` no `server.ts`), **G.17** (doze `console.*` no cliente) e **G.18** (o "broadcast" das
@@ -1702,7 +1733,16 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         por ação, 1/(N+1) do reenvio. Mudar o corpo é mudar o contrato (I.02): 31 conferências de teste leem a sala
         do corpo. *Gatilho:* a banda do workspace passar de 2,5 GB num mês, ou uma rota de ação mudar de corpo.
         Fonte: a L.0, acima.
+  - [ ] **O primeiro parâmetro morto da autenticação** (L.4): `signUpWithEmail`, `signInWithEmail`,
+        `signInWithProvider`, `onAuthChange` e `signOut` ainda recebem o client como primeiro argumento — sobra do
+        contrato do Firebase, que os quatro pontos de chamada passam e ninguém usa. A L.4 renomeou e dividiu, sem
+        mexer em assinatura. *Gatilho:* a próxima função de autenticação escrita (ela nasceria com o parâmetro de
+        novo). Fonte: a L.4, acima.
 - [ ] **Q.3** **Tela.** Fonte: [`G-frontend.md`](./varreduras/G-frontend.md), a não ser onde o item diz outra.
+  - [ ] **A rede de amigos com o menu minimizado** (L.3d): o botão troca o `isExpanded`, que a versão minimizada do
+        `FriendsList` não lê — clicar nele não abre nada, e o ping das pendências é o único sinal que sai de lá. É de
+        antes do corte (o código mudou de arquivo como estava). *Gatilho:* alguém com o menu minimizado tentar abrir a
+        rede de amigos. Fonte: o corte da L.3d, acima.
   - [ ] **Os controles do grid do GM** (L.5): limpar todos os tokens, trocar o tema e o tamanho do grid estavam escritos
         no `TacticalGrid` (`handleClearAllTokens`, `handleChangeTheme`, `handleChangeDimensions`) e nunca tiveram botão —
         o "construído e nunca ligado" do `CLAUDE.md`. Saíram na L.5 para o lint passar; voltam do histórico do git. O
@@ -1934,25 +1974,25 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
 | K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66); a K.6 — a criação com orçamento: os pacotes e o salário conferidos, o assistente na ficha e o orçamento à vista do GM na mesa (#67); a K.7 — as perícias pelas fontes (com os quatro pilotos), a tela que sugere todas, e o Leap no lugar do Walk (#68); o fechamento, com o portão da fase e a revisão do que ela produziu (#69); a revisão do código da fase, K.10, com seis consertos — o "Refazer" que trocava a escolha do pacote entre eles (#70) | ✅ | 20/10/2026 |
-| L | 🔨 | Performance e escala — a L.0 mediu (a sala da K pesa o dobro, o reenvio sai também do token movido e da resposta REST, e o E.20 entra na L.1) | 🔄 | — |
-| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7; 106 na revisão da K; 108 na L.0 (20/10); 109 na L.1, com o E.20 feito; 111 na L.5, com o E.16, o G.17 e o G.18 feitos (21/10) | ⬜ | — |
+| L | 🔨 | Performance e escala — a L.0 mediu (a sala da K pesa o dobro, o reenvio sai também do token movido e da resposta REST, e o E.20 entra na L.1); a L.1 (o reenvio por diferença, #73), a L.2 (os chunks, #74), a L.5 (o ESLint, #75), a L.3a–c (o `server.ts`, o `roomManager`, a mesa e o grid, #77–#79) e a L.3d + a L.4 em 13/11 — o `FriendsList`, o `CyberpunkMenu` e o `App` cortados pelos mapas da G.1f, e a camada Supabase em seis módulos por domínio, sem nome do Firebase; a L.6 decidida (manter o SSE) e o portão da fase | ✅ | 13/11/2026 |
+| Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7; 106 na revisão da K; 108 na L.0 (20/10); 109 na L.1, com o E.20 feito; 111 na L.5, com o E.16, o G.17 e o G.18 feitos (21/10); **113 na L** (13/11: a rede de amigos com o menu minimizado e o primeiro parâmetro morto da autenticação) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
 ### Linha de base atual
 
 Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual de abertura compara.
 
-| Verificação | Ao fechar a Fase K (20/10/2026; a revisão K.10 no mesmo dia) |
+| Verificação | Ao fechar a Fase L (13/11/2026) |
 |---|---|
 | Node | **24** (`.node-version`, o mesmo para o CI e o Render — R.8) |
 | `npx tsc --noEmit` | 0 erros |
-| `npx vitest run` | **1072** testes, 87 arquivos *(+8 da K.10, a revisão: `rules-creation` 2, `creation-budget` 2, `creation-wizard` 2, `cyberware-stat` 1, `scene-settings` 1 — 20/10/2026; +26 da K.7: `skill-tables` 12, `skill-suggestions` 4, `movement` 11, `derived-stats` −1 (o Walk) — 20/10/2026; +33 da K.6: `rules-creation` 19, `creation-wizard` 5, `creation-budget` 8, `sheet-size` +1 — 20/10/2026; +29 da K.5: `rules-netrun` 20, `netrunner-section` 8, `sheet-size` +1 — 20/10/2026; +32 da K.3: `wound-names` 22, `scene-settings` 7, `table-rolls.integration` +3 — 20/10/2026; +53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.12 (era o 4.1.11 até 22/10). *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
+| `npx vitest run` | **1134** testes, 96 arquivos *(desde a L.3c; a L.3d não pôs teste novo — o código mudou de arquivo, e a suíte é a mesma; era 1072 em 87 ao fechar a K)* *(+8 da K.10, a revisão: `rules-creation` 2, `creation-budget` 2, `creation-wizard` 2, `cyberware-stat` 1, `scene-settings` 1 — 20/10/2026; +26 da K.7: `skill-tables` 12, `skill-suggestions` 4, `movement` 11, `derived-stats` −1 (o Walk) — 20/10/2026; +33 da K.6: `rules-creation` 19, `creation-wizard` 5, `creation-budget` 8, `sheet-size` +1 — 20/10/2026; +29 da K.5: `rules-netrun` 20, `netrunner-section` 8, `sheet-size` +1 — 20/10/2026; +32 da K.3: `wound-names` 22, `scene-settings` 7, `table-rolls.integration` +3 — 20/10/2026; +53 da K.2: `rules-armor` 20, `rules-carga` 15, `armor-panel` 7, `gear-section` 5, `cyberware-stat` 3, `sheet-size` 2, `damage.integration` +1; +10 da K.1: `sheet-import` 7, `sheet-print` 3 — 18/10/2026; 522 ao fechar a D; +43 das R.1–R.6; +6 da R.16; +6 da R.10; +14 da R.11; +18 da E.3a–b; +42 da E.3c–e; +7 da F.0e; +11 da F.2; +2 da F.1; +73 do PR 3b: `theme-contrast` 41, `cn-theme` 21, `theme-motion` 8, `audit-colors` +3, e o `injury-rules` trocado; +1 da 01.10, `node-version` — **745** ao fechar a R e a F; +47 da G.3: `npc-armor` 14, `double-click` 7, `room-modals` 6, `room-chat` 5, `stat-input` 6, `cyberware-humanity` 9; +4 da G.3h: `room-modals` 3, `cyberware-humanity` 1 — **796** ao fechar a G; +9 da H.3: `room-refresh` 4, `room-transport` 5 — **805**; +36 da H.3d: `instance-lease` 18, `room-persistence` 7, `server-handoff` 6, `api-restart` 3, `room-transport` 2 — **841**; +1 da H.3d.5: `room-transport` 1 — **842** ao fechar a H; +26 da I, o SEC-16: `peer-id.integration` 22, `api-paths` 4 — **868** ao fechar a I; +13 da J: `awareness-guard.integration` 6, `yjs-cursors` 3 e `realtime-backpressure.integration` 2 (o SEC-17/18), `gitleaks-allowlist` 2 (o J.11) — **881** ao fechar a J)* — `vitest` 4.1.12 (era o 4.1.11 até 22/10). *A sonda não rastreada da J.1d fica fora da conta: `--exclude src/__tests__/zz-j-probe.integration.test.ts`* |
 | `npm run test:e2e` | **7/7** (Playwright) — 2 da ficha ajustados na D.3 para a trilha em pontos; +1 da F.0d (`fonts-csp`: CSP de produção e fontes carregadas) |
-| `node scripts/test-ws-e2e.mjs` | 5/5 contra o build de produção (o smoke do CI) — de novo ao fechar a K (`BASE_URL=http://127.0.0.1:3100`, com o `netsheet-prod`) |
-| `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema). Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
+| `node scripts/test-ws-e2e.mjs` | **6/6** contra o build de produção (de novo em 13/11/2026, na L.3d e na L.4); era 5/5 (o smoke do CI) — de novo ao fechar a K (`BASE_URL=http://127.0.0.1:3100`, com o `netsheet-prod`) |
+| `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema), e a K e a L também não mexeram em schema nem RLS — a suíte segue valendo da J. Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
 | gitleaks local (v8.23.3, a do CI) | **315** commits varridos ao fechar a K (o branch do fechamento sobre o `master` em `2d367b6`), nenhum vazamento — `gitleaks detect --source . --config .gitleaks.toml --redact`. Eram 277 na J.5. O histórico tem um commit sem merge a mais: o `b1daf6e`, que só apaga arquivo, e o gitleaks não conta (J.5) |
-| `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit` com **0** vulnerabilidades (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia; 20/10: `vite@6.4.4`, o alerta alto do `launch-editor` — GHSA-587h-7wmj-h5pm — publicado no dia, que deixou o `master` vermelho depois do #70; 22/10: `vitest@4.1.12`, as duas moderadas do `@vitest/mocker` — GHSA-qxg6-89mg-rqv8 e GHSA-xp26-3454-mjgp —, de desenvolvimento, vistas na L.5; vieram junto o `chai@6.3.0` e o `tinyrainbow@3.2.0`, do próprio `vitest`) |
-| Chunk de entrada | 629 kB / 186 kB gzip; CSS 115 kB / 16,8 kB gzip *(PR 3b — a paleta padrão saiu com a F.2.10)* |
+| `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit --omit=dev` com **0** vulnerabilidades — o `npm audit` completo tem **11 de desenvolvimento** em 13/11/2026: 10 moderadas do `minimatch` (pelo `eslint`) e 1 alta do `undici`, sem correção que não seja *major* (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia; 20/10: `vite@6.4.4`, o alerta alto do `launch-editor` — GHSA-587h-7wmj-h5pm — publicado no dia, que deixou o `master` vermelho depois do #70; 22/10: `vitest@4.1.12`, as duas moderadas do `@vitest/mocker` — GHSA-qxg6-89mg-rqv8 e GHSA-xp26-3454-mjgp —, de desenvolvimento, vistas na L.5; vieram junto o `chai@6.3.0` e o `tinyrainbow@3.2.0`, do próprio `vitest`; 13/11: `body-parser@1.20.9` e `qs@6.16.2` — a alta do `body-parser` (GHSA-27r3-jxmh-p828) saiu depois do #79 e deixou o `master` vermelho; corrigida **sem exceção nova**, porque há patch; o `vite@6.4.6` é de desenvolvimento) |
+| Chunk de entrada | **221,4 kB / 70,9 kB gzip** (o app), mais o React **194,2 / 60,7** e o Supabase **218,9 / 57,2** em chunks próprios, pré-carregados juntos desde a L.2 — eram 629 kB / 186 kB num arquivo só *(a CSS é a mesma do PR 3b: 115 kB / 16,8 kB gzip)* |
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
 | `node scripts/multiplayer/h1a.mjs` | A mesa de base da H.1a (14/10/2026): três contextos, do zero ao combate, **0** erro de console; um chat custa **6,7 KB** por aba, o ataque mais o dano **~52–72 KB** (depende de o ataque do NPC ferir), 45 s parada **0,5 KB**; a sala no fim, **~17 KB**. Rodada de novo ao fechar a H.3: os mesmos números. `npm run build` antes; sobe o próprio servidor |
 | `node scripts/multiplayer/h1j.mjs` | **No ar, só combinado com o dono** (14/10/2026): o deploy com a mesa aberta deixou as duas instâncias vivas **~20 s**; o despertar da hibernação, **~22 s**. **O ensaio local** (`H1J_LOCAL=1`, com o Supabase local; `H1J_SWITCH_DELAY_S=5` imita o Render da H.3d.0) com o bastão da H.3d, 15/10: **0** mensagem perdida e **6,1 s** de "reconectando" (o código de antes perdia 1) |
@@ -1964,7 +2004,9 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | Migrations em produção | `0001`–`0008` *(a `0008_instance_lease` desde 16/10/2026, na H.3d.1 — PR #47; a D não teve migration)* |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
-Renovar até 22/10 — passo a passo no P.2.
+Renovar até 22/10 — passo a passo no P.2. *(13/11/2026: **foi renovado** — o keepalive de 04/11, 07/11, 10/11 e
+13/11 rodou verde, e o `db-sync` é o que confere o token de verdade. A nota continua aqui pelo prazo: vence de novo
+~30 dias depois da renovação.)*
 
 **10/10/2026 — produção conferida, e o bloco R fechado.** O Node é o 24 — o do `FROM` do
 `Dockerfile`, porque o serviço é Docker —, a `TRUST_PROXY` confia nos privados e no Cloudflare (o valor
@@ -1980,7 +2022,7 @@ vermelho se algum virar erro antes:
 | Aviso | Onde | Gatilho |
 |---|---|---|
 | `ubuntu-latest` passa a ser Ubuntu 26 | os 4 jobs do `ci.yml` e o `keepalive.yml` | ✅ **Chegou em 21/10/2026** — o CI do merge do #73 rodou os quatro jobs na `ubuntu-26.04`, verdes. O keepalive se confere no próximo agendado |
-| CodeQL Action v3 descontinuada | `github/codeql-action/upload-sarif@v3` (gitleaks) | **Dezembro de 2026** — trocar por `@v4` antes |
+| CodeQL Action v3 descontinuada | `github/codeql-action/upload-sarif@v3` (gitleaks) | **Dezembro de 2026** — trocar por `@v4` antes. *(13/11/2026: faltam ~3 semanas; é o item de infra com prazo de fora mais próximo.)* |
 | Actions em Node 20 forçadas a rodar em Node 24 | `actions/checkout@v4`, `supabase/setup-cli@v1` | Um run falhar por isso, ou sair versão nova das duas |
 | **Node 20 na matriz do `validate`** *(revisão pós-D)* | `ci.yml` — o runtime do **projeto**, não das actions | ✅ **Resolvido na R.8 (29/09):** o CI lê o `.node-version` (24), o mesmo arquivo do Render |
 
