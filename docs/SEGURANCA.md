@@ -1330,20 +1330,20 @@ antes desta fase.
 anon do bundle (J.12) e fala com o Supabase com o JWT do próprio usuário.
 4. **Jogador convidado hostil?** Nada novo: as mesmas portas com os mesmos nomes, agora em arquivos diferentes.
 5. **Estado novo sem limite?** Nenhum. O `sharedChannels` (o mapa de canais com refcount, fix do T2.12) mudou de arquivo
-sem mudar de forma; agora mora em `client.ts` e só os módulos da camada o usam.
+sem mudar de forma; agora mora em `src/lib/supabase/client.ts` e só os módulos da camada o usam.
 6. **Custo por requisição a serviço externo?** Nenhum.
 
 **A trava que poderia ter ficado para trás:** o `subscribeShared`. Um canal Realtime novo escrito sem ele derruba a tela
 com o `ErrorBoundary` ("cannot add postgres_changes callbacks after subscribe()"), e o erro só aparece com o menu
-montado em dois lugares. Ficou escrita no cabeçalho do `lib/supabase/index.ts`, junto do mapa dos seis módulos. O
+montado em dois lugares. Ficou escrita no cabeçalho do `src/lib/supabase/index.ts`, junto do mapa dos sete módulos. O
 caminho de import não mudou em nenhum arquivo — o barril é o contrato.
 
 **O que este PR ensina antes de o conserto estar no ar?** Nada de segurança.
 
 **13/11/2026 — L.7, o portão da fase L inteira.** O que a fase mudou, em resumo: o reenvio por diferença com a vista
 por papel (L.1), três chunks de biblioteca (L.2), o ESLint com `--max-warnings 0` e os `any`/`console.*` zerados (L.5),
-sete módulos novos no servidor (L.3a–c) e doze no cliente (L.3d), e a camada Supabase em seis módulos por domínio
-(L.4). A L.6 não mudou código: decidiu manter o SSE.
+catorze módulos novos no servidor (L.3a–c) e treze no cliente (L.3d), e a camada Supabase em sete módulos por domínio,
+mais o `src/lib/supabase/index.ts` de barril (L.4). A L.6 não mudou código: decidiu manter o SSE.
 
 1. **Entrada nova?** Uma, na L.1 (o `delta=1` e o `resync`, já registrados acima) e nenhuma nas outras etapas.
 2. **Dado novo sai?** Sai **menos**: o E.20 fechou na L.1 (a ficha do NPC só vai ao Mestre, em toda porta). O resto é
@@ -1364,7 +1364,7 @@ contra o build de produção).
 números — nenhuma trava de segurança mora no cliente.
 
 **O que a fase ensina antes de o conserto estar no ar?** Nada de segurança — e uma lição de processo: a L.3 fatiou
-1.824 + 1.732 + 1.235 + 763 + 721 + 607 + 386 linhas em dezenove arquivos novos sem quebrar nada, porque cada corte
+1.824 + 1.732 + 1.235 + 763 + 721 + 607 + 386 linhas em **37 arquivos novos** — catorze no servidor, 23 no cliente, mais dois testes — sem quebrar nada, porque cada corte
 levou a suíte, o E2E, o smoke e o roteiro de mesa junto. O que mais pesou no `master` não foi o corte: foi uma advisory
 de dependência publicada entre dois merges (o `body-parser`, no fechamento).
 
