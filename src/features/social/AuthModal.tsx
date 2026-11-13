@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  auth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
+  supabase,
+  signInWithEmail,
+  signUpWithEmail,
+  signInWithProvider,
   googleProvider,
   saveUserProfile,
   updateProfile,
-  onAuthStateChanged
+  onAuthChange
 } from '../../lib/supabase';
 import { Shield, Mail, User as UserIcon, Lock, AlertTriangle, Loader2, Sparkles, LogIn, UserPlus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
@@ -61,12 +61,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Retorno do OAuth do Google: quando o usuário volta do redirect, a sessão
-  // já está ativa (onAuthStateChanged) e sincronizamos o perfil (display_name).
+  // já está ativa (onAuthChange) e sincronizamos o perfil (display_name).
   // Se o usuário cancelar no Google (volta sem sessão), limpamos a flag para
   // não disparar sync redundante no próximo login.
   useEffect(() => {
     if (!sessionStorage.getItem(OAUTH_PENDING_KEY)) return;
-    const unsub = onAuthStateChanged(auth, async (u) => {
+    const unsub = onAuthChange(supabase, async (u) => {
       sessionStorage.removeItem(OAUTH_PENDING_KEY);
       if (u) {
         try {
@@ -94,7 +94,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
     try {
       if (isRegister) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await signUpWithEmail(supabase, email, password);
         if (!userCredential.user) {
           // Ex.: cloud com confirmação de e-mail ativa — sessão ainda não existe
           setErrorMsg('Conta criada! Confirme seu e-mail antes de acessar.');
@@ -105,7 +105,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         }
         await saveUserProfile(userCredential.user, displayName);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmail(supabase, email, password);
       }
       onClose();
     } catch (err) {
@@ -122,7 +122,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       // Fluxo OAuth do Supabase usa redirect: marcamos o pendente para
       // sincronizar o perfil quando o usuário voltar ao app.
       sessionStorage.setItem(OAUTH_PENDING_KEY, '1');
-      await signInWithPopup(auth, googleProvider);
+      await signInWithProvider(supabase, googleProvider);
       onClose();
     } catch {
       sessionStorage.removeItem(OAUTH_PENDING_KEY);

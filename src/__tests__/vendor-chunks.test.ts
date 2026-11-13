@@ -40,7 +40,7 @@ describe('L.2 — a regra dos chunks das bibliotecas', () => {
   it('o resto fica com o Rollup: o código do app e as bibliotecas que só uma tela carrega', () => {
     for (const id of [
       '/repo/src/App.tsx',
-      '/repo/src/lib/supabase.ts',
+      '/repo/src/lib/supabase/client.ts',
       '/repo/node_modules/yjs/dist/yjs.mjs',
       '/repo/node_modules/react-router/dist/index.js',
       '/repo/node_modules/react-remove-scroll/dist/es2015/index.js',

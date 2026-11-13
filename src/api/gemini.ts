@@ -15,14 +15,14 @@
  */
 
 import { apiFetch } from './http';
-import { auth } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 /**
  * POST /api/gemini — envia prompt e devolve o texto da resposta.
  * @throws ApiError(401) se não houver sessão do Supabase ativa.
  */
 export async function askGemini(prompt: string): Promise<string> {
-  const { data } = await auth.auth.getSession();
+  const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) {
     // Falha aqui em vez de deixar o servidor recusar: a mensagem fica melhor e
