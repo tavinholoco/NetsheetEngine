@@ -23,8 +23,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  auth,
-  onAuthStateChanged,
+  supabase,
+  onAuthChange,
   subscribeToCharacterSheets,
   saveCharacterSheet,
   loadCharacterSheet,
@@ -221,7 +221,7 @@ export function useCharacterSheet(): UseCharacterSheetResult {
 
   // Sessão + assinatura do roster
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
+    const unsub = onAuthChange(supabase, async (u) => {
       setUser(u);
       setAuthLoading(false);
     });

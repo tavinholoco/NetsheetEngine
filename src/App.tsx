@@ -7,7 +7,7 @@ import { useUserActivity } from './hooks/useUserActivity';
 import { useSheetStore, syncSheetStore } from './stores/useSheetStore';
 import { useRollStore } from './stores/useRollStore';
 import { useUiStore } from './stores/useUiStore';
-import { firebaseSignOut, auth } from './lib/supabase';
+import { signOut, supabase } from './lib/supabase';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';
 import { APP_VERSION } from './version';
@@ -107,7 +107,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      await firebaseSignOut(auth);
+      await signOut(supabase);
       resetToBlankSheet();
     } catch (e) {
       // L.5 — o log no console não chegava a quem clicou em "Sair".
