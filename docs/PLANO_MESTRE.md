@@ -1487,19 +1487,21 @@ público mudar.
             *(13/11/2026 — o `FriendsList` → **283**: o `FriendChatBox` em arquivo próprio, o `AddFriendPanel` com o estado da
             busca junto, a lista de pedidos no `PendingRequests`, o `friendVisuals` (o ícone e o LED, que a lista e os pedidos
             desenhavam cada um) e o `friendProfile` (o perfil do pedido, montado duas vezes igual). O `CyberpunkMenu` → **416**:
-            o dado em `menu/menuConfig.ts` (itens, avatares, LED), o efeito do avatar em `menu/useAvatarProfile.ts` e o cartão
-            do usuário — **duas cópias**, no celular e no computador — num `menu/ProfileCard.tsx` com `variant`. O `App` →
+            o dado em `src/components/menu/menuConfig.ts` (itens, avatares, LED), o efeito do avatar em
+            `src/components/menu/useAvatarProfile.ts` e o cartão do usuário — **duas cópias**, no celular e no computador —
+            num `src/components/menu/ProfileCard.tsx` com `variant`. O `App` →
             **192**: a faixa de título no `AppPageHeader`, as rotas e as páginas lazy no `AppRoutes`, os dois avisos flutuantes
             em `RollBanner`/`SaveToastBanner` e as rolagens da ficha no `useSheetRollHandlers`. **A prova:** a suíte (1134 em
             96), o E2E 7/7, o smoke 6/6 no build de produção e o `h1a.mjs` com os números da L.1 — um chat 0,2 KB por aba, o
-            combate 7,9 KB, a sala 16,9 KB, zero erro de console. O `dist/index` segue em 221 kB / 70,9 kB gzip. **Achado no
+            combate 7,9 KB, a sala 16,9 KB, zero erro de console (as duas últimas variam ~10% entre execuções: a sala é
+            gerada). O `dist/index` segue em 221 kB / 70,9 kB gzip. **Achado no
             corte:** o botão da rede de amigos com o menu minimizado troca um estado que a versão minimizada não lê — clicar
             nele não abre nada (é de antes; entrou na lista da Q.3). Fecha a L.3 e o E.18/G.21.)*
 - [x] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
       *(13/11/2026 — o `src/lib/supabase.ts` de **891 linhas** virou `src/lib/supabase/`: `client` (o cliente, o provider do
       Google, os canais compartilhados e o `subscribeShared`), `types` (os tipos públicos e as linhas de cada tabela), `auth`,
       `profiles` (perfil, `#NC-####` e o bucket), `friends` (amizades, pendentes e os NPCs), `chat` (mensagens diretas) e
-      `sheets` (as fichas), com o `index.ts` de barril — **quem importava de `lib/supabase` continua importando do mesmo
+      `sheets` (as fichas), com o `src/lib/supabase/index.ts` de barril — **quem importava de `lib/supabase` continua importando do mesmo
       caminho**. Os nomes do Firebase saíram: `auth` → **`supabase`**, `createUserWithEmailAndPassword` → `signUpWithEmail`,
       `signInWithEmailAndPassword` → `signInWithEmail`, `signInWithPopup` → `signInWithProvider`, `onAuthStateChanged` →
       `onAuthChange` e `firebaseSignOut` → `signOut`; **as assinaturas ficaram iguais** — é renomear e dividir, não mudar
@@ -1536,11 +1538,21 @@ público mudar.
       entra quem abre a página na janela da troca de instância (H.14, com `sse_fallback` no mesmo minuto de
       `lease_released` como gatilho) e a diferença da L.1 passa por ele sem custo, porque é o mesmo texto. O E.05 (o
       `sseClients` guardando um `Set` vazio por sala) **segue na lista da Q.2** — o item só sumiria se o SSE saísse. Este
-      é o único item da fase que fecha por decisão, e não por código.
+      é o único item da fase que fecha por decisão, e não por código: a decisão também está na linha do **fallback SSE**
+      da tabela de decisões do [`CLAUDE.md`](../CLAUDE.md), com o mesmo gatilho de reabertura.
 - [x] **L.7** 🔒 **Portão de segurança** — responder as seis perguntas de [`SEGURANCA.md`](./SEGURANCA.md#o-portão-de-segurança) sobre o que esta fase mudou, e registrar em [`SEGURANCA.md`](./SEGURANCA.md#registro-por-fase). Atualizar o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md), se houver. **30 min — a fase não fecha sem isso.**
 - [x] **L.8** 🧠 **Fechar o estado durável** — marcar os checkboxes desta fase e a data, atualizar a tabela de progresso e o diagrama afetado em [`ARQUITETURA.md`](./ARQUITETURA.md) se a forma do sistema mudou, e **atualizar a memória do Claude apenas com o que o repo não carrega** (decisão nova, preferência, correção de rumo — nunca o estado da fase). Ver o [Protocolo de sessão](#-protocolo-de-sessão).
-- [x] ✅ **Fase L concluída em:** 13/11/2026 *(a L.0, a L.1, a L.2 e a L.5 em 20–21/10, os #73–#75; a L.3a–c em
-      22–23/10, os #77–#79; a L.3d, a L.4 e o fechamento em 13/11/2026, um PR por etapa)*
+- [ ] ✅ **Fase L concluída em:** ____/____/______ *(o trabalho está pronto e verde e o código **já está no
+      `master`** — os #80, #81 e #82 entraram em 13/11/2026 —, mas a fase fecha quando esta documentação entrar, e ela é
+      o #83. A data se preenche no merge dele. A L.0, a L.1, a L.2 e a L.5 foram em 20–21/10, os #73–#75; a L.3a–c, em
+      22–23/10, os #77–#79; a L.3d e a L.4, em 13/11/2026)*
+
+      *Estado em 13/11/2026:* o `master` está em **`6c70700`**, e os três PRs entraram na ordem prevista, no mesmo dia:
+      o **#80** (as dependências — `body-parser` 1.20.9, `qs` 6.16.2 e o `vite` 6.4.6), o **#81** (a L.3d) e o **#82**
+      (a L.4), mergeados às 22:40, 22:41 e 22:42. O `db-sync` só roda no `master`, e o run do merge do #82
+      ([43521437472](https://github.com/tavinholoco/NetsheetEngine/actions/runs/43521437472)) passou **verde** nele — a
+      fase entrou em produção com o token do CI bom. **O que falta é este documento, no #83**: é ele que preenche a
+      data acima.
 
 ---
 
@@ -1974,7 +1986,7 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
 | I | 🔍 | Varredura: integração — ledger com 9 itens, 2 FAZER (um é documento), no #53; o outro, o SEC-16 (o `peerId` que desviava o "Remover" do GM), consertado antes no #54; a I.3 vazia — o I.01 (a rota do modificador do GM sem tela) seguiu ADIAR no merge | ✅ | 16/10/2026 |
 | J | 🔍 | Varredura: segurança — J.0 no #57; ledger com 13 itens, 4 FAZER (#59): o SEC-17 (o awareness cru derrubava a tela do grid) e o SEC-18 (a memória sem teto pelo repasse e pelo SSE), consertados antes do ledger (#58); a J.3 com a allowlist do gitleaks ancorada, medida no binário (#60); no fechamento, a versão do CLI do Supabase fixa — o `latest` levou rate limit e deixou o `master` vermelho | ✅ | 17/10/2026 |
 | K | 🔨 | Profundidade de sistema — a K.0 mediu (a K.1 pela metade, a K.3 entregue, o "trapaceiro plausível" que o orçamento não fecha) e a K.0b virou a decisão 13 (18/10, #62); a K.1 — o import pelo validador, a ficha sem conta e a ficha impressa (#63); a K.2 — a armadura por peça com as camadas do livro, o EV no REF, o inventário com Carry e Lift, e o cromo que soma atributo (#64); a K.3 — um nome por nível de ferimento, o do livro, e as condições da cena escritas pelo GM, a rota que esperava tela desde a C.4 (#65); a K.5 — o netrunner na ficha, o deck e os programas, com a pesquisa fechando sem o PDF (#66); a K.6 — a criação com orçamento: os pacotes e o salário conferidos, o assistente na ficha e o orçamento à vista do GM na mesa (#67); a K.7 — as perícias pelas fontes (com os quatro pilotos), a tela que sugere todas, e o Leap no lugar do Walk (#68); o fechamento, com o portão da fase e a revisão do que ela produziu (#69); a revisão do código da fase, K.10, com seis consertos — o "Refazer" que trocava a escolha do pacote entre eles (#70) | ✅ | 20/10/2026 |
-| L | 🔨 | Performance e escala — a L.0 mediu (a sala da K pesa o dobro, o reenvio sai também do token movido e da resposta REST, e o E.20 entra na L.1); a L.1 (o reenvio por diferença, #73), a L.2 (os chunks, #74), a L.5 (o ESLint, #75), a L.3a–c (o `server.ts`, o `roomManager`, a mesa e o grid, #77–#79) e a L.3d + a L.4 em 13/11 — o `FriendsList`, o `CyberpunkMenu` e o `App` cortados pelos mapas da G.1f, e a camada Supabase em seis módulos por domínio, sem nome do Firebase; a L.6 decidida (manter o SSE) e o portão da fase | ✅ | 13/11/2026 |
+| L | 🔨 | Performance e escala — a L.0 mediu (a sala da K pesa o dobro, o reenvio sai também do token movido e da resposta REST, e o E.20 entra na L.1); a L.1 (o reenvio por diferença, #73), a L.2 (os chunks, #74), a L.5 (o ESLint, #75), a L.3a–c (o `server.ts`, o `roomManager`, a mesa e o grid, #77–#79) e a L.3d + a L.4 em 13/11 — o `FriendsList`, o `CyberpunkMenu` e o `App` cortados pelos mapas da G.1f, e a camada Supabase em seis módulos por domínio, sem nome do Firebase; a L.6 decidida (manter o SSE) e o portão da fase — em **três PRs mergeados em 13/11/2026** — `#80` (as dependências), `#81` (a L.3d) e `#82` (a L.4) —, com o documento de fechamento no **#83** | ✅ | 13/11/2026 |
 | Q | 🔨 | Quitar os ADIAR (decisão 12): 78 itens em 16/10, 26 com fase dona; 86 ao fechar a J (17/10); 89 na K.0 e 91 na K.2 (18/10); quatro já feitos — dois na K.2, dois na K.3 (20/10); 94 na K.5; 98 na K.6; 99 na K.7; 106 na revisão da K; 108 na L.0 (20/10); 109 na L.1, com o E.20 feito; 111 na L.5, com o E.16, o G.17 e o G.18 feitos (21/10); **113 na L** (13/11: a rede de amigos com o menu minimizado e o primeiro parâmetro morto da autenticação) | ⬜ | — |
 | M | 🔨 | Validação e encerramento | ⬜ | — |
 
@@ -1991,10 +2003,10 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | `node scripts/test-ws-e2e.mjs` | **6/6** contra o build de produção (de novo em 13/11/2026, na L.3d e na L.4); era 5/5 (o smoke do CI) — de novo ao fechar a K (`BASE_URL=http://127.0.0.1:3100`, com o `netsheet-prod`) |
 | `node scripts/test-rls.mjs` | **63/63** na H.3d.1 (15/10/2026: +7 da `instance_lease` — anon e authenticated negados, a service role lê e escreve), de novo ao fechar a I (16/10) e na J.0 (17/10; a J não mexeu em schema), e a K e a L também não mexeram em schema nem RLS — a suíte segue valendo da J. Eram 56/56 na Fase B, sem rodar na C nem na D (nenhuma das duas mexeu em schema nem RLS) |
 | gitleaks local (v8.23.3, a do CI) | **315** commits varridos ao fechar a K (o branch do fechamento sobre o `master` em `2d367b6`), nenhum vazamento — `gitleaks detect --source . --config .gitleaks.toml --redact`. Eram 277 na J.5. O histórico tem um commit sem merge a mais: o `b1daf6e`, que só apaga arquivo, e o gitleaks não conta (J.5) |
-| `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit --omit=dev` com **0** vulnerabilidades — o `npm audit` completo tem **11 de desenvolvimento** em 13/11/2026: 10 moderadas do `minimatch` (pelo `eslint`) e 1 alta do `undici`, sem correção que não seja *major* (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia; 20/10: `vite@6.4.4`, o alerta alto do `launch-editor` — GHSA-587h-7wmj-h5pm — publicado no dia, que deixou o `master` vermelho depois do #70; 22/10: `vitest@4.1.12`, as duas moderadas do `@vitest/mocker` — GHSA-qxg6-89mg-rqv8 e GHSA-xp26-3454-mjgp —, de desenvolvimento, vistas na L.5; vieram junto o `chai@6.3.0` e o `tinyrainbow@3.2.0`, do próprio `vitest`; 13/11: `body-parser@1.20.9` e `qs@6.16.2` — a alta do `body-parser` (GHSA-27r3-jxmh-p828) saiu depois do #79 e deixou o `master` vermelho; corrigida **sem exceção nova**, porque há patch; o `vite@6.4.6` é de desenvolvimento) |
+| `npm run audit:ci` | passa, **ALLOWLIST vazia**, e `npm audit --omit=dev` com **0** vulnerabilidades — o `npm audit` completo tem **10 de desenvolvimento** em 13/11/2026: **9** moderadas (o `minimatch` e a cadeia do `eslint` e do `typescript-eslint` que depende dele) e **1** alta (o `undici`), sem correção que não seja *major* (R.7: `express@4.22.3`, `qs@6.16.0`; 10/10: `proxy-addr@2.0.8`, `source-map-js@1.2.2`, alertas do dia; 20/10: `vite@6.4.4`, o alerta alto do `launch-editor` — GHSA-587h-7wmj-h5pm — publicado no dia, que deixou o `master` vermelho depois do #70; 22/10: `vitest@4.1.12`, as duas moderadas do `@vitest/mocker` — GHSA-qxg6-89mg-rqv8 e GHSA-xp26-3454-mjgp —, de desenvolvimento, vistas na L.5; vieram junto o `chai@6.3.0` e o `tinyrainbow@3.2.0`, do próprio `vitest`; 13/11: `body-parser@1.20.9` e `qs@6.16.2` — a alta do `body-parser` (GHSA-27r3-jxmh-p828) saiu depois do #79 e deixou o `master` vermelho; corrigida **sem exceção nova**, porque há patch; o `vite@6.4.6` é de desenvolvimento) |
 | Chunk de entrada | **221,4 kB / 70,9 kB gzip** (o app), mais o React **194,2 / 60,7** e o Supabase **218,9 / 57,2** em chunks próprios, pré-carregados juntos desde a L.2 — eram 629 kB / 186 kB num arquivo só *(a CSS é a mesma do PR 3b: 115 kB / 16,8 kB gzip)* |
 | Fontes (F.0c, F.1.3, F.4.3) | Rajdhani **400 e 700**, Share Tech Mono 400 e Orbitron variável — `woff2` do subconjunto `latin`, ~12–16 KB cada, servidos pelo próprio origin |
-| `node scripts/multiplayer/h1a.mjs` | A mesa de base da H.1a (14/10/2026): três contextos, do zero ao combate, **0** erro de console; um chat custa **6,7 KB** por aba, o ataque mais o dano **~52–72 KB** (depende de o ataque do NPC ferir), 45 s parada **0,5 KB**; a sala no fim, **~17 KB**. Rodada de novo ao fechar a H.3: os mesmos números. `npm run build` antes; sobe o próprio servidor |
+| `node scripts/multiplayer/h1a.mjs` | A mesa de base da H.1a (14/10/2026): três contextos, do zero ao combate, **0** erro de console; um chat custa **6,7 KB** por aba, o ataque mais o dano **~52–72 KB** (depende de o ataque do NPC ferir), 45 s parada **0,5 KB**; a sala no fim, **~17 KB**. Rodada de novo ao fechar a H.3: os mesmos números; e em 13/11/2026, com a L.1, um chat custa **0,2 KB** por aba e o combate **7,9 KB** *(as duas últimas medidas variam ~10% entre execuções, porque a sala é gerada)*. `npm run build` antes; sobe o próprio servidor |
 | `node scripts/multiplayer/h1j.mjs` | **No ar, só combinado com o dono** (14/10/2026): o deploy com a mesa aberta deixou as duas instâncias vivas **~20 s**; o despertar da hibernação, **~22 s**. **O ensaio local** (`H1J_LOCAL=1`, com o Supabase local; `H1J_SWITCH_DELAY_S=5` imita o Render da H.3d.0) com o bastão da H.3d, 15/10: **0** mensagem perdida e **6,1 s** de "reconectando" (o código de antes perdia 1) |
 | `node scripts/visual/impressao.mjs <pasta>` | A ficha impressa em PDF como o navegador imprime (sem fundo), contra o `netsheet-prod`: **6 páginas A4** desde a K.5 (de novo ao fechar a K, com o Leap no lugar do Walk; a seção da criação fica fora da folha) (eram 4 na K.1c, 18/10/2026; o deck e os programas entraram na ficha do roteiro), tinta sobre o papel, sem controle nenhum, com a armadura por peça. Abrir o PDF e olhar — não compara pixel |
 | `node scripts/visual/tipografia.mjs` | ✅ 0 negrito sintético e 0 texto abaixo de 10 px, em 12 telas *(precisa do `netsheet-prod` recém-subido)* |
@@ -2004,9 +2016,9 @@ Atualizar ao fechar cada fase. É contra estes números que o passo 6 do ritual 
 | Migrations em produção | `0001`–`0008` *(a `0008_instance_lease` desde 16/10/2026, na H.3d.1 — PR #47; a D não teve migration)* |
 
 **Operação:** o `SUPABASE_ACCESS_TOKEN` do CI **vence por volta de 25/10/2026** (validade de 30 dias).
-Renovar até 22/10 — passo a passo no P.2. *(13/11/2026: **foi renovado** — o keepalive de 04/11, 07/11, 10/11 e
-13/11 rodou verde, e o `db-sync` é o que confere o token de verdade. A nota continua aqui pelo prazo: vence de novo
-~30 dias depois da renovação.)*
+Renovar até 22/10 — passo a passo no P.2. *(13/11/2026: **foi renovado** — o keepalive rodou verde em 25/10, o dia do vencimento, e de novo em 28/10, 31/10,
+01/11, 04/11, 07/11, 10/11 e 13/11 (conferido em `gh run list --workflow keepalive.yml`), e o `db-sync` é o que
+confere o token de verdade. A nota continua aqui pelo prazo: vence de novo ~30 dias depois da renovação.)*
 
 **10/10/2026 — produção conferida, e o bloco R fechado.** O Node é o 24 — o do `FROM` do
 `Dockerfile`, porque o serviço é Docker —, a `TRUST_PROXY` confia nos privados e no Cloudflare (o valor
@@ -2022,7 +2034,7 @@ vermelho se algum virar erro antes:
 | Aviso | Onde | Gatilho |
 |---|---|---|
 | `ubuntu-latest` passa a ser Ubuntu 26 | os 4 jobs do `ci.yml` e o `keepalive.yml` | ✅ **Chegou em 21/10/2026** — o CI do merge do #73 rodou os quatro jobs na `ubuntu-26.04`, verdes. O keepalive se confere no próximo agendado |
-| CodeQL Action v3 descontinuada | `github/codeql-action/upload-sarif@v3` (gitleaks) | **Dezembro de 2026** — trocar por `@v4` antes. *(13/11/2026: faltam ~3 semanas; é o item de infra com prazo de fora mais próximo.)* |
+| CodeQL Action v3 descontinuada | `github/codeql-action/upload-sarif@v3` (gitleaks) | **Dezembro de 2026** — trocar por `@v4` antes. *(13/11/2026: o `.github/workflows/ci.yml` ainda usa `@v3`, no passo "Registrar achados na aba Security"; é o item de infra com prazo de fora mais próximo.)* |
 | Actions em Node 20 forçadas a rodar em Node 24 | `actions/checkout@v4`, `supabase/setup-cli@v1` | Um run falhar por isso, ou sair versão nova das duas |
 | **Node 20 na matriz do `validate`** *(revisão pós-D)* | `ci.yml` — o runtime do **projeto**, não das actions | ✅ **Resolvido na R.8 (29/09):** o CI lê o `.node-version` (24), o mesmo arquivo do Render |
 
