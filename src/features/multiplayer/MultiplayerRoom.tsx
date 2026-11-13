@@ -1,51 +1,24 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  RoomPlayer,
-  ChatMessage,
-  InitiativeEntry,
-  TableRollKind,
-  TacticalGridState,
-  TacticalToken,
-  RoomFullMessage,
-  RoomPatchMessage
-} from '../../types/multiplayer';
-import { applyRoomPatch } from '../../lib/roomPatch';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { RoomPlayer, ChatMessage, TacticalGridState, TacticalToken } from '../../types/multiplayer';
 import { errorMessage } from '../../lib/errorMessage';
 import { TacticalGrid } from './TacticalGrid';
 import { CombatPanel } from './CombatPanel';
-import { SceneConditions, signedModifier } from './SceneConditions';
-import { CreationBudget, CreationBudgetMark } from './CreationBudget';
-import { formatEb } from '../../lib/format';
-import { YjsGridConnection, RemoteCursor } from '../../lib/yjsConnection';
+import { signedModifier } from './SceneConditions';
+import { useRoomTransport } from './useRoomTransport';
+import { RoomLobby } from './RoomLobby';
+import { RoomChat } from './RoomChat';
+import { RoomSidebar } from './RoomSidebar';
+import { InitiativePanel } from './InitiativePanel';
+import { HealthMonitorDialog, InspectSheetDialog } from './RoomDialogs';
 import { trailingThrottle } from '../../lib/throttle';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSheetStore } from '../../stores/useSheetStore';
 import { woundStateOf } from '../../rules/damage';
 import { mortalLevel, woundRow } from '../../rules/character';
-import { woundLevelColor } from '../../utils/injuryRules';
 import { useInFlight } from '../../hooks/useInFlight';
 // Fase 7 (T7.3) — camada HTTP centralizada (sem fetch cru no componente)
 import * as roomsApi from '../../api/rooms';
-import { apiUrl, wsUrl } from '../../api/base';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '../../components/ui/dialog';
-import {
-  Radio,
-  Users,
-  MessageSquare,
-  Send,
-  Plus,
-  LogOut,
-  Skull,
-  UserPlus,
-  UserX,
-  Crosshair,
-  Eye,
-  Lock,
-  Link2,
-  Target,
-  Zap,
-  HeartPulse
-} from 'lucide-react';
+import { Radio, Users, LogOut, Link2 } from 'lucide-react';
 
 interface MultiplayerRoomProps {
   onOpenAuthModal: () => void;
@@ -60,7 +33,6 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // Fase 4 (T4.3) — estado da sala vem da useRoomStore
   const view = useRoomStore((s) => s.view);
   const roomCode = useRoomStore((s) => s.roomCode);
-  const setRoomCode = useRoomStore((s) => s.setRoomCode);
   const room = useRoomStore((s) => s.room);
   const peerId = useRoomStore((s) => s.peerId);
   const sessionToken = useRoomStore((s) => s.sessionToken);
@@ -91,16 +63,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     // O gatilho é a divergência e os valores do servidor, não o objeto (novo a cada render).
   }, [woundDiffers, serverWound?.damagePoints, serverWound?.isDead, serverWound?.isStabilized]);
 
-  const [roomName, setRoomName] = useState('Mesa de Night City');
-  const [chatInput, setChatInput] = useState('');
   const [tab, setTab] = useState<RoomTab['id']>('chat');
-  // Fase 5 (T5.3) — grid vindo do doc CRDT (Yjs) e cursores remotos do GM
-  const [yjsGrid, setYjsGrid] = useState<TacticalGridState | null>(null);
-  const [remoteCursors, setRemoteCursors] = useState<RemoteCursor[]>([]);
-  const yjsConnRef = useRef<YjsGridConnection | null>(null);
-  const yjsActiveRef = useRef(false);
-  const [initiativeName, setInitiativeName] = useState('');
-  const [initiativeScore, setInitiativeScore] = useState(10);
   // G.04 — os modais guardam QUEM, e leem o jogador da sala a cada render: com a
   // cópia tirada no clique, o Bio-Monitor não acendia o nível que o próprio GM
   // acabara de aplicar.
@@ -124,28 +87,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   // R.11 — o convite que o GM copia (o link /room/CÓDIGO). Se o navegador não
   // deixar copiar, o link aparece para seleção manual.
   const [inviteState, setInviteState] = useState<'idle' | 'copied' | 'manual'>('idle');
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  // Fase 5 (T5.2) — contador para retry do WebSocket após queda (backoff simples)
-  const [wsAttempt, setWsAttempt] = useState(0);
-  // H.09 — "já conectou nesta mesa" vive fora da rodada do efeito. Era uma
-  // variável de cada rodada: uma queda breve seguida de uma tentativa que
-  // falhava levava ao SSE para sempre — sem arrastar o próprio token, com o
-  // grid congelado, e com um `sse_fallback` no log que era queda de rede.
-  const wsEverOpenRef = useRef(false);
-  const wsRetriesRef = useRef(0);
-  // H.3d — até quando vale a reconexão curta depois de o servidor trocar de
-  // instância (o fechamento 1012).
-  const wsRestartUntilRef = useRef(0);
-
 
   const handle = user?.displayName || sheet.handle || 'Edgerunner';
-  // Fase 5 (T5.3) — refs correntes de peerId/handle para o effect de transporte
-  // (não reconectar o WS quando a ficha muda de nome)
-  const peerIdRef = useRef(peerId);
-  peerIdRef.current = peerId;
-  const handleRef = useRef(handle);
-  handleRef.current = handle;
   const isGm = !!room && room.gmPeerId === peerId;
   const players = room?.players || {};
   const npcs = room?.npcs || {};
@@ -161,344 +104,12 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     if (inspectedGone) setInspectedPeerId(null);
   }, [healthGone, inspectedGone]);
 
-  // G.24 — o chat acompanha a mensagem nova, só quando quem lê já está no fim
-  // (quem rolou para cima para reler fica onde está). Na mesa, a rolagem só
-  // existe no chat (T5.4). O gatilho é a ÚLTIMA mensagem, não a contagem: no
-  // teto de 100 (E.3b) a contagem para de crescer. Só a caixa rola, não a página.
-  const chatBox = useRef<HTMLDivElement | null>(null);
-  const chatAtBottom = useRef(true);
-  const chatBoxRef = useCallback((el: HTMLDivElement | null) => {
-    chatBox.current = el;
-    if (el) {
-      chatAtBottom.current = true; // a caixa (re)aparece mostrando a última
-      el.scrollTop = el.scrollHeight;
-    }
-  }, []);
-  const onChatScroll = () => {
-    const el = chatBox.current;
-    if (el) chatAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-  };
-  const chatList = room?.chatMessages;
-  const lastChatId = chatList?.[chatList.length - 1]?.id;
-  useLayoutEffect(() => {
-    const el = chatBox.current;
-    if (el && chatAtBottom.current) el.scrollTop = el.scrollHeight;
-  }, [lastChatId]);
+  // L.3c (G.21) — o WebSocket, o SSE, o Yjs, o heartbeat e a sincronia da ficha.
+  const { yjsGrid, remoteCursors, yjsConnRef, wsSend } = useRoomTransport({ view, roomCode, sessionToken, peerId, handle, sheet });
 
-  // R.11 — o lobby não lista salas (entra-se pelo código ou pelo link do GM).
-  // Aqui havia uma consulta a /api/rooms a cada 8 s, com a aba do lobby
-  // aberta: além de mostrar a sala de todo mundo a qualquer visitante, era uma
-  // das duas coisas que mantinham o Render acordado (risco 1 do custo zero).
-
-  // Fase 5 (T5.2) — TRANSPORTE UNIFICADO: tenta WebSocket; se não conectar
-  // (bloqueado/falhou), cai automaticamente para o SSE (EventSource). Ambos
-  // entregam o MESMO payload — desde a L.1, a sala inteira na entrada e depois
-  // só a diferença (`delta=1`).
-  // Fase 5 (T5.3) — sobre o WS também trafega o protocolo binário do Yjs
-  // (grid CRDT + awareness): binário → YjsGridConnection; texto → JSON.
-  useEffect(() => {
-    if (view !== 'active' || !roomCode) {
-      wsEverOpenRef.current = false;
-      wsRetriesRef.current = 0;
-      return;
-    }
-    let disposed = false;
-    // L.1 (ARQ-01) — o rev da sala que esta conexão tem; -1 até a sala inteira
-    // chegar. Uma diferença que parte de outro rev é uma que não vimos: pede a
-    // sala inteira e ignora as diferenças até ela chegar.
-    let rev = -1;
-    let awaitingFull = false;
-    const requestFull = () => {
-      if (awaitingFull) return;
-      awaitingFull = true;
-      if (wsRef.current === ws && ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.send(JSON.stringify({ type: 'resync' }));
-        } catch {
-          /* o onclose reconecta, e a entrada é a sala inteira */
-        }
-      } else if (sse) {
-        // O SSE não tem volta: reabrir o stream é pedir a sala inteira.
-        sse.close();
-        sse = connectSse();
-      }
-    };
-
-    /** Devolve `'restart'` quando o servidor avisa que vai trocar de instância (H.3d.4). */
-    const handlePayload = (raw: string): 'restart' | void => {
-      if (disposed) return;
-      try {
-        const parsed = JSON.parse(raw);
-        // Fase 5 (T5.4) — respostas de erro do servidor (roll-error / error)
-        if (parsed && typeof parsed === 'object' && typeof parsed.type === 'string' &&
-            (parsed.type === 'roll-error' || parsed.type === 'error')) {
-          // H.3d.4 — o aviso da troca de instância não é erro de quem joga.
-          if (parsed.code === 'server_restarting') return 'restart';
-          useRoomStore.getState().setErrorMsg(String(parsed.error || 'Ação rejeitada pelo servidor.'));
-          return;
-        }
-        if (parsed?.type === 'room:full') {
-          const m = parsed as RoomFullMessage;
-          rev = m.rev;
-          awaitingFull = false;
-          useRoomStore.getState().setRoom(m.room);
-          return;
-        }
-        if (parsed?.type === 'room:patch') {
-          const m = parsed as RoomPatchMessage;
-          const current = useRoomStore.getState().room;
-          if (awaitingFull) return;
-          if (!current || m.base !== rev) {
-            requestFull();
-            return;
-          }
-          rev = m.rev;
-          useRoomStore.getState().setRoom(applyRoomPatch(current, m));
-          return;
-        }
-        // A sala inteira sem `type` — a de antes da L.1.
-        useRoomStore.getState().setRoom(parsed);
-      } catch {
-        /* ignore */
-      }
-    };
-
-    // Fallback SSE (comportamento original — auto-reconecta via EventSource)
-    const connectSse = () => {
-      // T10.2 — frontend estático: base do backend vem de VITE_API_URL
-      // Fase B (B.3 — SEC-02): o stream passou a exigir sessão. O token vai na
-      // query porque `EventSource` não aceita header customizado — mesma
-      // limitação que o WebSocket já contorna do mesmo jeito, logo abaixo.
-      const es = new EventSource(
-        apiUrl(`/api/rooms/${roomCode}/stream?token=${encodeURIComponent(sessionToken)}&delta=1`)
-      );
-      eventSourceRef.current = es;
-      es.onmessage = (ev) => handlePayload(ev.data);
-      es.onerror = () => {
-        // EventSource reconecta automaticamente
-      };
-      return es;
-    };
-
-    let sse: EventSource | null = null;
-    const socketUrl = wsUrl(`/ws/rooms/${roomCode}?token=${encodeURIComponent(sessionToken)}&delta=1`);
-    const ws = new WebSocket(socketUrl);
-    ws.binaryType = 'arraybuffer';
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      wsEverOpenRef.current = true;
-      wsRetriesRef.current = 0;
-      wsRestartUntilRef.current = 0;
-      useRoomStore.getState().setErrorMsg('');
-      // Fase 5 (T5.3) — ativa a camada CRDT do grid sobre este socket
-      if (!yjsConnRef.current) {
-        const conn = new YjsGridConnection(
-          ws,
-          peerIdRef.current,
-          handleRef.current,
-          {
-            onGrid: (g) => {
-              if (!disposed) setYjsGrid(g);
-            },
-            onCursors: (cursors) => {
-              if (!disposed) setRemoteCursors(cursors);
-            }
-          }
-        );
-        yjsConnRef.current = conn;
-        yjsActiveRef.current = true;
-        conn.startSync();
-      }
-    };
-    ws.onmessage = (ev) => {
-      if (typeof ev.data === 'string') {
-        if (handlePayload(ev.data) === 'restart') leaveForRestart();
-      } else if (yjsConnRef.current) {
-        // Binário → protocolo Yjs (grid CRDT / awareness)
-        yjsConnRef.current.handleBinary(ev.data as ArrayBuffer);
-      }
-    };
-    ws.onerror = () => {
-      // Sem conexão → o onclose decide o fallback SSE
-    };
-    // H.3d.4 — o servidor avisou que vai trocar de instância. No ar, o proxy do
-    // Render segurou o fechamento que o servidor manda por 13–16 s, e a tela mandou
-    // uma mensagem pelo socket morto. Então o cliente fecha o próprio socket na
-    // hora — daqui em diante, as ações vão por REST, que repete o 503 — e volta pelo
-    // caminho do 1012, sem esperar o `onclose`.
-    const leaveForRestart = () => {
-      if (disposed || wsRef.current !== ws) return;
-      ws.onclose = null;
-      try {
-        ws.close();
-      } catch {
-        /* já fechando */
-      }
-      socketGone(1012);
-    };
-    ws.onclose = (ev) => socketGone(ev?.code);
-    function socketGone(code: number | undefined) {
-      if (disposed) return;
-      wsRef.current = null;
-      // H.02 — a conexão Yjs deste socket morre com ele. Só o ref era zerado, e
-      // o efeito seguinte não achava o que destruir: os timers dela (o refresh
-      // de 25 s e o do awareness) e o doc seguiam vivos, um par por queda.
-      yjsConnRef.current?.destroy();
-      yjsConnRef.current = null;
-      yjsActiveRef.current = false;
-      // H.09 — sem Yjs, a tela volta ao grid da sala (o JSON que o servidor
-      // espelha); o do Yjs ficaria parado na última posição.
-      setYjsGrid(null);
-      if (!wsEverOpenRef.current) {
-        // Nunca conectou nesta mesa → SSE (o proxy que bloqueia o WebSocket)
-        if (!sse) sse = connectSse();
-      } else {
-        // H.3d — 1012 (Service Restart): o servidor entregou a mesa à instância
-        // nova, no deploy. A velha recusa o WebSocket até o Render trocar o
-        // tráfego (~7–9 s, H.3d.0): tentar a cada 1,5 s por até 1 min, sem a
-        // espera crescente — que, na terceira recusa, já esperaria 12 s.
-        if (code === 1012) wsRestartUntilRef.current = Date.now() + 60_000;
-        const restarting = Date.now() < wsRestartUntilRef.current;
-        // Caiu depois de conectar → tenta o WebSocket de novo, com espera
-        // crescente: 3 s, 6 s, 12 s… até 30 s (token pode ter mudado via T3.3;
-        // o effect re-roda quando o token novo chega).
-        const delay = restarting ? 1500 : Math.min(3000 * 2 ** wsRetriesRef.current, 30_000);
-        if (!restarting) wsRetriesRef.current += 1;
-        setTimeout(() => {
-          if (!disposed) setWsAttempt((a) => a + 1);
-        }, delay);
-      }
-    }
-
-    return () => {
-      disposed = true;
-      ws.onclose = null;
-      yjsConnRef.current?.destroy();
-      yjsConnRef.current = null;
-      yjsActiveRef.current = false;
-      if (wsRef.current === ws) wsRef.current = null;
-      try {
-        ws.close();
-      } catch {
-        /* ignore */
-      }
-      sse?.close();
-      eventSourceRef.current = null;
-    };
-  }, [view, roomCode, sessionToken, wsAttempt]);
-
-  /** Envia uma mensagem JSON pelo WS se conectado; false = usar fallback POST. */
-  const wsSend = useCallback((msg: object): boolean => {
-    const ws = wsRef.current;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(JSON.stringify(msg));
-        return true;
-      } catch {
-        return false;
-      }
-    }
-    return false;
-  }, []);
-
-  // Fase 3 (T3.4) + Fase 5 (T5.2) — heartbeat periódico: mantém isOnline=true
-  // enquanto a aba está na mesa. Via WebSocket (baixa latência) ou POST como
-  // fallback. O servidor marca offline após o timeout (ROOM_OFFLINE_TIMEOUT_MS).
-  useEffect(() => {
-    if (view !== 'active' || !roomCode || !peerId || !sessionToken) return;
-    const beat = () => {
-      if (wsSend({ type: 'heartbeat' })) return;
-      roomsApi.postHeartbeat(roomCode).catch(() => {});
-    };
-    beat();
-    const iv = setInterval(beat, 20_000); // 20s < timeout default de 60s
-    return () => clearInterval(iv);
-  }, [view, roomCode, peerId, sessionToken, wsSend]);
-
-  // Sincroniza a ficha na mesa APENAS quando ela muda de fato.
-  // (Antes dependia de `room`, que muda a cada evento SSE, criando um loop
-  //  infinito: POST /sheet -> broadcast -> SSE -> POST /sheet...)
-  const lastSyncedSheetRef = useRef<string>('');
-
-  useEffect(() => {
-    if (view !== 'active' || !peerId || !sessionToken || !roomCode) return;
-    const sheetKey = JSON.stringify(sheet);
-    if (sheetKey === lastSyncedSheetRef.current) return;
-    lastSyncedSheetRef.current = sheetKey;
-    const t = setTimeout(() => {
-      // Fase 3 (T3.3) — authedFetch: se o token expirou (restart do servidor),
-      // reconecta automaticamente e re-tenta o sync da ficha.
-      roomsApi.syncSheet(roomCode, sheet).catch(() => {});
-    }, 600);
-    return () => clearTimeout(t);
-  }, [view, peerId, sessionToken, sheet, roomCode]);
-
-  // G.06 — criar, entrar e as ações de combate do GM: uma por vez, com o botão
-  // desligado enquanto a requisição não volta.
+  // G.06 — o próximo turno: um por vez, com o botão desligado enquanto a
+  // requisição não volta (criar e entrar, no RoomLobby).
   const { run, isBusy } = useInFlight();
-
-  const createRoom = () => {
-    if (!user) {
-      onOpenAuthModal();
-      return;
-    }
-    if (!roomCode.trim()) {
-      setErrorMsg('Informe um código de sala (ex.: NC-2020).');
-      return;
-    }
-    setErrorMsg('');
-    run('create', async () => {
-      try {
-        await roomsApi.createRoom({ code: roomCode.trim(), name: roomName, gmHandle: handle });
-        useRoomStore.getState().setView('active');
-      } catch (e) {
-        setErrorMsg(errorMessage(e, 'Erro ao criar sala.'));
-      }
-    });
-  };
-
-  const joinRoom = (code?: string) => {
-    const targetCode = (code || roomCode).trim();
-    if (!targetCode) return;
-    setErrorMsg('');
-    run('join', async () => {
-      try {
-        await roomsApi.joinRoom({ code: targetCode, handle, sheet });
-        useRoomStore.getState().setView('active');
-      } catch (e) {
-        setErrorMsg(errorMessage(e, 'Sala não encontrada.'));
-      }
-    });
-  };
-
-  const sendChat = async (text?: string) => {
-    const content = (text ?? chatInput).trim();
-    if (!content) return;
-    if (text === undefined) setChatInput('');
-    // Fase 5 (T5.2) — WebSocket quando disponível; fallback: POST autenticado.
-    // T5.4 — sem rollResult: rolagens só existem via { type: 'roll' }.
-    if (wsSend({ type: 'message', text: content })) return;
-    try {
-      await roomsApi.postMessage(roomCode, content);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  // Fase 5 (T5.4) — RNG SERVER-AUTHORITATIVE: o cliente só pede o tipo de
-  // rolagem; o servidor rola os dados (crypto.randomInt) usando a ficha que
-  // ELE possui e o resultado volta no broadcast do chat. WS-first, fallback
-  // POST /roll (clientes SSE).
-  const requestTableRoll = (kind: TableRollKind, skillName?: string) => {
-    if (wsSend({ type: 'roll', kind, skillName })) return;
-    roomsApi.postRoll(roomCode, kind, skillName).catch(() => {});
-  };
-
-  const rollAttack = () => requestTableRoll('attack');
-  const rollTableDamage = () => requestTableRoll('damage');
-  const rollTableSave = () => requestTableRoll('save');
-  const rollTableStun = () => requestTableRoll('stun');
 
   // Helper: ação autenticada (T7.3 — camada api). A api lança ApiError com a
   // mensagem do servidor; o banner mostra o motivo. Devolve a promessa já
@@ -540,20 +151,8 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     sendCursor(x, y);
   };
 
-  const generateNpc = (archetypeId?: string) => {
-    roomAction(roomsApi.generateNpc(roomCode, archetypeId));
-  };
-
-  const generatePlayerEdgerunner = () => {
-    roomAction(roomsApi.generatePlayers(roomCode));
-  };
-
   const updatePlayerHealth = (targetPeerId: string, woundLevel: number) => {
     roomAction(roomsApi.setPlayerHealth(roomCode, targetPeerId, woundLevel));
-  };
-
-  const updateNpcHealth = (npcId: string, woundLevel: number) => {
-    roomAction(roomsApi.setNpcHealth(roomCode, npcId, woundLevel));
   };
 
   // Fase D (D.3) — combate no cartão do token. O servidor faz toda a conta;
@@ -593,35 +192,6 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
     );
   };
 
-  const deleteNpc = (npcId: string) => {
-    roomAction(roomsApi.deleteNpc(roomCode, npcId));
-  };
-
-  // G.07 — o GM tira alguém da mesa (assento órfão, mesa cheia, convidado que
-  // não devia estar ali). O servidor revoga a sessão, fecha o socket e recusa a
-  // volta daquele assento (R.3, `removed_by_gm`): a pessoa só volta por uma aba
-  // nova — o GM precisa saber disso antes de tirar um amigo que só caiu.
-  const deletePlayer = (p: RoomPlayer) => {
-    if (!confirm(`Remover ${p.handle} da mesa? A sessão é encerrada, e ${p.handle} só volta abrindo o convite numa aba nova.`)) return;
-    roomAction(roomsApi.deletePlayer(roomCode, p.peerId));
-  };
-
-  const addInitiative = () => {
-    if (!initiativeName.trim()) return;
-    const list: InitiativeEntry[] = [
-      ...(room?.initiativeList || []),
-      {
-        playerId: 'init_' + Date.now(),
-        handle: initiativeName.trim(),
-        role: '—',
-        score: initiativeScore,
-        isCurrentTurn: false
-      }
-    ].sort((a, b) => b.score - a.score);
-    roomAction(roomsApi.setInitiativeList(roomCode, list));
-    setInitiativeName('');
-  };
-
   const nextTurn = () => {
     run('nextTurn', () => roomAction(roomsApi.nextTurn(roomCode)));
   };
@@ -649,97 +219,7 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
   /* ============================================================
      LOBBY
      ============================================================ */
-  if (view === 'lobby') {
-    return (
-      <div className="space-y-5 animate-fadeIn">
-        <div className="bg-surface/90 border-l-4 border-l-ok-500 border-y border-r border-line rounded-2xl p-6 relative overflow-hidden">
-          <div aria-hidden="true" className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none font-display text-[50px] font-black text-ok-500 select-none">
-            NET_LOBBY
-          </div>
-          <div className="flex items-center space-x-3 relative z-10">
-            <div className="w-12 h-12 rounded-lg bg-ok-950 border border-ok-500/60 flex items-center justify-center shadow-glow-15 shadow-ok-500/40">
-              <Radio className="w-6 h-6 text-ok-400" />
-            </div>
-            <div>
-              <h2 className="font-display text-lg sm:text-xl font-bold text-ok-400 uppercase tracking-display">Mesa Multiplayer</h2>
-              <p className="text-micro text-subtle">Crie ou entre em uma sala em tempo real</p>
-            </div>
-          </div>
-        </div>
-
-        {!user && (
-          <div className="bg-signal-950/40 border border-signal-500/50 p-4 rounded-xl text-xs text-signal-300 flex items-center space-x-2">
-            <Lock className="w-4 h-4 text-signal-400 shrink-0" />
-            <span>Você está no modo visitante. Faça login para criar salas como GM.</span>
-            <button onClick={onOpenAuthModal} className="ml-auto px-3 py-1.5 bg-signal-400 hover:bg-signal-300 text-black font-black text-micro uppercase rounded cursor-pointer transition-all shrink-0">
-              Acessar Conta
-            </button>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Criar sala */}
-          <div className="bg-surface/80 border border-line rounded-xl p-5 space-y-3">
-            <span className="text-xs font-black text-ok-400 uppercase tracking-caps flex items-center space-x-1.5">
-              <Plus className="w-4 h-4" /> Criar Nova Sala
-            </span>
-            <input
-              type="text"
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-              placeholder="Prefixo do código (ex.: NC-2020)"
-              className="w-full bg-raised border border-field text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-ok-400 focus:outline-none uppercase"
-            />
-            <p className="text-micro text-subtle leading-relaxed">
-              O código ganha um final aleatório (ex.: NC-2020-K7Q9XD) — é ele o convite, e ninguém o adivinha.
-            </p>
-            <input
-              type="text"
-              value={roomName}
-              onChange={(e) => setRoomName(e.target.value)}
-              placeholder="Nome da mesa"
-              className="w-full bg-raised border border-field text-xs text-fg-strong px-3 py-2 rounded focus:border-ok-400 focus:outline-none"
-            />
-            <button
-              onClick={createRoom}
-              disabled={!user || isBusy('create')}
-              className="w-full py-2.5 bg-ok-500 hover:bg-ok-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-xs uppercase rounded shadow-glow-15 shadow-ok-500/40 transition-all cursor-pointer"
-            >
-              {isBusy('create') ? 'Criando…' : '🌐 Criar Mesa como GM'}
-            </button>
-          </div>
-
-          {/* Entrar em sala */}
-          <div className="bg-surface/80 border border-line rounded-xl p-5 space-y-3">
-            <span className="text-xs font-black text-accent-400 uppercase tracking-caps flex items-center space-x-1.5">
-              <Users className="w-4 h-4" /> Entrar em Sala
-            </span>
-            <input
-              type="text"
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-              placeholder="Digite o código da sala"
-              className="w-full bg-raised border border-field text-sm text-accent-300 font-mono px-3 py-2 rounded focus:border-accent-400 focus:outline-none uppercase"
-            />
-            <button
-              onClick={() => joinRoom()}
-              disabled={isBusy('join')}
-              className="w-full py-2.5 bg-accent-500 hover:bg-accent-400 disabled:opacity-40 disabled:cursor-wait text-black font-black text-xs uppercase rounded shadow-glow-15 shadow-accent-500/40 transition-all cursor-pointer"
-            >
-              {isBusy('join') ? 'Entrando…' : '🎮 Entrar na Mesa'}
-            </button>
-            <p className="text-micro text-subtle leading-relaxed">
-              As mesas não aparecem numa lista: peça ao Mestre o código ou o link do convite.
-            </p>
-          </div>
-        </div>
-
-        {errorMsg && (
-          <div className="bg-fault-950/60 border border-fault-500/50 p-3 rounded text-mini text-fault-300">{errorMsg}</div>
-        )}
-      </div>
-    );
-  }
+  if (view === 'lobby') return <RoomLobby onOpenAuthModal={onOpenAuthModal} handle={handle} />;
 
   /* ============================================================
      SALA ATIVA
@@ -835,222 +315,20 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
       {/* CHAT */}
       {tab === 'chat' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 bg-surface/80 border border-line rounded-xl overflow-hidden flex flex-col h-[540px]">
-            <div className="flex items-center justify-between p-3 border-b border-line">
-              <span className="text-xs font-black text-accent-400 uppercase tracking-caps flex items-center space-x-1.5">
-                <MessageSquare className="w-4 h-4" /> Chat da Mesa
-              </span>
-              <span className="text-micro text-subtle">{chatMessages.length} mensagens</span>
-            </div>
-            <div
-              ref={chatBoxRef}
-              onScroll={onChatScroll}
-              role="log"
-              aria-label="Mensagens da mesa"
-              className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2"
-            >
-              {chatMessages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.senderHandle === 'SISTEMA_NET' ? 'justify-center' : ''}`}>
-                  {msg.senderHandle === 'SISTEMA_NET' ? (
-                    <div className="bg-raised/60 border border-line rounded px-3 py-1.5 text-micro text-muted text-center font-mono max-w-[90%]">
-                      {msg.text}
-                    </div>
-                  ) : (
-                    <div className="max-w-[85%] space-y-0.5">
-                      <div className="flex items-center space-x-1.5 text-micro font-mono">
-                        <span className={msg.senderRole === 'gm' ? 'text-signal-400' : 'text-accent-300'}>
-                          {msg.senderRole === 'gm' ? '👑' : '🔹'} {msg.senderHandle}
-                        </span>
-                        <span className="text-faint">{msg.timestamp}</span>
-                      </div>
-                      <div className={`px-3 py-2 rounded-lg text-xs leading-relaxed font-sans ${
-                        msg.senderRole === 'gm'
-                          ? 'bg-signal-950/50 border border-signal-800/60 text-signal-100'
-                          : 'bg-raised border border-line-strong text-fg'
-                      }`}>
-                        {msg.isDiceRoll && msg.rollResult ? (
-                          <div>
-                            <span className="font-mono text-signal-400">
-                              🎲 {msg.rollResult.label}: {msg.rollResult.total}
-                            </span>
-                            <p className="font-mono text-micro text-muted mt-1">{msg.rollResult.details}</p>
-                          </div>
-                        ) : (
-                          msg.text
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {chatMessages.length === 0 && (
-                <div className="text-center py-10 text-micro text-faint">A mesa está em silêncio... Quebre o gelo!</div>
-              )}
-            </div>
-            <div className="border-t border-line p-3 flex space-x-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendChat()}
-                placeholder="Mensagem para a mesa..."
-                className="flex-1 bg-raised border border-field text-fg-strong text-xs px-3 py-2.5 rounded focus:border-accent-400 focus:outline-none placeholder:text-faint"
-              />
-              <button
-                onClick={() => sendChat()}
-                className="px-3.5 py-2.5 bg-accent-500 hover:bg-accent-400 text-black rounded font-black uppercase cursor-pointer transition-all"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-              <button
-                onClick={rollAttack}
-                title="🎯 Ataque — d10 + REF + perícia da arma + WA (RNG no servidor)"
-                className="px-3 py-2.5 bg-signal-500 hover:bg-signal-400 text-black rounded font-black uppercase cursor-pointer transition-all"
-              >
-                <Target className="w-4 h-4" />
-              </button>
-              <button
-                onClick={rollTableDamage}
-                title="💥 Dano da arma + local de impacto (RNG no servidor)"
-                className="px-3 py-2.5 bg-danger-600 hover:bg-danger-700 text-white rounded font-black uppercase cursor-pointer transition-all"
-              >
-                <Zap className="w-4 h-4" />
-              </button>
-              <button
-                onClick={rollTableStun}
-                title="💫 Stun Save — 1d10 ≤ BODY − 0 a 9 pelo ferimento (RNG no servidor)"
-                aria-label="Stun Save"
-                className="px-3 py-2.5 bg-caution-500 hover:bg-caution-400 text-black rounded font-black uppercase cursor-pointer transition-all"
-              >
-                <Zap className="w-4 h-4 rotate-180" />
-              </button>
-              <button
-                onClick={rollTableSave}
-                title="🩸 Death Save — 1d10 ≤ BODY − nível Mortal (RNG no servidor)"
-                className="px-3 py-2.5 bg-danger-800 hover:bg-danger-700 border border-danger-500 text-white rounded font-black uppercase cursor-pointer transition-all"
-              >
-                <HeartPulse className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          <RoomChat chatMessages={chatMessages} roomCode={roomCode} wsSend={wsSend} />
 
           {/* Lateral: jogadores & NPCs */}
-          <div className="space-y-4">
-            <div className="bg-surface/80 border border-line rounded-xl p-3">
-              <span className="text-micro font-black text-accent-400 uppercase tracking-caps block mb-2">
-                Jogadores ({Object.keys(players).length})
-              </span>
-              <div className="space-y-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-1">
-                {Object.values(players).map((p) => (
-                  <div
-                    key={p.peerId}
-                    draggable={isGm}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData(
-                        'application/json',
-                        JSON.stringify({ type: 'character_drag', peerId: p.peerId, handle: p.handle, role: p.role, isNpc: false, hp: p.sheet.woundLevel })
-                      );
-                    }}
-                    className="bg-raised/70 border border-line rounded-lg px-2.5 py-2 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-accent-500/40 transition-all"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${p.isOnline ? 'bg-ok-400 animate-pulse' : 'bg-night-600'}`} />
-                      <span className="text-xs font-bold text-white truncate">{p.handle}</span>
-                      <span className="text-micro px-1 py-0.5 rounded bg-surface border border-line-strong text-signal-400 shrink-0">
-                        {p.role}
-                      </span>
-                      {/* K.6c — o orçamento da criação, à vista do GM */}
-                      {isGm && <CreationBudgetMark handle={p.handle} sheet={p.sheet} />}
-                    </div>
-                    <div className="flex items-center space-x-1 shrink-0">
-                      <button
-                        onClick={() => abrirInspecao(p)}
-                        title="Inspecionar ficha"
-                        className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-accent-400 cursor-pointer"
-                      >
-                        <Eye className="w-3 h-3" />
-                      </button>
-                      {isGm && p.peerId !== peerId && (
-                        <button
-                          onClick={() => abrirSaude(p)}
-                          title="Editar bio-monitor"
-                          className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-danger-400 cursor-pointer"
-                        >
-                          <Crosshair className="w-3 h-3" />
-                        </button>
-                      )}
-                      {isGm && p.peerId !== peerId && (
-                        <button
-                          onClick={() => deletePlayer(p)}
-                          title="Remover da mesa"
-                          aria-label={`Remover ${p.handle} da mesa`}
-                          className="p-1 rounded bg-surface border border-line-strong text-muted hover:text-fault-400 cursor-pointer"
-                        >
-                          <UserX className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {isGm && (
-              <div className="bg-surface/80 border border-signal-500/40 rounded-xl p-3 space-y-2">
-                <span className="text-micro font-black text-signal-400 uppercase tracking-caps block">Poderes do GM</span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    onClick={() => generateNpc()}
-                    className="px-2 py-1.5 bg-fault-950/80 hover:bg-fault-900 border border-fault-700/60 text-fault-300 rounded font-bold text-micro uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
-                  >
-                    <Skull className="w-3 h-3" />
-                    <span>Gerar NPC</span>
-                  </button>
-                  <button
-                    onClick={generatePlayerEdgerunner}
-                    className="px-2 py-1.5 bg-accent-950/80 hover:bg-accent-900 border border-accent-700/60 text-accent-300 rounded font-bold text-micro uppercase flex items-center justify-center space-x-1 cursor-pointer transition-all"
-                  >
-                    <UserPlus className="w-3 h-3" />
-                    <span>Gerar Jogador</span>
-                  </button>
-                </div>
-                <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                  <span className="text-micro text-subtle uppercase">NPCs ({Object.keys(npcs).length})</span>
-                  {Object.values(npcs).map((n) => (
-                    <div key={n.peerId} className="bg-raised/70 border border-line rounded px-2 py-1.5 flex items-center justify-between">
-                      <span className="text-micro text-fault-200 font-bold truncate">{n.handle}</span>
-                      <div className="flex items-center space-x-1 shrink-0">
-                        <button
-                          onClick={() => updateNpcHealth(n.peerId, Math.min(10, n.sheet.woundLevel + 1))}
-                          className="text-micro px-1 py-0.5 rounded bg-surface border border-line-strong text-danger-400 cursor-pointer"
-                        >
-                          +
-                        </button>
-                        <button
-                          onClick={() => deleteNpc(n.peerId)}
-                          className="text-micro px-1 py-0.5 rounded bg-surface border border-line-strong text-muted cursor-pointer"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  {Object.keys(npcs).length === 0 && (
-                    <div className="text-center py-2 text-micro text-faint">Sem NPCs na mesa.</div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {isGm && room && (
-              <SceneConditions
-                locationName={room.locationName}
-                combatModifier={room.combatModifier}
-                modifierReason={room.modifierReason}
-                onApply={(settings) => roomAction(roomsApi.updateSettings(roomCode, settings))}
-              />
-            )}
-          </div>
+          <RoomSidebar
+            room={room}
+            roomCode={roomCode}
+            peerId={peerId}
+            isGm={isGm}
+            players={players}
+            npcs={npcs}
+            roomAction={roomAction}
+            onInspectPlayer={abrirInspecao}
+            onSelectPlayerForHealthEdit={abrirSaude}
+          />
         </div>
       )}
 
@@ -1079,157 +357,29 @@ export const MultiplayerRoom: React.FC<MultiplayerRoomProps> = ({ onOpenAuthModa
 
       {/* INICIATIVA */}
       {tab === 'initiative' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 bg-surface/80 border border-line rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between p-3 border-b border-line">
-              <span className="text-xs font-black text-signal-400 uppercase tracking-caps">Ordem de Iniciativa</span>
-              <div className="flex items-center gap-2">
-                <span className="text-micro text-subtle">{initiative.length} entradas</span>
-                {isGm && (
-                  <button
-                    onClick={() => roomAction(roomsApi.rollInitiative(roomCode))}
-                    title="1d10 + REF (+ Combat Sense do Solo) para cada combatente com ficha. Quem você pôs à mão continua."
-                    className="px-2.5 py-1 bg-signal-500 hover:bg-signal-400 text-black font-black text-micro uppercase rounded cursor-pointer transition-all"
-                  >
-                    🎲 Rolar iniciativa
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="divide-y divide-line-soft">
-              {initiative.map((entry, idx) => (
-                <div
-                  key={entry.playerId}
-                  className={`flex items-center justify-between px-4 py-2.5 ${
-                    entry.isCurrentTurn ? 'bg-signal-950/40 border-l-4 border-l-signal-400' : ''
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <span className="font-mono text-micro text-subtle w-6">{idx + 1}º</span>
-                    <span className={`text-xs font-bold ${entry.isCurrentTurn ? 'text-signal-300' : 'text-white'}`}>
-                      {entry.handle}
-                    </span>
-                    {entry.isCurrentTurn && (
-                      <span className="text-micro px-1.5 py-0.5 bg-signal-400 text-black rounded font-black uppercase">Vez</span>
-                    )}
-                  </div>
-                  <span className="text-xs font-mono text-accent-300">{entry.score}</span>
-                </div>
-              ))}
-              {initiative.length === 0 && (
-                <div className="text-center py-10 text-micro text-faint">Role a iniciativa ou adicione combatentes para iniciar a rodada.</div>
-              )}
-            </div>
-            {initiative.length > 0 && (
-              <div className="p-3 border-t border-line">
-                <button
-                  onClick={nextTurn}
-                  disabled={isBusy('nextTurn')}
-                  className="w-full py-2.5 bg-signal-500 hover:bg-signal-400 disabled:opacity-40 disabled:cursor-wait text-black font-black text-xs uppercase rounded cursor-pointer transition-all"
-                >
-                  ⚔️ Próximo Turno
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-surface/80 border border-line rounded-xl p-4 space-y-2.5">
-            <span className="text-xs font-black text-signal-400 uppercase tracking-caps">Adicionar Combatente</span>
-            <input
-              type="text"
-              value={initiativeName}
-              onChange={(e) => setInitiativeName(e.target.value)}
-              placeholder="Nome / handle"
-              className="w-full bg-raised border border-field text-xs text-fg-strong px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
-            />
-            <input
-              type="number"
-              value={initiativeScore}
-              onChange={(e) => setInitiativeScore(parseInt(e.target.value) || 0)}
-              className="font-mono w-full bg-raised border border-field text-xs text-signal-400 px-3 py-2 rounded focus:border-signal-400 focus:outline-none"
-            />
-            <button
-              onClick={addInitiative}
-              disabled={!initiativeName.trim()}
-              className="w-full py-2 bg-signal-500 hover:bg-signal-400 disabled:opacity-40 text-black font-black text-micro uppercase rounded cursor-pointer transition-all"
-            >
-              + Adicionar
-            </button>
-          </div>
-        </div>
+        <InitiativePanel
+          initiative={initiative}
+          roomCode={roomCode}
+          isGm={isGm}
+          roomAction={roomAction}
+          onNextTurn={nextTurn}
+          nextTurnBusy={isBusy('nextTurn')}
+        />
       )}
 
-      {/* Os dois modais da mesa no Dialog do Radix (F.4.2): foco preso dentro,
-          Esc fecha, role="dialog" com o título ligado. Eram feitos à mão. */}
-
-      {/* Modal: editar saúde (GM) */}
-      <Dialog open={selectedHealthPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setHealthPeerId(null); }}>
-        <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-sm border-2 border-danger-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-danger-500/30 font-sans">
-          {selectedHealthPlayer && (
-            <>
-              <DialogTitle className="text-sm font-black text-danger-400 pr-6">
-                Bio-Monitor // {selectedHealthPlayer.handle}
-              </DialogTitle>
-              <DialogDescription className="sr-only">Escolha o nível de ferimento, de 0 a 10.</DialogDescription>
-              <div className="grid grid-cols-5 gap-1.5">
-                {Array.from({ length: 11 }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => updatePlayerHealth(selectedHealthPlayer.peerId, i)}
-                    className={`aspect-square rounded border-2 text-micro font-mono cursor-pointer transition-all ${
-                      i <= selectedHealthPlayer.sheet.woundLevel
-                        ? 'border-danger-500 bg-danger-950/80 text-danger-300'
-                        : 'border-line bg-raised text-subtle hover:border-danger-500/50'
-                    }`}
-                  >
-                    {i}
-                  </button>
-                ))}
-              </div>
-              <DialogClose className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer">
-                Fechar
-              </DialogClose>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal: inspecionar ficha */}
-      <Dialog open={inspectedPlayer !== null} onOpenChange={(aberto) => { if (!aberto) setInspectedPeerId(null); }}>
-        <DialogContent onCloseAutoFocus={devolverFoco} className="max-w-md border-2 border-accent-500/60 rounded-2xl sm:rounded-2xl shadow-glow-30 shadow-accent-500/30 max-h-[80vh] overflow-y-auto custom-scrollbar font-sans">
-          {inspectedPlayer && (
-            <>
-              <div className="flex items-center justify-between gap-2 pr-6">
-                <DialogTitle className="text-sm font-black">{inspectedPlayer.handle}</DialogTitle>
-                <span className="text-micro px-2 py-0.5 rounded bg-raised border border-line-strong text-signal-400">{inspectedPlayer.role}</span>
-              </div>
-              <DialogDescription className="sr-only">
-                Ficha de {inspectedPlayer.handle}: atributos, ferimento, verba, armas e cyberware.
-              </DialogDescription>
-              <div className="grid grid-cols-3 gap-1.5">
-                {(Object.keys(inspectedPlayer.sheet.stats) as (keyof typeof inspectedPlayer.sheet.stats)[]).map((k) => (
-                  <div key={k} className="bg-raised border border-line rounded p-1.5 text-center">
-                    <span className="text-micro text-subtle block">{k}</span>
-                    <span className="font-mono text-xs text-signal-400">{inspectedPlayer.sheet.stats[k]}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="font-mono text-micro text-muted space-y-1">
-                {/* Revisão da K — o nome da trilha do livro, como o cartão do token (K.3a):
-                    o "2/10" era o índice do nível. */}
-                <p>💥 Ferimento: <span className={woundLevelColor(inspectedPlayer.sheet.woundLevel)}>{woundRow(inspectedPlayer.sheet.woundLevel).name}</span></p>
-                <p>💰 {formatEb(inspectedPlayer.sheet.eurodollars)}</p>
-                <p>🔫 Armas: {inspectedPlayer.sheet.weapons.map(w => w.name).join(', ') || 'nenhuma'}</p>
-                <p>🦾 Ciberware: {inspectedPlayer.sheet.cyberware.length} itens</p>
-              </div>
-              {isGm && <CreationBudget sheet={inspectedPlayer.sheet} />}
-              <DialogClose className="w-full py-2 bg-raised border border-line-strong text-fg-soft rounded text-micro uppercase cursor-pointer">
-                Fechar
-              </DialogClose>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Os dois modais da mesa (F.4.2), no RoomDialogs. */}
+      <HealthMonitorDialog
+        selectedHealthPlayer={selectedHealthPlayer}
+        onClose={() => setHealthPeerId(null)}
+        onCloseAutoFocus={devolverFoco}
+        onSetWound={updatePlayerHealth}
+      />
+      <InspectSheetDialog
+        inspectedPlayer={inspectedPlayer}
+        isGm={isGm}
+        onClose={() => setInspectedPeerId(null)}
+        onCloseAutoFocus={devolverFoco}
+      />
     </div>
   );
 };

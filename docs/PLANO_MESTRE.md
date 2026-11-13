@@ -1470,8 +1470,19 @@ público mudar.
             os mesmos 52 nomes. **O E.11 feito:** o `roomKey` (`server/room/key.ts`, sem dependência) nos 29 pontos que
             normalizavam à mão — o stream SSE aberto com espaço no código achava a sala e não recebia o reenvio
             (reproduzido no `room-key.integration.test`; revertida a linha do stream, falha). *(22/10/2026, no #78)*
-      - [ ] **L.3c** O `MultiplayerRoom` (1.235) e o `TacticalGrid` (763): o `useRoomTransport`, o lobby, o chat, a barra
-            lateral, a iniciativa e os modais; o cartão do token, o *drop* e o formulário de token.
+      - [x] **L.3c** O `MultiplayerRoom` (1.235 linhas → 386) e o `TacticalGrid` (763 → 394), num PR só: os cortes são
+            de tela, com a mesma rede (os testes de tela da mesa, o E2E, o smoke e o `h1a.mjs`), e cabem num diff de
+            blocos movidos. Da sala saem o `useRoomTransport` (o WebSocket com o SSE de reserva, o `rev` da L.1, o Yjs, o
+            heartbeat e a sincronia da ficha), o `RoomLobby` (com o próprio `useInFlight`), o `RoomChat`, o `RoomSidebar`,
+            o `InitiativePanel` e o `RoomDialogs`; o "próximo turno" segue com o `useInFlight` da sala, que não desmonta ao
+            trocar de aba. Do grid saem o `gridDrop.ts` (o setor sob o ponteiro e o grid depois de soltar, puros — +17
+            testes no `grid-drop.test`; tirada a conferência do dono, o do jogador cai), o `TokenPopover`, o `AddTokenForm`
+            e o `gridTheme.ts`. A exceção nomeada das cinco cores hex do token (`audit-colors`) seguiu as cores para os
+            dois arquivos novos. **Achado no corte:** o formulário de "adicionar elemento" também não tem botão que o abra
+            (o `isAddingToken` nunca vira `true`) — entrou no item dos controles do grid do GM, na Q.3. A prova: a suíte
+            (1134 em 96), o E2E 7/7, o smoke 6/6 no `netsheet-prod` e o `h1a.mjs` com os números da L.1 (chat 0,2 KB por
+            aba, combate 7,8 KB, nenhum erro de console); estragado o `resync` no hook novo, o `room-patch-client` cai.
+            *(23/10/2026, no #79)*
       - [ ] **L.3d** O `FriendsList` (721), o `CyberpunkMenu` (607) e o `App` (386).
 - [ ] **L.4** Renomear os exports da camada Supabase e dividir o módulo por domínio. *(ARQ-06)*
 - [x] **L.5** ESLint com `typescript-eslint` em modo mínimo, zerar `any` e `console.*`,
@@ -1620,7 +1631,8 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         num contêiner Linux — 30 salas de 7 sockets, a sala da L.0 reenviada, a memória do processo com e sem
         `serverNoContextTakeover` — antes de qualquer linha no `server.ts`.)*
   - [ ] **E.18** e **G.21**: os cortes dos arquivos grandes, no backend e no frontend. *Dona:* L.3. *(22/10/2026: o
-        `server.ts` feito na L.3a, o `roomManager` na L.3b; o resto, nas L.3c–d.)*
+        `server.ts` feito na L.3a, o `roomManager` na L.3b; 23/10: o `MultiplayerRoom` e o `TacticalGrid` na L.3c; o resto,
+        na L.3d.)*
   - [x] **E.11**: `code.toUpperCase()` em 25 pontos, sem dono. *Dona:* L.3 (o `roomKey` vai para o módulo de
         salas). *Gatilho:* uma sala "não encontrada" por maiúscula ou espaço. *(Feito na L.3b, 22/10/2026.)*
   - [x] **E.16** (sete `any` no `server.ts`), **G.17** (doze `console.*` no cliente) e **G.18** (o "broadcast" das
@@ -1695,7 +1707,9 @@ M valida o produto inteiro e fecha o plano. Com a Q antes, a M valida também o 
         no `TacticalGrid` (`handleClearAllTokens`, `handleChangeTheme`, `handleChangeDimensions`) e nunca tiveram botão —
         o "construído e nunca ligado" do `CLAUDE.md`. Saíram na L.5 para o lint passar; voltam do histórico do git. O
         limpar usava o `confirm()` do navegador. *Gatilho:* o GM querer outro tema ou outro tamanho de grid numa sessão.
-        Fonte: a L.5, acima.
+        Fonte: a L.5, acima. *(23/10/2026, L.3c: o formulário de "adicionar elemento" — NPC, cobertura com SP, perigo —
+        também não abre: o `isAddingToken` nunca vira `true`, e a dica da aba do grid manda o GM "usar os controles do
+        grid". Ficou inteiro no `AddTokenForm`; falta o botão.)*
   - [ ] **As regras dos hooks do React no lint** (L.5): o `eslint-plugin-react-hooks` (`rules-of-hooks` e
         `exhaustive-deps`) ficou fora do modo mínimo; dois comentários do `useUserActivity` desligavam uma regra que nunca
         esteve instalada, e viraram o porquê das dependências. *Gatilho:* um bug de efeito com dependência faltando, ou
