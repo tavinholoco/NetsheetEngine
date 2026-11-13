@@ -1,51 +1,24 @@
-import React, { lazy, Suspense, useEffect, useRef } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CyberpunkMenu, TabType } from './components/CyberpunkMenu';
 import { AuthModal } from './features/social/AuthModal';
-import { RollResult, SkillItem, WeaponItem } from './types/cyberpunk';
 import { useCharacterSheet } from './hooks/useCharacterSheet';
 import { useUserActivity } from './hooks/useUserActivity';
 import { useSheetStore, syncSheetStore } from './stores/useSheetStore';
 import { useRollStore } from './stores/useRollStore';
 import { useUiStore } from './stores/useUiStore';
 import { firebaseSignOut, auth } from './lib/supabase';
-// Motor de dados FNFF — casca do cliente sobre src/rules/ (Fase C, C.1)
-import {
-  rollCheck,
-  rollSheetAttack,
-  rollSheetDamage,
-  rollSheetDeathSave,
-  rollSheetSkill,
-  rollSheetStunSave
-} from './utils/diceEngine';
-import type { Modifier } from './rules/dice';
 // Fase 7 (T7.1) — mapas de rota ↔ aba do menu
 import { pathToTab, tabToPath } from './router';
 import { APP_VERSION } from './version';
 import { errorMessage } from './lib/errorMessage';
-import { Dice5, CheckCircle2 } from 'lucide-react';
-
-// ===========================================================================
-// FASE 7 (T7.1) — PÁGINAS COM LAZY LOADING (code-splitting por rota)
-// Cada módulo vira um chunk separado no bundle; o Suspense mostra o fallback
-// enquanto o chunk carrega.
-// ===========================================================================
-const HomePageLazy = lazy(() => import('./components/HomePage').then((m) => ({ default: m.HomePage })));
-const PrdViewerLazy = lazy(() => import('./components/PrdViewer').then((m) => ({ default: m.PrdViewer })));
-const SheetPageLazy = lazy(() => import('./pages/SheetPage').then((m) => ({ default: m.SheetPage })));
-const DiceRollerLazy = lazy(() => import('./features/sheet/DiceRoller').then((m) => ({ default: m.DiceRoller })));
-const AiAssistantLazy = lazy(() => import('./features/ai/AiAssistant').then((m) => ({ default: m.AiAssistant })));
-const RoomPageLazy = lazy(() => import('./pages/RoomPage').then((m) => ({ default: m.RoomPage })));
-const PresetsManagerLazy = lazy(() => import('./components/PresetsManager').then((m) => ({ default: m.PresetsManager })));
-const UserProfileLazy = lazy(() => import('./features/social/UserProfile').then((m) => ({ default: m.UserProfile })));
-const NotFoundLazy = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
-
-/** Placeholder exibido enquanto o chunk da rota carrega. */
-const RouteFallback: React.FC = () => (
-  <div className="flex items-center justify-center py-20 font-mono text-subtle animate-pulse">
-    <span className="text-xs uppercase tracking-caps">Carregando módulo da Net...</span>
-  </div>
-);
+// L.3d — os cortes do mapa da G.1f: a faixa de título, as rotas, os dois avisos
+// flutuantes e as rolagens da ficha moram cada um no seu arquivo.
+import { AppPageHeader } from './components/AppPageHeader';
+import { AppRoutes } from './components/AppRoutes';
+import { RollBanner } from './components/RollBanner';
+import { SaveToastBanner } from './components/SaveToastBanner';
+import { useSheetRollHandlers } from './hooks/useSheetRollHandlers';
 
 export default function App() {
   // Fase 4 (T4.1/T4.2) — estado global via Zustand (sem prop drilling)
@@ -57,7 +30,6 @@ export default function App() {
   const isSavingSheet = useUiStore((s) => s.isSavingSheet);
 
   const lastRollBanner = useRollStore((s) => s.lastRollBanner);
-  const addRoll = useRollStore((s) => s.addRoll);
 
   const sheet = useSheetStore((s) => s.sheet);
   const user = useSheetStore((s) => s.user);
@@ -66,16 +38,7 @@ export default function App() {
   // localStorage + autosave) e espelha o estado na useSheetStore.
   const sheetResult = useCharacterSheet();
   syncSheetStore(sheetResult);
-  const {
-    updateSheet: handleUpdateSheet,
-    loadSheet,
-    loadPresetAsNewSheet,
-    createNewCharacter,
-    saveCurrentSheet,
-    saveCurrentSheetAndReset,
-    deleteCharacter,
-    resetToBlankSheet
-  } = sheetResult;
+  const { saveCurrentSheet, saveCurrentSheetAndReset, resetToBlankSheet } = sheetResult;
 
   // Activity status tracking (online, inativo after 1min, em jogo when in multiplayer tab)
   const activityStatus = useUserActivity(user?.uid, activeTab === 'multiplayer');
@@ -152,42 +115,9 @@ export default function App() {
     }
   };
 
-  const handleAddRollResult = (roll: RollResult) => {
-    addRoll(roll);
-  };
-
   // Rolagens da ficha (Fase C). As parcelas saem de src/rules/rolls.ts — as
-  // MESMAS funções que a mesa usa no servidor; o teste de paridade (C.10)
-  // confere o resultado inteiro com a mesma fila de dados.
-  const handleRollSkill = (skill: SkillItem) => {
-    handleAddRollResult(rollSheetSkill(sheet, skill));
-  };
-
-  // Teste com parcelas prontas — a habilidade especial usa este (C.8).
-  const handleRollCheck = (label: string, modifiers: Modifier[]) => {
-    handleAddRollResult(rollCheck(modifiers, { characterName: sheet.handle || 'Edgerunner', label }));
-  };
-
-  const handleRollWeaponAttack = (weapon: WeaponItem) => {
-    handleAddRollResult(rollSheetAttack(sheet, weapon));
-  };
-
-  // Fórmula de dano inválida é ignorada em silêncio, como antes.
-  const handleRollDamageOnly = (weaponName: string, damageFormula: string) => {
-    try {
-      handleAddRollResult(rollSheetDamage(sheet, { name: weaponName, damage: damageFormula }));
-    } catch {
-      /* fórmula de dano inválida */
-    }
-  };
-
-  const handleRollDeathSave = () => {
-    handleAddRollResult(rollSheetDeathSave(sheet));
-  };
-
-  const handleRollStunSave = () => {
-    handleAddRollResult(rollSheetStunSave(sheet));
-  };
+  // MESMAS funções que a mesa usa no servidor (paridade da C.10).
+  const rolls = useSheetRollHandlers();
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_center,_var(--color-raised)_0%,_var(--color-surface)_100%)] text-fg font-sans selection:bg-accent-500 selection:text-black relative">
@@ -198,34 +128,10 @@ export default function App() {
       />
 
       {/* Floating Roll Notification Banner */}
-      {lastRollBanner && (
-        <div className="print:hidden fixed bottom-4 right-4 z-50 max-w-sm bg-raised/90 border-2 border-accent-400 p-4 rounded-lg shadow-glow-25 shadow-accent-500/50 animate-bounce text-xs font-mono backdrop-blur-sm">
-          <div className="flex items-center justify-between border-b border-line pb-1 mb-2">
-            <span className="text-signal-400 flex items-center space-x-1">
-              <Dice5 className="w-4 h-4 text-accent-400" />
-              <span>{lastRollBanner.label}</span>
-            </span>
-            <span className="text-micro text-muted">{lastRollBanner.timestamp}</span>
-          </div>
-
-          <div className="text-xl text-accent-300 my-1">
-            RESULTADO TOTAL: {lastRollBanner.total}
-          </div>
-
-          <p className="text-mini text-fg-soft">{lastRollBanner.details}</p>
-        </div>
-      )}
+      <RollBanner banner={lastRollBanner} />
 
       {/* Floating Save Sheet Toast Notification */}
-      {saveToast && (
-        <div className="print:hidden fixed bottom-4 left-4 z-50 max-w-md bg-surface border-2 border-ok-400 p-4 rounded-lg shadow-glow-25 shadow-ok-500/50 text-xs backdrop-blur-sm space-y-1">
-          <div className="flex items-center space-x-2 text-ok-400 font-bold uppercase">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Sincronização Concluída</span>
-          </div>
-          <p className="text-fg">{saveToast}</p>
-        </div>
-      )}
+      <SaveToastBanner message={saveToast} />
 
       {/* CYBERPUNK 2077 HUD LAYOUT CONTAINER */}
       <div className="max-w-[1700px] mx-auto flex flex-col lg:flex-row min-h-screen">
@@ -239,127 +145,27 @@ export default function App() {
         {/* RIGHT COLUMN: ACTIVE MODULE WORKSPACE */}
         <div className="flex-1 flex flex-col min-w-0 p-4 lg:p-6 space-y-6">
           {/* Top Page Header Bar */}
-          {(() => {
-            const pageInfoMap: Record<TabType, { category: string; title: string; color: string }> = {
-              home: { category: 'BEM-VINDO', title: 'INÍCIO // CYBERPUNK 2020 NETSHEET ENGINE', color: 'text-signal-400' },
-              multiplayer: { category: 'JOGAR', title: 'MESA MULTIPLAYER EM TEMPO REAL', color: 'text-ok-400' },
-              sheet: { category: 'FICHA', title: 'CRIADOR & GESTOR DE FICHA', color: 'text-accent-400' },
-              presets: { category: 'LENDAS', title: 'BIBLIOTECA DE LENDAS DE NIGHT CITY', color: 'text-signal-400' },
-              ai: { category: 'NETRUNNER', title: 'ASSISTENTE NETRUNNER IA & LIFEPATH', color: 'text-cyber-400' },
-              dice: { category: 'DADOS', title: 'ROLADOR DE DADOS FNFF & COMBATE', color: 'text-roll-400' },
-              prd: { category: 'PRD', title: 'ESPECIFICAÇÃO PRD & ROADMAP', color: 'text-fg-strong' },
-              profile: { category: 'PERFIL', title: 'PERFIL DO EDGERUNNER', color: 'text-caution-400' },
-            };
-            const currentPage = pageInfoMap[activeTab] || pageInfoMap['home'];
-
-            return (
-              <div className="print:hidden bg-surface/90 border-2 border-accent-600/40 rounded-xl p-4 md:p-5 backdrop-blur-md shadow-glow-20 shadow-accent-500/15 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-signal-500 to-accent-500"></div>
-                <div className="pl-3 space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2.5 h-2.5 bg-accent-400 animate-pulse rounded-full shadow-glow-8 shadow-accent-400"></div>
-                    <span className="font-mono text-mini tracking-caps text-accent-400 uppercase">
-                      SISTEMA // {currentPage.category}
-                    </span>
-                  </div>
-                  <h1 key={activeTab} className={`animate-glitch font-display text-xl sm:text-2xl md:text-3xl font-black italic tracking-display uppercase ${currentPage.color} drop-shadow-glow-12 drop-shadow-white/15 leading-tight`}>
-                    {currentPage.title}
-                  </h1>
-                  {user && (
-                    <p className="text-xs text-fg-soft pt-1 flex items-center space-x-1.5">
-                      <span className="text-muted">FICHA ATIVA:</span>
-                      <strong className="text-signal-400 font-bold">{sheet.handle || 'Edgerunner'}</strong>
-                      <span className="text-accent-400 font-bold">({sheet.role || 'Solo'})</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
+          <AppPageHeader
+            activeTab={activeTab}
+            isLoggedIn={Boolean(user)}
+            handleName={sheet.handle}
+            role={sheet.role}
+          />
 
           {/* Main Content Render Area */}
           <main className="flex-1">
             {/* Fase 7 (T7.1) — rotas com lazy loading (URLs reais + deep links) */}
-            <Suspense fallback={<RouteFallback />}>
-              <Routes>
-                <Route path="/" element={<HomePageLazy onNavigate={setActiveTab} />} />
-                <Route path="/prd" element={<PrdViewerLazy />} />
-                <Route
-                  path="/sheet"
-                  element={
-                    <SheetPageLazy
-                      sheet={sheet}
-                      onChange={handleUpdateSheet}
-                      onRollDeathSave={handleRollDeathSave}
-                      onRollStunSave={handleRollStunSave}
-                      onRollWeaponAttack={handleRollWeaponAttack}
-                      onRollDamageOnly={handleRollDamageOnly}
-                      onRollSkill={handleRollSkill}
-                      onRollCheck={handleRollCheck}
-                      user={user}
-                      isSavingSheet={isSavingSheet}
-                      onSave={handleSaveCurrentSheet}
-                      onSaveAndReset={handleSaveAndResetSheet}
-                    />
-                  }
-                />
-                <Route
-                  path="/dice"
-                  element={
-                    <DiceRollerLazy
-                      onAddRoll={handleAddRollResult}
-                      onClearHistory={() => useRollStore.getState().clearHistory()}
-                    />
-                  }
-                />
-                <Route
-                  path="/ai"
-                  element={
-                    <AiAssistantLazy
-                      sheet={sheet}
-                      onChange={handleUpdateSheet}
-                      user={user}
-                      onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
-                    />
-                  }
-                />
-                {/* H.03 — o lobby também é o RoomPage: a mesa que fica ativa ali leva a URL para /room/CÓDIGO */}
-                <Route
-                  path="/multiplayer"
-                  element={<RoomPageLazy onOpenAuthModal={() => useUiStore.getState().openAuthModal()} />}
-                />
-                <Route
-                  path="/room/:code"
-                  element={<RoomPageLazy onOpenAuthModal={() => useUiStore.getState().openAuthModal()} />}
-                />
-                <Route
-                  path="/presets"
-                  element={
-                    <PresetsManagerLazy
-                      onLoadSheet={loadSheet}
-                      onLoadPresetAsNewSheet={loadPresetAsNewSheet}
-                      onCreateNew={createNewCharacter}
-                      onDeleteSheet={deleteCharacter}
-                    />
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <UserProfileLazy
-                      activityStatus={activityStatus}
-                      onLoadSheet={loadSheet}
-                      onDeleteSheet={deleteCharacter}
-                      onCreateNewSheet={createNewCharacter}
-                      onOpenAuthModal={() => useUiStore.getState().openAuthModal()}
-                      onNavigateToSheetCreator={() => useUiStore.getState().setActiveTab('sheet')}
-                      onLogout={handleLogout}
-                    />
-                  }
-                />
-                <Route path="*" element={<NotFoundLazy />} />
-              </Routes>
-            </Suspense>
+            <AppRoutes
+              sheetResult={sheetResult}
+              sheet={sheet}
+              user={user}
+              isSavingSheet={isSavingSheet}
+              activityStatus={activityStatus}
+              onSave={handleSaveCurrentSheet}
+              onSaveAndReset={handleSaveAndResetSheet}
+              onLogout={handleLogout}
+              rolls={rolls}
+            />
           </main>
 
           {/* Immersive Footer Bar */}
