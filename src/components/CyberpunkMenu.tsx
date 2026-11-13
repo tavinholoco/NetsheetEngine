@@ -1,32 +1,34 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * ============================================================
+ * NETSHEET ENGINE — MENU VERTICAL (HUD Cyberpunk 2020)
+ *
+ * L.3d — o arquivo passou de 607 linhas para a casca do menu. Saíram, pelo
+ * mapa da G.1f: o dado (itens, avatares e o LED de status) para
+ * `menu/menuConfig.ts`, o efeito do avatar para `menu/useAvatarProfile.ts`, e
+ * o cartão do usuário — que existia em duas cópias, no celular e no
+ * computador — para `menu/ProfileCard.tsx`. Nada mudou de comportamento.
+ * ============================================================
+ */
+import React, { useState } from 'react';
 import {
-  Home,
-  Radio,
-  Cpu,
-  Bot,
-  Dice5,
-  FileText,
-  Shield,
-  Skull,
-  Swords,
-  Zap,
-  Wifi,
-  LogOut,
-  LogIn,
   ChevronRight,
   ChevronLeft,
   ChevronDown,
   Terminal,
   Newspaper,
-  X
+  X,
+  LogIn
 } from 'lucide-react';
-import { generateCyberpunkId, fetchUserProfile } from '../lib/supabase';
 import { ActivityStatus } from '../hooks/useUserActivity';
 import { PatchNotesFeed } from './PatchNotesFeed';
 import { APP_VERSION } from '../version';
 import { FriendsList } from '../features/social/FriendsList';
 import { useUiStore } from '../stores/useUiStore';
 import { useSheetStore } from '../stores/useSheetStore';
+// L.3d — o dado do menu, o avatar do usuário e o cartão do perfil
+import { MENU_ITEMS, STATUS_LED_CONFIG } from './menu/menuConfig';
+import { useAvatarProfile } from './menu/useAvatarProfile';
+import { ProfileCard } from './menu/ProfileCard';
 
 export type TabType = 'home' | 'multiplayer' | 'sheet' | 'presets' | 'ai' | 'dice' | 'prd' | 'profile';
 
@@ -36,76 +38,6 @@ interface CyberpunkMenuProps {
   onOpenAuth?: () => void;
   onLogout?: () => void;
 }
-
-const AVATAR_CONFIG: Record<
-  string,
-  { icon: React.ComponentType<{ className?: string }>; color: string; border: string; bg: string }
-> = {
-  cpu: { icon: Cpu, color: 'text-accent-400', border: 'border-accent-400', bg: 'bg-accent-950/80' },
-  shield: { icon: Shield, color: 'text-signal-400', border: 'border-signal-400', bg: 'bg-signal-950/80' },
-  skull: { icon: Skull, color: 'text-fault-400', border: 'border-fault-400', bg: 'bg-fault-950/80' },
-  radio: { icon: Radio, color: 'text-cyber-400', border: 'border-cyber-400', bg: 'bg-cyber-950/80' },
-  zap: { icon: Zap, color: 'text-ok-400', border: 'border-ok-400', bg: 'bg-ok-950/80' }
-};
-
-const STATUS_LED_CONFIG: Record<
-  ActivityStatus,
-  {
-    border: string;
-    borderActive: string;
-    shadow: string;
-    shadowActive: string;
-    dotBg: string;
-    textColor: string;
-    badgeBorder: string;
-    badgeBg: string;
-    label: string;
-  }
-> = {
-  'online': {
-    border: 'border-ok-500/80 hover:border-ok-400',
-    borderActive: 'border-ok-400 ring-2 ring-ok-400/60',
-    shadow: 'shadow-glow-18 shadow-ok-500/35',
-    shadowActive: 'shadow-glow-28 shadow-ok-500/65',
-    dotBg: 'bg-ok-500',
-    textColor: 'text-ok-400',
-    badgeBorder: 'border-ok-500/60',
-    badgeBg: 'bg-ok-950/50',
-    label: 'ONLINE'
-  },
-  'inativo': {
-    border: 'border-caution-400/80 hover:border-caution-300',
-    borderActive: 'border-caution-400 ring-2 ring-caution-400/60',
-    shadow: 'shadow-glow-18 shadow-caution-400/35',
-    shadowActive: 'shadow-glow-28 shadow-caution-400/65',
-    dotBg: 'bg-caution-500',
-    textColor: 'text-caution-400',
-    badgeBorder: 'border-caution-500/60',
-    badgeBg: 'bg-caution-950/50',
-    label: 'INATIVO'
-  },
-  'em jogo': {
-    border: 'border-cyber-500/80 hover:border-cyber-400',
-    borderActive: 'border-cyber-400 ring-2 ring-cyber-400/60',
-    shadow: 'shadow-glow-18 shadow-cyber-500/35',
-    shadowActive: 'shadow-glow-28 shadow-cyber-500/65',
-    dotBg: 'bg-cyber-500',
-    textColor: 'text-cyber-400',
-    badgeBorder: 'border-cyber-500/60',
-    badgeBg: 'bg-cyber-950/50',
-    label: 'EM JOGO'
-  }
-};
-
-const MENU_ITEMS = [
-  { id: 'home' as TabType, label: 'INÍCIO', icon: Home, accent: 'text-signal-400' },
-  { id: 'multiplayer' as TabType, label: 'JOGAR', icon: Radio, accent: 'text-ok-400' },
-  { id: 'sheet' as TabType, label: 'FICHA', icon: Cpu, accent: 'text-accent-400' },
-  { id: 'presets' as TabType, label: 'LENDAS', icon: Swords, accent: 'text-signal-400' },
-  { id: 'ai' as TabType, label: 'NETRUNNER IA', icon: Bot, accent: 'text-cyber-400' },
-  { id: 'dice' as TabType, label: 'DADOS', icon: Dice5, accent: 'text-roll-400' },
-  { id: 'prd' as TabType, label: 'PRD', icon: FileText, accent: 'text-fg-strong' }
-];
 
 export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
   activityStatus = 'online',
@@ -117,78 +49,12 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
   const setActiveTab = useUiStore((s) => s.setActiveTab);
   const user = useSheetStore((s) => s.user);
 
-  const [avatarIconKey, setAvatarIconKey] = useState<string>('cpu');
-  const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [showPatchNotes, setShowPatchNotes] = useState<boolean>(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
-  const [userCyberpunkId, setUserCyberpunkId] = useState<string>('');
 
-  // Sync avatar icon/url and Cyberpunk ID from local profile cache & cloud
-  useEffect(() => {
-    if (user) {
-      const defaultId = generateCyberpunkId(user.uid);
-      try {
-        const cached = localStorage.getItem(`cyberpunk_profile_${user.uid}`);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          setUserCyberpunkId(parsed.cyberpunkId || defaultId);
-          if (parsed.avatarIcon) {
-            setAvatarIconKey(parsed.avatarIcon);
-          }
-        } else {
-          setUserCyberpunkId(defaultId);
-        }
-      } catch (e) {
-        setUserCyberpunkId(defaultId);
-      }
-
-      fetchUserProfile(user.uid).then(p => {
-        if (p?.cyberpunkId) {
-          setUserCyberpunkId(p.cyberpunkId);
-        }
-        if (p?.avatarUrl) {
-          setAvatarUrl(p.avatarUrl);
-        }
-      });
-    } else {
-      setUserCyberpunkId('');
-      setAvatarUrl('');
-    }
-  }, [user, activeTab]);
-
-  // Avatar atualiza imediatamente após upload/remoção feitos no UserProfile
-  // (evento customizado — evita depender de troca de aba para re-sync).
-  useEffect(() => {
-    const handler = (e: Event) => {
-      setAvatarUrl((e as CustomEvent<string>).detail || '');
-    };
-    window.addEventListener('cyberpunk:avatar-updated', handler);
-    return () => window.removeEventListener('cyberpunk:avatar-updated', handler);
-  }, []);
-
-  const avatarInfo = AVATAR_CONFIG[avatarIconKey] || AVATAR_CONFIG['cpu'];
-  const UserAvatarComp = avatarInfo.icon;
-  const statusInfo = STATUS_LED_CONFIG[activityStatus] || STATUS_LED_CONFIG['online'];
-
-  // Renderiza a imagem do avatar (bucket avatars) quando disponível; senão o ícone.
-  const renderAvatar = (sizeCls: string) => {
-    if (avatarUrl) {
-      return (
-        <img
-          src={avatarUrl}
-          alt="Avatar"
-          className={`${sizeCls} object-cover rounded-lg shrink-0`}
-          onError={() => setAvatarUrl('')}
-        />
-      );
-    }
-    return (
-      <div className={`${sizeCls} rounded-lg border ${avatarInfo.border} ${avatarInfo.bg} flex items-center justify-center shrink-0`}>
-        <UserAvatarComp className={`w-5 h-5 ${avatarInfo.color}`} />
-      </div>
-    );
-  };
+  const { avatarIconKey, avatarUrl, cyberpunkId: userCyberpunkId, clearAvatarUrl } = useAvatarProfile(user, activeTab);
+  const statusInfo = STATUS_LED_CONFIG[activityStatus];
 
   return (
     <aside
@@ -276,32 +142,19 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
           {/* Mobile User Profile Header Banner */}
           {user ? (
             <div>
-              <div
-                onClick={() => {
+              <ProfileCard
+                variant="mobile"
+                user={user}
+                cyberpunkId={userCyberpunkId}
+                avatarUrl={avatarUrl}
+                avatarIconKey={avatarIconKey}
+                statusInfo={statusInfo}
+                onOpenProfile={() => {
                   setActiveTab('profile');
                   setIsMobileMenuOpen(false);
                 }}
-                className={`p-3 rounded-xl border-2 cursor-pointer bg-raised/90 flex items-center justify-between ${statusInfo.borderActive} ${statusInfo.shadow}`}
-              >
-                <div className="flex items-center space-x-3">
-                  {renderAvatar('w-9 h-9')}
-                  <div>
-                    <div className="flex items-center space-x-1.5 leading-tight">
-                      <span className={`text-xs ${avatarInfo.color} font-black uppercase tracking-caps block`}>
-                        {user.displayName || user.email?.split('@')[0]}
-                      </span>
-                      <span className="text-micro font-mono text-accent-300 bg-accent-950/90 px-1.5 py-0.2 rounded border border-accent-500/60 shrink-0">
-                        {userCyberpunkId}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1 text-micro mt-0.5">
-                      <Wifi className={`w-2.5 h-2.5 ${statusInfo.textColor}`} />
-                      <span className={`font-mono uppercase ${statusInfo.textColor}`}>{statusInfo.label}</span>
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-signal-400" />
-              </div>
+                onAvatarError={clearAvatarUrl}
+              />
               <FriendsList user={user} isMinimized={false} />
             </div>
           ) : (
@@ -522,65 +375,22 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
         <div className="relative z-10 pt-3 mt-4 border-t-2 border-accent-600/60 shrink-0">
           {user ? (
             <div>
-              <div
-                onClick={() => {
+              <ProfileCard
+                variant="desktop"
+                user={user}
+                cyberpunkId={userCyberpunkId}
+                avatarUrl={avatarUrl}
+                avatarIconKey={avatarIconKey}
+                statusInfo={statusInfo}
+                isMinimized={isMinimized}
+                isProfileActive={activeTab === 'profile'}
+                onOpenProfile={() => {
                   setActiveTab('profile');
                   setIsMobileMenuOpen(false);
                 }}
-                title={user.displayName || user.email?.split('@')[0]}
-                className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all bg-surface/90 ${
-                  activeTab === 'profile'
-                    ? `${statusInfo.borderActive} ${statusInfo.shadowActive}`
-                    : `${statusInfo.border} ${statusInfo.shadow}`
-                }`}
-              >
-              <div
-                className={`flex items-center ${
-                  isMinimized ? 'justify-center' : 'justify-between'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  {/* User Avatar (imagem do bucket ou ícone) */}
-                  {renderAvatar('w-9 h-9 shadow-sm')}
-
-                  {/* Name and LED status */}
-                  {!isMinimized && (
-                    <div>
-                      <div className="flex items-center space-x-1.5 leading-tight">
-                        <span
-                          className={`text-xs ${avatarInfo.color} font-black uppercase tracking-caps block truncate max-w-[100px]`}
-                        >
-                          {user.displayName || user.email?.split('@')[0]}
-                        </span>
-                        <span className="text-micro font-mono text-accent-300 bg-accent-950/90 px-1.5 py-0.2 rounded border border-accent-500/60 shrink-0">
-                          {userCyberpunkId}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-micro mt-0.5">
-                        <Wifi className={`w-2.5 h-2.5 ${statusInfo.textColor}`} />
-                        <span className={`font-mono uppercase ${statusInfo.textColor}`}>
-                          {statusInfo.label}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Logout Button */}
-                {!isMinimized && onLogout && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onLogout();
-                    }}
-                    title="Sair da Conta"
-                    className="p-1.5 text-muted hover:text-accent-400 hover:bg-raised rounded transition-all border border-transparent hover:border-line cursor-pointer"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
+                onLogout={onLogout}
+                onAvatarError={clearAvatarUrl}
+              />
             {/* Friends List Component */}
             <FriendsList user={user} isMinimized={isMinimized} />
           </div>
@@ -604,4 +414,3 @@ export const CyberpunkMenu: React.FC<CyberpunkMenuProps> = ({
     </aside>
   );
 };
-

@@ -563,7 +563,12 @@ sem os sockets dentro do componente, a tela da mesa se testa sem servidor.
   `RoomChat`, `RoomSidebar`, `InitiativePanel` e `RoomDialogs` (os dois modais num arquivo). O grid (763 → 394):
   `gridDrop.ts` (`sectorFromPoint` e `gridAfterDrop`, puros e testados no `grid-drop.test`), `TokenPopover`,
   `AddTokenForm` e `gridTheme.ts` (o `THEME_STYLES` e o nome das linhas). O `AddTokenForm` não tem botão que o abra —
-  no item dos controles do grid do GM, na Q.3. O `FriendsList`, o `CyberpunkMenu` e o `App` são a L.3d.
+  no item dos controles do grid do GM, na Q.3. ✅ **O `FriendsList`, o `CyberpunkMenu` e o `App` cortados na L.3d**
+(13/11/2026), como o mapa propunha: o `FriendsList` 721 → 283 (`FriendChatBox`, `AddFriendPanel`, `PendingRequests`,
+`friendVisuals` e `friendProfile`), o `CyberpunkMenu` 607 → 416 (`menu/menuConfig.ts`, `menu/useAvatarProfile.ts` e o
+`menu/ProfileCard.tsx`, que juntou as duas cópias do cartão) e o `App` 386 → 192 (`AppPageHeader`, `AppRoutes`,
+`RollBanner`, `SaveToastBanner` e `useSheetRollHandlers`). Com isso o **G.21 fecha**. Um achado do corte: o botão da rede
+de amigos com o menu minimizado troca um estado que a versão minimizada não lê — foi para a Q.3.
 
 ---
 
